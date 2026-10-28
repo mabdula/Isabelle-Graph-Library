@@ -1700,12 +1700,26 @@ proof-
       then obtain Y where "to_set (result best_in_greedy_state) = Y \<union> B1" "Y \<subseteq> matroid.carrier_abs carrier - F"
         by blast
 
-      from indep_system.basis_in_max_indep_in[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
-          \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>]
       have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn) (insert x B1)"
-        using indep_system.indep_in_def[OF indep_system_axioms_abs]
-        by (metis DiffD1 \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>
-            indep_system.basis_in_indep_in indep_system_axioms_abs insert_subset)
+      proof
+        fix x
+        assume "x \<in> F - B1"
+        hence "x \<in> F" and "x \<notin> B1" by auto
+        from indep_system.basis_in_max_indep_in[OF indep_system_axioms_abs \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close>
+            \<open>indep_system.basis_in (matroid.indep_abs indep_fn) F B1\<close>]
+        have max_not_indep_in: "\<not> indep_system.indep_in (matroid.indep_abs indep_fn) F (insert x B1)"
+          using \<open>x \<in> F\<close> \<open>x \<notin> B1\<close> by blast
+        have subset_F: "insert x B1 \<subseteq> F"
+          using \<open>x \<in> F\<close> \<open>B1 \<subseteq> F\<close> by auto
+        show "\<not> (matroid.indep_abs indep_fn) (insert x B1)"
+        proof
+          assume indep_ins: "(matroid.indep_abs indep_fn) (insert x B1)"
+          have "indep_system.indep_in (matroid.indep_abs indep_fn) F (insert x B1)"
+            unfolding indep_system.indep_in_def[OF indep_system_axioms_abs]
+            using subset_F indep_ins by blast
+          with max_not_indep_in show False by blast
+        qed
+      qed
       moreover have "\<forall>x \<in> F - B1. insert x B1 \<subseteq> insert x (B1 \<union> Y)" by blast
       ultimately have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn) (insert x (B1 \<union> Y))"
         using indep_system.indep_subset[OF indep_system_axioms_abs] by metis
