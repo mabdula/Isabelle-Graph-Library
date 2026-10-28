@@ -2338,7 +2338,19 @@ proof-
 
   from prop_preserved_subset_induct[OF assms(1) this]
   have indep_subset: "\<forall>X Y. X \<subseteq> Y \<longrightarrow> ?indep Y \<longrightarrow> ?indep X"
-    by (metis assms(1) card_mono diff_diff_cancel diff_le_self finite_subset)
+  proof (intro allI impI)
+    fix X Y
+    assume F: "\<And>Y n X. Y \<subseteq> E \<Longrightarrow> n \<le> card Y \<longrightarrow> card X = card Y - n \<longrightarrow> X \<subseteq> Y \<longrightarrow> ?indep Y \<longrightarrow> ?indep X"
+    assume "X \<subseteq> Y" and indep_Y: "?indep Y"
+    from indep_Y have Y_subset: "Y \<subseteq> E" by blast
+    have Y_finite: "finite Y" using assms(1) Y_subset finite_subset by blast
+    from card_mono[OF Y_finite \<open>X \<subseteq> Y\<close>] have card_le: "card X \<le> card Y" .
+    have n_le: "card Y - card X \<le> card Y" by (rule diff_le_self)
+    have card_eq: "card X = card Y - (card Y - card X)"
+      using diff_diff_cancel[OF card_le] by simp
+    show "?indep X"
+      using F[of Y "card Y - card X" X] Y_subset n_le card_eq \<open>X \<subseteq> Y\<close> indep_Y by blast
+  qed
 
   have augment_aux: 
     "\<forall>X Y. ?indep X \<longrightarrow> ?indep Y \<longrightarrow> card X = Suc (card Y) \<longrightarrow> (\<exists>x \<in> X - Y. ?indep (insert x Y))" 
