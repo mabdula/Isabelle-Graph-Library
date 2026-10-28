@@ -1337,8 +1337,14 @@ proof
     have 3: "k < dim_col B - 1" 
       using 14 10 asmk by presburger
     have 4:"B @\<^sub>r mat_of_rows (dim_col B) [b] \<in> carrier_mat (Suc (dim_row B)) (Suc (dim_col B - 1))"
-      by (metis "3" Suc_eq_plus1 15 add_diff_inverse_nat less_nat_zero_code
-          nat_diff_split_asm plus_1_eq_Suc)
+    proof -
+      have "dim_col B \<noteq> 0"
+        using False by simp
+      hence "Suc (dim_col B - 1) = dim_col B"
+        by simp
+      thus ?thesis
+        using 15 by simp
+    qed
     have 5: "dim_row B < Suc (dim_row B)" 
       by blast
     have 18: "mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j $$ (i, k) =
