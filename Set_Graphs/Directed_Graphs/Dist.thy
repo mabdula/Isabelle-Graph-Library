@@ -1040,7 +1040,15 @@ lemma dist_set_leq:
 lemma dist_set_eq: 
   "\<lbrakk>\<And>u. u \<in> Vs \<Longrightarrow> distance G u v = distance G' u v\<rbrakk> \<Longrightarrow> distance_set G Vs v = distance_set G' Vs v"
   using dist_set_leq
-  by (metis nle_le)
+proof -
+  assume eq: "\<And>u. u \<in> Vs \<Longrightarrow> distance G u v = distance G' u v"
+  have le1: "distance_set G Vs v \<le> distance_set G' Vs v"
+    by (rule dist_set_leq) (simp add: eq)
+  have le2: "distance_set G' Vs v \<le> distance_set G Vs v"
+    by (rule dist_set_leq) (simp add: eq)
+  from le1 le2 show ?thesis
+    by (rule order_antisym)
+qed
 
 lemma distance_set_subset: "G \<subseteq> G' \<Longrightarrow> distance_set G' Vs v \<le> distance_set G Vs v"
   by (simp add: dist_set_leq distance_subset)
