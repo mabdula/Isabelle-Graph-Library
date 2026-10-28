@@ -2916,7 +2916,7 @@ proof -
         have 29: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J =
               submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})\<inter>{0..<1}) J"
           using submatrix_inter_rows' 3 
-          by metis
+          by (simp add: submatrix_inter_rows'[of "mat_of_rows n [unit_vec n i]" "(\<lambda>i. i - nr) ` (I - {0..<nr})" J] 3)
         have 28: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {}" 
           apply safe 
           apply simp+
