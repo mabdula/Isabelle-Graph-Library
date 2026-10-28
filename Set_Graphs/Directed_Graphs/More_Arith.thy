@@ -722,7 +722,12 @@ qed
 
 lemma integral_add: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a+b)"
   unfolding is_integral_def 
-  by (metis of_int_add)
+proof -
+  assume "\<exists>n::int. a = n" and "\<exists>n::int. b = n"
+  then obtain na nb :: int where "a = na" and "b = nb" by blast
+  hence "a + b = of_int (na + nb)" by (simp add: of_int_add)
+  thus "\<exists>n::int. a + b = n" by blast
+qed
 
 lemma integral_sub: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a-b)"
   unfolding is_integral_def 
