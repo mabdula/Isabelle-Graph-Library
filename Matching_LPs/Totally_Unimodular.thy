@@ -2162,10 +2162,32 @@ qed
       have "pick I (insert_index i t) = pick I t"
         unfolding insert_index_def 
         using True by simp
-      have "pick I t \<in> I - {pick I i}" 
-        using t_less_card 
-        by (metis (no_types, lifting) Diff_iff True 16 18 assms(3) card_mono order_less_imp_not_eq 
-            order_less_le_trans pick_in_set_inf pick_in_set_le pick_mono singletonD)
+      have i_bound: "i < card I \<or> infinite I"
+      proof (cases "infinite I")
+        case True
+        then show ?thesis by blast
+      next
+        case False
+        have "card {k. k < dim_row A \<and> k \<in> I} \<le> card I"
+          using 18 False card_mono by blast
+        moreover have "i < card {k. k < dim_row A \<and> k \<in> I}"
+          using assms(3) 16 by simp
+        ultimately have "i < card I" by linarith
+        then show ?thesis by blast
+      qed
+      have "pick I t \<in> I"
+      proof (cases "infinite I")
+        case True
+        then show ?thesis using pick_in_set_inf by blast
+      next
+        case False
+        then have "t < card I" using t_less_card by blast
+        then show ?thesis using pick_in_set_le by blast
+      qed
+      moreover have "pick I t < pick I i"
+        using pick_mono True i_bound by blast
+      ultimately have "pick I t \<in> I - {pick I i}"
+        by (auto simp: DiffI less_imp_neq)
       then have 35: "pick (I - {pick I i}) (card {a\<in>(I - {pick I i}). a < pick I t}) = pick I t" 
         using pick_card_in_set by presburger
       have 9:"card {a\<in>I. a < pick I t} = t" 
