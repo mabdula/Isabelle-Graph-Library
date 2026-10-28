@@ -392,7 +392,15 @@ proof(goal_cases)
   case (1 x1 x2 xs1 xs2 xs3)
   hence "Vwalk.vwalk_bet G u (xs1 @ x2 # xs3) v"
     using vwalk_bet_transitive_2 closed_vwalk_bet_decompE
-    by (smt (verit, best) butlast_snoc)
+  proof -
+    have p': "p = xs1 @ x2 # xs2 @ x2 # xs3"
+      using \<open>p = xs1 @ x1 # xs2 @ x2 # xs3\<close> \<open>x1 = x2\<close> by simp
+    have W: "vwalk_bet G u (xs1 @ [x2] @ xs2 @ [x2] @ xs3) v"
+      using \<open>vwalk_bet G u p v\<close>[unfolded p'] by simp
+    from vwalk_bet_cycle_delete[OF W]
+    show ?thesis
+      by simp
+  qed
   hence "distance G u v \<le> length (xs1 @ x2 # xs3) - 1"
     using vwalk_bet_dist
     by force
