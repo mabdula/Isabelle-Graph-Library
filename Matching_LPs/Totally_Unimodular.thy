@@ -2430,7 +2430,7 @@ proof
   assume asmj: "j < dim_col (mat_of_rows (card ({0..<n} \<inter> J)) 
                  [vec_of_list (nths (list_of_vec b) J)])"
   have "i = 0" 
-    by (metis Num.numeral_nat(7) Suc_eq_plus1 asmi less_one list.size(3-4) mat_of_rows_carrier(2))
+    using asmi mat_of_rows_carrier(2) by simp
   have "j < (card ({0..<n} \<inter> J))" 
     using 4 2 5 asmj by presburger
   have "row (submatrix (mat_of_rows n [b]) {0} J) 0 = col (submatrix (mat_of_rows n [b]) {0} J)\<^sup>T 0" 
