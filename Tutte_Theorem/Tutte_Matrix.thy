@@ -304,8 +304,14 @@ proof -
   have "(i, j) \<notin> oriented_edges" using zero_tutte_not_in_oriented 
     by (simp add: assms)
   moreover have "(j, i) \<notin> oriented_edges" 
-    by (metis add.inverse_neutral assms tutte_skew_symmetric 
-        zero_tutte_not_in_oriented)
+  proof -
+    have "tutte_matrix $j$i = - tutte_matrix $i$j"
+      by (rule tutte_skew_symmetric)
+    then have "tutte_matrix $j$i = 0"
+      using assms by simp
+    then show ?thesis
+      using zero_tutte_not_in_oriented by blast
+  qed
   ultimately show ?thesis 
     using  one_direction_in_oriented by blast
 qed
