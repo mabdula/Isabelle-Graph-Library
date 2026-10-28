@@ -71,7 +71,16 @@ proof(induct "card A" arbitrary: A rule: less_induct)
       then have "a \<noteq> a'" 
         using \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' = f a\<close> by fastforce
       have "card (A - {a, a'}) < card A" 
-        by (metis Diff_insert2 \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' \<in> A\<close> card_Diff2_less less.prems(1))
+        proof -
+          have a_in: "a \<in> A"
+            using \<open>a \<in> A \<and> f a \<noteq> a\<close> by simp
+          have "A - {a, a'} = A - {a} - {a'}"
+            by blast
+          moreover have "card (A - {a} - {a'}) < card A"
+            using less.prems(1) a_in \<open>a' \<in> A\<close> by (rule card_Diff2_less)
+          ultimately show "card (A - {a, a'}) < card A"
+            by simp
+        qed
       have " \<forall>x\<in>(A - {a, a'}). f x \<in> (A - {a, a'})" 
         by (metis Diff_iff \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' = f a\<close> empty_iff insert_iff 
             less.prems(2) less.prems(3))
