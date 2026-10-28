@@ -1195,11 +1195,26 @@ proof(intro invar_props_intros, goal_cases)
           proof(elim vwalk_bet_not_vwalk_bet_elim_2[OF _ "1"], goal_cases)
             case 1
             then show ?case
-              by (metis \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v \<le> enat (length p - 2)\<close> 
-                        \<open>p = p' @ [v', v]\<close> \<open>vwalk_bet (Graph.digraph_abs G) u p v\<close> assms(3)
-                        diff_is_0_eq distance_set_0 invar_2_def le_zero_eq length_append_singleton
-                        list.sel(3) not_less_eq_eq subset_eq v_not_visited vwalk_bet_endpoints(2) 
-                        vwalk_bet_vertex_decompE zero_enat_def)
+              proof (cases "p' = []")
+                case True
+                then have p_def: "p = [v', v]"
+                  using \<open>p = p' @ [v', v]\<close> by simp
+                then have "distance_set (Graph.digraph_abs G) (t_set srcs) v \<le> 0"
+                  using \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v \<le> enat (length p - 2)\<close>
+                  by (simp add: zero_enat_def)
+                then have "distance_set (Graph.digraph_abs G) (t_set srcs) v = 0"
+                  by (simp add: ile0_eq)
+                moreover have "v \<in> dVs (Graph.digraph_abs G)"
+                  using \<open>vwalk_bet (Graph.digraph_abs G) u p v\<close> by (rule vwalk_bet_endpoints(2))
+                ultimately have "v \<in> t_set srcs"
+                  by (simp add: distance_set_0)
+                then have "v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+                  using assms(3) by (auto simp: invar_2_def)
+                then show ?thesis using v_not_visited by blast
+              next
+                case False
+                then show ?thesis by (cases p') auto
+              qed
           next
             case (2 u'' v'')
             moreover hence "u'' \<notin> t_set (current bfs_state')"
