@@ -527,7 +527,18 @@ next
             using \<open>{a, xs ! 0} \<in> A\<close> by simp
         qed
       then show ?thesis 
-        by (metis \<open>path A xs\<close> \<open>xs = hd xs # tl xs\<close> path_2) 
+      proof -
+        obtain y ys where y_ys: "xs = y # ys"
+          using \<open>xs \<noteq> []\<close> by (cases xs) auto
+        have "{a, y} \<in> A"
+          using \<open>{a, hd xs} \<in> A\<close> by (simp add: y_ys)
+        moreover have "path A (y # ys)"
+          using \<open>path A xs\<close> by (simp add: y_ys)
+        ultimately have "path A (a # y # ys)"
+          by (rule Paths.path.path2)
+        then show ?thesis
+          by (simp add: y_ys)
+      qed
     qed
   qed
 qed
