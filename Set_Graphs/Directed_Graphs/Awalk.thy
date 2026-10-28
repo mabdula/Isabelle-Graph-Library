@@ -1413,7 +1413,7 @@ lemma closed_w_rotate: "closed_w E (c1@c2) \<Longrightarrow> closed_w E (c2@c1)"
   apply(cases c2) apply simp
   subgoal for ys y a list
     apply(rule exI[of _ "fst a"])
-    by (metis Nil_is_append_conv awalk_Cons_iff awalk_appendI awalk_append_iff length_greater_0_conv)
+    by (auto simp: awalk_append_iff awalk_Cons_iff awalk_Nil_iff dest: dVsI')
   done
 
 lemma awalk_map:
