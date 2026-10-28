@@ -701,7 +701,17 @@ proof(rule invar_props_intros, goal_cases)
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> set (carrier_sorted)"
-      using carrier_pref_def set_take_subset by (metis carrier_pref_expr)
+    proof -
+      have "insert (hd (carrier_list best_in_greedy_state))
+              (carrier_pref c order (num_iter c order best_in_greedy_state)) =
+            carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state))"
+        using carrier_pref_expr by simp
+      also have "... = set (take (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)) (carrier_sorted))"
+        by (simp add: carrier_pref_def)
+      also have "... \<subseteq> set (carrier_sorted)"
+        by (rule set_take_subset)
+      finally show ?thesis .
+    qed
     then have insert_subset_carrier:
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> matroid.carrier_abs carrier"
