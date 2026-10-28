@@ -3925,7 +3925,18 @@ proof-
     "\<forall>j < n. G \<inter> (set (take (Suc j) l) - set (take j l)) \<subseteq> {l ! j}" by blast
   then have 1:
     "\<forall>j \<in> {1..n}. G \<inter> (set (take j l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
-    by (metis Suc_pred' atLeastAtMost_iff lessI less_imp_diff_less less_one nat_less_le)
+proof (intro ballI)
+  fix j :: nat
+  assume "j \<in> {1..n}"
+  then have j_ge: "1 \<le> j" and j_le: "j \<le> n" by simp_all
+  from j_ge have j_eq: "Suc (j - 1) = j" by arith
+  from j_ge j_le have j1_lt_n: "j - 1 < n" by arith
+  with \<open>\<forall>j < n. G \<inter> (set (take (Suc j) l) - set (take j l)) \<subseteq> {l ! j}\<close>
+  have "G \<inter> (set (take (Suc (j - 1)) l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
+    by blast
+  with j_eq show "G \<inter> (set (take j l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
+    by simp
+qed
 
   from assms(2) assms(3) have "distinct l"
     by (simp add: card_distinct)
