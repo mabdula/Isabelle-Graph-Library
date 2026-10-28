@@ -72,7 +72,15 @@ lemma option_none_simp:
   by (auto split: option.split)
 
 lemma fst_snd_are_same: "prod.swap e = e \<Longrightarrow> fst e = snd e"  for e
-  by (metis snd_swap)
+proof -
+  assume assm: "prod.swap e = e"
+  have "snd e = snd (prod.swap e)"
+    using assm by simp
+  also have "\<dots> = fst e"
+    by (rule snd_swap)
+  finally show "fst e = snd e"
+    by (rule sym)
+qed
 
 lemma P_of_let_I: "(\<And> x. x = g \<Longrightarrow> P (t x)) \<Longrightarrow>P (let x = g in t x)" 
   by simp
