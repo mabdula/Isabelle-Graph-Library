@@ -236,7 +236,17 @@ next
     using UnionI insert.hyps(2) insert.prems(2) by auto
   then have "\<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" 
     using insert.prems(3)
-    by (metis insert_iff)
+    proof (intro ballI)
+      fix a assume aF: "a \<in> F"
+      then have aIns: "a \<in> insert x F" by simp
+      have "\<exists>c\<in>B. c \<in> a"
+        using insert.prems(3) aIns by blast
+      then obtain c where cB: "c \<in> B" and ca: "c \<in> a" by blast
+      have "c \<noteq> b"
+        using ca aF \<open>\<forall>a\<in>F. b \<notin> a\<close> by blast
+      then show "\<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b"
+        using cB ca by blast
+    qed
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-{b}. b1 \<in> a" 
     by (metis \<open>b \<in> B \<and> b \<in> x\<close> insertE insert_Diff)
   have "finite (B - {b})" 
