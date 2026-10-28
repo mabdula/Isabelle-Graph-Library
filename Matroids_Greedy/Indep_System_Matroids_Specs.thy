@@ -381,7 +381,16 @@ proof ((rule allI)+, (rule impI)+)
     set.set_cardinality[OF \<open>set_inv (from_set T)\<close>]
   have "cardinality (from_set S) = Suc (cardinality (from_set T))"
     using from_set_correct
-    by (metis \<open>indep_abs indep_fn S\<close> \<open>indep_abs indep_fn T\<close> indep_abs_infinite)
+  proof -
+    have finS: "finite S" by (rule indep_abs_finite[OF \<open>indep_abs indep_fn S\<close>])
+    have finT: "finite T" by (rule indep_abs_finite[OF \<open>indep_abs indep_fn T\<close>])
+    have eqS: "to_set (from_set S) = S" by (rule from_set_correct[OF finS])
+    have eqT: "to_set (from_set T) = T" by (rule from_set_correct[OF finT])
+    show ?thesis
+      using \<open>card S = Suc (card T)\<close> set.set_cardinality[OF \<open>set_inv (from_set S)\<close>]
+        set.set_cardinality[OF \<open>set_inv (from_set T)\<close>] eqS eqT
+      by simp
+  qed
 
   from \<open>set_inv (from_set S)\<close> \<open>set_inv (from_set T)\<close> \<open>indep_fn (from_set S)\<close> \<open>indep_fn (from_set T)\<close>
     \<open>cardinality (from_set S) = Suc (cardinality (from_set T))\<close>
