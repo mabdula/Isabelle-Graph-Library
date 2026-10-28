@@ -995,7 +995,14 @@ obtains ys p' q' where "p = p'@ys" "q =q'@ys"
 proof(induction "length p" arbitrary: p q thesis rule: less_induct)
   case less
   then obtain pa a where p_last:"p = pa@[a]"
-    by (metis append_butlast_last_id list.size(3) not_one_le_zero)
+  proof -
+    have "p \<noteq> []"
+      using less.prems(2) by auto
+    hence "p = butlast p @ [last p]"
+      by (simp add: append_butlast_last_id)
+    thus ?thesis
+      by (rule that)
+  qed
   from less obtain qb b where q_last:"q = qb@[b]"
     by (metis append_butlast_last_id list.size(3) not_one_le_zero)
   have butlasts: "butlast p = pa" "butlast q = qb"
