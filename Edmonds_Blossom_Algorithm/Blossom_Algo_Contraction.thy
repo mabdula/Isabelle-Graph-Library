@@ -2132,8 +2132,18 @@ proof(cases "length p1 \<ge> 2")
     by (simp add: edges_of_path_nempty)
   ultimately have "last (edges_of_path (rev p1)) \<in> M"
     using \<open>alt_path (-M) p1\<close>
-    apply(simp add: edges_of_path_rev[symmetric] last_rev)
-    by (metis alt_list_step list.exhaust_sel)  
+  proof -
+    obtain e es where e_es: "edges_of_path p1 = e # es"
+      using \<open>edges_of_path p1 \<noteq> []\<close> list.exhaust_sel by blast
+    have alt: "alt_list (\<lambda>e. e \<in> M) (\<lambda>e. e \<notin> M) (e # es)"
+      using \<open>alt_path (-M) p1\<close> e_es by simp
+    have "e \<in> M"
+      using alt[unfolded alt_list_step] by auto
+    then have "hd (edges_of_path p1) \<in> M"
+      by (simp add: e_es)
+    thus "last (edges_of_path (rev p1)) \<in> M"
+      by (simp add: edges_of_path_rev[symmetric] last_rev e_es)
+  qed
   moreover have "edges_of_path ((rev p1) @ p2) = (edges_of_path (rev p1)) @ (edges_of_path (hd p1 # p2))"
     by (metis (no_types, lifting) edges_of_path_append_2 edges_of_path_rev nempty(1) rev.simps(2) rev_append rev_rev_ident)
   moreover have "alt_path M (rev p1)"
