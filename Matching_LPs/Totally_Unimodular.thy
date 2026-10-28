@@ -2811,7 +2811,7 @@ proof rule
             qed
             then have "(\<Sum>j<dim_col B. B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
                        B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
-              by (metis atLeast0LessThan)
+              by (simp only: atLeast0LessThan)
             then have 27: "det B =  B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j"
               by (metis "4" \<open>dim_row B = dim_col B\<close>)
             then have 28: "det B = cofactor B (dim_row B - 1) j" 
