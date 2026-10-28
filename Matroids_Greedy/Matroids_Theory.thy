@@ -4835,9 +4835,32 @@ proof-
 
   have "card B1 = card (insert x (B1 - {y}))"
     using \<open>x \<in> B2 - B1\<close> \<open>y \<in> C - B2\<close>
-    by (metis Diff_iff \<open>C \<subseteq> insert x B1\<close> \<open>indep (insert x (B1 - {y}))\<close> \<open>indep_system E indep\<close>
-        card.remove card_insert_if finite.emptyI finite_Diff2 finite_insert in_mono
-        indep_system.indep_finite insert_iff)
+  proof -
+    from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(3)]
+    have B1_subset: "B1 \<subseteq> E" .
+    from B1_subset assms(1) have "finite B1" using finite_subset by blast
+
+    from \<open>x \<in> B2 - B1\<close> have "x \<notin> B1" by blast
+    from \<open>x \<in> B2 - B1\<close> have "x \<in> B2" by blast
+    from \<open>y \<in> C - B2\<close> have "y \<notin> B2" by blast
+    from \<open>x \<in> B2\<close> \<open>y \<notin> B2\<close> have "y \<noteq> x" by blast
+    from \<open>y \<in> C - B2\<close> \<open>C \<subseteq> insert x B1\<close> have "y \<in> insert x B1" by blast
+    from \<open>y \<in> insert x B1\<close> \<open>y \<noteq> x\<close> have "y \<in> B1" by blast
+
+    from \<open>finite B1\<close> have "finite (B1 - {y})" by blast
+    from \<open>x \<notin> B1\<close> have "x \<notin> B1 - {y}" by blast
+    from card_insert_disjoint[OF \<open>finite (B1 - {y})\<close> \<open>x \<notin> B1 - {y}\<close>]
+    have card_insert_eq: "card (insert x (B1 - {y})) = card (B1 - {y}) + 1" by simp
+
+    from card_Diff_singleton[OF \<open>y \<in> B1\<close>]
+    have card_diff_eq: "card (B1 - {y}) = card B1 - 1" .
+
+    from \<open>y \<in> B1\<close> have "{y} \<subseteq> B1" by blast
+    from card_mono[OF \<open>finite B1\<close> this] have card_B1_ge: "card B1 \<ge> 1" by simp
+
+    from card_insert_eq card_diff_eq card_B1_ge
+    show "card B1 = card (insert x (B1 - {y}))" by simp
+  qed
 
   from matroid.card_eq_basis[OF assms(2) assms(3) `indep (insert x (B1 - {y}))` this]
   have "indep_system.basis E indep (insert x (B1 - {y}))" .
