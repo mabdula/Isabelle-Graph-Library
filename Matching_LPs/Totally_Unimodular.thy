@@ -3367,9 +3367,37 @@ qed
             then  have "det (mat_delete B (dim_row B - 1) j) \<in> {-1, 0, 1}" 
               using "9" by presburger 
             then have "cofactor B (dim_row B - 1) j \<in> {-1, 0, 1}" 
-              by (smt (verit, best) "8" R.minus_equality UNIV_I add_neg_numeral_special(7) 
-                  cring_simprules(28) insertCI insertE mult_cancel_right2 mult_minus1_right 
-                  nat_pow_distrib singletonD square_eq_one)
+            proof -
+              assume d_mem: "det (mat_delete B (dim_row B - 1) j) \<in> {- 1, 0, 1}"
+              have pow_cases: "(-1::'a) ^ m = 1 \<or> (-1::'a) ^ m = -1" for m
+              proof (induct m)
+                case 0
+                show ?case by simp
+              next
+                case (Suc m)
+                then show ?case
+                proof
+                  assume "(-1::'a) ^ m = 1"
+                  then show ?case by (simp add: power_Suc)
+                next
+                  assume "(-1::'a) ^ m = -1"
+                  then show ?case by (simp add: power_Suc)
+                qed
+              qed
+              from pow_cases[of "(dim_row B - 1) + j"]
+              show ?thesis
+              proof
+                assume "(-1::'a) ^ ((dim_row B - 1) + j) = 1"
+                with "8" have eq1: "cofactor B (dim_row B - 1) j = det (mat_delete B (dim_row B - 1) j)"
+                  by simp
+                show ?thesis unfolding eq1 using d_mem .
+              next
+                assume "(-1::'a) ^ ((dim_row B - 1) + j) = -1"
+                with "8" have eq2: "cofactor B (dim_row B - 1) j = - det (mat_delete B (dim_row B - 1) j)"
+                  by simp
+                show ?thesis unfolding eq2 using d_mem by auto
+              qed
+            qed
             then show ?thesis 
               using `det B = - cofactor B (dim_row B - 1) j` by auto
           next
