@@ -2055,7 +2055,15 @@ proof-
     by (simp add: \<open>2 \<le> length p1\<close> even_alt_path_rev even_lens(1))
   moreover have "last (edges_of_path (rev p1)) \<notin> M"
     apply(simp add: edges_of_path_rev[symmetric])
-    by (metis \<open>last (edges_of_path p1) \<notin> M\<close> alt_list_step assms(4) last_rev list.exhaust_sel rev.simps(1))
+    proof (cases "edges_of_path p1")
+      case Nil
+      then show "last (rev (edges_of_path p1)) \<notin> M"
+        using \<open>last (edges_of_path p1) \<notin> M\<close> by simp
+    next
+      case (Cons e es)
+      then show "last (rev (edges_of_path p1)) \<notin> M"
+        using assms(4) by (simp add: alt_list_step last_rev)
+    qed
   moreover have "alt_path (-M) (hd p1 # p2)"
     using alt_paths(2,5)
     by(cases p2; auto simp add: alt_list_step alt_list_empty)
