@@ -862,7 +862,15 @@ next
       have "awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y]"
       by auto
     then have "\<exists>zs. tl (awalk_verts u p) = zs @ [v, x, y]"
-      by (metis append.assoc append_Cons append_Nil list.sel(3) tl_append2)
+proof -
+  have ne: "map fst (butlast xs) @ [fst (last xs)] \<noteq> []" by simp
+  have "awalk_verts u p = (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y]"
+    using \<open>awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y]\<close> by simp
+  with ne tl_append2[of "map fst (butlast xs) @ [fst (last xs)]" "[v, x, y]"]
+  have "tl (awalk_verts u p) = tl (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y]"
+    by simp
+  then show ?thesis by auto
+qed
     with \<open>distinct (tl (awalk_verts u p))\<close>
       show ?thesis by auto
   next
