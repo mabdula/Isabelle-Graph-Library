@@ -840,7 +840,36 @@ lemma append_two: "[a]@[b] = [a,b]"
   by simp
 
 lemma list_induct3: "\<lbrakk>P Nil; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs"
-  by (metis list_nonempty_induct neq_Nil_conv)
+proof (goal_cases)
+  case assms: 1
+  show ?case
+  proof (cases "xs = []")
+    case True
+    then show ?thesis using assms(1) by simp
+  next
+    case False
+    then show ?thesis
+    proof (induction xs rule: list_nonempty_induct)
+      case (single x)
+      show ?case by (rule assms(2))
+    next
+      case (cons x xs)
+      then show ?case
+      proof (cases xs)
+        case Nil
+        then show ?thesis using cons.hyps by simp
+      next
+        case (Cons y ys)
+        then show ?thesis
+        proof -
+          have "P (y # ys)" using cons.IH \<open>xs = y # ys\<close> by simp
+          then have "P (x # y # ys)" using assms(3) by blast
+          then show ?thesis using \<open>xs = y # ys\<close> by simp
+        qed
+      qed
+    qed
+  qed
+qed
 
 lemma list_induct3_len_geq_2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. P [x,y]) \<Longrightarrow> (\<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)) \<Longrightarrow> P xs" for xs P
   apply(induction rule: list_induct3)
