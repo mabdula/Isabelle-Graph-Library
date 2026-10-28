@@ -314,7 +314,10 @@ next
       by blast
     with `X \<union> Y \<subseteq> carrier` `card X > card Y` have
       "\<not> basis_in (X \<union> Y) X \<or> \<not> basis_in (X \<union> Y) Y"
-      by (metis nat_neq_iff)
+    proof -
+      have "card X \<noteq> card Y" using `card X > card Y` by simp
+      with `X \<union> Y \<subseteq> carrier` 1 show ?thesis by blast
+    qed
 
     have "\<not> basis_in (X \<union> Y) Y"
     proof (rule ccontr, goal_cases False)
