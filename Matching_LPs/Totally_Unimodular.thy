@@ -3572,7 +3572,19 @@ proof
     using One_nat_def Suc_eq_plus1 append_rows_def assms(2) carrier_matD(1)
         index_mat_four_block(2) index_zero_mat(2) le_add_diff_inverse2 list.size(3) 
         list.size(4) mat_of_rows_carrier(2)
-    by (metis (no_types, lifting) Suc_leI)
+  proof -
+    have X: "submatrix A {0..<nr - 1} UNIV \<in> carrier_mat (nr - 1) n"
+      using submatrix_minus_last_row_carr[OF A] .
+    have Y: "mat_of_rows n [Matrix.row A (nr - 1)] \<in> carrier_mat 1 n"
+      using mat_of_rows_carrier(1)[of n "[Matrix.row A (nr - 1)]"] by auto
+    have Z: "submatrix A {0..<nr - 1} UNIV @\<^sub>r mat_of_rows n [Matrix.row A (nr - 1)]
+             \<in> carrier_mat ((nr - 1) + 1) n"
+      using carrier_append_rows[OF X Y] .
+    have "(nr - 1) + 1 = nr"
+      using assms(2) by simp
+    with Z show ?thesis
+      using carrier_matD(1) by simp
+  qed
   then show 5: "dim_row A = dim_row (submatrix A {0..<nr - 1} UNIV @\<^sub>r 
                          mat_of_rows n [Matrix.row A (nr - 1)])"
     by (metis assms(1) carrier_matD(1))
