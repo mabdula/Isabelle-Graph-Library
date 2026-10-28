@@ -1806,8 +1806,26 @@ proof
     have 3: "k < dim_col B - 1" 
       using 14 asmk' by presburger
     have 4:"B \<in> carrier_mat (Suc (dim_row B - 1)) (Suc (dim_col B - 1))" 
-      by (metis "3" 19 add_diff_inverse_nat asmi' carrier_matI less_nat_zero_code 
-          nat_diff_split_asm plus_1_eq_Suc)
+    proof -
+      have dim_row_lt: "t < dim_row B - 1"
+        using 19 asmi' by simp
+      have dim_row_pos: "0 < dim_row B"
+      proof (rule ccontr)
+        assume "\<not> 0 < dim_row B"
+        then have "dim_row B = 0" by simp
+        then have "dim_row B - 1 = 0" by simp
+        then show False using dim_row_lt by simp
+      qed
+      have dim_col_pos: "0 < dim_col B"
+        using False by simp
+      have eq1: "Suc (dim_row B - 1) = dim_row B"
+        using dim_row_pos by simp
+      have eq2: "Suc (dim_col B - 1) = dim_col B"
+        using dim_col_pos by simp
+      show ?thesis
+        unfolding eq1 eq2
+        by (rule carrier_matI) simp_all
+    qed
     have 5: "t < (dim_row B -1)" 
       using 19 asmi' by presburger
     have 44: "mat_delete B i j $$ (t, k) = B $$ (insert_index i t, insert_index j k)" 
