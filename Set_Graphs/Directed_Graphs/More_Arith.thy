@@ -259,7 +259,14 @@ lemma binary_sum:
 lemma get_least: 
   assumes "P (n::nat)"
   obtains n_min where "P n_min" "\<not> (\<exists> m < n_min. P m)"
-  by (metis assms bot_nat_0.extremum_strict ex_least_nat_le)
+proof -
+  have p: "P (Least P)"
+    using assms by (rule LeastI)
+  have np: "\<not> (\<exists>m<Least P. P m)"
+    using not_less_Least by blast
+  show thesis
+    using that[OF p np] .
+qed
 
 lemma sum_cards_with_life_time:
   assumes "finite \<S>"
