@@ -759,7 +759,11 @@ proof (cases "(v, w) = last p")
   with awalk_verts_cons \<open>awalk E u p u\<close>
     have awalk_verts_p: "awalk_verts u ([(fst (hd p), snd (hd p))] @ (xs @ [(v, w)])) =
       [fst (hd p), snd (hd p)] @ tl (awalk_verts u (xs @ [(v, w)]))"
-    by metis
+  proof -
+    have "awalk E u ([(fst (hd p), snd (hd p))] @ xs @ [(v, w)]) u"
+      using \<open>awalk E u p u\<close> \<open>p = [(fst (hd p), snd (hd p))] @ xs @ [(v, w)]\<close> by simp
+    then show ?thesis by (rule awalk_verts_cons)
+  qed
   from awalk_verts_snoc
     obtain ys where "awalk_verts u (xs @ [(v, w)]) = ys @ [v, w]" by fastforce
   with awalk_verts_p \<open>p = [(fst (hd p), snd (hd p))] @ xs @ [(v, w)]\<close>
