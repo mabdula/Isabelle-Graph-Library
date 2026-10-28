@@ -2634,9 +2634,42 @@ proof rule
         have "row (submatrix A I J @\<^sub>r
               mat_of_rows (card ({0..<n} \<inter> J)) [vec_of_list (nths (list_of_vec (unit_vec n i)) J)]) 
               (dim_row (submatrix A I J)) = vec_of_list (nths (list_of_vec (unit_vec n i)) J)"
-          by (smt (verit, best) A Collect_cong carrier_dim_vec carrier_matD(2)
-              carrier_matI dim_submatrix(2) dim_vec row_apend_last_row submatrix_one_row_mat_of_rows
-              mat_of_rows_carrier(3) nths_list_pick_vec_same unit_vec_carrier)
+        proof -
+          have dim_col_sub: "dim_col (submatrix A I J) = card ({0..<n} \<inter> J)"
+          proof -
+            have "dim_col (submatrix A I J) = card {j. j < dim_col A \<and> j \<in> J}"
+              using dim_submatrix(2) by blast
+            moreover have "dim_col A = n"
+              using A carrier_matD(2) by blast
+            moreover have "{j. j < n \<and> j \<in> J} = {0..<n} \<inter> J"
+              by auto
+            ultimately show ?thesis
+              by simp
+          qed
+          have sub_carr:
+            "submatrix A I J \<in> carrier_mat (dim_row (submatrix A I J)) (card ({0..<n} \<inter> J))"
+            by (rule carrier_matI) (auto simp: dim_col_sub)
+          have vec_eq: "vec_of_list (nths (list_of_vec (unit_vec n i)) J) =
+                vec (card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J})
+                    (\<lambda>ia. (unit_vec n i) $ (pick J ia))"
+            using nths_list_pick_vec_same[of "unit_vec n i" J] by force
+          have vec_dim: "dim_vec (vec_of_list (nths (list_of_vec (unit_vec n i)) J)) = card ({0..<n} \<inter> J)"
+          proof -
+            have "dim_vec (vec_of_list (nths (list_of_vec (unit_vec n i)) J)) =
+          card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}"
+              using vec_eq by (simp add: length_nths)
+            moreover have "dim_vec (unit_vec n i) = n"
+              using index_unit_vec(3) by blast
+            moreover have "{ia. ia < n \<and> ia \<in> J} = {0..<n} \<inter> J"
+              by auto
+            ultimately show ?thesis
+              by simp
+          qed
+          have vec_carr:
+            "vec_of_list (nths (list_of_vec (unit_vec n i)) J) \<in> carrier_vec (card ({0..<n} \<inter> J))"
+            using vec_dim by (simp add: carrier_dim_vec)
+          from row_apend_last_row[OF sub_carr vec_carr refl] show ?thesis .
+        qed
         then  have 22: "row B (dim_row B - 1) = vec_of_list (nths (list_of_vec (unit_vec n i)) J)"
           using row_apend_last_row 
           by (simp add: 21 append_rows_def)
