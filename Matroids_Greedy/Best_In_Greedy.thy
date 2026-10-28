@@ -1085,8 +1085,93 @@ proof-
       carrier_pref_def[of c] pref_def[of c] by simp
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))"
-    using sum_diff_mult_distr[OF g_pos c_carrier_sorted_nonneg g_zero] semiring_1_cancel_class.of_nat_diff g_leq c_diff_def
-    by (smt (verit) sum.cong)
+  proof -
+    define A where "A = (\<lambda>j. rat_of_nat (card (pref c order ?G j)))"
+    define e where "e = (\<lambda>j. c (carrier_sorted ! j))"
+    have A0: "A 0 = 0"
+      using g_zero by (simp add: A_def)
+    have cast: "\<And>j. j \<in> {1..?n} \<Longrightarrow>
+      rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) = A j - A (j - 1)"
+      using g_leq by (simp add: A_def of_nat_diff)
+    have lhs_eq: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1)))
+              = (\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))"
+      using cast by (intro sum.cong) (auto simp: e_def)
+    have rhs_eq: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))
+              = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+      by (intro sum.cong) (auto simp: A_def e_def c_diff_def)
+    have telescope: "(\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))
+                  = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+    proof (cases "?n = 0")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      then have n_ge: "1 \<le> ?n" by linarith
+      have set_split1: "{1..?n} = insert ?n {1..?n - 1}"
+        using n_ge by auto
+      have set_split0: "{0..?n - 1} = insert 0 {1..?n - 1}"
+        using n_ge by auto
+      have split_diff: "(\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))
+          = (\<Sum>j = 1..?n. A j * e (j - 1)) - (\<Sum>j = 1..?n. A (j - 1) * e (j - 1))"
+        by (simp add: algebra_simps sum_subtractf)
+      have reindex: "(\<Sum>j = 1..?n. A (j - 1) * e (j - 1)) = (\<Sum>i = 0..?n - 1. A i * e i)"
+      proof -
+        obtain m where n_eq: "?n = Suc m" using n_ge by (cases ?n) auto
+        have "(\<Sum>j = 1..?n. A (j - 1) * e (j - 1)) = (\<Sum>j = Suc 0..Suc m. A (j - 1) * e (j - 1))"
+          using n_eq by simp
+        also have "\<dots> = (\<Sum>i = 0..m. A (Suc i - 1) * e (Suc i - 1))"
+          by (rule sum.shift_bounds_cl_Suc_ivl)
+        also have "\<dots> = (\<Sum>i = 0..m. A i * e i)"
+          by simp
+        also have "\<dots> = (\<Sum>i = 0..?n - 1. A i * e i)"
+          using n_eq by simp
+        finally show ?thesis .
+      qed
+      have split_last1: "(\<Sum>j = 1..?n. A j * e (j - 1)) = A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * e (j - 1))"
+        using n_ge by (subst set_split1) (simp add: sum.insert)
+      have split_first: "(\<Sum>i = 0..?n - 1. A i * e i) = (\<Sum>i = 1..?n - 1. A i * e i)"
+        using n_ge A0 by (subst set_split0) (simp add: sum.insert)
+      have split_last2: "(\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1))) =
+          A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * (e (j - 1) - e j))"
+      proof -
+        have step1: "(\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1))) =
+              A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+          using n_ge by (subst set_split1) (simp add: sum.insert)
+        have step2: "(\<Sum>j = 1..?n - 1. A j * (if j < ?n then e (j - 1) - e j else e (j - 1))) =
+              (\<Sum>j = 1..?n - 1. A j * (e (j - 1) - e j))"
+          by (intro sum.cong) auto
+        from step1 step2 show ?thesis by simp
+      qed
+      show ?thesis
+      proof -
+        have "(\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))
+            = (\<Sum>j = 1..?n. A j * e (j - 1)) - (\<Sum>j = 1..?n. A (j - 1) * e (j - 1))"
+          by (fact split_diff)
+        also have "\<dots> = (A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * e (j - 1)))
+            - (\<Sum>j = 1..?n. A (j - 1) * e (j - 1))"
+          using split_last1 by simp
+        also have "\<dots> = (A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * e (j - 1)))
+            - (\<Sum>i = 0..?n - 1. A i * e i)"
+          using reindex by simp
+        also have "\<dots> = A ?n * e (?n - 1)
+            + ((\<Sum>j = 1..?n - 1. A j * e (j - 1)) - (\<Sum>j = 1..?n - 1. A j * e j))"
+          using split_first by (simp add: algebra_simps)
+        also have "\<dots> = A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * (e (j - 1) - e j))"
+          by (simp add: algebra_simps left_diff_distrib sum_subtractf)
+        also have "\<dots> = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+          using split_last2 by simp
+        finally show ?thesis .
+      qed
+    qed
+    have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1)))
+        = (\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))"
+      by (fact lhs_eq)
+    also have "... = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+      by (fact telescope)
+    also have "... = (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))"
+      by (fact rhs_eq[symmetric])
+    finally show ?thesis .
+  qed
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j)) \<ge> 
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
     using G_j_prod_geq_lower_rank_E_j_prod sum_mono by fastforce 
