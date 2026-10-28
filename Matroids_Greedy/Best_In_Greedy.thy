@@ -1433,8 +1433,21 @@ proof-
 
   from \<open>length ?l_B1 = card B1\<close> \<open>length ?l_F_not_B1 = card (F - B1)\<close>
   have "length ?l_F = card F" 
-    by (metis Diff_disjoint Int_Diff_Un \<open>B1 \<subseteq> F\<close> \<open>finite (F - B1)\<close> \<open>finite B1\<close> card_Un_disjoint
-        inf.absorb_iff2 length_append)
+  proof -
+    have disjoint: "B1 \<inter> (F - B1) = {}"
+      by auto
+    have union_eq: "B1 \<union> (F - B1) = F"
+      using \<open>B1 \<subseteq> F\<close> by auto
+    have "length (?l_B1 @ ?l_F_not_B1) = length ?l_B1 + length ?l_F_not_B1"
+      by (simp add: length_append)
+    also have "... = card B1 + card (F - B1)"
+      using \<open>length ?l_B1 = card B1\<close> \<open>length ?l_F_not_B1 = card (F - B1)\<close> by simp
+    also have "... = card (B1 \<union> (F - B1))"
+      using card_Un_disjoint[OF \<open>finite B1\<close> \<open>finite (F - B1)\<close> disjoint] by simp
+    also have "... = card F"
+      using union_eq by simp
+    finally show ?thesis .
+  qed
   from \<open>set ?l_B1 = B1\<close> \<open>set ?l_F_not_B1 = (F - B1)\<close> set_append[of ?l_B1 ?l_F_not_B1] \<open>B1 \<subseteq> F\<close>
   have "set ?l_F = F" by auto
 
