@@ -947,8 +947,27 @@ proof(induction xs rule: rev_induct)
     show ?thesis 
     proof(cases list)
       case (Cons b llist)
-      then obtain ys x y where axs_subst:"xs = ys@[x,y]"
-        by (metis append_Cons append_butlast_last_cancel cons list.distinct(1) neq_Nil_conv_snoc)
+      note list_eq = this
+      have len_xs: "length xs \<ge> 2"
+        using cons list_eq by auto
+      have xs_nonempty: "xs \<noteq> []"
+      proof
+        assume "xs = []"
+        with len_xs show False by simp
+      qed
+      obtain y ys0 where xs_snoc: "xs = ys0 @ [y]"
+        using xs_nonempty by (auto simp: neq_Nil_conv_snoc)
+      have ys0_nonempty: "ys0 \<noteq> []"
+      proof
+        assume ys0_nil: "ys0 = []"
+        have "xs = [y]"
+          using xs_snoc ys0_nil by simp
+        with len_xs show False by simp
+      qed
+      obtain x ys where ys0_snoc: "ys0 = ys @ [x]"
+        using ys0_nonempty by (auto simp: neq_Nil_conv_snoc)
+      have axs_subst: "xs = ys@[x,y]"
+        using xs_snoc ys0_snoc by simp
       show ?thesis
         using axs_subst IH(3,4) snoc.IH 
         by (fastforce intro: IH(4))
