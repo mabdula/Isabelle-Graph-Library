@@ -996,7 +996,51 @@ lemma injective_predicate_unique_split:
 definition "last_in_list P xs y = (y \<in> set xs \<and> P y \<and> (\<nexists> xs1 xs2 z. xs = xs1@[y]@xs2 \<and> z \<in> set xs2 \<and> P z))"
 
 lemma last_in_list_unique: "unique (last_in_list P xs)"
-  by (auto simp add: unique_def last_in_list_def  )(smt (verit, del_insts) Un_iff append.assoc append_Cons in_set_conv_decomp_first insert_iff list.set(2) set_append)
+proof -
+  have key: "\<And>x y. x \<in> set xs \<Longrightarrow> P x \<Longrightarrow>
+               (\<nexists>xs1 xs2 z. xs = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and> P z) \<Longrightarrow>
+               y \<in> set xs \<Longrightarrow> P y \<Longrightarrow>
+               (\<nexists>xs1 xs2 z. xs = xs1 @ [y] @ xs2 \<and> z \<in> set xs2 \<and> P z) \<Longrightarrow>
+               x = y"
+  proof -
+    fix x y
+    assume x_in: "x \<in> set xs" and Px: "P x"
+      and x_last: "\<nexists>xs1 xs2 z. xs = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and> P z"
+    assume y_in: "y \<in> set xs" and Py: "P y"
+      and y_last: "\<nexists>xs1 xs2 z. xs = xs1 @ [y] @ xs2 \<and> z \<in> set xs2 \<and> P z"
+    show "x = y"
+    proof (rule ccontr)
+      assume neq: "x \<noteq> y"
+      obtain ys1 ys2 where y_cons: "xs = ys1 @ y # ys2"
+        using y_in[unfolded in_set_conv_decomp] by blast
+      have y_split: "xs = ys1 @ [y] @ ys2"
+        using y_cons by simp
+      have "x \<in> set ys1 \<or> x \<in> set ys2"
+        using x_in y_split neq by auto
+      thus False
+      proof
+        assume xin2: "x \<in> set ys2"
+        show False
+          using y_last y_split xin2 Px by blast
+      next
+        assume xin1: "x \<in> set ys1"
+        obtain xs1 xs2 where x_cons: "ys1 = xs1 @ x # xs2"
+          using xin1[unfolded in_set_conv_decomp] by blast
+        have x_split: "ys1 = xs1 @ [x] @ xs2"
+          using x_cons by simp
+        have xs_eq: "xs = xs1 @ [x] @ (xs2 @ [y] @ ys2)"
+          using y_split x_split by simp
+        have "y \<in> set (xs2 @ [y] @ ys2)"
+          by simp
+        thus False
+          using x_last xs_eq Py by blast
+      qed
+    qed
+  qed
+  show ?thesis
+    unfolding unique_def last_in_list_def
+    using key by blast
+qed
 
 lemma find_best_cand_chain_gives_A_suffix:
   assumes no_strong_exchange: "\<not> strong_exchange_property E F"
