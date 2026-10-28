@@ -1470,9 +1470,34 @@ proof
         unfolding insert_index_def 
         using True by simp
       have "pick J k \<in> J - {pick J j}" 
-        by (smt (verit, del_insts) DiffI True 12 19 9 assms(4) card_mono insert_index(1) 
-            nat_neq_iff order_less_le_trans pick_eq_iff_inf pick_in_set_inf pick_in_set_le 
-            pick_mono_le singletonD)
+      proof -
+        have j_bound: "j < card J \<or> infinite J"
+        proof (cases "infinite J")
+          case True
+          then show ?thesis by simp
+        next
+          case False
+          then have "finite J" by simp
+          with 9 have "card {i. i < dim_col A \<and> i \<in> J} \<le> card J"
+            by (simp add: card_mono)
+          with 8 show ?thesis by simp
+        qed
+        have k_bound: "k < card J \<or> infinite J"
+        proof (cases "infinite J")
+          case True
+          then show ?thesis by simp
+        next
+          case False
+          with j_bound have "j < card J" by blast
+          with True have "k < card J" by simp
+          then show ?thesis by simp
+        qed
+        have "pick J k < pick J j"
+          using pick_mono True j_bound by blast
+        moreover have "pick J k \<in> J"
+          using pick_in_set[OF k_bound] by blast
+        ultimately show "pick J k \<in> J - {pick J j}" by auto
+      qed
       then have 21:"pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J k}) = pick J k" 
         using pick_card_in_set by presburger
       have 20: "card {a\<in>J. a < pick J k} = k" 
