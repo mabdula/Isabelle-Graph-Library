@@ -1708,7 +1708,7 @@ lemma mat_delete_is_submatrix:
   shows "mat_delete B i j =  submatrix A (I - {pick I i})  (J - {pick J j})"
 proof
   have 14:"dim_col (mat_delete B i j) = dim_col B - 1" 
-    using mat_delete_dim(2) by metis 
+    using mat_delete_dim(2) by simp
   have 15:"dim_col (submatrix A (I - {pick I i}) (J - {pick J j})) = 
         card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
     using dim_submatrix(2) by blast
