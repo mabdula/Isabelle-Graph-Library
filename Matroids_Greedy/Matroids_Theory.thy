@@ -3363,8 +3363,23 @@ proof-
     qed
     then have
       "card X + matroid.rank_of indep (E - X) \<le> card Y + matroid.rank_of indep (E - Y)"
-      by (smt (verit, ccfv_SIG) Nat.diff_cancel \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close> assms(1) card_mono diff_cancel2
-          diff_diff_cancel diff_le_mono infinite_super le_antisym nat_le_linear)
+    proof -
+      have finite_Y: "finite Y" by (rule finite_subset[OF \<open>Y \<subseteq> E\<close> assms(1)])
+      have card_le: "card X \<le> card Y" by (rule card_mono[OF finite_Y \<open>X \<subseteq> Y\<close>])
+      show ?thesis
+      proof (cases "matroid.rank_of indep (E - X) \<le> matroid.rank_of indep (E - Y)")
+        case True
+        show ?thesis by (rule add_mono[OF card_le True])
+      next
+        case False
+        then have rank_le: "matroid.rank_of indep (E - Y) \<le> matroid.rank_of indep (E - X)"
+          by presburger
+        show ?thesis
+          using \<open>matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> card Y - card X\<close>
+            rank_le card_le
+          by presburger
+      qed
+    qed
 
     with assms(3) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> show "q X \<le> q Y" by simp
   qed
