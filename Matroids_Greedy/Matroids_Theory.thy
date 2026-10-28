@@ -1864,8 +1864,9 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "0 = card X" "X \<subseteq> E"
-    from assms(2) show "r X \<le> card X"
-      by (metis \<open>0 = card X\<close> \<open>X \<subseteq> E\<close> assms(1) card_0_eq infinite_super nle_le)
+    from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by (rule finite_subset)
+    with \<open>0 = card X\<close> have "X = {}" by (simp add: card_eq_0_iff)
+    with assms(2) show "r X \<le> card X" by simp
   qed
 next
   case (Suc n)
