@@ -3015,7 +3015,12 @@ proof rule
           using "1" assms(1) carrier_matD(1) by blast          
         have 16: "{ia. ia < 
                       dim_row (A @\<^sub>r mat_of_rows n [- (unit_vec n i) :: 'a vec]) \<and> ia \<in> I} \<noteq> {}"
-          by (metis "15" True empty_iff less_add_one mem_Collect_eq)
+        proof -
+          have "nr < dim_row (A @\<^sub>r mat_of_rows n [- (unit_vec n i) :: 'a vec])"
+            using "15" by simp
+          then show ?thesis
+            using True by blast
+        qed
         have "finite {ia. ia < dim_row (A @\<^sub>r mat_of_rows n [- (unit_vec n i) :: 'a vec]) \<and> ia \<in> I}"
           using finite_nat_set_iff_bounded by blast
         then have "card {ia. ia < 
