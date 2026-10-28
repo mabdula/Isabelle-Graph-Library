@@ -967,7 +967,10 @@ proof (cases "(w, v) = hd p")
     by simp
   moreover have "awhd u p = w"
     using \<open>awalk E u p u\<close> \<open>(w, v) = hd p\<close>
-    by (metis \<open>(w, v) \<in> set p\<close> awalk_Cons_iff calculation fst_eqD hd_Cons_tl list.distinct(1) list.set_cases)
+  proof -
+    from \<open>(w, v) \<in> set p\<close> have "p \<noteq> []" by auto
+    with \<open>(w, v) = hd p\<close> show ?thesis by (cases p) auto
+  qed
   ultimately have "u = w" by auto
 
   from \<open>awalk E u p u\<close>
