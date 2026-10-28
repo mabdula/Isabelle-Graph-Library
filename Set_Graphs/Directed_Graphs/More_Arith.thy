@@ -730,8 +730,17 @@ proof -
 qed
 
 lemma integral_sub: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a-b)"
-  unfolding is_integral_def 
-  by (metis of_int_diff)
+proof -
+  assume ia: "is_integral a" and ib: "is_integral b"
+  obtain m :: int where a_eq: "a = of_int m"
+    using ia by (rule is_integralE)
+  obtain n :: int where b_eq: "b = of_int n"
+    using ib by (rule is_integralE)
+  have "a - b = of_int (m - n)"
+    unfolding a_eq b_eq by (simp add: of_int_diff)
+  thus "is_integral (a - b)"
+    by (rule is_integralI)
+qed
 
 lemma is_integral_ceiling: "is_integral x \<Longrightarrow> \<lceil> x \<rceil> = x"
   unfolding is_integral_def by simp
