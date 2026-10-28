@@ -3285,7 +3285,12 @@ qed
             then have 28: "det B =  B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j"
               using "4" \<open>dim_row B = dim_col B\<close> by simp
             then have 29: "det B = - cofactor B (dim_row B - 1) j" 
-              by (metis \<open>B $$ (dim_row B - 1, j) = - 1\<close> mult_minus1)
+            proof -
+              have "det B = (- 1) * cofactor B (dim_row B - 1) j"
+                using "28" \<open>B $$ (dim_row B - 1, j) = - 1\<close> by simp
+              then show ?thesis
+                by (simp add: mult_minus1)
+            qed
             have 8: "cofactor B (dim_row B - 1) j = 
                 (-1)^((dim_row B - 1)+j) * det (mat_delete B (dim_row B - 1) j)" 
               by (meson Determinant.cofactor_def)
