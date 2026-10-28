@@ -4415,7 +4415,14 @@ proof -
 qed
 
   then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) \<ge> 1"
-    by (metis "1"(1) distinct_card distinct_drop distinct_filter)
+  proof -
+    from \<open>distinct xs\<close> have "distinct (drop k xs)" by (rule distinct_drop)
+    then have "distinct (filter (\<lambda>y. c y = 1) (drop k xs))" by (rule distinct_filter)
+    then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) =
+      length (filter (\<lambda>y. c y = 1) (drop k xs))" by (rule distinct_card)
+    with \<open>length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1\<close>
+    show ?thesis by simp
+  qed
   with set_filter
   have "card ({x \<in> set (drop k xs). c x = 1}) \<ge> 1" by simp
   with drop_eq_nths[of k xs] set_nths[of xs]
