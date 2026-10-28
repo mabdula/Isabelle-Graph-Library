@@ -31,8 +31,37 @@ lemma reachable_dist_2:
   assumes "reachable G u v"
   obtains p where "Vwalk.vwalk_bet G u p v" "distance G u v = length p - 1"
   using assms
-  apply(clarsimp simp add: reachable_vwalk_bet_iff distance_def image_def)
-  by (smt (verit, del_insts) Collect_disj_eq Inf_lower enat_ile mem_Collect_eq not_infinity_eq wellorder_InfI)
+proof -
+  from assms obtain q where q: "vwalk_bet G u q v"
+    by (auto simp: reachable_vwalk_bet_iff)
+  define f where "f = (\<lambda>p. if vwalk_bet G u p v then length p - 1 else \<infinity>)"
+  have distance_eq: "distance G u v = Inf (range f)"
+    by (simp add: distance_def f_def)
+  have mem: "f q \<in> range f"
+    by (rule rangeI)
+  have Inf_mem: "Inf (range f) \<in> range f"
+    by (rule wellorder_InfI[OF mem])
+  then obtain p0 where p0: "Inf (range f) = f p0"
+    by auto
+  have dist_finite: "distance G u v < \<infinity>"
+    using reachable_dist[OF assms] .
+  have Inf_finite: "Inf (range f) < \<infinity>"
+    using dist_finite distance_eq by simp
+  have vwalk_p0: "vwalk_bet G u p0 v"
+  proof (rule ccontr)
+    assume "\<not> vwalk_bet G u p0 v"
+    hence "f p0 = \<infinity>"
+      by (simp add: f_def)
+    with p0 Inf_finite show False
+      by simp
+  qed
+  hence f_p0_eq: "f p0 = length p0 - 1"
+    by (simp add: f_def)
+  with distance_eq p0 have dist_p0: "distance G u v = length p0 - 1"
+    by simp
+  from vwalk_p0 dist_p0 show thesis
+    by (rule that)
+qed
 
 lemma triangle_ineq_reachable: 
   assumes "reachable G u v" "reachable G v w"
