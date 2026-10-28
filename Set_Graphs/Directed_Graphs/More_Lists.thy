@@ -106,7 +106,7 @@ proof(goal_cases)
       hence "a # xs = (a # xs1) @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
         by auto
       thus ?thesis
-        by metis
+        by blast
     qed
   qed
 qed
