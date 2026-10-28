@@ -900,7 +900,7 @@ proof(goal_cases)
   have "(INF v\<in>V. (f::'a \<Rightarrow> enat) v) + (x::enat) \<le> f_v" if "f_v \<in> {f v + x | v . v\<in>V}" for f_v
     using that
     apply(auto simp: image_def)
-    by (metis (mono_tags, lifting) Inf_lower mem_Collect_eq)
+    by (fastforce intro!: Inf_lower add_mono)
   moreover have "(INF v\<in>V. (f::'a \<Rightarrow> enat) v) + (x::enat) \<in> {f v + x | v . v\<in>V}"
   proof-
     have "Inf {f v | v. v \<in> V} \<in> {f v | v. v \<in> V}"
