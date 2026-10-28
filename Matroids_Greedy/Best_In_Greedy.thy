@@ -2062,7 +2062,7 @@ proof-
     using in_mono \<open>B1 \<subseteq> F\<close> by fastforce
   finally have "sum ?c (to_set (result (BestInGreedy (initial_state ?c ?order)))) = rat_of_nat (card B1)" .
   then have "c_set ?c (to_set (result (BestInGreedy (initial_state ?c ?order)))) = rat_of_nat (card B1)"
-    using c_set_def by metis
+    by (simp add: c_set_def)
 
 (* Cost of B2 solution *)
   have "\<exists>X_B2. set_inv X_B2 \<and> to_set X_B2 = B2"
