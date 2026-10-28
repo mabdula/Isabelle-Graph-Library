@@ -1889,7 +1889,24 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
         by (simp add: disj_pfx_are_disj_2 pfxs_are_pfxs)
       show ?thesis
         using p_nempty_even[OF p_nempty len_pf1_ge_2 pfx2_nempty from_tree odd_lens \<open>last pfx1 = last pfx2\<close> hds_neq \<open>set (butlast pfx1) \<inter> set pfx2 = {}\<close> distinct(1) alt_paths(1,2,3)]
-        by (metis \<open>drop (length pfx1) p1 = p\<close> calculation edges_of_path_rev hd_rev length_rev pfx1_nempty rev.simps(2))
+        proof -
+          assume key: "odd (length (edges_of_path (last pfx1 # p))) \<Longrightarrow> False"
+          have not_odd: "even (length (edges_of_path (last pfx1 # p)))"
+            using key by blast
+          have hd_eq: "hd (rev pfx1 @ pfx2) = last pfx1"
+          proof -
+            have "hd (rev pfx1 @ pfx2) = hd (rev pfx1)"
+              using \<open>hd (rev pfx1 @ pfx2) = hd (rev pfx1)\<close> .
+            also have "... = last pfx1"
+              using pfx1_nempty by (simp add: hd_rev)
+            finally show ?thesis .
+          qed
+          have rev_eq: "rev (drop (length pfx1) p1) @ [hd (rev pfx1 @ pfx2)] = rev (last pfx1 # p)"
+            using \<open>drop (length pfx1) p1 = p\<close> hd_eq by simp
+          show ?thesis
+            using rev_eq not_odd
+            by (simp add: edges_of_path_rev del: rev.simps(2))
+        qed
     next
       case False
       then have len_pf1_le_1: "length pfx1 \<le> 1"
