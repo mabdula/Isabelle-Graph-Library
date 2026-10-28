@@ -1812,7 +1812,18 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
           by simp
         moreover have "even (length (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])))"
           using odd_length \<open>last pfx1 = last pfx2\<close>
-          by (metis One_nat_def append.assoc append_Cons append_Nil edges_of_path.simps(3) edges_of_path_rev length_rev list.size(4) odd_even_add odd_one rev.simps(2))
+          proof -
+            have e1: "length ((last pfx1) # p) = length (edges_of_path ((last pfx1) # p)) + 1"
+              by (intro edges_of_path_length') simp
+            have e2: "length (rev p @ [last pfx2, last (butlast pfx2)])
+                      = length (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])) + 1"
+              by (intro edges_of_path_length') simp
+            have len1: "length (edges_of_path ((last pfx1) # p)) = length p"
+              using e1 by simp
+            have len2: "length (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])) = length p + 1"
+              using e2 by simp
+            from odd_length len1 len2 show ?thesis by presburger
+          qed
         moreover have "last (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])) = {last pfx2, last (butlast pfx2)}"
           by (metis edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append last_snoc)
         ultimately have "{last pfx2, last (butlast pfx2)} \<in> M"
