@@ -258,7 +258,51 @@ lemma induced_subgraphI':
 
 lemma induced_subgraph_altdef:
   "induced_subgraph H G \<longleftrightarrow> subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"
-  by (metis Component.induced_subgraphI' ddfs.verts_eq ddfs.wf_digraph_digraph_of induced_subgraph_iff subgraph_iff subgraph_induce_subgraphI2 induced_subgraphD wf_digraph.induce_eq_iff_induced)
+proof
+  assume ind: "induced_subgraph H G"
+  have subg: "subgraph H G"
+    using ind by (auto dest: induced_subgraphD)
+  have dVs_eq: "dVs (G \<downharpoonright> dVs H) = dVs H"
+    using subg by simp
+  have H_eq: "H = G \<downharpoonright> dVs H"
+    using ind by (simp add: induced_subgraph_def)
+  have "\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H"
+  proof (intro allI impI)
+    fix H'
+    assume subH': "subgraph H' G"
+    show "dVs H' \<noteq> dVs H \<or> subgraph H' H"
+    proof (cases "dVs H' = dVs H")
+      case True
+      have inH: "subgraph H' (G \<downharpoonright> dVs H)"
+      proof (unfold subgraph_def, rule subsetI)
+        fix e assume eH': "e \<in> H'"
+        then obtain u v where e: "e = (u, v)" by (cases e) auto
+        with eH' have uv: "(u, v) \<in> H'" by simp
+        have inG: "(u, v) \<in> G"
+          using subH'[unfolded subgraph_def] uv by blast
+        have uH: "u \<in> dVs H" and vH: "v \<in> dVs H"
+          using dVsI(1)[OF uv] dVsI(2)[OF uv] True by blast+
+        from e inG uH vH show "e \<in> G \<downharpoonright> dVs H"
+          by (auto simp: induce_subgraph_def)
+      qed
+      from inH H_eq have "subgraph H' H"
+        by simp
+      then show ?thesis by simp
+    next
+      case False
+      then show ?thesis by simp
+    qed
+  qed
+  with subg show "subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"
+    by blast
+next
+  assume conj: "subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"
+  then have subg2: "subgraph H G"
+    by simp
+  have max2: "\<And>H'. subgraph H' G \<Longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H"
+    using conj by simp
+  from induced_subgraphI'[OF subg2 max2] show "induced_subgraph H G" .
+qed
 
 lemma in_induce_subgraph_dVsI_reachable:
   fixes G :: "'a dgraph"
