@@ -1042,8 +1042,9 @@ qed
         [w, v] @ tl (awalk_verts u (xs @ [(fst (last p), snd (last p))]))"
       by (rule awalk_verts_cons)
   qed
-  from awalk_verts_snoc
-    obtain ys where "awalk_verts u (xs @ [(fst (last p), snd (last p))]) = ys @ [fst (last p), snd (last p)]" by metis
+  from awalk_verts_snoc[of "xs @ [(fst (last p), snd (last p))]" xs "fst (last p)" "snd (last p)" u]
+    obtain ys where "awalk_verts u (xs @ [(fst (last p), snd (last p))]) = ys @ [fst (last p), snd (last p)]"
+    by blast
   with awalk_verts_p \<open>p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]\<close>
     have "awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])" by argo
   moreover have "ys \<noteq> []"
