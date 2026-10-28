@@ -1010,7 +1010,14 @@ proof(safe, goal_cases)
   moreover have "distance G v v = 0"
     by (meson calculation(1) distance_0)
   ultimately show ?case
-    by (metis dist_set_mem le_zero_eq)
+  proof -
+    have "distance_set G Vs v \<le> distance G v v"
+      using \<open>v \<in> Vs\<close> by (rule dist_set_mem)
+    with \<open>distance G v v = 0\<close> have "distance_set G Vs v \<le> 0"
+      by simp
+    then show ?case
+      by (simp add: le_zero_eq)
+  qed
 next
   case 1
   thus ?case
