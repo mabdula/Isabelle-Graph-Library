@@ -844,10 +844,36 @@ lemma scc_of_eq': "u \<in> scc_of G v \<Longrightarrow> scc_of G u = scc_of G v"
 
 lemma strongly_connected_eq_iff:
   "strongly_connected G \<longleftrightarrow> sccs G = {G}"
-  apply (auto simp add: strongly_connected_iff in_sccs_iff wf_digraph.strongly_connected_eq_iff)
-  by (metis Digraph_Component.subgraph_def ddfs.digraph_of_pair_conv empty_iff in_sccsE insert_iff
-            pre_digraph.in_sccsE pre_digraph.induced_subgraph_altdef strongly_connected_iff
-            wf_digraph.strongly_connected_eq_iff ddfs.arcs_ends_eq)+
+proof
+  assume sc: "strongly_connected G"
+  have max: "max_subgraph G strongly_connected G"
+  proof (rule max_subgraphI)
+    show "strongly_connected G" by (rule sc)
+    show "subgraph G G" by (rule subgraph_refl)
+  next
+    fix y assume "G \<noteq> y" "subgraph G y" "subgraph y G"
+    then have "G = y" by (auto simp: subgraph_def)
+    with \<open>G \<noteq> y\<close> show "\<not> strongly_connected y" by blast
+  qed
+  have uniq: "\<And>H. max_subgraph G strongly_connected H \<Longrightarrow> H = G"
+  proof -
+    fix H assume H: "max_subgraph G strongly_connected H"
+    then have subH: "subgraph H G" by (rule subgraphI_max_subgraph)
+    show "H = G" using max_subgraph_subg_eq[OF H max subH] .
+  qed
+  have "sccs G = {H. max_subgraph G strongly_connected H}"
+    by (rule sccs_altdef)
+  also have "\<dots> = {G}"
+    using max uniq by blast
+  finally show "sccs G = {G}" .
+next
+  assume eq: "sccs G = {G}"
+  have "G \<in> sccs G" using eq by blast
+  then have "max_subgraph G strongly_connected G"
+    by (simp add: sccs_altdef)
+  then show "strongly_connected G"
+    by (rule max_subgraph_prop)
+  qed
 
 lemma union_sccs_subset: "\<Union>(sccs G) \<subseteq> G"
   by  (auto elim!: in_sccsE induced_subgraphE)
