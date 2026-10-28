@@ -3855,7 +3855,12 @@ proof-
 
   from take_Suc_conv_app_nth[OF assms(5)]
   have set_take_diff_expr: "set (take j l) - set (take (j - 1) l) = {l ! (j - 1)}"
-    by (metis add.commute assms(1) assms(2) assms(4) assms(5) le_add_diff_inverse2 plus_1_eq_Suc set_take_Suc_diff)
+  proof -
+    have j_eq: "Suc (j - 1) = j" using assms(4) by simp
+    from set_take_Suc_diff[OF assms(1) assms(2) assms(5)]
+    have "{l ! (j - 1)} = set (take (Suc (j - 1)) l) - set (take (j - 1) l)" .
+    with j_eq show ?thesis by simp
+  qed
 
   have card_diff_expr: "(card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l))) =
     card (A \<inter> (set (take j l) - set (take (j - 1) l)))"
