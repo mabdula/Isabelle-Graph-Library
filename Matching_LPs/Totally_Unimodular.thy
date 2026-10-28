@@ -2599,7 +2599,8 @@ proof rule
         have 18: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J =
               submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})\<inter>{0..<1}) J"
           using submatrix_inter_rows' 3 
-          by metis
+          using submatrix_inter_rows'[of "mat_of_rows n [unit_vec n i]" "?f ` (I - {0..<nr})" J] 3
+          by simp
         have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}" 
           apply safe 
             apply simp+
