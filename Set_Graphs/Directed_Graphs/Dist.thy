@@ -642,8 +642,21 @@ qed
 lemma dist_not_inf''':
   "\<lbrakk>distance_set G U v \<noteq> \<infinity>; u\<in>U; distance G u v = distance_set G U v\<rbrakk>
       \<Longrightarrow> \<exists>p. shortest_path G u (u#p) v \<and> set p \<inter> U = {}"
-  apply (simp add: shortest_path_def)
-  by (metis dist_not_inf'' enat.distinct(1))
+proof -
+  assume dist_ne: "distance_set G U v \<noteq> \<infinity>"
+     and u_in: "u \<in> U"
+     and dist_eq: "distance G u v = distance_set G U v"
+  obtain p where p1: "vwalk_bet G u (u # p) v"
+             and p2: "length p = distance G u v"
+             and p3: "set p \<inter> U = {}"
+    using dist_not_inf''[OF dist_ne u_in dist_eq] by blast
+  have "distance G u v = length (u # p) - 1"
+    using p2 by force
+  hence "shortest_path G u (u # p) v"
+    using p1 by (simp add: shortest_path_def)
+  thus ?thesis
+    using p3 by blast
+qed
 
 (*lemma distance_set_split:
   "\<lbrakk>distance_set G U v \<noteq> \<infinity>; distance_set G U v = distance_set G U w + distance_set G U' v; w \<in> U' \<rbrakk> \<Longrightarrow>
