@@ -817,7 +817,12 @@ next
     obtain u where "awalk E u p u" by blast
 
   have "\<exists>xs ys. p = xs @ [(v, w)] @ ys"
-    by (metis \<open>(v, w) \<in> set p\<close> append_Cons append_Nil in_set_conv_decomp_first)
+  proof -
+    from \<open>(v, w) \<in> set p\<close> obtain xs ys where "p = xs @ (v, w) # ys"
+      by (blast dest: split_list)
+    then have "p = xs @ [(v, w)] @ ys" by simp
+    then show ?thesis by blast
+  qed
   then obtain xs ys where "p = xs @ [(v, w)] @ ys" by blast
   from cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] False this
     have "ys \<noteq> []" by auto
