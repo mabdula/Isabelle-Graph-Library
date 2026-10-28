@@ -176,7 +176,18 @@ lemma sum_split_off: "\<lbrakk>A \<subseteq> B; finite B; \<And> x. x \<in> B - 
   by (simp add: sum.mono_neutral_cong_right)
 
 lemma sum_filter_zero: "finite X \<Longrightarrow> sum f X = sum f {x|x.   x \<in> X \<and> f x \<noteq>0 }"
-  by (metis (mono_tags, lifting) DiffD1 DiffD2 mem_Collect_eq subsetI sum.mono_neutral_cong_left)
+proof -
+  assume fin: "finite X"
+  define S where "S = {x |x. x \<in> X \<and> f x \<noteq> 0}"
+  have S_sub: "S \<subseteq> X"
+    unfolding S_def by blast
+  have zero: "\<And>i. i \<in> X - S \<Longrightarrow> f i = 0"
+    unfolding S_def by blast
+  have "sum f S = sum f X"
+    by (rule sum.mono_neutral_cong_left[OF fin S_sub]) (auto simp: S_def)
+  then show ?thesis
+    unfolding S_def by simp
+qed
 
 lemma sum_up_leq:
   "\<lbrakk>\<And> j. \<lbrakk>(a::nat) \<le> j; j < i\<rbrakk> \<Longrightarrow>((f j)::nat) \<le> g j; a < i; n = i - a\<rbrakk>
