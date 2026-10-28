@@ -248,7 +248,18 @@ next
         using cB ca by blast
     qed
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-{b}. b1 \<in> a" 
-    by (metis \<open>b \<in> B \<and> b \<in> x\<close> insertE insert_Diff)
+  proof -
+    assume hyp: "\<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b"
+    have "\<exists>b1\<in>B - {b}. b1 \<in> a" if "a \<in> F" for a
+    proof -
+      from hyp that obtain b1 where b1: "b1 \<in> B" "b1 \<in> a" "b1 \<noteq> b"
+        by blast
+      from b1(1) b1(3) have "b1 \<in> B - {b}"
+        by simp
+      with b1(2) show ?thesis ..
+    qed
+    then show ?thesis by blast
+  qed
   have "finite (B - {b})" 
     using insert.prems(1) by blast
   have "\<exists>C\<subseteq>(B - {b}). \<forall>a\<in>F. \<exists>b\<in>C. b \<in> a  \<and> card F = card C"
