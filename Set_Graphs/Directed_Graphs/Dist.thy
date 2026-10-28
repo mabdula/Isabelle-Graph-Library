@@ -1210,7 +1210,7 @@ qed
 lemma forest_shortest_path:
   "\<lbrakk>forest G; Vwalk.vwalk_bet G u p v\<rbrakk> \<Longrightarrow> shortest_path G u p v"
   apply(auto elim!: forest_props intro!: shortest_path_intro)
-  by (metis One_nat_def reachable_dist_2 reachable_vwalk_bet_iff)
+  by simp
 
 lemma forest_insert: "\<lbrakk>forest G; v \<notin> dVs G\<rbrakk> \<Longrightarrow> forest (insert (u,v) G)"
 proof(intro forest_intro, goal_cases)
