@@ -320,7 +320,16 @@ lemma length_carrier_sorted:
 lemma carrier_sorted_distinct:
   "distinct (carrier_sorted)"
   unfolding sort_desc_axioms_def using card_distinct set_inv_carrier matroid.set.set_cardinality 
-  by (metis carrier_sorted_set length_carrier_sorted) 
+proof -
+  have card_eq: "cardinality carrier = card (to_set carrier)"
+    using set_inv_carrier matroid.set.set_cardinality by simp
+  have set_eq: "card (to_set carrier) = card (set carrier_sorted)"
+    using carrier_sorted_set by simp
+  have "card (set carrier_sorted) = length carrier_sorted"
+    using card_eq set_eq length_carrier_sorted by simp
+  then show "distinct carrier_sorted"
+    using card_distinct by auto
+qed
 
 
 
