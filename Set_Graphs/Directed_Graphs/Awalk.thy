@@ -1082,7 +1082,16 @@ qed
 
   from \<open>snd (last p) = u\<close> \<open>u = w\<close> \<open>fst (last p) \<noteq> v\<close>
     show ?thesis
-    by (metis True \<open>last p \<noteq> (w, v)\<close> hd_Nil_eq_last last_in_set prod.collapse)
+  proof -
+  have p_nonempty: "p \<noteq> []" using \<open>(w, v) \<in> set p\<close> by auto
+  have last_mem: "last p \<in> set p" using p_nonempty by (rule last_in_set)
+  have snd_last_eq: "snd (last p) = w" using \<open>snd (last p) = u\<close> \<open>u = w\<close> by simp
+  have last_eq: "last p = (fst (last p), w)"
+    using snd_last_eq prod.collapse[of "last p"] by simp
+  have "(fst (last p), w) \<in> set p" using last_mem last_eq by simp
+  moreover have "fst (last p) \<noteq> v" using \<open>fst (last p) \<noteq> v\<close> .
+  ultimately show ?thesis by blast
+  qed
 next
   case False
   assume "cycle' E p" "v \<noteq> w" "(w, v) \<in> set p"
