@@ -548,8 +548,22 @@ lemma x_in_xs_Min: "\<lbrakk>x \<in> (set xs); a \<le> Min {y . \<exists> x. x \
       hence "Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
                      min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (f z)"
       using  Min_Un[of " {y. \<exists>x. x \<in> set xs \<and> y = f x}" "{f z}"]
-      by (metis (mono_tags, lifting) List.finite_set Min_singleton equals0I list.discI list.simps(15)
-           \<open>finite {y. \<exists>x. x \<in> set xs \<and> y = f x}\<close> empty_Collect_eq  set_empty)
+      proof -
+        have A_finite: "finite {y. \<exists>x. x \<in> set xs \<and> y = f x}"
+          using \<open>finite {y. \<exists>x. x \<in> set xs \<and> y = f x}\<close> .
+        have A_nonempty: "{y. \<exists>x. x \<in> set xs \<and> y = f x} \<noteq> {}"
+        proof -
+          have "b \<in> set xs" using Cons by simp
+          thus ?thesis by blast
+        qed
+        have B_finite: "finite {f z}" by simp
+        have B_nonempty: "{f z} \<noteq> {}" by simp
+        have "Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
+              min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (Min {f z})"
+          by (rule Min_Un[OF A_finite A_nonempty B_finite B_nonempty])
+        also have "Min {f z} = f z" by (rule Min_singleton)
+        finally show ?thesis .
+      qed
     have " Min ({y. \<exists>x. x \<in> set (z#xs) \<and> y = f x}) = min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (f z)"
       using set_img_extract[of xs f z]  
            \<open>Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
