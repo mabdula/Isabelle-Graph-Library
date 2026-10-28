@@ -132,7 +132,7 @@ proof-
     have rank_eq_iff: "(n = rank X) \<longleftrightarrow> 
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
       unfolding rank_def using Max_eq_iff[OF `finite ?indep_cards` `?indep_cards \<noteq> {}`]
-      by (smt (verit, del_insts) mem_Collect_eq)
+      by force
 
     have "(\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')) \<longleftrightarrow>
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
