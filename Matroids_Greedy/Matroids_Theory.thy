@@ -513,7 +513,40 @@ proof-
     qed
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B})"
-    by (smt (verit, del_insts) Max.bounded_iff Max_eq_iff Min_eq_iff bases_X_finite bases_X_nonempty)
+  proof
+    assume LTR: "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+    show "\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      with LTR obtain n where n_eq: "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n" by blast
+      from `X \<subseteq> carrier` bases_X_nonempty have nonempty: "{card B | B. basis_in X B} \<noteq> {}" by blast
+      then obtain s where s_in: "s \<in> {card B | B. basis_in X B}" by blast
+      with n_eq have "s = n" by blast
+      with n_eq s_in have "{card B | B. basis_in X B} = {n}" by blast
+      then show "Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}" by simp
+    qed
+  next
+    assume RTL: "\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+    show "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      with RTL have min_eq_max: "Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+        by blast
+      from `X \<subseteq> carrier` bases_X_finite have fin: "finite {card B | B. basis_in X B}" by blast
+      have "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = Min {card B | B. basis_in X B}"
+      proof (rule allI, rule impI)
+        fix n'
+        assume n'_in: "n' \<in> {card B | B. basis_in X B}"
+        from Min_le[OF fin n'_in] have le1: "Min {card B | B. basis_in X B} \<le> n'" .
+        from Max_ge[OF fin n'_in] have "n' \<le> Max {card B | B. basis_in X B}" .
+        with min_eq_max have le2: "n' \<le> Min {card B | B. basis_in X B}" by simp
+        from le1 le2 show "n' = Min {card B | B. basis_in X B}" by simp
+      qed
+      then show "\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n" by blast
+    qed
+  qed
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B}))"
     by simp
