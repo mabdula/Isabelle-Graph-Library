@@ -790,7 +790,7 @@ proof(goal_cases)
 qed
 
 lemma diff_le_self_enat: "m - n \<le> (m::enat)"
-  by (metis diff_le_self enat.exhaust enat_ord_code(1) idiff_enat_enat idiff_infinity idiff_infinity_right order_refl zero_le)
+  by (cases m; cases n; simp add: idiff_enat_enat idiff_infinity_right diff_le_self)
 
 lemma shortest_path_dist_set_union:
   "\<lbrakk>distance_set G U v = distance G u v; u \<in> U; shortest_path G u (p1 @ x # p2) v;
