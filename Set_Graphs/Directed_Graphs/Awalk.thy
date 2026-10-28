@@ -693,7 +693,17 @@ proof (cases "(v, w) = last p")
     by simp
   moreover have "awlast u p = w"
     using \<open>awalk E u p u\<close> \<open>(v, w) = last p\<close> awalk_verts_conv
-    by (metis \<open>(v, w) \<in> set p\<close> empty_iff empty_set last_snoc snd_conv)
+  proof -
+    from \<open>(v, w) \<in> set p\<close> have "p \<noteq> []" by auto
+    then have "awalk_verts u p = map fst p @ [snd (last p)]"
+      by (simp add: awalk_verts_conv)
+    then have "awlast u p = snd (last p)"
+      by simp
+    also have "\<dots> = snd (v, w)"
+      using \<open>(v, w) = last p\<close> by simp
+    also have "\<dots> = w" by simp
+    finally show "awlast u p = w" .
+  qed
   ultimately have "u = w" by auto
 
   from \<open>awalk E u p u\<close>
