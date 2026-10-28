@@ -881,7 +881,19 @@ qed
       have "cas u (xs @ [(v, w), (x, y), hd_tl_ys] @ zs) u" by blast
     with \<open>p = xs @ [(v, w), (x, y), hd_tl_ys] @ zs\<close> append_assoc
       have "y = fst hd_tl_ys" 
-      by (smt (verit, best) cas.simps(2) cas_append_iff prod.collapse)
+    proof -
+      have list_eq: "(xs @ [(v, w)]) @ (x, y) # hd_tl_ys # zs
+          = xs @ [(v, w), (x, y), hd_tl_ys] @ zs"
+        by simp
+      have "cas u ((xs @ [(v, w)]) @ (x, y) # hd_tl_ys # zs) u"
+        using \<open>cas u (xs @ [(v, w), (x, y), hd_tl_ys] @ zs) u\<close>
+        by (simp only: list_eq)
+      hence "cas (awlast u (xs @ [(v, w)])) ((x, y) # hd_tl_ys # zs) u"
+        using cas_append_iff[THEN iffD1,
+          of u "xs @ [(v, w)]" "(x, y) # hd_tl_ys # zs" u] by blast
+      thus "y = fst hd_tl_ys"
+        by (simp add: cas_simp)
+    qed
     with \<open>p = xs @ [(v, w), (x, y), hd_tl_ys] @ zs\<close>
       have "p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs" by simp
     show ?thesis
