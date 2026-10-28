@@ -3217,8 +3217,14 @@ qed
                     then show "dim_col B = (card {ia. ia<n \<and> ia\<in>J})"
                       using dim_col_eq by presburger
                   qed                  then have "j < card J" 
-                    by (metis (mono_tags, lifting) \<open>pick J k = pick J j\<close> asm(2) pick_eq_iff_inf
-                        basic_trans_rules(21) card_mono j mem_Collect_eq not_less  subsetI)
+                  proof -
+                    have "finite J" using False by simp
+                    moreover have "{ia. ia < n \<and> ia \<in> J} \<subseteq> J" by auto
+                    ultimately have "card {ia. ia < n \<and> ia \<in> J} \<le> card J"
+                      using card_mono[of J "{ia. ia < n \<and> ia \<in> J}"] by blast
+                    then show "j < card J"
+                      using j 26 by linarith
+                  qed
                   then show ?thesis 
                     by (metis (mono_tags, lifting) False asm_not_eq 26 asm(1-2) mem_Collect_eq  
                         basic_trans_rules(21)  j nat_neq_iff not_less pick_mono subsetI card_mono)
