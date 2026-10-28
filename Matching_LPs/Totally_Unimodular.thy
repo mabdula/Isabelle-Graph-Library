@@ -3225,9 +3225,47 @@ qed
                     then show "j < card J"
                       using j 26 by linarith
                   qed
-                  then show ?thesis 
-                    by (metis (mono_tags, lifting) False asm_not_eq 26 asm(1-2) mem_Collect_eq  
-                        basic_trans_rules(21)  j nat_neq_iff not_less pick_mono subsetI card_mono)
+                  then have j_lt_card: "j < card J" .
+                  have finite_J: "finite J"
+                    using False by simp
+                  have subset_J: "{ia. ia < n \<and> ia \<in> J} \<subseteq> J"
+                    by blast
+                  have k_lt_dim: "k < dim_col B"
+                    using asm(1) .
+                  have k_lt_card: "k < card J"
+                  proof -
+                    have "k < card {ia. ia < n \<and> ia \<in> J}"
+                      using k_lt_dim 26 by simp
+                    also have "\<dots> \<le> card J"
+                      using finite_J subset_J card_mono by blast
+                    finally show ?thesis .
+                  qed
+                  have "k \<noteq> j"
+                    using asm(2) by simp
+                  then consider (k_lt_j) "k < j" | (j_lt_k) "j < k"
+                    by linarith
+                  then show ?thesis
+                  proof cases
+                    case k_lt_j
+                    then have "pick J k < pick J j"
+                      using j_lt_card pick_mono by blast
+                    moreover have "pick J k = i"
+                      using asm_not_eq by simp
+                    moreover have "pick J j = i"
+                      using j by blast
+                    ultimately show False
+                      by linarith
+                  next
+                    case j_lt_k
+                    then have "pick J j < pick J k"
+                      using k_lt_card pick_mono by blast
+                    moreover have "pick J k = i"
+                      using asm_not_eq by simp
+                    moreover have "pick J j = i"
+                      using j by blast
+                    ultimately show False
+                      by linarith
+                  qed
                 qed
               qed
               then show " B $$ (dim_row B - 1, k) = 0" 
