@@ -3065,7 +3065,13 @@ lemma dual_indep_system:
   apply(unfold_locales)
   using assms indep_system.carrier_finite apply blast
   apply simp
-  apply (metis assms empty_subsetI indep_system.basis_ex inf_bot_left)
+  subgoal
+  proof -
+    from indep_system.basis_ex[OF assms] obtain B where basis_B: "indep_system.basis E indep B" by blast
+    have "{} \<subseteq> E" by (rule empty_subsetI)
+    moreover have "{} \<inter> B = {}" by (rule inf_bot_left)
+    ultimately show ?thesis using basis_B by blast
+  qed
   using disjoint_iff apply blast
   done
 
