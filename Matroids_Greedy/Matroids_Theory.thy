@@ -1526,8 +1526,22 @@ proof-
       then obtain y where y_p: "y \<in> B2 - B1 \<and> indep (insert y (B1 - {x}))" by blast
 
       from y_p `x \<in> B1 - B2` have "card (insert y (B1 - {x})) = card B1"
-        by (metis DiffD1 DiffD2 basis_B1 card.remove card_insert_disjoint finite_Diff indep_sys
-            indep_system.basis_finite)
+      proof -
+        from `x \<in> B1 - B2` have x_in_B1: "x \<in> B1" by blast
+        from y_p have "y \<in> B2 - B1" by blast
+        then have y_notin: "y \<notin> B1 - {x}" by blast
+
+        from indep_system.basis_finite[OF indep_sys basis_B1] have B1_finite: "finite B1" .
+        then have finite_B1_x: "finite (B1 - {x})" by blast
+
+        from card_insert_disjoint[OF finite_B1_x y_notin]
+        have eq1: "card (insert y (B1 - {x})) = Suc (card (B1 - {x}))" .
+
+        from card.remove[OF B1_finite x_in_B1]
+        have eq2: "card B1 = Suc (card (B1 - {x}))" .
+
+        from eq1 eq2 show "card (insert y (B1 - {x})) = card B1" by simp
+      qed
 
       with basis_B1 y_p indep_p have "indep_system.basis E indep (insert y (B1 - {x}))"
         by (metis matroid.card_eq_basis)
