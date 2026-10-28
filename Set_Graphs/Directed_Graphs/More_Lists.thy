@@ -801,7 +801,36 @@ lemma list_cases4:
   "\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P ;
     \<And> x y. xs = x#y#[] \<Longrightarrow> P; \<And> x y z zs. xs = x#y#z#zs \<Longrightarrow> P\<rbrakk>
     \<Longrightarrow> P"
-  by(cases xs, force, metis neq_Nil_conv)
+proof(goal_cases)
+  case 1
+  show ?case
+  proof(cases xs)
+    case Nil
+    then show ?thesis using 1(1) by blast
+  next
+    case (Cons x xs1)
+    note xs_eq1 = Cons
+    show ?thesis
+    proof(cases xs1)
+      case Nil
+      hence "xs = [x]" using xs_eq1 by simp
+      then show ?thesis using 1(2) by blast
+    next
+      case (Cons y xs2)
+      note xs1_eq = Cons
+      show ?thesis
+      proof(cases xs2)
+        case Nil
+        hence "xs = [x, y]" using xs_eq1 xs1_eq by simp
+        then show ?thesis using 1(3) by blast
+      next
+        case (Cons z xs3)
+        hence "xs = x # y # z # xs3" using xs_eq1 xs1_eq by simp
+        then show ?thesis using 1(4) by blast
+      qed
+    qed
+  qed
+qed
 
 lemma  set_singleton_list: "set [ x] = {x}" for x by simp
 
