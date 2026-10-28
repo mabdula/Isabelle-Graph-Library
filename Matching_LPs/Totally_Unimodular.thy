@@ -1503,7 +1503,20 @@ proof
       have 20: "card {a\<in>J. a < pick J k} = k" 
         using card_pick k_less_card by blast
       have "pick J k < pick J j" 
-        by (metis True 12 9 assms(4) card_mono order_trans_rules(22) pick_mono_inf pick_mono_le)
+      proof -
+        have "j < card J \<or> infinite J"
+        proof (cases "infinite J")
+          case True
+          then show ?thesis by blast
+        next
+          case False
+          have "{i. i < dim_col A \<and> i \<in> J} \<subseteq> J" using 9 by blast
+          then have "card {i. i < dim_col A \<and> i \<in> J} \<le> card J"
+            using False card_mono by blast
+          then show ?thesis using 12 assms(4) by simp
+        qed
+        then show ?thesis using True pick_mono_inf pick_mono_le by blast
+      qed
       then  have "{a\<in>J. a < pick J k} = {a\<in>(J - {pick J j}). a < pick J k}"
         by auto
       then have "pick (J - {pick J j}) k = pick J k" 
