@@ -3479,7 +3479,7 @@ qed
           using False by auto
         have 32: "submatrix (mat_of_rows n [(- unit_vec n i):: 'a vec]) (?f ` (I - {0..<nr})) J = 
             submatrix (mat_of_rows n [- unit_vec n i]) {} J" 
-          by (metis 30 31)
+          using 31 unfolding 30 by simp
         then have 11: "submatrix (mat_of_rows n [- unit_vec n i]) {} J = 
           0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [- unit_vec n i]) (?f ` (I - {0..<nr})) J))"
           using empty_set_submatrix_iz_zero_mat 
