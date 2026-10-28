@@ -216,7 +216,33 @@ lemma awalk_induce:
   unfolding awalk_def
   using assms
   apply (auto simp: hd_in_awalk_verts set_awalk_verts image_subset_iff intro!: in_induce_subgraph_dVsI)
-   apply (metis (mono_tags, lifting) awalkE' cas_simp list.set_sel(1) prod.collapse subsetD)
+  subgoal
+  proof -
+    obtain e es where p_eq: "p = e # es"
+      using assms(3) by (cases p) auto
+    have cas_upv: "cas u p v"
+      using assms(1) by (auto elim: awalkE')
+    have subset_G: "set p \<subseteq> G"
+      using assms(1) by (auto elim: awalkE')
+    have fst_e: "fst e = u"
+      using cas_upv p_eq by (auto simp: cas_simp)
+    have e_in_G: "e \<in> G"
+      using subset_G p_eq by auto
+    have uv'_in_G: "(u, snd e) \<in> G"
+      using e_in_G fst_e by (cases e) auto
+    have e_in_set_p: "e \<in> set p"
+      using p_eq by simp
+    have snd_e_in_S: "snd e \<in> S"
+    proof -
+      have "snd e \<in> set (awalk_verts u p)"
+        using e_in_set_p cas_upv assms(3)
+        by (auto simp: Awalk.set_awalk_verts_not_Nil_cas)
+      then show "snd e \<in> S"
+        using assms(2) by blast
+    qed
+    show "\<exists>v'\<in>S. (u, v') \<in> G \<or> (v', u) \<in> G"
+      using snd_e_in_S uv'_in_G by blast
+  qed
   by (metis (no_types, lifting) CollectI awalkE' case_prodI fst_conv induce_subgraph_def snd_conv subsetD)
 
 lemma induce_subgraph_of_subgraph_verts[simp]:
