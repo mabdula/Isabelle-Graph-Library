@@ -4259,7 +4259,10 @@ proof-
     finally show "card B1 \<le> card B2"
       using \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close> by simp
   qed
-  with X B1 B2 show ?thesis by metis
+  have "Frac (int (card B1)) (int (card B2)) = rank_quotient"
+    using X(2) B1(2) B2(2) by simp
+  with X(1) B1(1) B2(1) \<open>card B1 \<le> card B2\<close>
+  show ?thesis by blast
 qed
 
 lemma rank_quotient_greater_0:
