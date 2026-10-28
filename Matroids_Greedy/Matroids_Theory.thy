@@ -4398,7 +4398,21 @@ proof (rule ccontr, goal_cases)
 
   with \<open>length (filter (\<lambda>y. c y = 1) xs) = k\<close> append_take_drop_id[of k xs] filter_append
   have "length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1"
-    by (metis One_nat_def Suc_le_eq append_self_conv length_greater_0_conv nless_le)
+proof -
+  have filter_eq: "filter (\<lambda>y. c y = 1) xs =
+    filter (\<lambda>y. c y = 1) (take k xs) @ filter (\<lambda>y. c y = 1) (drop k xs)"
+  proof -
+    have "xs = take k xs @ drop k xs" by (simp add: append_take_drop_id)
+    then show ?thesis by (subst \<open>xs = take k xs @ drop k xs\<close>) (rule filter_append)
+  qed
+  have len_eq: "length (filter (\<lambda>y. c y = 1) xs) =
+    length (filter (\<lambda>y. c y = 1) (take k xs)) + length (filter (\<lambda>y. c y = 1) (drop k xs))"
+    using filter_eq by simp
+  show "length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1"
+    using len_eq \<open>length (filter (\<lambda>y. c y = 1) xs) = k\<close>
+      \<open>length (filter (\<lambda>y. c y = 1) (take k xs)) < k\<close>
+    by linarith
+qed
 
   then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) \<ge> 1"
     by (metis "1"(1) distinct_card distinct_drop distinct_filter)
