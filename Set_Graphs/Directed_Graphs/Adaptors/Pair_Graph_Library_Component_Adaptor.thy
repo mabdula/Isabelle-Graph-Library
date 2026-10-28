@@ -444,8 +444,22 @@ proof-
     case False
     then show ?thesis
       using that
-      by (metis assms(3) induced_imp_subgraph reachable_vwalk_iff2 singletonD
-                subgraph_digraph_of_dVs_arcs_subset')
+      proof -
+      have H'_subgraph: "subgraph_digraph H' (ddfs.digraph_of G)"
+        using assms(3) induced_imp_subgraph by blast
+      have v1_in_verts: "v1 \<in> verts H'"
+        by (rule subgraph_digraph_of_dVs_arcs_subset'[OF H'_subgraph that(1)])
+      have v2_in_verts: "v2 \<in> verts H'"
+        by (rule subgraph_digraph_of_dVs_arcs_subset'[OF H'_subgraph that(2)])
+      have verts_H': "verts H' = {u}"
+        using False by simp
+      have "v1 = u"
+        using v1_in_verts verts_H' singletonD by blast
+      moreover have "v2 = u"
+        using v2_in_verts verts_H' singletonD by blast
+      ultimately show ?thesis
+        using that(1) reachable_vwalk_iff2 by fastforce
+      qed
   qed
   thus ?thesis
     using assms(1)
