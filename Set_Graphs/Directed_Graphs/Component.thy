@@ -487,7 +487,35 @@ lemma induced_subgraphI_arc_mono:
   shows "induced_subgraph H G"
   using assms
   unfolding induced_subgraph_def arc_mono_def max_subgraph_def
-  by (metis induce_subgraph_of_subgraph_verts subgraph_induce_subgraph subgraph_induce_subgraphI2)
+proof -
+  have P_H: "P H"
+    using assms(1) unfolding max_subgraph_def by blast
+  have subg_H: "subgraph H G"
+    using assms(1) unfolding max_subgraph_def by blast
+  have max: "\<And>H'. \<lbrakk>H \<noteq> H'; subgraph H H'; subgraph H' G\<rbrakk> \<Longrightarrow> \<not> P H'"
+    using assms(1) unfolding max_subgraph_def by blast
+  have mono: "\<And>H1 H2. \<lbrakk>P H1; subgraph H1 H2; dVs H1 = dVs H2\<rbrakk> \<Longrightarrow> P H2"
+    using assms(2) unfolding arc_mono_def by blast
+  have subg_H2: "subgraph (G \<downharpoonright> dVs H) G"
+    by (rule subgraph_induce_subgraph)
+  have subg_H_H2: "subgraph H (G \<downharpoonright> dVs H)"
+    using subg_H by (rule subgraph_induce_subgraphI2)
+  have dVs_eq: "dVs (G \<downharpoonright> dVs H) = dVs H"
+    using subg_H by (rule induce_subgraph_of_subgraph_verts)
+  have P_H2: "P (G \<downharpoonright> dVs H)"
+    using mono[OF P_H subg_H_H2 dVs_eq[symmetric]] .
+  have H_eq: "H = G \<downharpoonright> dVs H"
+  proof (rule ccontr)
+    assume neq: "H \<noteq> G \<downharpoonright> dVs H"
+    have "\<not> P (G \<downharpoonright> dVs H)"
+      using max[OF neq subg_H_H2 subg_H2] .
+    with P_H2 show False by blast
+  qed
+  show "H = G \<downharpoonright> dVs H"
+    using assms H_eq
+    unfolding max_subgraph_def arc_mono_def
+    by simp
+qed
 
 lemma subgraph_induced_subgraph_neq:
   assumes "induced_subgraph H G" "subgraph H H'" "H \<noteq> H'"
