@@ -1952,7 +1952,21 @@ qed
     have "B $$ (insert_index i t, insert_index j k) = A $$ (t1, k1)" 
       using 25 k1 t1 by blast
     have 47: "submatrix A (I - {pick I i}) (J - {pick J j}) $$ (t, k) = A $$ (t2, k2)"
-      by (metis (no_types, lifting) asmi asmk dim_submatrix(1-2) t2 k2 submatrix_index)
+    proof -
+      have t_card: "t < card {a. a < dim_row A \<and> a \<in> (I - {pick I i})}"
+        using asmi by (simp add: dim_submatrix(1))
+      have k_card: "k < card {b. b < dim_col A \<and> b \<in> (J - {pick J j})}"
+        using asmk by (simp add: dim_submatrix(2))
+      have eq: "submatrix A (I - {pick I i}) (J - {pick J j}) $$ (t, k) =
+                A $$ (pick (I - {pick I i}) t, pick (J - {pick J j}) k)"
+        using submatrix_index[OF t_card k_card] .
+      have t2': "t2 = pick (I - {pick I i}) t"
+        using t2[THEN conjunct2, THEN conjunct2] .
+      have k2': "k2 = pick (J - {pick J j}) k"
+        using k2[THEN conjunct2, THEN conjunct2] .
+      show ?thesis
+        using eq t2' k2' by simp
+    qed
     have 46: "pick J (insert_index j k) = pick (J - {pick J j}) k"
     proof(cases "k < j")
       case True
