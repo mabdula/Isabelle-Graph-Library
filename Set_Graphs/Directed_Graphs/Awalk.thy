@@ -1288,7 +1288,7 @@ lemma awalk_inductive_simps:
      a2 = u \<and>
      a3 = e # d # ds \<and>
      a4 = w \<and> e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w))"], simp)
-      by (blast, metis awalk_Cons_iff awalk_intros(1) list.distinct(1))
+      by (blast, fastforce simp: awalk_Cons_iff awalk_Nil_iff intro: awalk_intros(1))
     subgoal
     apply(rule disjE, simp)
       apply (simp add: arc_implies_awalk)
