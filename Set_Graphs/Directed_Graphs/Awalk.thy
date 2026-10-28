@@ -520,9 +520,29 @@ qed
   
 lemma vwalk_rev:
   "\<forall>(x, y) \<in> E. (y, x) \<in> E \<Longrightarrow> Vwalk.vwalk E p \<Longrightarrow> Vwalk.vwalk E (rev p)"
-  apply (induction p)
-  apply simp
-  by (metis append_Nil case_prod_conv last_rev rev.simps(2) rev_is_Nil_conv vwalk_ConsE vwalk_append_single)
+proof (induction p)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a p')
+  show ?case
+  proof (cases "p' = []")
+    case True
+    then show ?thesis using Cons.prems by simp
+  next
+    case False
+    obtain e where e_mem: "e \<in> E" and e_eq: "e = (a, hd p')" and vw': "Vwalk.vwalk E p'"
+      by (rule vwalk_ConsE[OF Cons.prems(2) False])
+    have edge: "(a, hd p') \<in> E" using e_mem e_eq by simp
+    have edge_rev: "(hd p', a) \<in> E" using Cons.prems(1) edge by auto
+    have rev_p': "Vwalk.vwalk E (rev p')" using Cons.IH Cons.prems(1) vw' by simp
+    have last_rev_p': "last (rev p') = hd p'" using False by (simp add: last_rev)
+    have edge_rev': "(last (rev p'), a) \<in> E" using edge_rev last_rev_p' by simp
+    have "Vwalk.vwalk E (rev p' @ [a])"
+      by (rule vwalk_append_single[OF rev_p' edge_rev'])
+    then show ?thesis by simp
+  qed
+qed
   
 lemma awalk_verts_cons:
   "awalk E u ([(x, y)] @ xs) v \<Longrightarrow> awalk_verts u ([(x, y)] @ xs) = [x, y] @ tl (awalk_verts u xs)"
