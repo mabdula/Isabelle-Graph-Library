@@ -2321,7 +2321,11 @@ proof-
     from \<open>Y \<subseteq> E\<close> \<open>Y = insert y X\<close> have "y \<in> E" by blast
 
     have "card X + 1 = card Y" using \<open>Y = insert y X\<close>
-      by (metis Suc_eq_plus1 \<open>X \<subseteq> E\<close> \<open>y \<notin> X\<close> assms(1) card_insert_disjoint finite_subset)
+    proof -
+      from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by (rule finite_subset)
+      from this \<open>y \<notin> X\<close> have "card (insert y X) = Suc (card X)" by (rule card_insert_disjoint)
+      then show "card X + 1 = card Y" using \<open>Y = insert y X\<close> by simp
+    qed
     also have "... = r Y" using \<open>?indep Y\<close> by simp
     also have "... = r (X \<union> {y})" using \<open>Y = insert y X\<close> by auto
     also have "... \<le> r X + 1" using R2' \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> by simp
