@@ -3421,7 +3421,46 @@ qed
           then have "\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = 0" 
             using 6 "5" Collect_cong 22  carrier_vecD index_row(2)  index_zero_vec(1) 
               pick_le vec_carrier 
-            by (smt (verit, ccfv_SIG) index_uminus_vec(2) index_unit_vec(3))
+            proof (intro allI impI)
+              fix j
+              assume asmj: "j < dim_col B"
+              have huz: "((- unit_vec n i) :: 'a vec) = 0\<^sub>v n"
+                using uminus_vec_if_zero[OF 13 14] by simp
+              have dimn: "dim_vec ((- unit_vec n i) :: 'a vec) = n"
+                using huz by simp
+              have step1: "dim_vec (vec_of_list (nths (list_of_vec ((- (unit_vec n i) :: 'a vec))) J)) =
+                           card {ia. ia < dim_vec ((- (unit_vec n i) :: 'a vec)) \<and> ia \<in> J}"
+                using "5" by simp
+              have step2: "dim_vec (vec_of_list (nths (list_of_vec ((- (unit_vec n i) :: 'a vec))) J)) =
+                           card {ia. ia < n \<and> ia \<in> J}"
+                using step1 dimn by simp
+              have dim_row_eq: "dim_vec (row B (dim_row B - 1)) = card {ia. ia < n \<and> ia \<in> J}"
+                using 22 step2 by simp
+              have rowcarr: "row B (dim_row B - 1) \<in> carrier_vec (dim_col B)"
+                using row_carrier by blast
+              have dim_rowcarr: "dim_vec (row B (dim_row B - 1)) = dim_col B"
+                using rowcarr carrier_vecD by blast
+              have colB_eq: "dim_col B = card {ia. ia < n \<and> ia \<in> J}"
+              proof -
+                have "dim_col B = dim_vec (row B (dim_row B - 1))"
+                  using dim_rowcarr by simp
+                also have "... = card {ia. ia < n \<and> ia \<in> J}"
+                  using dim_row_eq by simp
+                finally show ?thesis .
+              qed
+              have j_lt_card: "j < card {ia. ia < n \<and> ia \<in> J}"
+                using colB_eq asmj by simp
+              have pick_lt: "pick J j < n"
+                using pick_le j_lt_card by blast
+              have zero_at: "(0\<^sub>v n :: 'a vec) $ (pick J j) = 0"
+                using pick_lt by simp
+              have uvec_zero: "((- unit_vec n i) :: 'a vec) $ (pick J j) = 0"
+                using huz zero_at by simp
+              have step6: "B $$ (dim_row B - 1, j) = (- (unit_vec n i) :: 'a vec) $ (pick J j)"
+                using 6 asmj by blast
+              show "B $$ (dim_row B - 1, j) = 0"
+                using step6 uvec_zero by simp
+            qed
           then show ?thesis using 4 
             by (simp add: \<open>dim_row B = dim_col B\<close>)
         qed
