@@ -1674,7 +1674,20 @@ qed
               using arg_cong[where f = Least, OF pred_eq] by simp
           qed
         then have "pick (J - {pick J j}) k = pick J (Suc k)" 
-          by (metis Suc_eq_plus1 24 25 26 27 28)
+        proof -
+          have hk: "k = Suc (k - 1)"
+            using 24 26 by arith
+          have "pick (J - {pick J j}) k = pick (J - {pick J j}) (Suc (k - 1))"
+            using hk by simp
+          also have "\<dots> = (LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a)"
+            by (rule 27)
+          also have "\<dots> = (LEAST a. a \<in> J \<and> pick J k < a)"
+            using \<open>(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) =
+                   (LEAST a. a \<in> J \<and> pick J k < a)\<close> .
+          also have "\<dots> = pick J (Suc k)"
+            by (rule 28[symmetric])
+          finally show ?thesis .
+        qed
         then show ?thesis 
           using \<open>pick J (insert_index j k) = pick J (Suc k)\<close> by presburger
       qed
