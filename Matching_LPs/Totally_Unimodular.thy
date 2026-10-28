@@ -1974,9 +1974,28 @@ qed
         unfolding insert_index_def 
         using True by simp
       have "pick J k \<in> J - {pick J j}"
-        by (smt (verit, del_insts) DiffI True 10 23 12  assms(4) card_mono insert_index(1)
-            nat_neq_iff order_less_le_trans pick_eq_iff_inf pick_in_set_inf pick_in_set_le
-            pick_mono_le singletonD)
+      proof -
+        have j_bound: "j < card J \<or> infinite J"
+        proof (cases "finite J")
+          case True
+          then have "card {i. i < dim_col A \<and> i \<in> J} \<le> card J"
+            using True 12 by (meson card_mono)
+          then show ?thesis using 11 by linarith
+        next
+          case False
+          then show ?thesis by blast
+        qed
+        have lt: "pick J k < pick J j"
+          using pick_mono True j_bound by blast
+        have mem: "pick J k \<in> J"
+          using pick_in_set[OF k_less_card] .
+        have "pick J k \<noteq> pick J j"
+        proof
+          assume "pick J k = pick J j"
+          with lt show False by simp
+        qed
+        with mem show ?thesis by blast
+      qed
       then have 27:"pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J k}) = pick J k" 
         using pick_card_in_set 
         by presburger
