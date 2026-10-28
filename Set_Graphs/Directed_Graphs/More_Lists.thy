@@ -85,7 +85,7 @@ proof(goal_cases)
           then obtain xs1 x xs2 where "(a # xs) = (a #xs1) @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
             by auto
           then show ?thesis
-            by metis
+            by blast
         next
           case x_notin_ys2: False
           hence "a # xs = (a# ys1') @ [y] @ ys2 \<and> P2 y \<and> (\<forall>y\<in>set ys2. \<not> P1 y)"
