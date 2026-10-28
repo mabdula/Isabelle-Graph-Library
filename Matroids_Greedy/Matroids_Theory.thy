@@ -4428,7 +4428,20 @@ qed
   with drop_eq_nths[of k xs] set_nths[of xs]
   have "card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) \<ge> 1" by simp
   then have "\<exists>j. j \<ge> k \<and> j < length xs \<and> c (xs ! j) = 1"
-    by (smt (verit, ccfv_threshold) Collect_empty_eq card.empty mem_Collect_eq not_one_le_zero)
+  proof -
+    have "{x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1} \<noteq> {}"
+    proof
+      assume "{x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1} = {}"
+      then have "card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) = 0" by simp
+      with \<open>card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) \<ge> 1\<close>
+      show False by linarith
+    qed
+    then obtain x where "x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}" and "c x = 1"
+      by auto
+    then obtain j where "x = xs ! j" "j < length xs" "k \<le> j"
+      by blast
+    with \<open>c x = 1\<close> show ?thesis by auto
+  qed
   then obtain j where "j \<ge> k" "j < length xs" "c (xs ! j) = 1" by blast
 
   from \<open>i < k\<close> \<open>j \<ge> k\<close> have "i < j" by auto
