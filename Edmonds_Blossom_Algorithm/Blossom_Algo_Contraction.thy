@@ -2244,8 +2244,14 @@ lemma odd_cycle_length_verts_ge_4:
   assumes "odd_cycle p"
   shows "length p \<ge> 4"
   using odd_cycle_length_edges_ge_3[OF assms]
-  by (metis Suc_leI assms le_eq_less_or_eq numeral_3_eq_3 numeral_4_eq_4 odd_cycle_def
-            odd_cycle_even_verts odd_numeral)
+proof -
+  have p_nonempty: "p \<noteq> []"
+    using odd_cycle_nempty[OF assms] .
+  have edges_ge3: "3 \<le> length (edges_of_path p)"
+    using odd_cycle_length_edges_ge_3[OF assms] .
+  show "4 \<le> length p"
+    using edges_ge3 edges_of_path_length'[OF p_nonempty] by linarith
+qed
 
 lemma odd_cycle_set_butlast_tl:
   assumes "odd_cycle C"
