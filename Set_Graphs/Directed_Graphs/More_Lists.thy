@@ -1092,7 +1092,32 @@ qed simp
 
 lemma rev_cases3: 
   "\<lbrakk>xs = Nil \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P; \<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" 
-  by (metis More_Lists.append_butlast_last_cancel append_Nil neq_Nil_conv_snoc)
+proof -
+  assume A1: "xs = [] \<Longrightarrow> P"
+     and A2: "\<And>x. xs = [x] \<Longrightarrow> P"
+     and A3: "\<And>ys y x. xs = ys @ [y, x] \<Longrightarrow> P"
+  show P
+  proof (cases "xs = []")
+    case True
+    with A1 show ?thesis by blast
+  next
+    case False
+    then obtain ys x where xs_eq: "xs = ys @ [x]"
+      using neq_Nil_conv_snoc[of xs, THEN iffD1, OF False] by blast
+    show ?thesis
+    proof (cases "ys = []")
+      case True
+      with xs_eq have "xs = [x]" by simp
+      with A2 show ?thesis by blast
+    next
+      case False
+      then obtain zs y where ys_eq: "ys = zs @ [y]"
+        using neq_Nil_conv_snoc[of ys, THEN iffD1, OF False] by blast
+      with xs_eq have "xs = zs @ [y, x]" by simp
+      with A3 show ?thesis by blast
+    qed
+  qed
+qed
 
 fun itrev_aux :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 "itrev_aux  [] ys = ys" |
