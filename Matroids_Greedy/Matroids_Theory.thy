@@ -265,7 +265,18 @@ proof (standard, goal_cases LTR RTL)
       with `B1 \<subseteq> X` `B2 \<subseteq> X` have "\<exists>x \<in> B2 - B1. indep_in X (insert x B1)"
         by (simp add: in_mono indep_in_def)
       with ex_B1_B2 show ?thesis 
-        by (metis DiffD2 DiffI basis_in_max_indep_in ex_X indep_in_subset_carrier insert_subset)
+      proof -
+        from ex_B1_B2 have basis_B1: "basis_in X B1" by blast
+        from ex_X have "X \<subseteq> carrier" by blast
+        from \<open>\<exists>x \<in> B2 - B1. indep_in X (insert x B1)\<close>
+        obtain x where x_mem: "x \<in> B2 - B1" and x_indep: "indep_in X (insert x B1)" by blast
+        from x_mem have "x \<in> B2" and "x \<notin> B1" by simp_all
+        from \<open>B2 \<subseteq> X\<close> \<open>x \<in> B2\<close> have "x \<in> X" by blast
+        with \<open>x \<notin> B1\<close> have "x \<in> X - B1" by blast
+        from basis_in_max_indep_in[OF \<open>X \<subseteq> carrier\<close> basis_B1 this]
+        have "\<not> indep_in X (insert x B1)" .
+        with x_indep show False by blast
+      qed
     next
       case 2
       from LTR `indep B1` `indep B2` 2 have "\<exists>x \<in> B1 - B2. indep (insert x B2)" by blast
