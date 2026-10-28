@@ -2424,9 +2424,10 @@ proof-
         show "r X \<le> r Y" by blast
       qed
 
-      from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> rank_Y_un_x_eq_Y R3'] 
+      from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> rank_Y_un_x_eq_Y R3',
+          of "card (X - Y)" "X - Y"]
       have "r Y = r (Y \<union> (X - Y))"
-        by (metis subset_refl)
+        by simp
       also have "... = r (X \<union> Y)" by (simp add: Un_commute)
       also have "... \<ge> r X" using subset_rank_leq \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> by auto
       finally have "r Y \<ge> r X" .
