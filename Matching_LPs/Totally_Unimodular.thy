@@ -3300,11 +3300,67 @@ qed
                        carrier_vec (dim_col (submatrix A I J))"
               by (smt (verit) A Collect_cong carrier_dim_vec carrier_matD(2) dim_submatrix(2)
                   dim_vec nths_list_pick_vec_same)
-            then have 9:"mat_delete B (dim_row B - 1) j = submatrix A I (J - {pick J j})"
-              using mat_delete_last_row_submatrix 10 22 19
-              by (smt (verit, best) "12" "5" Collect_cong assms(1) carrier_vecD dim_submatrix(1) 
-                  dim_submatrix(2) submatrix_one_row_mat_of_rows index_row(2) j mat_delete_dim(1) 
-                  mat_of_rows_carrier(3) vec_carrier_vec)
+            have 9: "mat_delete B (dim_row B - 1) j = submatrix A I (J - {pick J j})"
+            proof -
+              have dimA_col: "dim_col A = n"
+                using assms(1) carrier_matD(2) by blast
+              have dim_col_submat: "dim_col (submatrix A I J) = card {ja. ja < n \<and> ja \<in> J}"
+              proof -
+                have "dim_col (submatrix A I J) = card {ja. ja < dim_col A \<and> ja \<in> J}"
+                  using dim_submatrix(2) by blast
+                then show ?thesis using dimA_col by simp
+              qed
+              have dim_vec_uminus: "dim_vec ((- unit_vec n i) :: 'a vec) = n"
+                by simp
+              have b_carr: "vec_of_list (nths (list_of_vec ((- unit_vec n i) :: 'a vec)) J) \<in>
+                            carrier_vec (dim_col (submatrix A I J))"
+              proof -
+                have "vec_of_list (nths (list_of_vec ((- unit_vec n i) :: 'a vec)) J) =
+                      vec (card {ia. ia < n \<and> ia \<in> J}) (\<lambda>ia. (- unit_vec n i :: 'a vec) $ pick J ia)"
+                  using nths_list_pick_vec_same[of "(- unit_vec n i :: 'a vec)" J] dim_vec_uminus
+                  by simp
+                also have "\<dots> \<in> carrier_vec (dim_col (submatrix A I J))"
+                  using dim_col_submat carrier_dim_vec by (simp add: dim_col_submat)
+                finally show ?thesis .
+              qed
+              have dim_col_eq: "dim_col (submatrix A I J) = card ({0..<n} \<inter> J)"
+              proof -
+                have "{ja. ja < n \<and> ja \<in> J} = {0..<n} \<inter> J" by fastforce
+                then show ?thesis using dim_col_submat by simp
+              qed
+              have B_eq: "B = submatrix A I J @\<^sub>r
+                                mat_of_rows (dim_col (submatrix A I J))
+                                [vec_of_list (nths (list_of_vec ((- unit_vec n i :: 'a vec))) J)]"
+                using 21 dim_col_eq by simp
+              have submat_carr: "submatrix A I J \<in>
+                                  carrier_mat (dim_row (submatrix A I J)) (dim_col (submatrix A I J))"
+                by (rule carrier_matI) simp_all
+              have row_carr: "mat_of_rows (dim_col (submatrix A I J))
+                                  [vec_of_list (nths (list_of_vec ((- unit_vec n i :: 'a vec))) J)]
+                                \<in> carrier_mat 1 (dim_col (submatrix A I J))"
+                using mat_of_rows_carrier(1)[of "dim_col (submatrix A I J)"
+                        "[vec_of_list (nths (list_of_vec ((- unit_vec n i :: 'a vec))) J)]"]
+                by auto
+              have B_carr: "B \<in> carrier_mat (dim_row (submatrix A I J) + 1) (dim_col (submatrix A I J))"
+                using carrier_append_rows[OF submat_carr row_carr] B_eq by simp
+              have dim_row_B: "dim_row (submatrix A I J) = dim_row B - 1"
+                using B_carr carrier_matD(1) by fastforce
+              have dim_row_eq2: "dim_row B - 1 = dim_row (submatrix A I J)"
+                using dim_row_B by simp
+              have dim_col_B: "dim_col (submatrix A I J) = dim_col B"
+                using B_carr carrier_matD(2) by fastforce
+              have j_less: "j < dim_col (submatrix A I J)"
+                using j dim_col_B by auto
+              have "mat_delete B (dim_row B - 1) j =
+                    mat_delete (submatrix A I J @\<^sub>r
+                      mat_of_rows (dim_col (submatrix A I J))
+                      [vec_of_list (nths (list_of_vec ((- unit_vec n i :: 'a vec))) J)])
+                      (dim_row (submatrix A I J)) j"
+                using B_eq dim_row_eq2 by simp
+              also have "\<dots> = submatrix A I (J - {pick J j})"
+                using mat_delete_last_row_submatrix[OF assms(1) b_carr refl j_less] .
+              finally show ?thesis .
+            qed
             have "det (submatrix A I (J - {pick J j})) \<in> {-1, 0, 1}" 
               using assms(2) unfolding tot_unimodular_def 
               by blast
