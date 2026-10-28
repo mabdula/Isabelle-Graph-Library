@@ -2766,9 +2766,27 @@ proof rule
                     then have "card {ia. ia < n \<and> ia \<in> J} \<le> card J" using subset card_mono by blast
                     then show ?thesis using "26" j by linarith
                   qed
-                  then show ?thesis 
-                    by (metis (mono_tags, lifting) False asm_not_eq 26 asm(1-2) mem_Collect_eq
-                        basic_trans_rules(21) card_mono j nat_neq_iff not_less pick_mono subsetI)
+                  show ?thesis
+                  proof -
+                    have subset_J: "{ia. ia < n \<and> ia \<in> J} \<subseteq> J" by blast
+                  have fin_J: "finite J" using False by simp
+                  have card_le: "card {ia. ia < n \<and> ia \<in> J} \<le> card J"
+                    using card_mono[OF fin_J subset_J] .
+                  have k_lt_card: "k < card J" using asm(1) 26 card_le by linarith
+                  have j_disj: "j < card J \<or> infinite J" using \<open>j < card J\<close> by (rule disjI1)
+                  have k_disj: "k < card J \<or> infinite J" using k_lt_card by (rule disjI1)
+                  have "k < j \<or> j < k" using asm(2) by linarith
+                  then show ?thesis
+                  proof
+                    assume "k < j"
+                    then have "pick J k < pick J j" using pick_mono j_disj by blast
+                    then show False using 25 by simp
+                  next
+                    assume "j < k"
+                    then have "pick J j < pick J k" using pick_mono k_disj by blast
+                    then show False using 25 by simp
+                  qed
+                  qed
                 qed
               qed
               then show " B $$ (dim_row B - 1, k) = 0" 
