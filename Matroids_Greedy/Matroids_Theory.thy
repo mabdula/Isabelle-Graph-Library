@@ -4148,8 +4148,20 @@ lemma rank_geq_card_indep_in:
   shows "rank X \<ge> card Y"
 proof-
   from indep_in_def have "finite {card Y | Y. indep_in X Y}"
-    by (smt (verit, del_insts) card_mono carrier_finite finite_nat_set_iff_bounded_le indep_subset_carrier
-        mem_Collect_eq)
+  proof -
+    have "\<forall>n \<in> {card Y | Y. indep_in X Y}. n \<le> card carrier"
+    proof
+      fix n
+      assume "n \<in> {card Y | Y. indep_in X Y}"
+      then obtain Y where "n = card Y" "indep_in X Y" by blast
+      from indep_in_subset_carrier[OF this(2)] have "Y \<subseteq> X" .
+      with assms(1) have "Y \<subseteq> carrier" by blast
+      from card_mono[OF carrier_finite \<open>Y \<subseteq> carrier\<close>] have "card Y \<le> card carrier" .
+      with \<open>n = card Y\<close> show "n \<le> card carrier" by simp
+    qed
+    then show "finite {card Y | Y. indep_in X Y}"
+      using finite_nat_set_iff_bounded_le by blast
+  qed
   moreover have "card Y \<in> {card Y | Y. indep_in X Y}" using assms(2) by fast 
   ultimately show ?thesis using rank_def by auto
 qed
