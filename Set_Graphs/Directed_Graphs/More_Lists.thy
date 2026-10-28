@@ -681,8 +681,10 @@ proof(induction xs arbitrary: x)
           using Cons.IH wP by blast
         then show thesis using that by blast
       qed
-      then show ?thesis 
-        by (metis append_Cons)
+      then have "xx # xs = (xx # ys) @ [y] @ zs"
+        by simp
+      then show ?thesis
+        using \<open>xs = ys @ [y] @ zs \<and> P y \<and> (\<nexists>z. z \<in> set zs \<and> P z)\<close> by blast
     next
       case False
       hence "P a \<or> P x"
