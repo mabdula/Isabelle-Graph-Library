@@ -4775,7 +4775,11 @@ proof-
   from matroid.axioms(1) assms(2) have "indep_system E indep" by blast 
 
   from \<open>x \<in> B2 - B1\<close> \<open>indep_system.basis E indep B2\<close> have "x \<in> E - B1"
-    by (metis DiffD1 DiffD2 DiffI assms(2) indep_system.basis_subset_carrier matroid.axioms(1) subsetD)
+    proof -
+      from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(4)]
+      have "B2 \<subseteq> E" .
+      with \<open>x \<in> B2 - B1\<close> show "x \<in> E - B1" by blast
+    qed
   from matroid.basis_ex1_supset_circuit[OF assms(2) assms(3) this] 
   have unique_circuit: "\<exists>!C. indep_system.circuit E indep C \<and> C \<subseteq> insert x B1" .
   then obtain C where "indep_system.circuit E indep C" "C \<subseteq> insert x B1" by blast
