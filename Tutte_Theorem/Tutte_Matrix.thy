@@ -520,7 +520,12 @@ next
       have "xs = hd xs # tl xs" 
         by (simp add: \<open>xs \<noteq> []\<close>)
       then have "{a, hd xs} \<in> A" 
-        by (metis \<open>{a, xs ! 0} \<in> A\<close> nth_Cons_0)
+        proof -
+          have "hd xs = xs ! 0"
+            using \<open>xs \<noteq> []\<close> by (rule hd_conv_nth)
+          then show "{a, hd xs} \<in> A"
+            using \<open>{a, xs ! 0} \<in> A\<close> by simp
+        qed
       then show ?thesis 
         by (metis \<open>path A xs\<close> \<open>xs = hd xs # tl xs\<close> path_2) 
     qed
