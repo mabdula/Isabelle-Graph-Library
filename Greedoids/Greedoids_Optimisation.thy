@@ -1095,10 +1095,53 @@ next
      es = es1 @ [x] @ es2 \<and> x \<notin> set l \<and> insert x (set l) \<in> F \<and>
      (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x)))"
       have x_last_P: "last_in_list P es x"
-        using es_split
-        by (auto simp add: last_in_list_def P_def )
-          (metis DiffI append_Cons_eq_iff 
-            distinct_append es_prop(1) es_prop(2) no_strong_exchange in_set_conv_decomp not_distinct_conv_prefix)
+      proof -
+  have x_in_es: "x \<in> set es"
+    using es_split(1) by auto
+  have es_split4': "\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x"
+    using es_split(4) by blast
+  have x_in_E: "x \<in> E"
+    using x_in_es es_prop(1) by simp
+  have P_x: "\<exists>es1 es2. es = es1 @ [x] @ es2 \<and> x \<notin> set l \<and> insert x (set l) \<in> F \<and>
+       (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x)"
+    using es_split(1,2,3) es_split4' by blast
+  have unique_x: "unique (\<lambda>w. w = x)"
+    by (simp add: unique_def)
+  have no_later: "\<nexists>xs1 xs2 z. es = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and>
+       (\<exists>es1 es2. es = es1 @ [z] @ es2 \<and> z \<notin> set l \<and> insert z (set l) \<in> F \<and>
+          (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z))"
+  proof (rule notI)
+    assume "\<exists>xs1 xs2 z. es = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and>
+       (\<exists>es1 es2. es = es1 @ [z] @ es2 \<and> z \<notin> set l \<and> insert z (set l) \<in> F \<and>
+          (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z))"
+    then obtain xs1 xs2 z where later_prop1:
+      "es = xs1 @ [x] @ xs2" "z \<in> set xs2"
+      "\<exists>es1 es2. es = es1 @ [z] @ es2 \<and> z \<notin> set l \<and> insert z (set l) \<in> F \<and>
+          (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z)"
+      by blast
+    then obtain zs1 zs2 where later_prop2:
+      "es = zs1 @ [z] @ zs2" "z \<notin> set l" "insert z (set l) \<in> F"
+      "\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z"
+      by blast
+    have split_eq: "es1 = xs1" "es2 = xs2"
+      using injective_predicate_unique_split[OF es_prop(2) unique_x es_split(1) later_prop1(1) refl refl]
+      by auto
+    have z_in_es2: "z \<in> set es2"
+      using later_prop1(2) split_eq(2) by simp
+    have z_in_E: "z \<in> E"
+      using z_in_es2 es_split(1) es_prop(1) by auto
+    have x_in_El: "x \<in> E - set l"
+      using x_in_E es_split(2) by blast
+    have x_le_z: "elements_costs costs x \<le> elements_costs costs z"
+      using later_prop2(4) x_in_El es_split(3) by blast
+    show False
+      using es_split(5) z_in_es2 later_prop2(2,3) x_le_z
+      by blast
+  qed
+  show "last_in_list P es x"
+    unfolding last_in_list_def P_def
+    using x_in_es P_x no_later by blast
+      qed
       have insert_new_element_is:"insert (A_list ! length l) (set (take (length l) A_list)) = (set (take (Suc (length l)) A_list))"
         using split_off_first by auto
       have " (A_list ! length l) \<in> set A_list" 
