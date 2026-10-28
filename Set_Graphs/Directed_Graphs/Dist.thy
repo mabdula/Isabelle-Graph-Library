@@ -691,7 +691,13 @@ lemma distance_set_wit:
 
 lemma distance_set_single_source:
   "distance_set G {s} x = distance G s x" 
-  by (metis distance_set_wit singleton_iff)
+proof -
+  have "s \<in> {s}" by simp
+  then obtain v' where "v' \<in> {s}" "distance_set G {s} x = distance G v' x"
+    by (rule distance_set_wit)
+  then show ?thesis
+    by simp
+qed
 
 lemma distance_set_wit':
   assumes "distance_set G V v \<noteq> \<infinity>"
