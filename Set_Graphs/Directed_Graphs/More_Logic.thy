@@ -294,7 +294,21 @@ lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<
   by argo
 
 lemma if_PQ_E: "\<lbrakk>if P then False else if Q then False else True; \<not> P \<and> \<not> Q \<Longrightarrow> R\<rbrakk> \<Longrightarrow> R"
-  by metis
+proof -
+  assume h1: "if P then False else if Q then False else True"
+  assume h2: "\<not> P \<and> \<not> Q \<Longrightarrow> R"
+  have notP: "\<not> P"
+  proof
+    assume "P"
+    with h1 show False by simp
+  qed
+  have notQ: "\<not> Q"
+  proof
+    assume "Q"
+    with h1 notP show False by simp
+  qed
+  from notP notQ h2 show R by blast
+qed
 
 lemma image_two_Collect: "{f x y | x y. P x y} = (\<lambda> (x, y). f x y) ` { (x, y) | x y. P x y}"
   by auto
