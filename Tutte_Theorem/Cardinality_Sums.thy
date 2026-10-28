@@ -145,7 +145,17 @@ next
     using UnionI insert.hyps(2) insert.prems(2) by auto
   then have " \<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" 
     using insert.prems(3)
-    by (metis insert_iff)
+  proof -
+    have ex_neq: "\<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" if "a \<in> F" for a
+    proof -
+      from that have "a \<in> insert x F" by simp
+      with insert.prems(3) obtain b1 where "b1 \<in> B" and "b1 \<in> a" by blast
+      have "b \<notin> a" using \<open>\<forall>a\<in>F. b \<notin> a\<close> that by blast
+      then have "b1 \<noteq> b" using \<open>b1 \<in> a\<close> by auto
+      then show ?thesis using \<open>b1 \<in> B\<close> \<open>b1 \<in> a\<close> by blast
+    qed
+    show ?thesis using ex_neq by blast
+  qed
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-{b}. b1 \<in> a" 
     by (metis \<open>b \<in> B \<and> b \<in> x\<close> insertE insert_Diff)
   have "finite (B - {b})" 
