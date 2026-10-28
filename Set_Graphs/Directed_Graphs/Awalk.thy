@@ -991,7 +991,17 @@ qed
 
   from \<open>v \<noteq> w\<close> \<open>snd (last p) = u\<close> \<open>u = w\<close>
     have "(last p) \<noteq> (w, v)"
-    by (metis snd_conv)
+proof -
+  show "(last p) \<noteq> (w, v)"
+  proof (rule notI)
+    assume "last p = (w, v)"
+    then have "v = snd (last p)" by simp
+    also have "\<dots> = u" using \<open>snd (last p) = u\<close> by simp
+    finally have "v = u" .
+    with \<open>u = w\<close> have "v = w" by simp
+    with \<open>v \<noteq> w\<close> show False by simp
+  qed
+qed
 
   from \<open>(w, v) = hd p\<close> \<open>(last p) \<noteq> (w, v)\<close>
     have "\<exists>xs. p = [(w, v)] @ xs @ [last p]" 
