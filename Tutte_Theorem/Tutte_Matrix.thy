@@ -193,8 +193,17 @@ proof -
   have "(i, j) \<notin> oriented_edges" 
     using assms oriented_edges by blast
   have "(j, i) \<notin> oriented_edges" 
-    using assms  oriented_edges_def 
-    by (metis (mono_tags, lifting) insert_commute oriented_edges)
+    proof (rule notI)
+    assume "(j, i) \<in> oriented_edges"
+    then have "{j, i} \<in> G"
+      by (rule oriented_edges)
+    moreover have "{j, i} = {i, j}"
+      by (simp add: insert_commute)
+    ultimately have "{i, j} \<in> G"
+      by simp
+    then show False
+      using assms by simp
+  qed
   show ?thesis  unfolding tutte_matrix_def 
     by (simp add: \<open>(i, j) \<notin> oriented_edges\<close> \<open>(j, i) \<notin> oriented_edges\<close>)
 qed
