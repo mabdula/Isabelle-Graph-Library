@@ -1806,8 +1806,17 @@ proof-
       then have "set (take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) (sort_desc ?c ?order)) =
         insert (hd (drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)))
         (set (take (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)))"
-        apply (simp add: num_iter_upd)
-        by (metis list.set(2) rotate1.simps(2) set_rotate1 take_hd_drop)
+      proof -
+        have take_eq: "take (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) @
+            [hd (drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order))] =
+            take (Suc (num_iter ?c ?order best_in_greedy_state)) (sort_desc ?c ?order)"
+          using take_hd_drop[OF \<open>num_iter ?c ?order best_in_greedy_state < length (sort_desc ?c ?order)\<close>] .
+        have suc_eq: "num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state) =
+            Suc (num_iter ?c ?order best_in_greedy_state)"
+          using num_iter_upd by simp
+        show ?thesis
+          unfolding suc_eq take_eq[symmetric] by simp
+      qed
       then have "set (take (num_iter ?c ?order (BestInGreedy_upd1 best_in_greedy_state)) (sort_desc ?c ?order)) =
         insert (hd (carrier_list best_in_greedy_state))
         (set (take (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)))"
