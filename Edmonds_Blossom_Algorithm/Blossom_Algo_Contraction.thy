@@ -2145,7 +2145,15 @@ proof(cases "length p1 \<ge> 2")
       by (simp add: edges_of_path_rev[symmetric] last_rev e_es)
   qed
   moreover have "edges_of_path ((rev p1) @ p2) = (edges_of_path (rev p1)) @ (edges_of_path (hd p1 # p2))"
-    by (metis (no_types, lifting) edges_of_path_append_2 edges_of_path_rev nempty(1) rev.simps(2) rev_append rev_rev_ident)
+  proof -
+  have "rev p1 \<noteq> []"
+    using nempty(1) by simp
+  then have "edges_of_path (rev p1 @ p2) = edges_of_path (rev p1) @ edges_of_path (last (rev p1) # p2)"
+    using edges_of_path_append_3 by blast
+  also have "last (rev p1) = hd p1"
+    using nempty(1) by (simp add: last_rev)
+  finally show ?thesis .
+  qed
   moreover have "alt_path M (rev p1)"
     using alt_paths(1) alt_list_rev \<open>alt_path (-M) p1\<close>
     by (simp add: True odd_alt_path_rev odd_lens(1))
