@@ -656,7 +656,22 @@ proof -
   have "((inv p)^^(?inv_l)) i = i" 
     by (simp add: assms least_power_of_permutation(1) p_is_permutation permutation_inverse)
   then have "i = (p^^?inv_l) i" 
-    by (metis assms bij_fn bij_inv_eq_iff inv_fn permutes_imp_bij)
+  proof -
+    have bij_p: "bij p"
+      using assms by (rule permutes_imp_bij)
+    then have bij_pn: "bij (p ^^ least_power (inv p) i)"
+      by (rule bij_fn)
+    have inv_eq: "inv (p ^^ least_power (inv p) i) = inv p ^^ least_power (inv p) i"
+      by (simp add: bij_p inv_fn)
+    have perm_inv: "permutation (inv p)"
+      using assms p_is_permutation permutation_inverse by blast
+    have "(inv p ^^ least_power (inv p) i) i = i"
+      using perm_inv by (rule least_power_of_permutation(1))
+    with inv_eq have "inv (p ^^ least_power (inv p) i) i = i"
+      by simp
+    then show "i = (p ^^ least_power (inv p) i) i"
+      using bij_inv_eq_iff[OF bij_pn, of i i] by simp
+  qed
   show ?thesis
   proof(rule ccontr)
     assume "?l \<noteq> ?inv_l"
