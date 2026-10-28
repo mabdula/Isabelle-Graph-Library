@@ -1837,7 +1837,19 @@ proof
                          k1 < dim_col A \<and>
                          k1 = pick J (insert_index j k)" 
       using asmk pick_le col_submatrix_UNIV 
-      by (metis (no_types, lifting) Collect_cong 10 23)
+proof -
+  have card_lt: "insert_index j k < card {i. i < dim_col A \<and> i \<in> J}"
+    using 23 10 by simp
+  have col_eq: "col (submatrix A UNIV J) (insert_index j k) = col A (pick J (insert_index j k))"
+    using col_submatrix_UNIV card_lt by blast
+  have lt: "pick J (insert_index j k) < dim_col A"
+    using pick_le card_lt by blast
+  have "col A (pick J (insert_index j k)) = col (submatrix A UNIV J) (insert_index j k) \<and>
+        pick J (insert_index j k) < dim_col A \<and>
+        pick J (insert_index j k) = pick J (insert_index j k)"
+    using col_eq lt by simp
+  then show thesis using that by blast
+qed
     obtain k2 where k2: "col A k2 = col (submatrix A UNIV (J - {pick J j})) k \<and>
                          k2 < dim_col A \<and> 
                          k2 = pick (J - {pick J j}) k"
