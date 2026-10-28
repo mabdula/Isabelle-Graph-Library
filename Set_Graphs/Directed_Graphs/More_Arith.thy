@@ -399,7 +399,13 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
       using concat by linarith
   qed
   also have "... = (\<Sum>j = 0..<Suc i. card (S j - {x})) + (life_time + 1)"
-    by (metis j_min_prop(1) le_eq_less_or_eq sum.atLeastLessThan_concat zero_le)
+  proof -
+    have sum_split: "(\<Sum>j = 0..<j_min. card (S j - {x})) + (\<Sum>j = j_min..<Suc i. card (S j - {x}))
+         = (\<Sum>j = 0..<Suc i. card (S j - {x}))"
+      by (rule sum.atLeastLessThan_concat) (use j_min_prop(1) in simp)+
+    show ?thesis
+      using sum_split by simp
+  qed
   also have "... \<le> (life_time + 1) * card \<S> + (life_time + 1)"
     apply(rule add_right_mono)
     using 2(4) 2(2)  2(5) 2(6) 
