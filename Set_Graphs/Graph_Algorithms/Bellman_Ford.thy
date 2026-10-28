@@ -509,7 +509,14 @@ next
          (insert (OPT l s (fst e) + edge_costs (fst e) v) 
          (insert (OPT l s v) {OPT l s u + edge_costs u v |u. (u, v) \<in> set es}))" 
       using sym[OF 1] 
-      by (auto, metis fst_conv) 
+    proof -
+      obtain a b where e_eq: "e = (a, b)"
+        by (rule prod.exhaust)
+      have b_eq: "b = v"
+        using e_eq "1" by simp
+      show ?thesis
+        using e_eq b_eq by auto
+    qed
     from 1 show ?case 
       apply simp
       apply(subst effect_of_relax(1)[of " (foldr (\<lambda>(x, y) done. relax done x y) es connections)" ])
