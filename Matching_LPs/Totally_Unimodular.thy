@@ -2760,8 +2760,12 @@ proof rule
                   then have 26: "dim_col B = (card {ia. ia<n \<and> ia\<in>J})" 
                     using carrier_matD(2)[OF carrier_append_rows[OF A 1]] by simp
                   then have "j < card J" 
-                    by (metis (mono_tags, lifting) 25 asm(2) basic_trans_rules(21) card_mono j 
-                        mem_Collect_eq not_less pick_eq_iff_inf subsetI)
+                  proof -
+                    have subset: "{ia. ia < n \<and> ia \<in> J} \<subseteq> J" by blast
+                    have "finite J" using False by simp
+                    then have "card {ia. ia < n \<and> ia \<in> J} \<le> card J" using subset card_mono by blast
+                    then show ?thesis using "26" j by linarith
+                  qed
                   then show ?thesis 
                     by (metis (mono_tags, lifting) False asm_not_eq 26 asm(1-2) mem_Collect_eq
                         basic_trans_rules(21) card_mono j nat_neq_iff not_less pick_mono subsetI)
