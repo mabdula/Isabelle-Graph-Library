@@ -1544,7 +1544,14 @@ proof-
       qed
 
       with basis_B1 y_p indep_p have "indep_system.basis E indep (insert y (B1 - {x}))"
-        by (metis matroid.card_eq_basis)
+        proof -
+          have mat: "matroid E indep" using indep_p by blast
+          have indep_y: "indep (insert y (B1 - {x}))" using y_p by blast
+          from \<open>card (insert y (B1 - {x})) = card B1\<close>
+          have card_eq: "card B1 = card (insert y (B1 - {x}))" by (rule sym)
+          from matroid.card_eq_basis[OF mat basis_B1 indep_y card_eq]
+          show "indep_system.basis E indep (insert y (B1 - {x}))" .
+        qed
 
       with y_p indep_p show "\<exists>y. y \<in> B2 - B1 \<and> insert y (B1 - {x}) \<in> \<B>" by blast
     qed
