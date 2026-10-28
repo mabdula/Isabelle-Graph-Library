@@ -3901,7 +3901,8 @@ proof-
     from set_take_diff_expr False have "(A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) = {}"
       by force
     then have "sum c (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) = 0"
-      by (metis sum.empty)
+      unfolding \<open>A \<inter> set (take j l) - A \<inter> set (take (j - 1) l) = {}\<close>
+      by simp
     moreover have "rat_of_nat (card (A \<inter> set (take j l)) - (card (A \<inter> set (take (j - 1) l)))) = 0"
       using set_take_diff_expr False card_diff_expr by auto
     ultimately show ?thesis by auto
