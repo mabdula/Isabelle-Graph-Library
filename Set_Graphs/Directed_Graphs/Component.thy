@@ -965,8 +965,28 @@ lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
   shows "\<lbrakk>u \<in> dVs G; u \<notin> dVs (\<Union>(sccs G))\<rbrakk> \<Longrightarrow> scc_of G u = {u}"
   using in_scc_ofD not_in_dVs_sccs_not_reachable_and_reach
-  apply auto
-  by (smt (verit, best) in_scc_ofD(1) in_scc_ofD(2) not_in_dVs_sccs_not_reachable_and_reach)
+proof -
+  assume u_in: "u \<in> dVs G"
+  assume u_notin: "u \<notin> dVs (\<Union>(sccs G))"
+  have subset1: "{u} \<subseteq> scc_of G u"
+    using in_scc_of_self u_in by auto
+  have subset2: "scc_of G u \<subseteq> {u}"
+  proof
+    fix x assume x_in: "x \<in> scc_of G u"
+    then have reach: "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> x \<and> x \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
+      using in_scc_ofD(1)[OF x_in] in_scc_ofD(2)[OF x_in] by simp
+    show "x \<in> {u}"
+    proof (rule ccontr)
+      assume "x \<notin> {u}"
+      hence "u \<noteq> x" by simp
+      hence "\<exists>v. u \<noteq> v \<and> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u \<and> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
+        using reach by blast
+      thus False
+        using not_in_dVs_sccs_not_reachable_and_reach[OF u_notin] by blast
+    qed
+  qed
+  from subset1 subset2 show ?thesis by blast
+qed
 
 declare ddfs_library_adaptor_simps[simp del]
 
