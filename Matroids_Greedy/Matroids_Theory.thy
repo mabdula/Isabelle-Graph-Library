@@ -3584,9 +3584,62 @@ proof-
     indep_system.lower_rank_of (dual E indep) X"
     using indep_system.lower_rank_of_def
       matroid.axioms(1)[OF \<open>matroid E indep'\<close>] matroid.axioms(1)[OF \<open>matroid E (dual E indep)\<close>]
-    by (smt (verit, ccfv_threshold) \<open>matroid E (dual E indep)\<close> \<open>matroid E indep'\<close>
-        indep_system.basis_in_ex indep_system.basis_in_subset_carrier matroid.rank_of_eq_card_basis_in
-        subset_trans)
+    proof (intro allI impI)
+      fix X
+      assume "X \<subseteq> E"
+
+      have basis_in_iff: "\<And>B. B \<subseteq> E \<Longrightarrow> indep_system.basis_in indep' X B \<longleftrightarrow>
+        indep_system.basis_in (dual E indep) X B"
+        using \<open>\<forall>X \<subseteq> E. \<forall>B \<subseteq> E. indep_system.basis_in indep' X B \<longleftrightarrow>
+          indep_system.basis_in (dual E indep) X B\<close> \<open>X \<subseteq> E\<close>
+        by blast
+
+      have set_eq: "{card B | B. indep_system.basis_in indep' X B} =
+        {card B | B. indep_system.basis_in (dual E indep) X B}"
+      proof (rule equalityI)
+        show "{card B | B. indep_system.basis_in indep' X B} \<subseteq>
+              {card B | B. indep_system.basis_in (dual E indep) X B}"
+        proof (rule subsetI)
+          fix n
+          assume "n \<in> {card B | B. indep_system.basis_in indep' X B}"
+          then have "\<exists>B. n = card B \<and> indep_system.basis_in indep' X B" by auto
+          then obtain B where n_def: "n = card B" and B_basis: "indep_system.basis_in indep' X B"
+            by blast
+          from indep_system.basis_in_subset_carrier[OF \<open>indep_system E indep'\<close> \<open>X \<subseteq> E\<close> B_basis]
+          have "B \<subseteq> X" .
+          with \<open>X \<subseteq> E\<close> have "B \<subseteq> E" by blast
+          with basis_in_iff B_basis have "indep_system.basis_in (dual E indep) X B" by blast
+          then show "n \<in> {card B | B. indep_system.basis_in (dual E indep) X B}"
+            using n_def by auto
+        qed
+      next
+        show "{card B | B. indep_system.basis_in (dual E indep) X B} \<subseteq>
+              {card B | B. indep_system.basis_in indep' X B}"
+        proof (rule subsetI)
+          fix n
+          assume "n \<in> {card B | B. indep_system.basis_in (dual E indep) X B}"
+          then have "\<exists>B. n = card B \<and> indep_system.basis_in (dual E indep) X B" by auto
+          then obtain B where n_def: "n = card B" and B_basis: "indep_system.basis_in (dual E indep) X B"
+            by blast
+          from indep_system.basis_in_subset_carrier[OF \<open>indep_system E (dual E indep)\<close> \<open>X \<subseteq> E\<close> B_basis]
+          have "B \<subseteq> X" .
+          with \<open>X \<subseteq> E\<close> have "B \<subseteq> E" by blast
+          with basis_in_iff B_basis have "indep_system.basis_in indep' X B" by blast
+          then show "n \<in> {card B | B. indep_system.basis_in indep' X B}"
+            using n_def by auto
+        qed
+      qed
+
+      have def1: "indep_system.lower_rank_of indep' X =
+        Min {card B | B. indep_system.basis_in indep' X B}"
+        using \<open>indep_system E indep'\<close> indep_system.lower_rank_of_def by blast
+      have def2: "indep_system.lower_rank_of (dual E indep) X =
+        Min {card B | B. indep_system.basis_in (dual E indep) X B}"
+        using \<open>indep_system E (dual E indep)\<close> indep_system.lower_rank_of_def by blast
+
+      show "indep_system.lower_rank_of indep' X = indep_system.lower_rank_of (dual E indep) X"
+        unfolding def1 def2 using set_eq by simp
+    qed
 
   with \<open>\<forall>X\<subseteq>E. ?q X = matroid.rank_of indep' X\<close>
   have "\<forall>X \<subseteq> E. matroid.rank_of (dual E indep) X = ?q X" by auto
