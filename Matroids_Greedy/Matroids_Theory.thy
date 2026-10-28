@@ -600,7 +600,40 @@ proof-
     using lower_rank_of_def upper_rank_of_def by auto
   also have "...
     \<longleftrightarrow> (Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} = 1)"
-    using upper_rank_equiv_rank arg_cong by (smt (verit, best) Collect_cong)
+  proof -
+  have set_eq: "{Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} =
+                {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+  proof (rule subset_antisym)
+    show "{Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} \<subseteq>
+          {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+    proof (rule subsetI)
+      fix q
+      assume "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      then obtain X where X_sub: "X \<subseteq> carrier"
+        and q_eq: "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+        by blast
+      from upper_rank_equiv_rank[OF X_sub] q_eq
+      have "q = Frac (int (lower_rank_of X)) (int (rank X))" by simp
+      with X_sub show "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        by blast
+    qed
+  next
+    show "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} \<subseteq>
+          {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (rule subsetI)
+      fix q
+      assume "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+      then obtain X where X_sub: "X \<subseteq> carrier"
+        and q_eq: "q = Frac (int (lower_rank_of X)) (int (rank X))"
+        by blast
+      from upper_rank_equiv_rank[OF X_sub] q_eq
+      have "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by simp
+      with X_sub show "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        by blast
+    qed
+  qed
+  show ?thesis by (simp add: set_eq)
+  qed
   also have "... \<longleftrightarrow> (rank_quotient = 1)"
     unfolding rank_quotient_def by simp
   finally have augment_iff_rq_eq_1:
