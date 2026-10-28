@@ -4599,8 +4599,37 @@ proof-
       by (simp add: in_set_conv_nth)
 
     show "(x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
-      by (metis \<open>\<exists>i<length xs. xs ! i = x\<close>  \<open>\<forall>i<length xs. (i < k) = (c (xs ! i) = 1)\<close>
-          in_set_conv_nth length_take min_less_iff_conj nth_take)
+    proof -
+      obtain i where i_len: "i < length xs" and xs_i: "xs ! i = x"
+        using \<open>\<exists>i<length xs. xs ! i = x\<close> by blast
+      have iff_i: "(i < k) = (c (xs ! i) = 1)"
+        using \<open>\<forall>i<length xs. (i < k) = (c (xs ! i) = 1)\<close> i_len by blast
+      show "(x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
+      proof
+        assume "x \<in> set (take k xs)"
+        then have "\<exists>j<length (take k xs). take k xs ! j = x"
+          by (simp add: in_set_conv_nth)
+        then obtain j where j_len: "j < length (take k xs)" and take_j: "take k xs ! j = x"
+          by blast
+        from j_len have j_lt_k: "j < k" and j_lt_len: "j < length xs"
+          using length_take[of k xs] by auto
+        from take_j j_lt_k have xs_j: "xs ! j = x"
+          by (simp add: nth_take)
+        have eq_ij: "xs ! i = xs ! j" using xs_i xs_j by simp
+        from nth_eq_iff_index_eq[OF assms(1) i_len j_lt_len] eq_ij have "i = j" by simp
+        with j_lt_k iff_i xs_i show "c x = 1" by simp
+      next
+        assume "c x = 1"
+        with iff_i xs_i have i_lt_k: "i < k" by simp
+        with i_len have i_lt_take: "i < length (take k xs)"
+          using length_take[of k xs] by auto
+        from i_lt_k xs_i have "take k xs ! i = x"
+          by (simp add: nth_take)
+        with i_lt_take have "\<exists>j<length (take k xs). take k xs ! j = x" by blast
+        then show "x \<in> set (take k xs)"
+          by (simp add: in_set_conv_nth)
+      qed
+    qed
   qed
 
   from append_take_drop_id[of k xs]
