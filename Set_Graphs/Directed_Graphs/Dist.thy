@@ -707,8 +707,12 @@ lemma distance_set_wit':
 
 lemma dist_set_not_inf: 
 "distance_set G U v \<noteq> \<infinity> \<Longrightarrow> \<exists>u\<in>U. distance G u v = distance_set G U v"
-  using distance_set_wit'
-  by metis
+proof -
+  assume "distance_set G U v \<noteq> \<infinity>"
+  then obtain u where "u \<in> U" and "distance_set G U v = distance G u v"
+    by (rule distance_set_wit')
+  then show ?thesis by auto
+qed
 
 lemma dist_not_inf': 
   "distance_set G U v \<noteq> \<infinity> \<Longrightarrow>\<exists>u\<in>U. distance G u v = distance_set G U v \<and> reachable G u v"
