@@ -649,7 +649,14 @@ proof-
       hence "set (local.greedoid_greedy es c []) \<subseteq> E"
         using ss_assum by(auto simp add: set_system_def)
       moreover have "rev (local.greedoid_greedy es c []) ! k \<in> set (local.greedoid_greedy es c  [])" 
-        by (metis length_rev nth_mem one set_rev)
+      proof -
+        have "k < length (rev (local.greedoid_greedy es c []))"
+          using one by (simp add: length_rev)
+        hence "rev (local.greedoid_greedy es c []) ! k \<in> set (rev (local.greedoid_greedy es c []))"
+          by (rule nth_mem)
+        thus ?thesis
+          by (simp add: set_rev)
+      qed
       ultimately show ?thesis by auto
     qed
     have a6: "rev (local.greedoid_greedy es c []) ! k \<notin> B" 
