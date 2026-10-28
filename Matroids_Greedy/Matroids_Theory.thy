@@ -2062,7 +2062,12 @@ proof (induction n arbitrary: A rule: less_induct)
         from assms(5) \<open>Y \<union> (A - {x, y}) \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> 1 2
         have "r ((Y \<union> (A - {x, y})) \<union> {x, y}) = r (Y \<union> (A - {x, y}))" by blast
         then have "r (Y \<union> A) = r (Y \<union> (A - {x, y}))"
-          by (metis Un_Diff_cancel2 \<open>x \<in> A\<close> \<open>y \<in> A\<close> bot.extremum insert_subsetI sup.order_iff sup_assoc)
+        proof -
+          assume rank_eq: "r ((Y \<union> (A - {x, y})) \<union> {x, y}) = r (Y \<union> (A - {x, y}))"
+          have set_eq: "Y \<union> (A - {x, y}) \<union> {x, y} = Y \<union> A"
+            using \<open>x \<in> A\<close> \<open>y \<in> A\<close> by blast
+          from rank_eq[unfolded set_eq] show ?thesis .
+        qed
         with r_A_sub_x_y
         show "r (Y \<union> A) = r Y" by auto
       qed
