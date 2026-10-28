@@ -485,7 +485,13 @@ lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_er
   by (simp add: ereal_real)
 
 lemma is_multiple_multiple: "(\<exists> n::nat.  y = (real n) * x) \<Longrightarrow> (\<exists> n::nat. y*2 = (real n) * x )"
-  by (metis distrib_left mult.commute mult_2_right of_nat_add)
+proof -
+  assume "\<exists>n::nat. y = real n * x"
+  then obtain n where n_def: "y = real n * x" by blast
+  have "y * 2 = real (n + n) * x"
+    by (simp add: n_def of_nat_add algebra_simps)
+  thus "\<exists>n::nat. y * 2 = real n * x" by blast
+qed
 
 lemma real_of_plus_distrib: "real (a + b) = real a + real b"
  and real_of_minus_distrib: "a \<ge> b \<Longrightarrow> real (a - b) = real a - real b"
