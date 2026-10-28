@@ -3700,7 +3700,16 @@ proof-
     by (simp add: length_tl; linarith)
   moreover have "set (take (?j + 1) l1) = insert (hd (drop (?j) l1)) (set (take (?j) l1))"
     using take_hd_drop \<open>?j < length l1\<close>
-    by (metis Suc_eq_plus1 list.simps(15) rotate1.simps(2) set_rotate1)
+  proof -
+    have take_eq: "take (?j) l1 @ [hd (drop (?j) l1)] = take (Suc (?j)) l1"
+      using take_hd_drop[OF \<open>?j < length l1\<close>] .
+    have "set (take (Suc (?j)) l1) = set (take (?j) l1 @ [hd (drop (?j) l1)])"
+      using take_eq by simp
+    also have "... = insert (hd (drop (?j) l1)) (set (take (?j) l1))"
+      by simp
+    finally show ?thesis
+      by simp
+  qed
   then have "set (take (?j + 1) l1) = insert (hd l2) (set (take (?j) l1))"
     using \<open>l2 = drop (length l1 - length l2) l1\<close> by simp
   ultimately show ?thesis by auto
