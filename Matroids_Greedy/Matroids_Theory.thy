@@ -1758,7 +1758,15 @@ proof-
 
 
           from `finite B1` `finite B2` ex_B1_B2 card_mono Diff_mono 
-          have 6: "card (Y - X) \<ge> card (Y - B1)" by (metis equalityD1 finite_Diff finite_subset)
+          have 6: "card (Y - X) \<ge> card (Y - B1)"
+          proof -
+            from ex_B1_B2 have "X \<subseteq> B1" by blast
+            then have subset: "Y - B1 \<subseteq> Y - X" by blast
+            from ex_B1_B2 have "Y \<subseteq> B2" by blast
+            from this \<open>finite B2\<close> have "finite Y" by (rule finite_subset)
+            then have "finite (Y - X)" by blast
+            from card_mono[OF this subset] show ?thesis .
+          qed
 
           from 5 6 have 7: "card (X - Y) > card (Y - B1)" by simp
 
