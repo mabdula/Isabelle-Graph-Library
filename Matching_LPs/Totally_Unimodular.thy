@@ -2449,7 +2449,13 @@ proof -
   have 10: "vec_of_list (nths (list_of_vec b) J) $ j = b $ (pick J j)" 
   proof -
     have f1: "card ({0..<n} \<inter> J) = card {na. na < n \<and> na \<in> J}"
-      by (smt (z3) 4 3)
+    proof -
+      have "card ({0..<n} \<inter> J) = card {j. j < dim_col (mat_of_rows n [b]) \<and> j \<in> J}"
+        using 4 by simp
+      also have "... = card {na. na < n \<and> na \<in> J}"
+        using 3 by simp
+      finally show ?thesis .
+    qed
     have f2: "j < card ({0..<n} \<inter> J)"
       using \<open>j < card ({0..<n} \<inter> J)\<close> by fastforce
     have "dim_vec b = n"
