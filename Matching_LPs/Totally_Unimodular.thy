@@ -2689,8 +2689,29 @@ proof rule
             fix k
             assume asm: "k < dim_col B" "pick J k \<noteq> i"
             have "pick J k < n" 
-              by (metis (no_types, lifting) "5" Collect_cong 22 asm(1) index_unit_vec(3) pick_le
-                  row_carrier vec_carrier_vec)
+            proof -
+              have row_dim: "row B (dim_row B - 1) \<in> carrier_vec (dim_col B)"
+                using row_carrier \<open>dim_row B - 1 < dim_row B\<close> by blast
+              have dim_eq1: "dim_vec (row B (dim_row B - 1)) = dim_col B"
+                using row_dim vec_carrier_vec by simp
+              have row_eq: "row B (dim_row B - 1) = 
+                    vec (card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}) 
+                        (\<lambda> ia. (unit_vec n i) $ (pick J ia))"
+                using "22" "5" by simp
+              have dim_eq2: "dim_vec (row B (dim_row B - 1)) = 
+                             card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}"
+                using row_eq by simp
+              have "dim_col B = dim_vec (row B (dim_row B - 1))"
+                using dim_eq1 by simp
+              also have "\<dots> = card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}"
+                using dim_eq2 by simp
+              then have dim_col_eq: "dim_col B = card {ia. ia < n \<and> ia \<in> J}"
+                by (simp add: index_unit_vec(3))
+              from asm(1) dim_col_eq have "k < card {ia. ia < n \<and> ia \<in> J}"
+                by simp
+              then show "pick J k < n"
+                using pick_le by blast
+            qed
             then have "(unit_vec n i) $ (pick J k) = 0" 
               unfolding unit_vec_def 
               using asm(2) by force
