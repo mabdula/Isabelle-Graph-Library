@@ -1581,8 +1581,44 @@ proof-
     (carrier_list best_in_greedy_state) = drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) \<Longrightarrow>
     hd (carrier_list best_in_greedy_state) \<in> B1 \<Longrightarrow> num_iter ?c ?order best_in_greedy_state < length ?l_B1"
     using carrier_sorted_expr \<open>set ?l_B1 \<inter> set ?l_not_B1 = {}\<close> \<open>set ?l_B1 = B1\<close>
-    by (smt (verit) append_Nil disjoint_iff_not_equal drop_all drop_append in_set_dropD length_greater_0_conv
-        less_numeral_extra(1) linorder_le_less_linear list.set_sel(1) order_less_le_trans)
+  proof -
+    fix best_in_greedy_state
+    assume drop_assm: "carrier_list best_in_greedy_state =
+      drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)"
+    assume len_assm: "length (carrier_list best_in_greedy_state) \<ge> 1"
+    assume hd_in_B1: "hd (carrier_list best_in_greedy_state) \<in> B1"
+    assume sort_fact: "sort_desc ?c ?order = ?l_B1 @ ?l_not_B1"
+    assume disj: "set ?l_B1 \<inter> set ?l_not_B1 = {}"
+    assume seteq: "set ?l_B1 = B1"
+    show "num_iter ?c ?order best_in_greedy_state < length ?l_B1"
+    proof (rule ccontr)
+      assume "\<not> num_iter ?c ?order best_in_greedy_state < length ?l_B1"
+      then have ge: "length ?l_B1 \<le> num_iter ?c ?order best_in_greedy_state" by simp
+      have drop_empty: "drop (num_iter ?c ?order best_in_greedy_state) ?l_B1 = []"
+        using ge by auto
+      have drop_eq: "drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) =
+        drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1"
+        using sort_fact drop_empty by (simp add: drop_append)
+      have carrier_list_eq: "carrier_list best_in_greedy_state =
+        drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1"
+        using drop_assm drop_eq by simp
+      have nonempty: "drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1 \<noteq> []"
+      proof
+        assume "drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1 = []"
+        with len_assm carrier_list_eq show False by simp
+      qed
+      have hd_drop_in_B1: "hd (drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1) \<in> B1"
+        using hd_in_B1 carrier_list_eq by auto
+      have "hd (drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1) \<in>
+        set (drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1)"
+        using nonempty by (cases "drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1") simp_all
+      also have "\<dots> \<subseteq> set ?l_not_B1"
+        by (rule set_drop_subset)
+      finally have hd_in_not_B1:
+        "hd (drop (num_iter ?c ?order best_in_greedy_state - length ?l_B1) ?l_not_B1) \<in> set ?l_not_B1" .
+      from hd_drop_in_B1 hd_in_not_B1 seteq disj show False by auto
+    qed
+  qed
   have num_iter_not_in_B1: "\<And>best_in_greedy_state. hd (carrier_list best_in_greedy_state) \<notin> B1 \<Longrightarrow>
     (carrier_list best_in_greedy_state) = drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) \<Longrightarrow>
     num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
