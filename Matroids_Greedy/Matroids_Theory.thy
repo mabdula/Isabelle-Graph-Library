@@ -2622,7 +2622,18 @@ begin
 lemma rank_of_eq_basis_subset:
   assumes "Y \<subseteq> carrier" "X \<subseteq> Y" "basis_in X B" "rank_of X = rank_of Y"
   shows "basis_in Y B"
-  using assms by (smt (verit) basis_in_iff_rank_of basis_in_subset_carrier subset_trans)
+proof -
+  have X_carrier: "X \<subseteq> carrier" using assms(1) assms(2) by blast
+  have B_subset_X: "B \<subseteq> X" using basis_in_subset_carrier[OF X_carrier assms(3)] .
+  have B_subset_Y: "B \<subseteq> Y" using B_subset_X assms(2) by blast
+  have rank_B: "rank_of B = rank_of X"
+    using basis_in_iff_rank_of[OF X_carrier B_subset_X] assms(3) by blast
+  have card_B: "rank_of B = card B"
+    using basis_in_iff_rank_of[OF X_carrier B_subset_X] assms(3) by blast
+  have "rank_of B = rank_of Y" using rank_B assms(4) by simp
+  thus "basis_in Y B"
+    using card_B basis_in_iff_rank_of[OF assms(1) B_subset_Y] by blast
+qed
 
 lemma rank_of_circuit:
   assumes "circuit X"
