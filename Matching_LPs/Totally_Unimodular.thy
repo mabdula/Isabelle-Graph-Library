@@ -1326,7 +1326,14 @@ proof
     have 1:"j < Suc (dim_col B - 1)" 
       using assms(4) by linarith 
     have 2: "i < dim_row B" 
-      by (metis asmi assms(3) dim_submatrix(1))
+    proof -
+      have "dim_row B = card {k. k < dim_row A \<and> k \<in> I}"
+        by (simp add: assms(3) dim_submatrix(1))
+      also have "\<dots> = dim_row (submatrix A I (J - {pick J j}))"
+        by (simp add: dim_submatrix(1))
+      finally show "i < dim_row B"
+        using asmi by simp
+    qed
     have 3: "k < dim_col B - 1" 
       using 14 10 asmk by presburger
     have 4:"B @\<^sub>r mat_of_rows (dim_col B) [b] \<in> carrier_mat (Suc (dim_row B)) (Suc (dim_col B - 1))"
