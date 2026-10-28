@@ -2,9 +2,17 @@ session Hopcroft_Karp = Micali_Vazirani +
   options [timeout = 3600]
   sessions
     Basic_Matching
+    Imperative
+    Separation_Logic_Imperative_HOL_Partial
   theories
     Hopcroft_Karp_Top_Loop
     Disjoint_Paths_Search
     Alt_BFS_Bipartite
+    Hopcroft_Karp_Phase
     Hopcroft_Karp_Subprocedures
     Hopcroft_Karp_Example
+    Disjoint_Paths_Search_Imperative
+    Hopcroft_Karp_Phase_Imperative
+    Hopcroft_Karp_Builders_Imperative
+    Hopcroft_Karp_Top_Loop_Imperative
+    Hopcroft_Karp_Imperative

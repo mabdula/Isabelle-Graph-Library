@@ -8,7 +8,7 @@ session "Undirected_Set_Graphs" = "HOL-Eisbach" +
   (*directories*)
   
   theories [document=false]
-    Misc
+    Undirected_Misc
 
   theories
     Undirected_Set_Graphs

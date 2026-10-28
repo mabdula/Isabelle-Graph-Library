@@ -3,7 +3,7 @@
   Author: Mohammad Abdulaziz
 *)
 
-theory Misc
+theory Undirected_Misc
   imports "Directed_Set_Graphs.enat_misc" "HOL-Eisbach.Eisbach_Tools" "HOL-Library.FuncSet" 
           "HOL-Library.Disjoint_Sets" Main "Directed_Set_Graphs.More_Lists"
 begin

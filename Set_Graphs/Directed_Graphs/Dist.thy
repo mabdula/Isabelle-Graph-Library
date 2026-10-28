@@ -4,7 +4,7 @@
 *)
 
 theory Dist
-  imports "../Misc/enat_misc" Vwalk
+  imports enat_misc Vwalk
 begin
 
 provenance human

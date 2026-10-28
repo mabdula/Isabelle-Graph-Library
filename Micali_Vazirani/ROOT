@@ -3,15 +3,19 @@ session Micali_Vazirani = Graph_Algorithms_Dev +
   sessions
     Alternating_Lists
     Basic_Matching
+    Imperative
   theories
     Alt_Dist
     Alt_BFS
     Alt_BFS_Example
+    Alt_BFS_Dist
+    Alt_BFS_Imperative
     Layered_Digraph
     DDFS
     DFS_Avoid
     IDFS
     IDFS_Example
+    IDFS_Imperative
     DDFS_Interpretation
     DDFS_Example
     Top_Loop
