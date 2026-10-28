@@ -383,7 +383,36 @@ next
     then show ?case
       (*TODO: Lukas*)
       using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
-      by (simp, metis walk_betw_cons walk_endpoints(1))
+      proof -
+        have singleton: "u = w \<or> u = x" "v3 = w \<or> v3 = x"
+          using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
+          by auto
+        have zs_eq: "zs = v3 # p'"
+          using \<open>a # zs = u # v3 # p'\<close> by (fastforce simp: list.inject)
+        have "walk_betw (insert {w, x} G) v3 zs v"
+          using zs_eq \<open>walk_betw (insert {w, x} G) v3 (v3 # p') v\<close> by simp
+        hence "walk_betw G v3 zs v \<or> walk_betw {{w, x}} v3 zs v"
+          using Cons.IH \<open>w \<notin> Vs G\<close> \<open>x \<notin> Vs G\<close> by blast
+        with zs_eq have "walk_betw G v3 (v3 # p') v \<or> walk_betw {{w, x}} v3 (v3 # p') v"
+          by simp
+        then have tail: "walk_betw {{w, x}} v3 (v3 # p') v"
+        proof
+          assume "walk_betw G v3 (v3 # p') v"
+          hence "v3 \<in> Vs G"
+            by (rule walk_endpoints(1))
+          with singleton(2) \<open>w \<notin> Vs G\<close> \<open>x \<notin> Vs G\<close> show ?thesis
+            by blast
+        next
+          assume "walk_betw {{w, x}} v3 (v3 # p') v"
+          thus ?thesis .
+        qed
+        have "walk_betw {{w, x}} u (u # v3 # p') v"
+          using walk_betw_cons[of "{{w, x}}" u u v3 p' v]
+                \<open>walk_betw {{w, x}} u [u, v3] v3\<close> tail
+          by blast
+        thus ?case
+          using \<open>a # zs = u # v3 # p'\<close> by auto
+      qed
   next
     case (5 p' v3)
     then show ?case
