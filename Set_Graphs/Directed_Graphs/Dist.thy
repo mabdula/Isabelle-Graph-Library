@@ -462,7 +462,7 @@ next
   hence "length p = 1" "vwalk_bet G u p v"
     using \<open>distance G u v = 0\<close>
     apply (auto simp: shortest_path_def)
-    by (metis diff_Suc_Suc diff_zero enat_0_iff(2) hd_of_vwalk_bet length_Cons)
+    by (auto simp: zero_enat_def diff_is_0_eq le_Suc_eq dest: vwalk_bet_nonempty)
   then obtain x where "p = [x]"
     by (auto simp: length_Suc_conv)
   then have "x = u" "x = v" "x \<in> dVs G"
