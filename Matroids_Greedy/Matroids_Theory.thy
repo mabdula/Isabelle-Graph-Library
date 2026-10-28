@@ -1056,7 +1056,16 @@ qed
       by auto
 
     from \<open>finite K\<close> have "card K = card (K - J) + card (K \<inter> J)"
-      by (metis Diff_Diff_Int Diff_disjoint Un_Diff_Int card_Un_disjoint finite_Diff) 
+    proof -
+      have union_eq: "K - J \<union> K \<inter> J = K" by blast
+      have disj: "(K - J) \<inter> (K \<inter> J) = {}" by blast
+      have fin1: "finite (K - J)" using \<open>finite K\<close> by simp
+      have fin2: "finite (K \<inter> J)" using \<open>finite K\<close> by simp
+      have "card K = card (K - J \<union> K \<inter> J)" using union_eq by simp
+      also have "... = card (K - J) + card (K \<inter> J)"
+        using card_Un_disjoint[OF fin1 fin2 disj] by simp
+      finally show "card K = card (K - J) + card (K \<inter> J)" .
+    qed
     also have "... \<le>  p * card (J - K) + card (K \<inter> J)"
       using \<open>card (K - J) \<le> p * card (J - K)\<close> by auto
     also have "... = p * card (J - K) + p * card (K \<inter> J) - p * card (K \<inter> J) + card (K \<inter> J)"
