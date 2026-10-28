@@ -62,7 +62,24 @@ proof(induction )
   moreover have "finite ((\<Union> x \<in> X. f x))" 
     by (simp add: insert.hyps(1) insert.prems(2))
   ultimately show ?case using sum.union_disjoint[of "f xx" "(\<Union> x \<in> X. f x)" g]
-    by (metis inf_commute insert.prems(2) insertCI)
+  proof -
+    have fin_fxx: "finite (f xx)"
+      using insert.prems(2) by blast
+    have fin_union: "finite (\<Union>x\<in>X. f x)"
+      by (simp add: insert.hyps(1) insert.prems(2))
+    have disj_fxx: "f xx \<inter> (\<Union>x\<in>X. f x) = {}"
+      using insert.prems(1) insert.hyps(2) by blast
+    have union_eq: "sum g (f xx \<union> (\<Union>x\<in>X. f x)) = sum g (f xx) + sum g (\<Union>x\<in>X. f x)"
+      using sum.union_disjoint[OF fin_fxx fin_union disj_fxx] .
+    have eq1: "(\<Sum>x\<in>insert xx X. sum g (f x)) = sum g (f xx) + (\<Sum>x\<in>X. sum g (f x))"
+      using insert.hyps(1) insert.hyps(2) by (simp add: sum.insert)
+    have eq2: "(\<Sum>x\<in>X. sum g (f x)) = sum g (\<Union>x\<in>X. f x)"
+      using insert.IH insert.prems insert.hyps(2) by blast
+    have eq3: "(\<Union>x\<in>insert xx X. f x) = f xx \<union> (\<Union>x\<in>X. f x)"
+      by auto
+    show ?case
+      using eq1 eq2 eq3 union_eq by simp
+  qed
 qed simp
 
 lemma sum_inj: "inj f \<Longrightarrow> sum g (f ` X) = sum (g \<circ> f) X"
