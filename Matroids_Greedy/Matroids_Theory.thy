@@ -3490,8 +3490,12 @@ proof-
     have "E - X \<subseteq> E" by blast
 
     have "(?q X = card X) \<longleftrightarrow> (matroid.rank_of indep (E - X) = matroid.rank_of indep E)"
-      using dual_rank_well_def
-      by (metis \<open>X \<subseteq> E\<close> assms(2) diff_add_inverse diff_add_inverse2 diff_diff_cancel)
+    proof -
+      have le: "matroid.rank_of indep E \<le> card X + matroid.rank_of indep (E - X)"
+        using dual_rank_well_def[OF assms(2)] \<open>X \<subseteq> E\<close> by blast
+    show "(?q X = card X) \<longleftrightarrow> (matroid.rank_of indep (E - X) = matroid.rank_of indep E)"
+      using le by presburger
+    qed
     also have "... \<longleftrightarrow> (\<exists>B. indep_system.basis_in indep E B \<and> B \<subseteq> (E - X))"
       using matroid.rank_carrier_iff_contains_basis[OF assms(2) \<open>E - X \<subseteq> E\<close>] by simp
     also have "... \<longleftrightarrow> (\<exists>B. indep_system.basis_in indep E B \<and> X \<inter> B = {})"
