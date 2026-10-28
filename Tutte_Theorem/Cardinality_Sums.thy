@@ -265,7 +265,30 @@ next
   have "\<exists>C\<subseteq>(B - {b}). \<forall>a\<in>F. \<exists>b\<in>C. b \<in> a  \<and> card F = card C"
     using \<open>\<forall>a\<in>F. \<exists>b1\<in>B - {b}. b1 \<in> a\<close> \<open>finite (B - {b})\<close> insert.hyps(3) insert.prems(2) by auto
   then  obtain C where "C \<subseteq> (B - {b}) \<and> (\<forall>a\<in>F. \<exists>b\<in>C. b \<in> a) \<and> card F = card C"
-    by (metis card.empty empty_subsetI finite_has_maximal insert.hyps(1))
+  proof -
+    from \<open>\<exists>C\<subseteq>(B - {b}). \<forall>a\<in>F. \<exists>b\<in>C. b \<in> a \<and> card F = card C\<close>
+    obtain C' where C'_sub: "C' \<subseteq> B - {b}"
+      and C'_cov: "\<forall>a\<in>F. \<exists>b'\<in>C'. b' \<in> a \<and> card F = card C'"
+      by blast
+    show thesis
+    proof (cases "F = {}")
+      case True
+      have "{} \<subseteq> B - {b} \<and> (\<forall>a\<in>F. \<exists>b'\<in>{}. b' \<in> a) \<and> card F = card {}"
+        using True by simp
+      then show thesis by (rule that)
+    next
+      case False
+      then obtain a0 where "a0 \<in> F" by blast
+      then have card_eq: "card F = card C'"
+        using C'_cov by blast
+      have "\<forall>a\<in>F. \<exists>b'\<in>C'. b' \<in> a"
+        using C'_cov by blast
+      with C'_sub card_eq
+      have "C' \<subseteq> B - {b} \<and> (\<forall>a\<in>F. \<exists>b'\<in>C'. b' \<in> a) \<and> card F = card C'"
+        by blast
+      then show thesis by (rule that)
+    qed
+  qed
   moreover then  have "(C \<union> {b}) \<subseteq> B" 
     using \<open>b \<in> B \<and> b \<in> x\<close> by blast
   moreover have  "\<forall>a\<in>insert x F. \<exists>b\<in> (C \<union> {b}). b \<in> a" 
