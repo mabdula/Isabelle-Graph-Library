@@ -1220,7 +1220,30 @@ begin
 
 lemma card_eq_basis:
   "basis X \<Longrightarrow> indep Y \<Longrightarrow> card X = card Y \<Longrightarrow> basis Y"
-  by (metis basis_iff_rank_of basis_subset_carrier indep_iff_rank_of indep_subset_carrier) 
+proof -
+  assume "basis X" and "indep Y" and "card X = card Y"
+
+  from basis_subset_carrier[OF \<open>basis X\<close>] have X_carrier: "X \<subseteq> carrier" .
+  from indep_subset_carrier[OF \<open>indep Y\<close>] have Y_carrier: "Y \<subseteq> carrier" .
+
+  from basis_iff_rank_of[OF X_carrier] \<open>basis X\<close>
+  have X_indep_rank: "rank_of X = card X \<and> rank_of X = rank_of carrier" by blast
+  from indep_iff_rank_of[of X] X_carrier X_indep_rank
+  have X_indep: "indep X" by blast
+  from X_indep_rank have X_rank: "rank_of X = rank_of carrier" by blast
+
+  from indep_iff_rank_of[OF X_carrier] X_indep
+  have "rank_of X = card X" by blast
+  with X_rank have carrier_rank: "rank_of carrier = card X" by simp
+
+  from indep_iff_rank_of[OF Y_carrier] \<open>indep Y\<close>
+  have "rank_of Y = card Y" by blast
+  with \<open>card X = card Y\<close> carrier_rank
+  have Y_rank: "rank_of Y = rank_of carrier" by simp
+
+  from basis_iff_rank_of[OF Y_carrier] indep_iff_rank_of[OF Y_carrier] \<open>indep Y\<close> Y_rank
+  show "basis Y" by blast
+qed
 
 end
 
