@@ -3268,8 +3268,13 @@ proof (rule allI, rule impI)
   have "E - X \<subseteq> E" by auto
 
   from matroid.rank_of_def[OF assms(1)] have "matroid.rank_of indep {} = 0"
-    by (metis assms(1) card.empty empty_subsetI indep_system.indep_empty matroid.axioms(1)
-        matroid.indep_iff_rank_of) 
+  proof -
+    have "indep_system E indep" using assms(1) by (rule matroid.axioms(1))
+    then have "indep {}" by (rule indep_system.indep_empty)
+    then have "matroid.rank_of indep {} = card {}"
+      using matroid.indep_iff_rank_of[OF assms(1) empty_subsetI] by fastforce
+    then show ?thesis by simp
+  qed
 
   from matroid.rank_of_Un_Int_le[OF assms(1) \<open>X \<subseteq> E\<close> \<open>E - X \<subseteq> E\<close>]
   have "indep_system.lower_rank_of indep (X \<union> (E - X)) + indep_system.lower_rank_of indep (X \<inter> (E - X))
