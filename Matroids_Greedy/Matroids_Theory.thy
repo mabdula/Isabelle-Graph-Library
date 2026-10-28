@@ -1318,8 +1318,18 @@ proof-
           with assms(1) have "finite B" by (blast intro: finite_subset)
           from card_insert_disjoint[OF this \<open>x \<notin> B\<close>] show ?thesis .
         qed
-        with `B' \<in> S` assms show "\<not>(insert x B) \<subseteq> B'"
-          by (metis `B \<in> S` Suc_n_not_le_n card_mono infinite_super)
+        show "\<not>(insert x B) \<subseteq> B'"
+        proof (rule notI)
+          assume "insert x B \<subseteq> B'"
+          from assms(3) `B' \<in> S` have "B' \<subseteq> E" by blast
+          with assms(1) have "finite B'" using finite_subset by blast
+          from card_mono[OF `finite B'` `insert x B \<subseteq> B'`]
+          have "card (insert x B) \<le> card B'" .
+          with `card (insert x B) = Suc (card B)` have "Suc (card B) \<le> card B'" by simp
+          from assms(2) `B \<in> S` `B' \<in> S` have "card B = card B'" by blast
+          with `Suc (card B) \<le> card B'` have "Suc (card B') \<le> card B'" by simp
+          then show False using Suc_n_not_le_n by blast
+        qed
       qed
     qed
 
