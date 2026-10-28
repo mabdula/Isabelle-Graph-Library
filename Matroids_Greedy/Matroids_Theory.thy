@@ -2638,8 +2638,35 @@ qed
 lemma rank_of_circuit:
   assumes "circuit X"
   shows "rank_of X = card X - 1"
-  by (metis all_not_in_conv assms card_Diff_singleton circuit_imp_circuit_in circuit_in_iff_rank_of
-      circuit_in_subset_carrier subset_refl)
+proof -
+  have X_carrier: "X \<subseteq> carrier" using assms unfolding circuit_def by blast
+  have X_dep: "\<not> indep X" using assms unfolding circuit_def by blast
+  have X_minus: "\<And>x. x \<in> X \<Longrightarrow> indep (X - {x})"
+    using assms unfolding circuit_def by blast
+  have X_nonempty: "X \<noteq> {}" using X_dep indep_empty by blast
+  obtain x where x_in: "x \<in> X" using X_nonempty by blast
+  have indep_X_minus_x: "indep (X - {x})" using X_minus x_in by blast
+  have subset_X: "X - {x} \<subseteq> X" by blast
+  have indep_in_X_minus_x: "indep_in X (X - {x})"
+    using subset_X indep_X_minus_x unfolding indep_in_def by blast
+  have insert_eq: "insert x (X - {x}) = X" using x_in by blast
+  have basis_X_minus_x: "basis_in X (X - {x})"
+  proof (rule basis_inI[OF X_carrier])
+    show "indep_in X (X - {x})" using indep_in_X_minus_x .
+  next
+    fix y assume y_mem: "y \<in> X - (X - {x})"
+    have y_eq: "y = x" using y_mem x_in by blast
+    have not_indep_in_XX: "\<not> indep_in X X" using X_dep unfolding indep_in_def by blast
+    show "\<not> indep_in X (insert y (X - {x}))"
+      using y_eq insert_eq not_indep_in_XX by simp
+  qed
+  have rank_eq: "rank_of X = card (X - {x})"
+    using rank_of_eq_card_basis_in[OF X_carrier basis_X_minus_x] .
+  have finite_X: "finite X" using finite_subset[OF X_carrier carrier_finite] .
+  have card_eq: "card (X - {x}) = card X - 1"
+    using card_Diff_singleton[OF x_in] .
+  from rank_eq card_eq show ?thesis by simp
+qed
 
 end
 
