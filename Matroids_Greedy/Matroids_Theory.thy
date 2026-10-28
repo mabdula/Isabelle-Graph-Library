@@ -3111,7 +3111,8 @@ proof (rule iffI, erule HOL.contrapos_pp)
       by (simp add: dual_def) 
   next
     case False
-    with indep_system.basis_def[OF dual_indep_sys] dual_def show ?thesis by metis
+    from False have "\<not> (dual E indep) B'" by (simp add: dual_def)
+    with indep_system.basis_def[OF dual_indep_sys] show ?thesis by auto
   qed
 next
   assume complement: "(\<exists>B. indep_system.basis E indep B \<and> B' = E - B)"
