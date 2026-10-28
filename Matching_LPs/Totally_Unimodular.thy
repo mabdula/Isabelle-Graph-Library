@@ -3283,7 +3283,7 @@ qed
               B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               by (simp add: atLeast0LessThan)
             then have 28: "det B =  B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j"
-              by (metis "4" \<open>dim_row B = dim_col B\<close>)
+              using "4" \<open>dim_row B = dim_col B\<close> by simp
             then have 29: "det B = - cofactor B (dim_row B - 1) j" 
               by (metis \<open>B $$ (dim_row B - 1, j) = - 1\<close> mult_minus1)
             have 8: "cofactor B (dim_row B - 1) j = 
