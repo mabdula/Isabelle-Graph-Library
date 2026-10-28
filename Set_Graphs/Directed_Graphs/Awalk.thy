@@ -1225,7 +1225,16 @@ proof (rule ccontr, goal_cases)
     have "u \<in> dVs E" "set p \<subseteq> E" "cas u p u" by auto
 
   from \<open>cas u p u\<close> have "u \<in> dVs (set p)"
-    by (metis \<open>p \<noteq> []\<close> cas_simp dVsI'(1) list.set_sel(1))
+  proof -
+    have hd_eq: "fst (hd p) = u"
+      using \<open>cas u p u\<close> \<open>p \<noteq> []\<close> by (simp add: cas_simp)
+    have hd_in: "hd p \<in> set p"
+      using \<open>p \<noteq> []\<close> by (rule list.set_sel(1))
+    then have "fst (hd p) \<in> dVs (set p)"
+      using dVsI'(1) by blast
+    with hd_eq show "u \<in> dVs (set p)"
+      by simp
+  qed
   with \<open>set p \<subseteq> E'\<close> have "u \<in> dVs E'" unfolding dVs_def by auto
   with \<open>set p \<subseteq> E'\<close> \<open>cas u p u\<close> awalk_def \<open>distinct (tl (awalk_verts u p))\<close> \<open>p \<noteq> []\<close>
     \<open>length p > 2\<close> cycle_def cycle'_def
