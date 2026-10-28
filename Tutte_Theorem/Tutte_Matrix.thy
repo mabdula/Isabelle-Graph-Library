@@ -442,7 +442,16 @@ proof(rule ccontr)
   have "{i, i} \<notin> G" 
     using graph by fastforce
   then show False 
-    by (metis \<open>p i = i\<close> assms nonzero_edge_in_graph)
+  proof -
+    have "{i, p i} \<in> G"
+      by (rule nonzero_edge_in_graph[OF assms])
+    then have "{i, i} \<in> G"
+      using \<open>p i = i\<close> by simp
+    moreover have "{i, i} \<notin> G"
+      using graph by fastforce
+    ultimately show False
+      by blast
+  qed
 qed
 
 lemma edges_construct_a_path:
