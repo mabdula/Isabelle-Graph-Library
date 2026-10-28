@@ -1092,7 +1092,15 @@ qed
 
   from Min_in[OF \<open>finite ?fracs\<close> \<open>?fracs \<noteq> {}\<close>]
   have "\<exists>F \<subseteq> carrier. Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
-    by (smt (verit, best) mem_Collect_eq)
+  proof -
+    have "Min ?fracs \<in> ?fracs"
+      using Min_in[OF \<open>finite ?fracs\<close> \<open>?fracs \<noteq> {}\<close>] .
+    then obtain F where "F \<subseteq> carrier"
+      and "Min ?fracs = Frac (int (lower_rank_of F)) (int (upper_rank_of F))"
+      by (auto simp: mem_Collect_eq)
+    then show "\<exists>F \<subseteq> carrier. Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
+      by auto
+  qed
   then obtain F where "F \<subseteq> carrier" "Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
     by blast
 
