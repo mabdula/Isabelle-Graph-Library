@@ -1716,8 +1716,12 @@ proof-
             using all_subset_E by blast
           then have "finite B1"
             using assms(1) finite_subset by blast
-          have "finite B2" using ex_B1_B2 assms finite_subset
-            by (metis all_subset_E)
+          have "finite B2"
+          proof -
+            have "B2 \<in> \<B>" using ex_B1_B2 by blast
+            hence "B2 \<subseteq> E" using all_subset_E by blast
+            thus "finite B2" using assms(1) finite_subset by blast
+          qed
 
           from card_eq1[OF `finite B1` `finite B2`] ex_B1_B2 
           have 1: "card (B1 \<inter> B2) + card (Y - B1) + card ((B2 - B1) - Y) = card B2" by auto
