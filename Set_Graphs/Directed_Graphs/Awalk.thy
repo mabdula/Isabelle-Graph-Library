@@ -828,7 +828,13 @@ next
     have "ys \<noteq> []" by auto
   with \<open>p = xs @ [(v, w)] @ ys\<close>
     obtain x y where "p = xs @ [(v, w), (x, y)] @ tl ys"
-    by (metis append_Cons append_Nil list.collapse prod.collapse)
+  proof -
+    from \<open>ys \<noteq> []\<close> obtain x' y' ys' where "ys = (x', y') # ys'"
+      by (cases ys) auto
+    then have "p = xs @ [(v, w), (x', y')] @ tl ys"
+      using \<open>p = xs @ [(v, w)] @ ys\<close> by simp
+    then show thesis by (rule that)
+  qed
   with \<open>awalk E u p u\<close> awalk_def
     have "cas u (xs @ [(v, w), (x, y)] @ tl ys) u" by blast
   then have "w = x" by simp
