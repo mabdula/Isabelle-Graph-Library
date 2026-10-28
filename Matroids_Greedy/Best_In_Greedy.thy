@@ -1455,9 +1455,23 @@ proof-
 
   from \<open>length ?l_F_not_B1 = card (F - B1)\<close> \<open>length ?l_not_F = card (?carrier_abs - F)\<close>
   have "length ?l_not_B1 = card (?carrier_abs - B1)" 
-    by (smt (verit) \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>finite (matroid.carrier_abs carrier)\<close>
-        card_Diff_subset card_mono dual_order.trans finite_subset le_add_diff_inverse length_append
-        ordered_cancel_comm_monoid_diff_class.add_diff_assoc2)
+  proof -
+    have finite_F: "finite F"
+      using \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>finite (matroid.carrier_abs carrier)\<close> finite_subset by blast
+    have finite_compl_F: "finite (matroid.carrier_abs carrier - F)"
+      using \<open>finite (matroid.carrier_abs carrier)\<close> by blast
+    have finite_F_minus_B1: "finite (F - B1)"
+      using finite_F by blast
+    have disjoint: "(F - B1) \<inter> (matroid.carrier_abs carrier - F) = {}"
+      by blast
+    have union_eq: "(F - B1) \<union> (matroid.carrier_abs carrier - F) = matroid.carrier_abs carrier - B1"
+      using \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close> by blast
+    have "card (matroid.carrier_abs carrier - B1) = card (F - B1) + card (matroid.carrier_abs carrier - F)"
+      using card_Un_disjoint[OF finite_F_minus_B1 finite_compl_F disjoint] union_eq by simp
+    then show ?thesis
+      using \<open>length ?l_F_not_B1 = card (F - B1)\<close> \<open>length ?l_not_F = card (matroid.carrier_abs carrier - F)\<close>
+      by simp
+  qed
   from \<open>set ?l_F_not_B1 = (F - B1)\<close> \<open>set ?l_not_F = (?carrier_abs - F)\<close> set_append[of ?l_F_not_B1 ?l_not_F]
     \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close>
   have "set ?l_not_B1 = (?carrier_abs - B1)"
