@@ -939,7 +939,14 @@ qed
         have "awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y] @ (map fst zs) @ [(snd (last p))]"
         by auto
       then have "\<exists>as. tl (awalk_verts u p) = as @ [v, x, y] @ (map fst zs) @ [(snd (last p))]"
-        by (metis append.assoc append_Cons append_Nil list.sel(3) tl_append2)
+        proof -
+          have "awalk_verts u p = (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y] @ (map fst zs) @ [(snd (last p))]"
+            using \<open>awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y] @ (map fst zs) @ [(snd (last p))]\<close>
+            by simp
+          then have "tl (awalk_verts u p) = tl (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y] @ (map fst zs) @ [(snd (last p))]"
+            by (cases "map fst (butlast xs)") (auto simp: tl_append2)
+          then show ?thesis by blast
+        qed
       with \<open>distinct (tl (awalk_verts u p))\<close>
         show ?thesis by auto
     qed
