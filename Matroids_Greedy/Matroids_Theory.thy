@@ -553,7 +553,43 @@ proof-
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. 
     Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1)"
-    by (smt (verit, best) Frac_def One_rat_def eq_rat(1) eq_rat(2) mult.commute mult_cancel_right)
+  proof (rule iffI)
+    assume eq_assm: "\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B})"
+    show "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      with eq_assm have eq: "Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+        by simp
+      then show "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+        unfolding Frac_def by simp
+    qed
+  next
+    assume frac_assm: "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+    show "\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B})"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      let ?m = "Min {card B | B. basis_in X B}"
+      let ?M = "Max {card B | B. basis_in X B}"
+
+      from bases_X_finite \<open>X \<subseteq> carrier\<close> have fin: "finite {card B | B. basis_in X B}" by blast
+      from bases_X_nonempty \<open>X \<subseteq> carrier\<close> have nonempty: "{card B | B. basis_in X B} \<noteq> {}" by blast
+
+      from Min_in[OF fin nonempty] have m_in: "?m \<in> {card B | B. basis_in X B}" .
+      from Max_ge[OF fin m_in] have m_le_M: "?m \<le> ?M" .
+
+      from frac_assm \<open>X \<subseteq> carrier\<close>
+      have frac_eq: "Frac (int ?m) (int ?M) = 1" by blast
+
+      from Frac_of_int_leq_quotient[OF m_le_M refl]
+      have "rat_of_nat ?m = Frac (int ?m) (int ?M) * rat_of_nat ?M" .
+      also have "... = rat_of_nat ?M" using frac_eq by simp
+      finally have "rat_of_nat ?m = rat_of_nat ?M" .
+      then have "?m = ?M" by simp
+      then show "int ?m = int ?M" by simp
+    qed
+  qed
   also have "...
     \<longleftrightarrow> (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) | 
     X. X \<subseteq> carrier} = 1)"
