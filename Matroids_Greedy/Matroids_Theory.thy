@@ -1679,7 +1679,7 @@ proof-
         (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> \<not> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B'))))" by metis
     then have
       "\<forall>B. (B \<in> \<B>) = ((B \<subseteq> E \<and> (\<exists>B'\<in>\<B>. B \<subseteq> B')) \<and> 
-        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> (\<exists>B' \<in> \<B>. insert x B \<subseteq> B'))))" by metis
+        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> (\<exists>B' \<in> \<B>. insert x B \<subseteq> B'))))" by meson
     with indep_system.basis_def[OF indep_sys]
     have "\<forall>B. B \<in> \<B> = indep_system.basis E ?indep B" by presburger
     then have basis_set: "\<B> = {B. (indep_system.basis E ?indep B)}" by blast
