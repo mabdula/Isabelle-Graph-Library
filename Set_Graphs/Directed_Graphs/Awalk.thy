@@ -1171,7 +1171,14 @@ next
         have "v = awlast u p"
         by (simp add: awalk_verts_conv)
       with \<open>awalk E u p u\<close> have "fst (hd p) = v"
-        by (metis Nil_is_append_conv \<open>cas u p u\<close> \<open>p = xs @ [(w, v)] @ ys\<close> \<open>xs \<noteq> []\<close> awlast_if_cas cas_simp)
+      proof -
+        have "p \<noteq> []" using \<open>xs \<noteq> []\<close> \<open>p = xs @ [(w, v)] @ ys\<close> by simp
+        have "awlast u p = u" using awlast_if_cas[OF \<open>cas u p u\<close>] .
+        with \<open>v = awlast u p\<close> have "v = u" by simp
+        moreover have "fst (hd p) = u"
+          using \<open>cas u p u\<close> cas_simp[OF \<open>p \<noteq> []\<close>] by blast
+        ultimately show "fst (hd p) = v" by simp
+      qed
       with \<open>p = zs @ [(fst l_bl_xs, x), (x, y), (w, v)] @ ys\<close> awalk_verts_conv'[OF \<open>cas u p u\<close>] Nil
         have "awalk_verts u p = [v] @ (map snd zs) @ [x, y, v]"
         by force
