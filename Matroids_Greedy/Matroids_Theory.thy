@@ -333,7 +333,12 @@ next
       have "card Y < card B" by auto
 
       from `X \<union> Y \<subseteq> carrier` `basis_in (X \<union> Y) B` `basis_in (X \<union> Y) Y` `card Y < card B` RTL        
-      show ?case by (metis nat_neq_iff)
+      show ?case
+      proof -
+        from RTL `X \<union> Y \<subseteq> carrier` `basis_in (X \<union> Y) B` `basis_in (X \<union> Y) Y`
+        have "card B = card Y" by blast
+        with `card Y < card B` show False by simp
+      qed
     qed
 
 
