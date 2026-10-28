@@ -116,7 +116,33 @@ lemma distance_split:
   "\<lbrakk>distance G u v \<noteq> \<infinity>; distance G u v = distance G u w + distance G w v \<rbrakk> \<Longrightarrow>
        \<exists>w'. reachable G u w' \<and> distance G u w' = distance G u w \<and>
             reachable G w' v \<and> distance G w' v = distance G w' v"
-  by (metis dist_reachable enat_ord_simps(4) plus_eq_infty_iff_enat)
+proof -
+  assume dist_neq: "distance G u v \<noteq> \<infinity>"
+  assume dist_eq: "distance G u v = distance G u w + distance G w v"
+  have sum_neq: "distance G u w + distance G w v \<noteq> \<infinity>"
+    using dist_neq by (simp add: dist_eq)
+  have uw_neq: "distance G u w \<noteq> \<infinity>" and wv_neq: "distance G w v \<noteq> \<infinity>"
+    using sum_neq plus_eq_infty_iff_enat by auto
+  have reach_uw: "reachable G u w"
+  proof (rule ccontr)
+    assume "\<not> reachable G u w"
+    hence "distance G u w = \<infinity>" by (rule unreachable_dist)
+    with uw_neq show False by simp
+  qed
+  have reach_wv: "reachable G w v"
+  proof (rule ccontr)
+    assume "\<not> reachable G w v"
+    hence "distance G w v = \<infinity>" by (rule unreachable_dist)
+    with wv_neq show False by simp
+  qed
+  show ?thesis
+  proof (intro exI conjI)
+    show "reachable G u w" using reach_uw .
+    show "distance G u w = distance G u w" by (rule refl)
+    show "reachable G w v" using reach_wv .
+    show "distance G w v = distance G w v" by (rule refl)
+  qed
+qed
 
 lemma dist_inf: 
   "v \<notin> dVs G \<Longrightarrow> distance G u v = \<infinity>"
