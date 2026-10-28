@@ -1931,8 +1931,15 @@ next
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
-      by (metis Suc_diff_le \<open>Suc n \<le> card Y\<close> \<open>X \<subseteq> Y\<close> assms(1) assms(3) card_insert_disjoint
-          diff_Suc_Suc finite_subset)
+      proof -
+        from \<open>X \<subseteq> Y\<close> assms(3) have "X \<subseteq> E" by auto
+        from this assms(1) have "finite X" by (rule finite_subset)
+        from \<open>X' = insert x X\<close> \<open>x \<notin> X\<close> \<open>finite X\<close> have "card X' = card X + 1"
+          by (simp add: card_insert_disjoint)
+        also from \<open>card X = card Y - Suc n\<close> have "... = card Y - Suc n + 1" by simp
+        also from \<open>Suc n \<le> card Y\<close> have "... = card Y - n" by arith
+        finally show ?thesis .
+      qed
 
     from \<open>Suc n \<le> card Y\<close> have "n \<le> card Y" by auto
 
