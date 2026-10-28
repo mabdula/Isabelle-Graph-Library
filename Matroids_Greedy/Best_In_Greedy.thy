@@ -2051,7 +2051,7 @@ proof-
   have "finite X" by auto
   from \<open>B1 \<subseteq> F\<close> \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> indep_system.carrier_finite[OF indep_system_axioms_abs]
     finite_subset
-  have "finite B1" by metis
+  have "finite B1" by (blast intro: finite_subset)
 
   from sum.union_disjoint[OF \<open>finite X\<close> \<open>finite B1\<close> \<open>X \<inter> B1 = {}\<close>] 
     \<open>to_set (result (BestInGreedy (initial_state ?c ?order))) = X \<union> B1\<close>
