@@ -1146,7 +1146,21 @@ next
       have "cas u (zs @ [l_bl_xs, (x, y), (w, v)] @ ys) u" by blast
     with \<open>p = zs @ [l_bl_xs, (x, y), (w, v)] @ ys\<close> append_assoc
       have "x = snd l_bl_xs" 
-      by (smt (verit, best) cas.simps(2) cas_append_iff prod.collapse)
+      proof -
+        have "zs @ [l_bl_xs, (x, y), (w, v)] @ ys = zs @ (l_bl_xs # (x, y) # (w, v) # ys)"
+          by simp
+        with \<open>cas u (zs @ [l_bl_xs, (x, y), (w, v)] @ ys) u\<close>
+          have "cas u (zs @ (l_bl_xs # (x, y) # (w, v) # ys)) u"
+          by simp
+        then have "cas (awlast u zs) (l_bl_xs # (x, y) # (w, v) # ys) u"
+          by (simp only: cas_append_iff)
+        then have "cas (snd l_bl_xs) ((x, y) # (w, v) # ys) u"
+          by (cases l_bl_xs) (auto simp: cas.simps(2))
+        then have "fst (x, y) = snd l_bl_xs"
+          by (simp add: cas.simps(2))
+        then show "x = snd l_bl_xs"
+          by simp
+      qed
     with \<open>p = zs @ [l_bl_xs, (x, y), (w, v)] @ ys\<close>
       have "p = zs @ [(fst l_bl_xs, x), (x, y), (w, v)] @ ys" by simp
     
