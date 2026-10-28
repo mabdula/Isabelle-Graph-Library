@@ -759,7 +759,12 @@ proof-
     have "distinct (tl (awalk_verts u ?c'))" by simp
 
   have list_decomp_1: "\<And>l. length l = 1 \<Longrightarrow> \<exists>a. l = [a]"
-    by (metis One_nat_def length_0_conv length_Cons nat.inject neq_Nil_conv)
+  proof -
+    fix l
+    assume "length l = 1"
+    then show "\<exists>a. l = [a]"
+      by (cases l) auto
+  qed
 
   have "length ?c' > 2"
   proof (rule ccontr, goal_cases)
