@@ -4198,7 +4198,16 @@ proof-
       using \<open>rank_quotient \<le> Fract (int (lower_rank_of X)) (int (rank X))\<close>
       by (simp add: Fract_of_int_quotient)
     then show ?thesis
-      by (metis mult_zero_right of_nat_0_le_iff order_le_less pos_le_divide_eq)
+    proof (cases "rank X = 0")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      then have rank_pos: "rat_of_nat (rank X) > 0" by (simp add: of_nat_0_less_iff)
+      from pos_le_divide_eq[OF rank_pos, of rank_quotient "rat_of_nat (lower_rank_of X)"]
+        \<open>rank_quotient \<le> rat_of_nat (lower_rank_of X) / rat_of_nat (rank X)\<close>
+      show ?thesis by simp
+    qed
   qed
 qed
 
