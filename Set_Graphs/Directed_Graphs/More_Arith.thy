@@ -386,8 +386,18 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
     by simp
   also have "... = (\<Sum>j = 0..<j_min. card (S j - {x})) +
   (\<Sum>j = j_min..<Suc i. card (S j - {x})) + (life_time + 1)"
-    by (smt (z3) add.commute group_cancel.add2 j_min_prop(1) le_Suc_eq less_add_Suc1 min.commute 
-            min_def order_less_imp_le sum.atLeastLessThan_concat)
+  proof -
+    have le1: "j_min \<le> Suc (min (j_min + life_time) i)"
+      using min.boundedI[of "j_min" "j_min + life_time" i] j_min_prop(1) by simp
+    have le2: "Suc (min (j_min + life_time) i) \<le> Suc i"
+      by simp
+    have concat: "(\<Sum>j = j_min..<Suc (min (j_min + life_time) i). card (S j - {x})) +
+                  (\<Sum>j = Suc (min (j_min + life_time) i)..<Suc i. card (S j - {x})) =
+                  (\<Sum>j = j_min..<Suc i. card (S j - {x}))"
+      by (rule sum.atLeastLessThan_concat[OF le1 le2])
+    show ?thesis
+      using concat by linarith
+  qed
   also have "... = (\<Sum>j = 0..<Suc i. card (S j - {x})) + (life_time + 1)"
     by (metis j_min_prop(1) le_eq_less_or_eq sum.atLeastLessThan_concat zero_le)
   also have "... \<le> (life_time + 1) * card \<S> + (life_time + 1)"
