@@ -284,7 +284,30 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
     case True
     then obtain j_min where j_min_prop:"j_min < Suc i" "x \<in> S j_min" 
                                        "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min)"
-      using get_least[of "\<lambda> j. j < Suc i \<and> x \<in> S j"] by metis
+    proof -
+      from True obtain j0 where j0: "j0 < Suc i" "x \<in> S j0" by blast
+      have ex_P: "\<exists> j. j < Suc i \<and> x \<in> S j" using j0 by blast
+      define j_min' where "j_min' = (LEAST j. j < Suc i \<and> x \<in> S j)"
+      have j_min'_prop: "j_min' < Suc i \<and> x \<in> S j_min'"
+        unfolding j_min'_def using LeastI_ex[OF ex_P] by blast
+      have j_min'_least: "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min')"
+      proof (rule notI)
+        assume "\<exists> j < Suc i. x \<in> S j \<and> j < j_min'"
+        then obtain j where j_less: "j < Suc i" and j_in: "x \<in> S j" and j_lt: "j < j_min'"
+          by blast
+        from j_lt have j_lt': "j < (LEAST j. j < Suc i \<and> x \<in> S j)"
+          unfolding j_min'_def .
+        have "\<not> (j < Suc i \<and> x \<in> S j)"
+          using not_less_Least[OF j_lt'] .
+        thus False using j_less j_in by blast
+      qed
+      show thesis
+      proof (rule that[of j_min'])
+        show "j_min' < Suc i" using j_min'_prop by blast
+        show "x \<in> S j_min'" using j_min'_prop by blast
+        show "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min')" using j_min'_least by blast
+      qed
+    qed
     hence x_never_after: "j > j_min + life_time \<Longrightarrow> x \<notin> S j" for j
       using 2(5)[of j_min j x] by simp
    have "(\<Sum>j = 0..<Suc i. card (S j)) = (\<Sum>j = 0..< j_min. card (S j)) +
