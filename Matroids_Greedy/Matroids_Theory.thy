@@ -3988,8 +3988,20 @@ lemma sum_split_last:
   assumes "n \<ge> 1"
   shows "(\<Sum>j=1..(n - 1). g j) + g (n::nat) = (\<Sum>j=1..n. g j)"
   using assms
-  by (metis Suc_eq_plus1_left Suc_pred' add.commute atLeastLessThanSuc_atLeastAtMost lessI
-      less_add_same_cancel1 order_le_less_trans sum.last_plus)
+proof -
+  from assms have n_eq: "n = Suc (n - 1)" by presburger
+  have set_eq: "{1..Suc (n - 1)} = insert (Suc (n - 1)) {1..(n - 1)}" by auto
+  have notin: "Suc (n - 1) \<notin> {1..(n - 1)}" by auto
+  have "(\<Sum>j = 1..(n - 1). g j) + g n = (\<Sum>j = 1..(n - 1). g j) + g (Suc (n - 1))"
+    by (rule arg_cong[OF n_eq])
+  also have "... = g (Suc (n - 1)) + (\<Sum>j = 1..(n - 1). g j)" by (rule add.commute)
+  also have "... = (\<Sum>j \<in> insert (Suc (n - 1)) {1..(n - 1)}. g j)"
+    using sum.insert[OF finite_atLeastAtMost notin] by simp
+  also have "... = (\<Sum>j = 1..Suc (n - 1). g j)"
+    using set_eq by simp
+  also have "... = (\<Sum>j = 1..n. g j)" by (rule arg_cong[OF n_eq, symmetric])
+  finally show ?thesis .
+qed
 
 lemma sum_diff_mult_distr:
   assumes "\<forall>j \<in> {0..(n::nat)}. (g::(nat \<Rightarrow> rat)) j \<ge> 0" "\<forall>j \<in> {1..n}. c (j - 1) \<ge> 0" "g 0 = 0"
