@@ -4731,7 +4731,12 @@ next
 
   from this(2) Suc(2) augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close>]
   have "\<exists>x \<in> A' - A. indep_in X (insert x A)"
-    by (metis Suc.prems(2) Suc_diff_le diff_Suc_Suc)
+  proof -
+    have "card A' = Suc (card A)"
+      using Suc.prems(1) Suc.prems(2) \<open>card A' = rank_of X - n\<close> by linarith
+    from augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close> this]
+    show "\<exists>x \<in> A' - A. indep_in X (insert x A)" .
+  qed
   then obtain x where "x \<in> A' - A" "indep_in X (insert x A)" by blast
 
   with Suc.prems(1) have "card (insert x A) = rank_of X - n"
