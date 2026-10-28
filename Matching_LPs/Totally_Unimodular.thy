@@ -3276,9 +3276,9 @@ qed
             then have "(\<Sum>j \<in> {0..<dim_col B}. B $$ (dim_row B - 1,j) * 
                         cofactor B (dim_row B - 1) j) =
                         B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
-              using only_one_nonzero_is_sum[of "{0..<dim_col B}" j]
-              by (metis (no_types, lifting) atLeast0LessThan finite_atLeastLessThan j lessThan_iff 
-                  vector_space_over_itself.scale_eq_0_iff)
+              using only_one_nonzero_is_sum[of "{0..<dim_col B}" j
+                     "\<lambda>x. B $$ (dim_row B - 1, x) * cofactor B (dim_row B - 1) x"] j
+              by auto
             then have "(\<Sum>j<dim_col B. B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
               B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               by (metis atLeast0LessThan)
