@@ -676,8 +676,21 @@ proof -
   proof(rule ccontr)
     assume "?l \<noteq> ?inv_l"
     then have "?l < ?inv_l" 
-      by (metis \<open>i = (p ^^ least_power (inv p) i) i\<close> assms le_eq_less_or_eq least_power_le 
-          least_power_of_permutation(2) p_is_permutation permutation_inverse)
+    proof -
+      assume ne: "least_power p i \<noteq> least_power (inv p) i"
+      have perm_inv: "permutation (inv p)"
+        using assms p_is_permutation permutation_inverse by blast
+      have pos: "0 < least_power (inv p) i"
+        using perm_inv by (rule least_power_of_permutation(2))
+      have fix_p: "(p ^^ least_power (inv p) i) i = i"
+        using \<open>i = (p ^^ least_power (inv p) i) i\<close> by simp
+      have "least_power p i dvd least_power (inv p) i"
+        using fix_p by (rule least_power_minimal)
+      then have "least_power p i \<le> least_power (inv p) i"
+        using pos by (rule dvd_imp_le)
+      then show "least_power p i < least_power (inv p) i"
+        using ne by simp
+    qed
     then show False 
       by (metis \<open>(p ^^ least_power p i) i = i\<close> assms bij_betw_inv_into_left bij_fn bij_is_surj 
           inv_fn leD least_power_le least_power_of_permutation(2) p_is_permutation permutes_imp_bij 
