@@ -902,7 +902,16 @@ qed
       with \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close>
         have "v = awhd u p" by simp
       with \<open>awalk E u p u\<close> have "snd (last p) = v"
-        by (metis \<open>(v, w) \<in> set p\<close> awalkE' awalk_verts_conv empty_iff empty_set last_snoc)
+        proof -
+          have "p \<noteq> []" using \<open>(v, w) \<in> set p\<close> by auto
+          then have "awalk_verts u p = map fst p @ [snd (last p)]"
+            by (simp add: awalk_verts_conv)
+          then have "awlast u p = snd (last p)" by simp
+          moreover have "awlast u p = u" using \<open>awalk E u p u\<close> by simp
+          moreover have "awhd u p = u" using \<open>awalk E u p u\<close> by blast
+          ultimately have "snd (last p) = awhd u p" by simp
+          then show "snd (last p) = v" using \<open>v = awhd u p\<close> by simp
+        qed
       with \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close> awalk_verts_conv Nil
         have "awalk_verts u p = [v, x, y] @ (map fst zs) @ [v]"
         by (metis (no_types, lifting) append_Cons append_Nil fst_conv list.simps(3) list.simps(9))
