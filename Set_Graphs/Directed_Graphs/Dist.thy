@@ -1193,9 +1193,16 @@ proof(goal_cases)
     using \<open>G \<subseteq> G'\<close>
     by(auto simp: distance_subset)
   moreover  have "distance G u v \<le> distance G' u v"
-    using 1 
-    apply(auto simp: elim!: forest_props intro!: dist_eq[where f = id])
-    by (metis reachable_dist_2 vwalk_bet_subset)
+    proof(rule dist_eq[where f = id])
+      fix p assume p': "Vwalk.vwalk_bet G' u p v"
+      from \<open>reachable G u v\<close> obtain q where q: "Vwalk.vwalk_bet G u q v" "distance G u v = enat (length q - 1)"
+        by (auto intro: reachable_dist_2)
+      hence "Vwalk.vwalk_bet G' u q v" using \<open>G \<subseteq> G'\<close> by (rule vwalk_bet_subset)
+      moreover have uniq: "\<And>a b r s. \<lbrakk>Vwalk.vwalk_bet G' a r b; Vwalk.vwalk_bet G' a s b\<rbrakk> \<Longrightarrow> r = s"
+        using \<open>forest G'\<close> unfolding forest_def by blast
+      ultimately have "p = q" using p' by blast
+      with q(1) show "Vwalk.vwalk_bet G u (map id p)" by simp
+    qed
   ultimately show ?thesis
     by auto
 qed
