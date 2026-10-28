@@ -747,7 +747,14 @@ lemma single_in_append: "([a]@xs) = a#xs"
 
 lemma map_split_exists:
   "map f xs = ys@zs \<Longrightarrow> \<exists> ys' zs'. ys'@zs' = xs \<and> map f ys' = ys \<and> map f zs' = zs"
-  by (metis append_eq_map_conv)
+proof -
+  assume "map f xs = ys @ zs"
+  then have "ys @ zs = map f xs" by simp
+  then obtain us vs where "xs = us @ vs" "ys = map f us" "zs = map f vs"
+    using append_eq_map_conv[THEN iffD1] by blast
+  then show "\<exists>ys' zs'. ys' @ zs' = xs \<and> map f ys' = ys \<and> map f zs' = zs"
+    by auto
+qed
 
 lemma map_sum_split: 
   "foldr (\<lambda> x acc. f x + acc) (xs@ys) (0::real) = 
