@@ -729,7 +729,13 @@ lemma map_hd: "xs \<noteq> [] \<Longrightarrow> hd (map f xs) = f (hd (xs))"
   using list.map_sel(1) by auto
 
 lemma map_last': "\<lbrakk>xs \<noteq> []; \<And> x. g (f x) = h x\<rbrakk> \<Longrightarrow>g (last (map f xs)) = h (last xs)"
-  by (metis last_map)
+proof -
+  assume "xs \<noteq> []" and eq: "\<And>x. g (f x) = h x"
+  from \<open>xs \<noteq> []\<close> have "last (map f xs) = f (last xs)"
+    by (rule last_map)
+  thus "g (last (map f xs)) = h (last xs)"
+    by (simp add: eq)
+qed
 
 lemma in_set_map: "y \<in> set (map f xs) \<Longrightarrow> \<exists> x. y = f x \<and> x \<in> set xs" by auto
 
