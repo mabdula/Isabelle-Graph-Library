@@ -2084,7 +2084,7 @@ proof-
   then have "sum ?c (to_set X_B2) = rat_of_nat (card B2)"
     using in_mono \<open>B2 \<subseteq> F\<close> by fastforce
   then have "c_set ?c (to_set X_B2) = rat_of_nat (card B2)"
-    using c_set_def by metis
+    by (simp add: c_set_def)
 
 (* B2 solution is valid *)
   from \<open>B2 \<subseteq> F\<close> \<open>F \<subseteq> (matroid.carrier_abs carrier)\<close> set_inv_carrier matroid.carrier_abs_def \<open>to_set X_B2 = B2\<close>
