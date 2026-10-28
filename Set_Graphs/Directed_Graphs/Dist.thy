@@ -949,9 +949,26 @@ proof(goal_cases)
     using 1 distance_parent
     by fastforce
   thus ?thesis
-    by (metis "1"(2) \<open>distance_set G Vs v = distance G u v\<close> \<open>u \<in> Vs\<close> 
-              add_mono_thms_linordered_semiring(3) dist_set_mem
-              distance_set_neighbourhood nle_le)
+  proof -
+    have dist_w_le: "distance_set G Vs w \<le> distance G u w"
+      using dist_set_mem[OF \<open>u \<in> Vs\<close>] .
+    have le1: "distance_set G Vs w + 1 \<le> distance_set G Vs v"
+    proof -
+      have "distance_set G Vs w + 1 \<le> distance G u w + 1"
+        using dist_w_le by (rule add_right_mono)
+      also have "\<dots> = distance G u v"
+        using \<open>distance G u w + 1 = distance G u v\<close> .
+      also have "\<dots> = distance_set G Vs v"
+        by (simp add: \<open>distance_set G Vs v = distance G u v\<close>)
+      finally show ?thesis .
+    qed
+    have le2: "distance_set G Vs v \<le> distance_set G Vs w + 1"
+      using distance_set_neighbourhood[OF \<open>v \<in> neighbourhood G w\<close> "1"(2)] .
+    from le1 le2 have "distance_set G Vs w + 1 = distance_set G Vs v"
+      by (rule order_antisym)
+    thus ?thesis
+      using \<open>v \<in> neighbourhood G w\<close> by blast
+  qed
 qed
 
 lemma distance_set_parent':
