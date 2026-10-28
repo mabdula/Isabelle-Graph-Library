@@ -2248,7 +2248,14 @@ qed
         then have 39: "pick I t > pick I i"
           using pick_mono_inf pick_mono_le t_less_card by presburger
         have "pick I t \<in> I - {pick I i}" 
-          by (metis Diff_iff \<open>pick I i < pick I t\<close> nat_neq_iff pick_in_set singletonD t_less_card)
+        proof -
+          have "pick I t \<in> I"
+            using pick_in_set[OF t_less_card] .
+          moreover have "pick I t \<noteq> pick I i"
+            using 39 by simp
+          ultimately show ?thesis
+            by simp
+        qed
         then have 1: "pick (I - {pick I i}) (card {a\<in>(I - {pick I i}). a < pick I t}) = pick I t"
           using pick_card_in_set 
           by presburger
