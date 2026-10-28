@@ -2832,9 +2832,44 @@ proof rule
             then  have "det (mat_delete B (dim_row B - 1) j) \<in> {-1, 0, 1}" 
               using "9" by presburger 
             then have "cofactor B (dim_row B - 1) j \<in> {-1, 0, 1}" using 8 9 
-              by (smt (verit) R.add.inv_equality UNIV_I add_neg_numeral_special(7) 
-                  cring_simprules(29) insert_iff mult_cancel_right2 mult_minus1_right 
-                  nat_pow_distrib singletonD square_eq_one)
+proof -
+              have neg_one_pow: "\<And>k. (-1::'a) ^ k = 1 \<or> (-1::'a) ^ k = -1"
+              proof -
+                fix k
+                show "(-1::'a) ^ k = 1 \<or> (-1::'a) ^ k = -1"
+                proof (induct k)
+                  case 0
+                  then show ?case by simp
+                next
+                  case (Suc k)
+                  then show ?case by (auto simp: power_Suc)
+                qed
+              qed
+              have det_bound: "det (submatrix A I (J - {pick J j})) \<in> {-1, 0, 1}"
+                using assms(2) unfolding tot_unimodular_def by blast
+              then have det_eq: "det (mat_delete B (dim_row B - 1) j) \<in> {-1, 0, 1}"
+                using 9 by presburger
+              show "cofactor B (dim_row B - 1) j \<in> {-1, 0, 1}"
+              proof -
+                have "det (mat_delete B (dim_row B - 1) j) = -1 \<or>
+                      det (mat_delete B (dim_row B - 1) j) = 0 \<or>
+                      det (mat_delete B (dim_row B - 1) j) = 1"
+                  using det_eq by auto
+                then show ?thesis
+                proof (elim disjE)
+                  assume d: "det (mat_delete B (dim_row B - 1) j) = -1"
+                  show ?thesis
+                    using neg_one_pow[of "(dim_row B - 1) + j"] 8 d by auto
+                next
+                  assume d: "det (mat_delete B (dim_row B - 1) j) = 0"
+                  show ?thesis using 8 d by auto
+                next
+                  assume d: "det (mat_delete B (dim_row B - 1) j) = 1"
+                  show ?thesis
+                    using neg_one_pow[of "(dim_row B - 1) + j"] 8 d by auto
+                qed
+              qed
+            qed
             then show ?thesis 
               using `det B = cofactor B (dim_row B - 1) j` by auto
           next
