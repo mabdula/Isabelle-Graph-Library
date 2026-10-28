@@ -526,9 +526,38 @@ qed
 
 lemma in_sccs_digraph_of_imp_in_sccs:
   "(ddfs.digraph_of c) \<in> pre_digraph.sccs (ddfs.digraph_of G) \<Longrightarrow> c \<in> sccs G"
-  unfolding sccs_def pre_digraph.sccs_def
-  by (simp add: induced_subgraph_iff strongly_connected_iff)
-     (metis ddfs.verts_eq induced_imp_induced' induced_subgraph_dVs_subset_iff)
+proof -
+  assume asm: "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+  have H_c: "induced_subgraph_digraph (ddfs.digraph_of c) (ddfs.digraph_of G)"
+    using asm by (simp add: pre_digraph.sccs_def)
+  have SC_c: "strongly_connected_digraph (ddfs.digraph_of c)"
+    using asm by (simp add: pre_digraph.sccs_def)
+  have max_c: "\<not> verts (ddfs.digraph_of c) \<subset> verts c'"
+    if "induced_subgraph_digraph c' (ddfs.digraph_of G)" "strongly_connected_digraph c'" for c'
+    using asm that by (auto simp: pre_digraph.sccs_def)
+  have ind_c: "induced_subgraph c G"
+    using H_c by (rule induced_imp_induced')
+  have sc_c: "strongly_connected c"
+    using SC_c by (simp add: strongly_connected_iff)
+  have no_superset: "\<not> c \<subset> H'" if H'_ind: "induced_subgraph H' G" and H'_sc: "strongly_connected H'" for H'
+  proof
+    assume c_sub: "c \<subset> H'"
+    have H'_ind_d: "induced_subgraph_digraph (ddfs.digraph_of H') (ddfs.digraph_of G)"
+      using H'_ind by (simp add: induced_subgraph_iff)
+    have H'_sc_d: "strongly_connected_digraph (ddfs.digraph_of H')"
+      using H'_sc by (simp add: strongly_connected_iff)
+    have "dVs c \<subset> dVs H'"
+      using induced_subgraph_dVs_subset_iff[OF ind_c H'_ind] c_sub by simp
+    hence "verts (ddfs.digraph_of c) \<subset> verts (ddfs.digraph_of H')"
+      by (simp add: ddfs.verts_eq)
+    with max_c[OF H'_ind_d H'_sc_d] show False
+      by simp
+  qed
+  have "\<nexists>H'. induced_subgraph H' G \<and> strongly_connected H' \<and> c \<subset> H'"
+    using no_superset by blast
+  with ind_c sc_c show "c \<in> sccs G"
+    by (simp add: sccs_def)
+qed
 
 lemma in_sccs_iff:
   shows "c \<in> sccs G \<longleftrightarrow> ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
