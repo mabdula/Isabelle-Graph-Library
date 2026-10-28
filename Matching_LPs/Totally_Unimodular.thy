@@ -2193,7 +2193,18 @@ qed
       have 9:"card {a\<in>I. a < pick I t} = t" 
         using card_pick t_less_card by blast
       have "pick I t < pick I i" 
-        by (metis True 16 18 assms(3) card_mono order_trans_rules(22) pick_mono_inf pick_mono_le)
+      proof -
+        have i_bound: "i < card I \<or> infinite I"
+        proof (rule ccontr)
+          assume "\<not> (i < card I \<or> infinite I)"
+          then have fin: "finite I" and le: "card I \<le> i" by auto
+          have "card {i. i < dim_row A \<and> i \<in> I} \<le> card I"
+            using 18 fin by (simp add: card_mono)
+          with 17 le show False by linarith
+        qed
+        then show ?thesis
+          using True pick_mono by blast
+      qed
       then  have 8: "{a\<in>I. a < pick I t} = {a\<in>(I - {pick I i}). a < pick I t}"
         by auto
       then have "pick (I - {pick I i}) t = pick I t" 
