@@ -1434,7 +1434,12 @@ proof-
 
   from 1 card_Un_disjoint[OF finite_1 finite_2 2] 
   have "card B2 = card (B1 \<inter> B2) + card (((B2 - B1) - Y) \<union> (Y - B1))"
-    by (metis Un_assoc)
+  proof -
+    have "B2 = (B1 \<inter> B2) \<union> ((B2 - B1) - Y \<union> (Y - B1))"
+      using 1 by auto
+    then show ?thesis
+      using card_Un_disjoint[OF finite_1 finite_2 2] by simp
+  qed
 
   with card_Un_disjoint[OF finite_3 finite_4 3]
   have "card B2 = card (B1 \<inter> B2) + card (Y - B1) + card ((B2 - B1) - Y)" 
