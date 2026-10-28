@@ -1121,7 +1121,7 @@ next
     by blast
 
   consider (Nil) "butlast xs = Nil" | (Snoc) "\<exists>zs l_bl_xs. butlast xs = zs @ [l_bl_xs]"
-    by (metis append_butlast_last_id)
+    by (cases "butlast xs" rule: rev_cases) auto
   then have "x \<noteq> v"
   proof (cases)
     case Nil
