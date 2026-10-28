@@ -4317,7 +4317,17 @@ proof (rule ccontr, goal_cases)
 
   with \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close>  \<open>rank_quotient = 0\<close>
   have "card B1 = 0"
-    by (metis gr_implies_not0 le0 nat_less_le of_nat_0_less_iff order_less_irrefl zero_less_Fract_iff)
+  proof -
+    have B2_pos: "card B2 > 0" using \<open>card B1 < card B2\<close> by simp
+    then have B2_nonzero: "of_int (int (card B2)) \<noteq> (0::rat)" by simp
+    have "Fract (int (card B1)) (int (card B2)) = 0"
+      using \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close> \<open>rank_quotient = 0\<close> by simp
+    then have "of_int (int (card B1)) / of_int (int (card B2)) = (0::rat)"
+      by (simp add: Fract_of_int_quotient)
+    with B2_nonzero have "of_int (int (card B1)) = (0::rat)"
+      by (simp add: divide_eq_0_iff)
+    then show "card B1 = 0" by simp
+  qed
 
   with \<open>card B1 < card B2\<close>
   have "card B2 > 0" by simp
