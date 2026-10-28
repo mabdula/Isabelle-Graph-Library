@@ -2465,8 +2465,16 @@ proof -
   qed
   have 9: "submatrix (mat_of_rows n [b]) {0} J $$ (i, j) = 
         (mat_of_rows n [b]) $$ (pick {0} i, pick J j)" 
-    by (metis (no_types, lifting) 4 2 6 \<open>i = 0\<close> \<open>j < card ({0..<n} \<inter> J)\<close> dim_submatrix(1-2)
-        submatrix_index zero_less_one_class.zero_less_one)
+  proof -
+    have card_row: "card {i. i < dim_row (mat_of_rows n [b]) \<and> i \<in> {0}} = 1"
+      using 1 6 by linarith
+    have i_lt: "i < card {i. i < dim_row (mat_of_rows n [b]) \<and> i \<in> {0}}"
+      using card_row \<open>i = 0\<close> by simp
+    have j_lt: "j < card {j. j < dim_col (mat_of_rows n [b]) \<and> j \<in> J}"
+      using 4 \<open>j < card ({0..<n} \<inter> J)\<close> by linarith
+    show ?thesis
+      using submatrix_index[OF i_lt j_lt] .
+  qed
   have "(mat_of_rows n [b]) $$ (pick {0} i, pick J j) = b $ (pick J j)" 
     by (metis "1" One_nat_def Suc_eq_plus1 7 6 \<open>i = 0\<close> \<open>j < card ({0..<n} \<inter> J)\<close>
         \<open>{j. j < n \<and> j \<in> J} = {0..<n} \<inter> J\<close> less_one list.size(3-4) mat_of_rows_index
