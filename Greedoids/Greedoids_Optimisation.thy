@@ -1309,7 +1309,7 @@ proof-
         using  es1es2(1) x_in_es1 A_list_props(1) BYA_list_props(1)  EBx_list_props(1) Y_list_props(1)  es_prop 
         by (auto simp add:  es_def)
       then obtain as bs where "EBx_list @ Y_list = as@[cand]@bs"
-        by (metis append.left_neutral append_Cons in_set_conv_decomp)
+        by (auto simp only: in_set_conv_decomp append_Cons append.left_neutral)
       hence es_split4: "es = as@[cand]@bs@[x]@BYA_list @ rev A_list" 
         unfolding es_def by simp
       have "as = es1" 
