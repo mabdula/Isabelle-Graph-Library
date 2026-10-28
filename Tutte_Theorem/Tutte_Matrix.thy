@@ -750,7 +750,26 @@ proof -
     finally show ?thesis by simp
   qed
   then show ?thesis 
-    by (metis assms(1) bij_fn bij_inv_eq_iff comp_apply inv_fn permutation_bijective)
+proof -
+  have bij_p: "bij p"
+    by (rule permutation_bijective[OF assms(1)])
+  then have bij_pk: "bij (p ^^ k)"
+    by (rule bij_fn)
+  then have inj_pk: "inj (p ^^ k)"
+    by (rule bij_is_inj)
+  have inv_pk: "inv (p ^^ k) = (inv p) ^^ k"
+    by (rule inv_fn[OF bij_p])
+  have cancel: "((inv p) ^^ k) ((p ^^ k) y) = y" for y
+    by (simp add: inv_pk[symmetric] inv_f_f[OF inj_pk])
+  have shift: "(p ^^ k) ((p ^^ (n - k)) i) = (p ^^ (k + (n - k))) i"
+    by (simp add: funpow_add)
+  have kn: "k + (n - k) = n"
+    using assms(2) by simp
+  have decomp: "(p ^^ n) i = (p ^^ k) ((p ^^ (n - k)) i)"
+    using shift by (simp add: kn)
+  show ?thesis
+    by (simp add: decomp cancel)
+qed
 qed
 
 lemma inv_support_same:
