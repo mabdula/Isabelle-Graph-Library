@@ -15,7 +15,22 @@ when we have a corresponding inverse element\<close>
 
 lemma var_not_zero:
   shows "((Var\<^sub>0 n) :: ('a \<Rightarrow>\<^sub>0 nat) \<Rightarrow>\<^sub>0 real) \<noteq> 0" unfolding Var\<^sub>0_def 
-  by (smt (z3) lookup_single_eq single_zero)
+proof
+  assume eq: "Poly_Mapping.single (Poly_Mapping.single n (1::nat)) (1::real) = 0"
+  have "(1::real) =
+        Poly_Mapping.lookup
+          (Poly_Mapping.single (Poly_Mapping.single n (1::nat)) (1::real))
+          (Poly_Mapping.single n 1)"
+    by (simp add: lookup_single_eq)
+  also have "\<dots> =
+        Poly_Mapping.lookup (0 :: ('a \<Rightarrow>\<^sub>0 nat) \<Rightarrow>\<^sub>0 real)
+          (Poly_Mapping.single n 1)"
+    by (simp only: eq)
+  also have "\<dots> = 0"
+    by (rule lookup_zero)
+  finally show False
+    by simp
+qed
 
 
 lemma sum_of_values_cancel_out:
