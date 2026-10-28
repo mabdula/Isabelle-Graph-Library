@@ -1215,7 +1215,23 @@ proof-
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1)))"
     using sum_diff_mult_distr[OF pref_X_pos c_carrier_sorted_nonneg pref_X_zero] semiring_1_cancel_class.of_nat_diff
       pref_X_leq c_diff_def rank_quotient_geq_0 mult_left_mono 
-    by (smt (verit, best) order.refl sum.cong)
+  proof -
+    have cast: "\<And>j. j \<in> {1..?n} \<Longrightarrow>
+        rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) =
+        rat_of_nat (card (pref c order (to_set X) j)) - rat_of_nat (card (pref c order (to_set X) (j - 1)))"
+      using pref_X_leq by (simp add: of_nat_diff)
+    have eq: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c (carrier_sorted ! (j - 1))) =
+              (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
+    proof -
+      have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c (carrier_sorted ! (j - 1))) =
+            (\<Sum>j = 1..?n. (rat_of_nat (card (pref c order (to_set X) j)) - rat_of_nat (card (pref c order (to_set X) (j - 1)))) * c (carrier_sorted ! (j - 1)))"
+        using cast by (intro sum.cong) auto
+      also have "... = (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
+        using sum_diff_mult_distr[OF pref_X_pos c_carrier_sorted_nonneg pref_X_zero] c_diff_def by simp
+      finally show ?thesis .
+    qed
+    show ?thesis using eq by simp
+  qed
   moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
