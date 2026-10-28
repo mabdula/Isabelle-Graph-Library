@@ -2579,7 +2579,11 @@ proof rule
         have 15: "dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) = nr + 1"
           by (meson "1" assms(1) carrier_append_rows carrier_matD(1))
         have 16: "{ia. ia < dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia \<in> I} \<noteq> {}"
-          by (metis "15" Collect_empty_eq Suc_eq_plus1 True lessI)
+        proof -
+          have "nr \<in> {ia. ia < dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia \<in> I}"
+            using "15" True by simp
+          then show ?thesis by blast
+        qed
         have "finite {ia. ia < dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia \<in> I}"
           using finite_nat_set_iff_bounded by blast
         then have "card {ia. ia < dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia \<in> I} > 0"
