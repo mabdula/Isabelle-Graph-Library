@@ -2130,7 +2130,12 @@ next
 
     from \<open>X' = (insert x X)\<close> assms(3)
     have "r X \<le> r X'"
-      by (metis Un_commute \<open>X' \<subseteq> Y\<close> assms(2) insert_is_Un insert_subset subset_trans)
+    proof -
+      from \<open>X' = (insert x X)\<close> \<open>X' \<subseteq> Y\<close> assms(2) have "X \<subseteq> E" by blast
+      from \<open>X' = (insert x X)\<close> \<open>X' \<subseteq> Y\<close> assms(2) have "x \<in> E" by blast
+      from assms(3) \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> have "r X \<le> r (X \<union> {x})" by blast
+      with \<open>X' = (insert x X)\<close> show "r X \<le> r X'" by simp
+    qed
 
     with \<open>r X' \<le> r Y\<close> show "r X \<le> r Y" by simp
   qed
