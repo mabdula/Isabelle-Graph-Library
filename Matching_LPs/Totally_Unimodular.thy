@@ -2222,9 +2222,25 @@ qed
           using True by fastforce
         have "i < dim_row B - 1" 
           using "5" True by blast
-        then show ?thesis 
-          using pick_suc_diff_set
-          by (metis False True 16 24 18 basic_trans_rules(22) card_mono insert_index_def)
+        then have suc_i_lt: "Suc i < dim_row B"
+          by presburger
+        have "Suc i < card I \<or> infinite I"
+        proof (cases "infinite I")
+          case True
+          then show ?thesis by simp
+        next
+          case False
+          have fin_I: "finite I" using False by simp
+          have card_le: "card {k. k < dim_row A \<and> k \<in> I} \<le> card I"
+            using fin_I 18 card_mono by blast
+          have "Suc i < card I" using 16 card_le suc_i_lt by linarith
+          then show ?thesis by blast
+        qed
+        then have "pick I (Suc i) = pick (I - {pick I i}) i"
+          using pick_suc_diff_set by blast
+        then show ?thesis
+          unfolding insert_index_def
+          using True by simp
       next
         case False
         have "t > i" using `\<not> t < i` False 
