@@ -133,11 +133,27 @@ lemma one_direction_in_oriented:
   assumes "{a, b} \<in> G"
   shows "(a, b) \<in> oriented_edges \<or> (b, a) \<in> oriented_edges" 
 proof -
-  have "a \<noteq> b" 
+  have ab: "a \<noteq> b"
     using assms graph by fastforce
-  then show ?thesis  unfolding oriented_edges_def 
-    unfolding get_oriented_def 
-    by (smt (z3) CollectI assms insert_commute neqE)
+  have go: "get_oriented x y = (x, y) \<or> get_oriented x y = (y, x)" for x y
+    by (simp add: get_oriented_def)
+  have in_or: "get_oriented x y \<in> oriented_edges" if "{x, y} \<in> G" "x < y" for x y
+    using that unfolding oriented_edges_def by blast
+  show ?thesis
+  proof (cases a b rule: linorder_cases)
+    case less
+    from in_or[OF assms less] show ?thesis
+      using go[of a b] by auto
+  next
+    case equal
+    with ab show ?thesis by simp
+  next
+    case greater
+    have "{b, a} \<in> G"
+      using assms by (simp add: insert_commute)
+    from in_or[OF this greater] show ?thesis
+      using go[of b a] by auto
+  qed
 qed
 
 text \<open>We define the Tutte matrix. On the rows and columns we have 
