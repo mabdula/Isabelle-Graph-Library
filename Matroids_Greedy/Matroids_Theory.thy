@@ -91,8 +91,43 @@ proof-
     fix n
     have upper_rank_eq_iff: "(n = upper_rank_of X) \<longleftrightarrow> 
       (\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
-      unfolding upper_rank_of_def using Max_eq_iff[OF `finite ?basis_cards` `?basis_cards \<noteq> {}`]
-      by (smt (verit, del_insts) mem_Collect_eq)
+    proof -
+      have max_eq: "(Max ?basis_cards = n) \<longleftrightarrow> (n \<in> ?basis_cards \<and> (\<forall>a \<in> ?basis_cards. a \<le> n))"
+        using Max_eq_iff[OF `finite ?basis_cards` `?basis_cards \<noteq> {}`] by auto
+      show ?thesis
+      proof
+        assume "n = upper_rank_of X"
+        then have "Max ?basis_cards = n" by (simp add: upper_rank_of_def)
+        with max_eq have n_mem: "n \<in> ?basis_cards" and n_ub: "\<forall>a \<in> ?basis_cards. a \<le> n" by auto
+        from n_mem obtain Y where Y_basis: "basis_in X Y" and Y_card: "card Y = n" by auto
+        have Y_max: "\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'"
+        proof (rule allI, rule impI)
+          fix Y'
+          assume Y'_basis: "basis_in X Y'"
+          then have "card Y' \<in> ?basis_cards" by auto
+          with n_ub have "card Y' \<le> n" by auto
+          with Y_card show "card Y \<ge> card Y'" by simp
+        qed
+        from Y_basis Y_card Y_max
+        show "\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')"
+          by blast
+      next
+        assume "\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')"
+        then obtain Y where Y_basis: "basis_in X Y" and Y_card: "card Y = n"
+          and Y_max: "\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'" by blast
+        have n_mem: "n \<in> ?basis_cards" using Y_basis Y_card by auto
+        have n_ub: "\<forall>a \<in> ?basis_cards. a \<le> n"
+        proof
+          fix a
+          assume "a \<in> ?basis_cards"
+          then obtain Y' where a_eq: "a = card Y'" and Y'_basis: "basis_in X Y'" by auto
+          from Y_max Y'_basis have "card Y' \<le> card Y" by auto
+          with a_eq Y_card show "a \<le> n" by simp
+        qed
+        from n_mem n_ub max_eq have "Max ?basis_cards = n" by auto
+        then show "n = upper_rank_of X" by (simp add: upper_rank_of_def)
+      qed
+    qed
 
     have rank_eq_iff: "(n = rank X) \<longleftrightarrow> 
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
