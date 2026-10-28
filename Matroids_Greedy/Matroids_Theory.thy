@@ -3864,8 +3864,27 @@ proof-
 
   have card_diff_expr: "(card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l))) =
     card (A \<inter> (set (take j l) - set (take (j - 1) l)))"
-    by (metis Diff_Int_distrib List.finite_set card_Diff_subset diff_le_self equalityD1 finite_Int
-        inf_mono set_take_subset_set_take)
+  proof -
+    have subset_take: "set (take (j - 1) l) \<subseteq> set (take j l)"
+    proof (rule set_take_subset_set_take)
+      show "j - 1 \<le> j" by simp
+    qed
+    have subset_inter: "A \<inter> set (take (j - 1) l) \<subseteq> A \<inter> set (take j l)"
+      using subset_take by blast
+    have finite_inter: "finite (A \<inter> set (take (j - 1) l))" by simp
+    have card_diff: "card (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) =
+      card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l))"
+      using card_Diff_subset[OF finite_inter subset_inter] .
+    have set_eq: "A \<inter> set (take j l) - A \<inter> set (take (j - 1) l) =
+      A \<inter> (set (take j l) - set (take (j - 1) l))"
+      by blast
+    have "card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l)) =
+      card (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l))"
+      using card_diff by simp
+    also have "... = card (A \<inter> (set (take j l) - set (take (j - 1) l)))"
+      using set_eq by simp
+    finally show ?thesis .
+  qed
 
   show ?thesis
   proof(cases "l ! (j - 1) \<in> A")
