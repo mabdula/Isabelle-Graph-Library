@@ -1731,7 +1731,27 @@ proof-
       with \<open>hd (carrier_list best_in_greedy_state) \<in> F - B1\<close> 
       have "\<not>(indep' (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state)))"
         using \<open>invar_1 best_in_greedy_state\<close>
-        by (metis insert_is_Un invar_1_def matroid.indep_impl_to_abs matroid.set.invar_insert matroid.set.set_insert matroid_inv(1) matroid_inv(2) sup.commute)
+      proof -
+        have set_inv_result: "set_inv (result best_in_greedy_state)"
+          using \<open>invar_1 best_in_greedy_state\<close> by (auto simp: invar_1_def)
+        have not_indep_abs:
+          "\<not> matroid.indep_abs indep_fn
+             (insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state)))"
+          using \<open>\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn) (insert x (to_set (result best_in_greedy_state)))\<close>
+                \<open>hd (carrier_list best_in_greedy_state) \<in> F - B1\<close>
+          by blast
+        have set_inv_ins:
+          "set_inv (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state))"
+          using set_inv_result by (simp add: matroid.set.invar_insert)
+        have to_set_ins:
+          "to_set (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state)) =
+           insert (hd (carrier_list best_in_greedy_state)) (to_set (result best_in_greedy_state))"
+          using set_inv_result by (simp add: matroid.set.set_insert)
+        show
+          "\<not>(indep' (set_insert (hd (carrier_list best_in_greedy_state)) (result best_in_greedy_state)))"
+          using not_indep_abs to_set_ins
+          by (simp add: matroid.indep_abs_equiv[OF matroid_inv(1) matroid_inv(2) set_inv_ins])
+      qed
 
       then show ?case
         using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close>
