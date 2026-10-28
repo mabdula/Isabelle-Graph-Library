@@ -1055,8 +1055,14 @@ lemma distance_set_subset: "G \<subseteq> G' \<Longrightarrow> distance_set G' V
 
 lemma vwalk_bet_dist_set:
   "\<lbrakk>Vwalk.vwalk_bet G u p v; u \<in> U\<rbrakk> \<Longrightarrow> distance_set G U v \<le> length p - 1"
-  apply (auto simp: distance_set_def image_def intro!:)
-  by (metis (mono_tags, lifting) Inf_lower One_nat_def dual_order.trans mem_Collect_eq vwalk_bet_dist)
+proof -
+  assume "Vwalk.vwalk_bet G u p v" "u \<in> U"
+  then have "distance_set G U v \<le> distance G u v"
+    by (intro dist_set_mem)
+  also have "\<dots> \<le> length p - 1"
+    using \<open>Vwalk.vwalk_bet G u p v\<close> by (rule vwalk_bet_dist)
+  finally show "distance_set G U v \<le> length p - 1" .
+qed
 
 lemma shorter_path_in_level_compliant_graph:
   assumes "\<And> u p v. u \<in> S \<Longrightarrow> vwalk_bet F u p v \<Longrightarrow> length p - 1 = distance_set G S v"
