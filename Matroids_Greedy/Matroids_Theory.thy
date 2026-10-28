@@ -3417,7 +3417,11 @@ proof-
     also have "... = card X + card Y +
       matroid.rank_of indep (E - (X \<union> Y)) + matroid.rank_of indep (E - (X \<inter> Y))
       - matroid.rank_of indep E - matroid.rank_of indep E"
-      by (metis \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> assms(1) card_Un_Int rev_finite_subset)
+    proof -
+      from assms(1) \<open>X \<subseteq> E\<close> have "finite X" by (rule rev_finite_subset)
+      from assms(1) \<open>Y \<subseteq> E\<close> have "finite Y" by (rule rev_finite_subset)
+      from card_Un_Int[OF \<open>finite X\<close> \<open>finite Y\<close>] show ?thesis by simp
+    qed
     also have "... = card X + card Y +
       matroid.rank_of indep ((E - X) \<inter> (E - Y)) + matroid.rank_of indep ((E - X) \<union> (E - Y))
       - matroid.rank_of indep E - matroid.rank_of indep E"
