@@ -38,19 +38,27 @@ global_interpretation phase_bfs: Alt_BFS.BFS
 
 subsection \<open>The matching, represented by its mate function\<close>
 
-lemma mate_Map_axioms: "Map Leaf update RBT_Map.delete lookup M.invar"
-  using M.Map_axioms
-  by (auto simp add: RBT_Set.empty_def)
+definition "mate_get nil M u = (case lookup M u of None \<Rightarrow> nil | Some v \<Rightarrow> v)"
 
-global_interpretation mate: Matching_Augmentation_Specs Leaf update RBT_Map.delete lookup M.invar
+lemma mate_fixed_univ_map:
+  "fixed_univ_map K M.invar (\<lambda>M u v. update u v M) (mate_get nil)"
+  by unfold_locales (auto simp: mate_get_def M.map_update M.invar_update)
+
+global_interpretation mate: Matching_Augmentation_Specs "- {nil}" M.invar
+  "\<lambda>M u v. update u v M" "mate_get nil" Leaf nil
+  for nil
   defines mate_augment = mate.augment_impl
     and mate_matching = mate.\<M>
     and mate_invar = mate.invar_matching
-  by (auto intro!: Matching_Augmentation_Specs.intro simp add: mate_Map_axioms)
+    and mate_lookup = mate.buddy_lookup
+  by (auto intro!: Matching_Augmentation_Specs.intro mate_fixed_univ_map)
 
-interpretation mate_thms: matching_augmentation Leaf update RBT_Map.delete lookup M.invar
-  using mate.Matching_Augmentation_Specs_axioms
-  by (auto intro!: matching_augmentation.intro)
+interpretation mate_thms: matching_augmentation "- {nil}" M.invar
+  "\<lambda>M u v. update u v M" "mate_get nil" Leaf nil
+  for nil
+  by (auto intro!: matching_augmentation.intro matching_augmentation_axioms.intro
+                   mate.Matching_Augmentation_Specs_axioms
+           simp: mate_get_def M.invar_def rbt_def fun_eq_iff)
 
 lemmas mate_augmentation_correct =
   mate_thms.augmentation_correct[folded mate_invar_def mate_matching_def mate_augment_def]
@@ -58,15 +66,30 @@ lemmas mate_empty_props =
   mate_thms.empty_matching_props[folded mate_invar_def mate_matching_def]
 lemmas mate_invarD =
   mate.invar_matchingD[folded mate_invar_def mate_matching_def]
-lemmas mate_matching_eq = mate.\<M>_def'
+lemmas mate_matching_eq = mate.\<M>_def'[folded mate_matching_def mate_lookup_def]
+
+lemma mate_lookup_symmetric:
+  "mate_invar nil G m \<Longrightarrow> mate_lookup nil m u = Some v \<longleftrightarrow> mate_lookup nil m v = Some u"
+  unfolding mate_lookup_def
+  by (rule mate.symmetric_buddiesD[OF mate_invarD(2)])
 
 lemma mate_matching_iff:
-  "mate_invar G m \<Longrightarrow> {u, v} \<in> mate_matching m \<longleftrightarrow> lookup m u = Some v"
-  by (auto simp: mate_matching_eq doubleton_eq_iff dest: mate_invarD(2) mate.symmetric_buddiesD)
+  assumes "mate_invar nil G m"
+  shows "{u, v} \<in> mate_matching nil m \<longleftrightarrow> mate_get nil m u = v \<and> v \<noteq> nil"
+proof-
+  have "{u, v} \<in> mate_matching nil m \<longleftrightarrow> mate_lookup nil m u = Some v"
+    using assms by (auto simp: mate_matching_eq doubleton_eq_iff dest: mate_lookup_symmetric)
+  thus ?thesis by (auto simp: mate_lookup_def mate.buddy_lookup_def)
+qed
 
 lemma mate_Vs_iff:
-  "mate_invar G m \<Longrightarrow> v \<in> Vs (mate_matching m) \<longleftrightarrow> lookup m v \<noteq> None"
-  by (auto simp: Vs_def mate_matching_eq dest: mate_invarD(2) mate.symmetric_buddiesD)
+  assumes "mate_invar nil G m"
+  shows "v \<in> Vs (mate_matching nil m) \<longleftrightarrow> mate_get nil m v \<noteq> nil"
+proof-
+  have "v \<in> Vs (mate_matching nil m) \<longleftrightarrow> mate_lookup nil m v \<noteq> None"
+    using assms by (auto simp: Vs_def mate_matching_eq dest: mate_lookup_symmetric)
+  thus ?thesis by (auto simp: mate_lookup_def mate.buddy_lookup_def)
+qed
 
 subsection \<open>The input\<close>
 
@@ -85,24 +108,24 @@ subsection \<open>Executable builders\<close>
 definition "adjacency_edges Gin vs =
   concat (map (\<lambda>u. map (Pair u) (Tree2.inorder (G.neighbourhood Gin u))) vs)"
 
-definition "matched_edges edges m = filter (\<lambda>(u, v). lookup m u = Some v) edges"
+definition "matched_edges nil edges m = filter (\<lambda>(u, v). mate_get nil m u = v) edges"
 
-definition "unmatched_edges edges m = filter (\<lambda>(u, v). lookup m u \<noteq> Some v) edges"
+definition "unmatched_edges nil edges m = filter (\<lambda>(u, v). mate_get nil m u \<noteq> v) edges"
 
-definition "free_vertices vs m = filter (\<lambda>v. lookup m v = None) vs"
+definition "free_vertices nil vs m = filter (\<lambda>v. mate_get nil m v = nil) vs"
 
-definition "free_vertex_set vs m = foldr insert_rbt (free_vertices vs m) Leaf"
+definition "free_vertex_set nil vs m = foldr insert_rbt (free_vertices nil vs m) Leaf"
 
-definition "copies_edges edges m dag =
+definition "copies_edges nil edges m dag =
   concat (map (\<lambda>(u, v).
      if isin (G.neighbourhood dag u) v
-     then (if lookup m u = Some v then [(Vtx Even v, Vtx Odd u)] else [(Vtx Odd v, Vtx Even u)])
+     then (if mate_get nil m u = v then [(Vtx Even v, Vtx Odd u)] else [(Vtx Odd v, Vtx Even u)])
      else []) edges)"
 
 definition "copy_level dists w = the_enat (the (lookup dists w))"
 
-definition "phase_roots vs m odd_visited dists =
-  (let free_odd = filter (\<lambda>t. isin odd_visited t) (free_vertices vs m) in
+definition "phase_roots nil vs m odd_visited dists =
+  (let free_odd = filter (\<lambda>t. isin odd_visited t) (free_vertices nil vs m) in
    if free_odd = [] then [] else
    let k = fold min (map (\<lambda>t. copy_level dists (Vtx Odd t)) (tl free_odd))
                     (copy_level dists (Vtx Odd (hd free_odd)))
@@ -290,28 +313,28 @@ qed (fact search_step)+
 
 subsection \<open>The phase\<close>
 
-definition "hopcroft_karp_phase edges vs m =
-  (if free_vertices vs m = [] then [] else
-   let matching_graph = G.from_list (matched_edges edges m);
-       non_matching_graph = G.from_list (unmatched_edges edges m);
+definition "hopcroft_karp_phase nil edges vs m =
+  (if free_vertices nil vs m = [] then [] else
+   let matching_graph = G.from_list (matched_edges nil edges m);
+       non_matching_graph = G.from_list (unmatched_edges nil edges m);
        bfs_state = alt_bfs_impl matching_graph non_matching_graph
-                     (alt_bfs_initial_state (free_vertex_set vs m));
-       copies_edge_list = copies_edges edges m (Alt_BFS.BFS_state.parents bfs_state);
+                     (alt_bfs_initial_state (free_vertex_set nil vs m));
+       copies_edge_list = copies_edges nil edges m (Alt_BFS.BFS_state.parents bfs_state);
        copies_graph = idfs.Graph.from_list copies_edge_list;
        level = copy_level (distances bfs_state)
    in map (map vtx)
         (paths (disjoint_paths_search_rbt copies_graph (\<lambda>w. level w = 0)
                   (blocked_copies (map fst copies_edge_list @ map snd copies_edge_list))
-                  (phase_roots vs m (visited_odd bfs_state) (distances bfs_state)))))"
+                  (phase_roots nil vs m (visited_odd bfs_state) (distances bfs_state)))))"
 
 lemma hopcroft_karp_phase_no_free:
-  "free_vertices vs m = [] \<Longrightarrow> hopcroft_karp_phase edges vs m = []"
+  "free_vertices nil vs m = [] \<Longrightarrow> hopcroft_karp_phase nil edges vs m = []"
   by (simp add: hopcroft_karp_phase_def)
 
 subsection \<open>The input graph\<close>
 
 context
-  fixes Gin vs X Y
+  fixes Gin and vs :: "('a::linorder) list" and X Y and nil :: 'a
   assumes input: "hopcroft_karp_axiom_rbt Gin vs" "bipartite (ugraph_abs_rbt Gin) X Y"
 begin
 
@@ -353,51 +376,61 @@ subsection \<open>One phase, for a fixed matching\<close>
 
 context
   fixes m
-  assumes m_invar: "mate_invar (ugraph_abs_rbt Gin) m" and m_free: "free_vertices vs m \<noteq> []"
+  assumes m_invar: "mate_invar nil (ugraph_abs_rbt Gin) m" and m_free: "free_vertices nil vs m \<noteq> []"
 begin
 
 abbreviation "edge_list \<equiv> adjacency_edges Gin vs"
-abbreviation "matching_graph \<equiv> G.from_list (matched_edges edge_list m)"
-abbreviation "non_matching_graph \<equiv> G.from_list (unmatched_edges edge_list m)"
-abbreviation "bfs_sources \<equiv> free_vertex_set vs m"
+abbreviation "matching_graph \<equiv> G.from_list (matched_edges nil edge_list m)"
+abbreviation "non_matching_graph \<equiv> G.from_list (unmatched_edges nil edge_list m)"
+abbreviation "bfs_sources \<equiv> free_vertex_set nil vs m"
 abbreviation "bfs_state \<equiv> alt_bfs_impl matching_graph non_matching_graph (alt_bfs_initial_state bfs_sources)"
 abbreviation "bfs_dag \<equiv> Alt_BFS.BFS_state.parents bfs_state"
-abbreviation "copies_edge_list \<equiv> copies_edges edge_list m bfs_dag"
+abbreviation "copies_edge_list \<equiv> copies_edges nil edge_list m bfs_dag"
 abbreviation "copies_graph \<equiv> idfs.Graph.from_list copies_edge_list"
 abbreviation "level \<equiv> copy_level (distances bfs_state)"
-abbreviation "copy_roots \<equiv> phase_roots vs m (visited_odd bfs_state) (distances bfs_state)"
+abbreviation "copy_roots \<equiv> phase_roots nil vs m (visited_odd bfs_state) (distances bfs_state)"
 abbreviation "blocked \<equiv> blocked_copies (map fst copies_edge_list @ map snd copies_edge_list)"
 abbreviation "search_state \<equiv>
   phase_search.Disjoint_Paths_Search blocked copies_graph (\<lambda>w. level w = 0)
     (phase_search.initial_state copy_roots)"
 
-lemma mate_matching_subset: "mate_matching m \<subseteq> ugraph_abs_rbt Gin"
+lemma mate_matching_subset: "mate_matching nil m \<subseteq> ugraph_abs_rbt Gin"
   using mate_invarD(4)[OF m_invar]
   by auto
 
-lemma matching_graph_abs: "G.digraph_abs matching_graph = {(u, v). {u, v} \<in> mate_matching m}"
+lemma matching_graph_vertices:
+  "nil \<notin> Vs (ugraph_abs_rbt Gin)"
+  using mate_invarD(6)[OF m_invar] by auto
+
+lemma input_edge_not_nil[simp]:
+  "(u, v) \<in> G.digraph_abs Gin \<Longrightarrow> u \<noteq> nil"
+  "(u, v) \<in> G.digraph_abs Gin \<Longrightarrow> v \<noteq> nil"
+  using matching_graph_vertices
+  by (auto simp: hopcroft_karp_input_rbt.ugraph_abs_def Vs_def)
+
+lemma matching_graph_abs: "G.digraph_abs matching_graph = {(u, v). {u, v} \<in> mate_matching nil m}"
 proof-
-  have "(u, v) \<in> G.digraph_abs Gin" if "lookup m u = Some v" for u v
+  have "(u, v) \<in> G.digraph_abs Gin" if "mate_get nil m u = v" "v \<noteq> nil" for u v
     using mate_matching_subset that mate_matching_iff[OF m_invar, of u v]
     by auto
   thus ?thesis
-    by (auto simp: matched_edges_def mate_matching_iff[OF m_invar])
+    by (auto simp: matched_edges_def mate_matching_iff[OF m_invar] dest: input_edge_not_nil)
 qed
 
 lemma non_matching_graph_abs:
-  "G.digraph_abs non_matching_graph = {(u, v). {u, v} \<in> ugraph_abs_rbt Gin - mate_matching m}"
-  by (auto simp: unmatched_edges_def mate_matching_iff[OF m_invar])
+  "G.digraph_abs non_matching_graph = {(u, v). {u, v} \<in> ugraph_abs_rbt Gin - mate_matching nil m}"
+  by (auto simp: unmatched_edges_def mate_matching_iff[OF m_invar] dest: input_edge_not_nil)
 
 lemma bfs_sources_props:
-  "vset_inv bfs_sources" "Tree2.set_tree bfs_sources = set (free_vertices vs m)"
-  "Tree2.set_tree bfs_sources = Vs (ugraph_abs_rbt Gin) - Vs (mate_matching m)"
+  "vset_inv bfs_sources" "Tree2.set_tree bfs_sources = set (free_vertices nil vs m)"
+  "Tree2.set_tree bfs_sources = Vs (ugraph_abs_rbt Gin) - Vs (mate_matching nil m)"
   by (auto simp: free_vertex_set_def free_vertices_def mate_Vs_iff[OF m_invar])
 
 lemma bfs_sources_in_graph: "Tree2.set_tree bfs_sources \<subseteq> dVs (G.digraph_abs non_matching_graph)"
 proof
   fix v
   assume "v \<in> Tree2.set_tree bfs_sources"
-  then obtain w where "(v, w) \<in> G.digraph_abs Gin" "lookup m v = None"
+  then obtain w where "(v, w) \<in> G.digraph_abs Gin" "mate_get nil m v = nil"
     by (auto simp: bfs_sources_props(2) free_vertices_def dVs_eq dest: input_sym)
   thus "v \<in> dVs (G.digraph_abs non_matching_graph)"
     unfolding non_matching_graph_abs
@@ -422,12 +455,12 @@ proof-
   ultimately show ?thesis
     unfolding phase_bfs.BFS_axiom_def
     using G.from_list_correct(1-3) bfs_sources_props(1) bfs_sources_in_graph
-    by blast
+    by (auto simp: G.from_list_correct(1-3))
 qed
 
 lemma bipartite_matching_input_phase:
   "phase_bfs.bipartite_matching_input bfs_sources matching_graph non_matching_graph
-     (ugraph_abs_rbt Gin) (mate_matching m) X Y"
+     (ugraph_abs_rbt Gin) (mate_matching nil m) X Y"
   using ugraph_abs_rbt_graph_invar mate_matching_subset matching_graph_abs non_matching_graph_abs
         bfs_sources_props(3) input(2)
   by (simp add: phase_bfs.bipartite_matching_input_def)
@@ -450,15 +483,13 @@ lemma bfs_dag_subset: "G.digraph_abs bfs_dag \<subseteq> G.digraph_abs Gin"
 proof
   fix e
   assume "e \<in> G.digraph_abs bfs_dag"
-  then obtain u v where "e = (u, v)" "(u, v) \<in> G.digraph_abs bfs_dag"
+  then obtain u v where e: "e = (u, v)" and edge: "(u, v) \<in> G.digraph_abs bfs_dag"
     by (cases e) auto
-  hence "(u, v) \<in> G.digraph_abs non_matching_graph \<or> (u, v) \<in> G.digraph_abs matching_graph"
-    using phase_bfs.valid_alt_BFS_DAG_props(3)[OF phase_bfs_axiom bfs_state_valid]
-    by blast
-  thus "e \<in> G.digraph_abs Gin"
-    unfolding matching_graph_abs non_matching_graph_abs
-    using \<open>e = (u, v)\<close> mate_matching_subset
-    by auto
+  from phase_bfs.valid_alt_BFS_DAG_props(3)[OF phase_bfs_axiom bfs_state_valid edge]
+  show "e \<in> G.digraph_abs Gin"
+    unfolding e
+    by (auto simp only: G.from_list_correct(4) matched_edges_def unmatched_edges_def
+                        set_filter adjacency_edges_set case_prod_conv)
 qed
 
 lemma bfs_dag_graph_inv: "G.graph_inv bfs_dag"
@@ -476,7 +507,7 @@ lemma copies_graph_abs:
   by (auto simp: copies_edges_def isin_bfs_dag phase_bfs.copies_dag_def
                  matching_graph_abs[unfolded G.from_list_correct(4)]
                  non_matching_graph_abs[unfolded G.from_list_correct(4)] mate_matching_iff[OF m_invar]
-           split: if_splits)
+           dest: input_edge_not_nil split: if_splits)
 
 lemma copies_graph_level:
   "w \<in> dVs (idfs.Graph.digraph_abs copies_graph) \<Longrightarrow>
@@ -523,8 +554,8 @@ proof
 qed
 
 lemma copy_roots_nonempty:
-  "filter (\<lambda>t. isin (visited_odd bfs_state) t) (free_vertices vs m) \<noteq> [] \<Longrightarrow> copy_roots \<noteq> []"
-proof(cases "filter (\<lambda>t. isin (visited_odd bfs_state) t) (free_vertices vs m)")
+  "filter (\<lambda>t. isin (visited_odd bfs_state) t) (free_vertices nil vs m) \<noteq> [] \<Longrightarrow> copy_roots \<noteq> []"
+proof(cases "filter (\<lambda>t. isin (visited_odd bfs_state) t) (free_vertices nil vs m)")
   case (Cons t0 ts)
   let ?L = "\<lambda>t. copy_level (distances bfs_state) (Vtx Odd t)"
   have "fold min (map ?L ts) (?L t0) \<in> ?L ` set (t0 # ts)"
@@ -579,7 +610,7 @@ lemmas phase_search_correct_3 =
   phase_search_proofs.Disjoint_Paths_Search_correct_3[folded disjoint_paths_search_initial_state_def]
 
 lemma hopcroft_karp_phase_unfold:
-  "hopcroft_karp_phase edge_list vs m = map (map vtx) (paths search_state)"
+  "hopcroft_karp_phase nil edge_list vs m = map (map vtx) (paths search_state)"
   using m_free
   by (simp add: hopcroft_karp_phase_def phase_search.Disjoint_Paths_Search_run_impl_def
                 phase_search_proofs.Disjoint_Paths_Search_impl_to_Disjoint_Paths_Search[
@@ -589,10 +620,10 @@ text \<open>A path of the phase is the projection of a walk of the copies graph 
   down to level 0, hence an augmenting path (Alt_BFS_Bipartite).\<close>
 
 lemma phase_paths_augmenting:
-  "P \<in> set (hopcroft_karp_phase edge_list vs m) \<Longrightarrow>
-   graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching m) P"
+  "P \<in> set (hopcroft_karp_phase nil edge_list vs m) \<Longrightarrow>
+   graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P"
 proof-
-  assume "P \<in> set (hopcroft_karp_phase edge_list vs m)"
+  assume "P \<in> set (hopcroft_karp_phase nil edge_list vs m)"
   then obtain q where "q \<in> set (paths search_state)" "P = map vtx q"
     by (auto simp: hopcroft_karp_phase_unfold)
   note q = phase_search_correct_1[OF this(1)]
@@ -605,16 +636,16 @@ proof-
   moreover hence "phase_bfs.copies_lev bfs_sources matching_graph non_matching_graph (hd q) = 0"
     using q copies_graph_level[OF vwalk_bet_endpoints(2)]
     by simp
-  ultimately have "graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching m) (rev (map vtx (rev q)))"
+  ultimately have "graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) (rev (map vtx (rev q)))"
     by (intro phase_bfs.copies_walk_augmenting(1)[OF phase_bfs_axiom bipartite_matching_input_phase
                                                       bfs_state_valid])
        (simp_all only: copies_graph_abs)
-  thus "graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching m) P"
+  thus "graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P"
     using \<open>P = map vtx q\<close>
     by (simp add: rev_map)
 qed
 
-lemma phase_paths_disjoint: "sorted_wrt (\<lambda>P Q. set P \<inter> set Q = {}) (hopcroft_karp_phase edge_list vs m)"
+lemma phase_paths_disjoint: "sorted_wrt (\<lambda>P Q. set P \<inter> set Q = {}) (hopcroft_karp_phase nil edge_list vs m)"
 proof-
   have "set q \<subseteq> dVs (idfs.Graph.digraph_abs copies_graph)" if "q \<in> set (paths search_state)" for q
   proof-
@@ -637,10 +668,10 @@ text \<open>If an augmenting path exists, some free vertex has an odd copy in th
   the roots are not empty, every root reaches level 0, and the search finds a path.\<close>
 
 lemma phase_paths_nonempty:
-  "\<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching m) P \<Longrightarrow>
-   hopcroft_karp_phase edge_list vs m \<noteq> []"
+  "\<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P \<Longrightarrow>
+   hopcroft_karp_phase nil edge_list vs m \<noteq> []"
 proof-
-  assume "\<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching m) P"
+  assume "\<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P"
   then obtain t where "t \<in> Tree2.set_tree bfs_sources"
       "Vtx Odd t \<in> dVs (phase_bfs.copies_dag matching_graph non_matching_graph (G.digraph_abs bfs_dag))"
     using phase_bfs.augmenting_path_iff_free_odd_copy[OF phase_bfs_axiom bipartite_matching_input_phase
@@ -672,29 +703,41 @@ qed
 end
 
 lemma free_vertices_nonempty:
-  "\<lbrakk>mate_invar (ugraph_abs_rbt Gin) m;
-    \<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching m) P\<rbrakk>
-   \<Longrightarrow> free_vertices vs m \<noteq> []"
-  by (fastforce simp: free_vertices_def filter_empty_conv matching_augmenting_path_def
-                      mate_Vs_iff
-               dest: mem_path_Vs[OF _ hd_in_set])
+  "\<lbrakk>mate_invar nil (ugraph_abs_rbt Gin) m;
+    \<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P\<rbrakk>
+   \<Longrightarrow> free_vertices nil vs m \<noteq> []"
+proof-
+  assume inv: "mate_invar nil (ugraph_abs_rbt Gin) m"
+    and "\<exists>P. graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P"
+  then obtain P where aug: "graph_augmenting_path (ugraph_abs_rbt Gin) (mate_matching nil m) P"
+    by blast
+  have path: "path (ugraph_abs_rbt Gin) P" and nonempty: "P \<noteq> []"
+    and free: "hd P \<notin> Vs (mate_matching nil m)"
+    using aug by (auto simp: matching_augmenting_path_def)
+  have "hd P \<in> set vs"
+    using mem_path_Vs[OF path hd_in_set[OF nonempty]] by simp
+  moreover have "mate_get nil m (hd P) = nil"
+    using free by (simp add: mate_Vs_iff[OF inv])
+  ultimately have "hd P \<in> set (free_vertices nil vs m)"
+    by (simp add: free_vertices_def)
+  thus ?thesis by auto
+qed
 
 end
 
 subsection \<open>The sub-procedures meet the contracts of the top loop\<close>
 
 lemma matching:
-  "mate_invar (ugraph_abs_rbt G) M \<Longrightarrow> graph_matching (ugraph_abs_rbt G) (mate_matching M)"
-  "mate_invar (ugraph_abs_rbt G) Leaf"
-  "mate_matching Leaf = {}"
-  using mate_invarD mate_empty_props
-  by simp_all
+  "mate_invar nil (ugraph_abs_rbt G) M \<Longrightarrow> graph_matching (ugraph_abs_rbt G) (mate_matching nil M)"
+  "nil \<notin> Vs (ugraph_abs_rbt G) \<Longrightarrow> mate_invar nil (ugraph_abs_rbt G) Leaf"
+  "mate_matching nil Leaf = {}"
+  by (auto dest: mate_invarD(4) intro: mate_empty_props(1) simp: mate_empty_props(2))
 
 lemma augment:
-  "\<lbrakk>mate_invar (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p\<rbrakk>
-   \<Longrightarrow> mate_invar (ugraph_abs_rbt G) (mate_augment M p)"
-  "\<lbrakk>mate_invar (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p\<rbrakk>
-   \<Longrightarrow> mate_matching (mate_augment M p) = mate_matching M \<oplus> set (edges_of_path p)"
+  "\<lbrakk>mate_invar nil (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p\<rbrakk>
+   \<Longrightarrow> mate_invar nil (ugraph_abs_rbt G) (mate_augment M p)"
+  "\<lbrakk>mate_invar nil (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p\<rbrakk>
+   \<Longrightarrow> mate_matching nil (mate_augment M p) = mate_matching nil M \<oplus> set (edges_of_path p)"
   by (simp_all add: mate_augmentation_correct)
 
 lemma bipartite_of_axiom:
@@ -703,13 +746,13 @@ lemma bipartite_of_axiom:
   by blast
 
 lemma phase_sound:
-  "\<lbrakk>hopcroft_karp_axiom_rbt G vs; mate_invar (ugraph_abs_rbt G) M;
-    p \<in> set (hopcroft_karp_phase (adjacency_edges G vs) vs M)\<rbrakk>
-   \<Longrightarrow> graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p"
+  "\<lbrakk>hopcroft_karp_axiom_rbt G vs; mate_invar nil (ugraph_abs_rbt G) M;
+    p \<in> set (hopcroft_karp_phase nil (adjacency_edges G vs) vs M)\<rbrakk>
+   \<Longrightarrow> graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p"
 proof-
-  assume "hopcroft_karp_axiom_rbt G vs" "mate_invar (ugraph_abs_rbt G) M"
-         "p \<in> set (hopcroft_karp_phase (adjacency_edges G vs) vs M)"
-  moreover hence "free_vertices vs M \<noteq> []"
+  assume "hopcroft_karp_axiom_rbt G vs" "mate_invar nil (ugraph_abs_rbt G) M"
+         "p \<in> set (hopcroft_karp_phase nil (adjacency_edges G vs) vs M)"
+  moreover hence "free_vertices nil vs M \<noteq> []"
     by (auto simp: hopcroft_karp_phase_no_free)
   moreover obtain X Y where "bipartite (ugraph_abs_rbt G) X Y"
     using bipartite_of_axiom \<open>hopcroft_karp_axiom_rbt G vs\<close>
@@ -720,25 +763,25 @@ proof-
 qed
 
 lemma phase_disjoint:
-  "\<lbrakk>hopcroft_karp_axiom_rbt G vs; mate_invar (ugraph_abs_rbt G) M\<rbrakk>
-   \<Longrightarrow> sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) (hopcroft_karp_phase (adjacency_edges G vs) vs M)"
+  "\<lbrakk>hopcroft_karp_axiom_rbt G vs; mate_invar nil (ugraph_abs_rbt G) M\<rbrakk>
+   \<Longrightarrow> sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) (hopcroft_karp_phase nil (adjacency_edges G vs) vs M)"
 proof-
-  assume "hopcroft_karp_axiom_rbt G vs" "mate_invar (ugraph_abs_rbt G) M"
+  assume "hopcroft_karp_axiom_rbt G vs" "mate_invar nil (ugraph_abs_rbt G) M"
   moreover obtain X Y where "bipartite (ugraph_abs_rbt G) X Y"
     using bipartite_of_axiom \<open>hopcroft_karp_axiom_rbt G vs\<close>
     by blast
   ultimately show ?thesis
     using phase_paths_disjoint
-    by (cases "free_vertices vs M = []") (simp_all add: hopcroft_karp_phase_no_free)
+    by (cases "free_vertices nil vs M = []") (simp_all add: hopcroft_karp_phase_no_free)
 qed
 
 lemma phase_complete:
-  "\<lbrakk>hopcroft_karp_axiom_rbt G vs; mate_invar (ugraph_abs_rbt G) M;
-    \<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p\<rbrakk>
-   \<Longrightarrow> hopcroft_karp_phase (adjacency_edges G vs) vs M \<noteq> []"
+  "\<lbrakk>hopcroft_karp_axiom_rbt G vs; mate_invar nil (ugraph_abs_rbt G) M;
+    \<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p\<rbrakk>
+   \<Longrightarrow> hopcroft_karp_phase nil (adjacency_edges G vs) vs M \<noteq> []"
 proof-
-  assume "hopcroft_karp_axiom_rbt G vs" "mate_invar (ugraph_abs_rbt G) M"
-         "\<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p"
+  assume "hopcroft_karp_axiom_rbt G vs" "mate_invar nil (ugraph_abs_rbt G) M"
+         "\<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p"
   moreover obtain X Y where "bipartite (ugraph_abs_rbt G) X Y"
     using bipartite_of_axiom \<open>hopcroft_karp_axiom_rbt G vs\<close>
     by blast
