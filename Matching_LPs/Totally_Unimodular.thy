@@ -2758,7 +2758,7 @@ proof rule
                         (card {ia. ia<dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia\<in>J})" 
                     using I_J dim_submatrix(2) by blast
                   then have 26: "dim_col B = (card {ia. ia<n \<and> ia\<in>J})" 
-                    by (metis 24 index_row(2) index_unit_vec(3))
+                    using carrier_matD(2)[OF carrier_append_rows[OF A 1]] by simp
                   then have "j < card J" 
                     by (metis (mono_tags, lifting) 25 asm(2) basic_trans_rules(21) card_mono j 
                         mem_Collect_eq not_less pick_eq_iff_inf subsetI)
