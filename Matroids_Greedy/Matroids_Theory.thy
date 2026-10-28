@@ -3797,9 +3797,27 @@ which proves the cost inequality for the greedy solution *)
 lemma set_take_Suc_diff:
   assumes "set l = S" "length l = card S" "j < length l" 
   shows "{l ! j} = set (take (Suc j) l) - set (take j l)"
-  using take_Suc_conv_app_nth[OF assms(3)] 
-  by (metis Diff_Diff_Int Diff_insert_absorb assms(1) assms(2) card_distinct distinct_take inf_bot_right
-      insert_inter_insert list.simps(15) not_distinct_conv_prefix rotate1.simps(2) set_rotate1)
+proof -
+  have "distinct l" using assms(1) assms(2) card_distinct by force
+  have take_eq: "take (Suc j) l = take j l @ [l ! j]"
+    using take_Suc_conv_app_nth[OF assms(3)] .
+  have l_j_notin: "l ! j \<notin> set (take j l)"
+  proof
+    assume "l ! j \<in> set (take j l)"
+    from this[unfolded in_set_conv_nth]
+    obtain i where i_lt: "i < length (take j l)" and eq: "take j l ! i = l ! j" by blast
+    from i_lt assms(3) have i_less_j: "i < j" by simp
+    from eq i_less_j assms(3) have l_eq: "l ! i = l ! j" by (simp add: nth_take)
+    from i_less_j assms(3) have i_len: "i < length l" and j_len: "j < length l" by simp_all
+    from nth_eq_iff_index_eq[OF \<open>distinct l\<close> i_len j_len] l_eq have "i = j" by simp
+    with i_less_j show False by simp
+  qed
+  have "set (take (Suc j) l) = set (take j l) \<union> {l ! j}"
+    using take_eq by simp
+  with l_j_notin have "set (take (Suc j) l) - set (take j l) = {l ! j}"
+    by auto
+  then show ?thesis by simp
+qed
 
 lemma set_union_expr:
   assumes "n = length l" "set l = S" "length l = card S" "A \<subseteq> S"
