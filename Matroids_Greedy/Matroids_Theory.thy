@@ -4681,9 +4681,52 @@ proof (induction n arbitrary: A)
 next
   case (Suc n)
   from Suc have "\<exists>A'. indep_in X A' \<and> card A' = rank_of X - n"
-    by (metis DiffD2 Suc_diff_le assms card_insert_disjoint diff_Suc_Suc diff_le_self finite_subset
-        indep_in_def indep_in_not_basis_in indep_system.carrier_finite indep_system_axioms not_less_eq_eq
-        rank_of_eq_card_basis_in)
+  proof -
+    from Suc.prems(1) have card_A: "card A = rank_of X - Suc n" by simp
+    from Suc.prems(2) have le_Suc: "Suc n \<le> rank_of X" by simp
+    from Suc.prems(3) have indep_A: "indep_in X A" by simp
+
+    have rank_eq: "rank_of X = card A + Suc n"
+    proof -
+      from le_Suc have "rank_of X - Suc n + Suc n = rank_of X"
+        by (rule le_add_diff_inverse2)
+      with card_A show ?thesis by simp
+    qed
+
+    have not_basis: "\<not> basis_in X A"
+    proof
+      assume basis_A: "basis_in X A"
+      from rank_of_eq_card_basis_in[OF assms basis_A] have "rank_of X = card A" .
+      with rank_eq show False by simp
+    qed
+
+    from indep_in_not_basis_in[OF assms indep_A not_basis]
+    obtain x where x_mem: "x \<in> X - A" and indep_Ax: "indep_in X (insert x A)"
+      by blast
+
+    from indep_in_subset_carrier[OF indep_A] have "A \<subseteq> X" .
+    with assms have A_subset_carrier: "A \<subseteq> carrier" by blast
+
+    have carrier_fin: "finite carrier"
+      using indep_system.carrier_finite[OF indep_system_axioms] .
+    from carrier_fin A_subset_carrier have finite_A: "finite A"
+      using finite_subset by blast
+
+    from x_mem have x_notin: "x \<notin> A" by blast
+    with finite_A have card_insert: "card (insert x A) = card A + 1"
+      by (simp add: card_insert_disjoint)
+
+    have card_next: "card A + 1 = rank_of X - n"
+    proof -
+      from rank_eq have "rank_of X - n = card A + Suc n - n" by simp
+      also have "... = card A + 1" by simp
+      finally show ?thesis by simp
+    qed
+
+    with card_insert have "card (insert x A) = rank_of X - n" by simp
+
+    with indep_Ax show "\<exists>A'. indep_in X A' \<and> card A' = rank_of X - n" by blast
+  qed
   then obtain A' where "indep_in X A'" "card A' = rank_of X - n" by blast
 
   from this(2) Suc(2) augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close>]
