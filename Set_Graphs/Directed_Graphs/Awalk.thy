@@ -1100,7 +1100,12 @@ next
   then have "cas u p u" unfolding awalk_def by auto
 
   have "\<exists>xs ys. p = xs @ [(w, v)] @ ys"
-    by (metis \<open>(w, v) \<in> set p\<close> append_Cons append_Nil in_set_conv_decomp_first)
+  proof -
+    obtain xs ys where "p = xs @ (w, v) # ys"
+      using split_list[OF \<open>(w, v) \<in> set p\<close>] by blast
+    hence "p = xs @ [(w, v)] @ ys" by simp
+    thus "\<exists>xs ys. p = xs @ [(w, v)] @ ys" by blast
+  qed
   then obtain xs ys where "p = xs @ [(w, v)] @ ys" by blast
   from cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] False this
     have "xs \<noteq> []" by auto
