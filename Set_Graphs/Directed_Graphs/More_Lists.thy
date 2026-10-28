@@ -790,7 +790,12 @@ lemma non_empt_elim_triple:
 
 lemma nth_append':
   "\<lbrakk>(xs@ys) ! i = (xs@ys) ! j; i < length xs; j < length xs\<rbrakk> \<Longrightarrow> xs ! i =xs ! j"
-  by (metis nth_append)
+proof -
+  assume assms: "(xs@ys) ! i = (xs@ys) ! j" "i < length xs" "j < length xs"
+  from assms(2) have "(xs@ys) ! i = xs ! i" by (simp add: nth_append)
+  moreover from assms(3) have "(xs@ys) ! j = xs ! j" by (simp add: nth_append)
+  ultimately show "xs ! i = xs ! j" using assms(1) by simp
+qed
 
 lemma list_cases4:
   "\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P ;
