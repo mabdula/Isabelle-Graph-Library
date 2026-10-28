@@ -2084,7 +2084,22 @@ qed
               card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
           by force
         then have 31:"card {a\<in>(J - {pick J j}). a < pick J k} + 1 = card {a\<in>J. a < pick J k}"
-          by (metis 28 card_eq_1_iff)
+        proof -
+          have fin1: "finite {a \<in> (J - {pick J j}). a < pick J k}"
+          proof (rule finite_subset[of _ "{0..<pick J k}"])
+            show "{a \<in> (J - {pick J j}). a < pick J k} \<subseteq> {0..<pick J k}" by auto
+            show "finite {0..<pick J k}" by simp
+          qed
+          have disj: "{a \<in> (J - {pick J j}). a < pick J k} \<inter> {pick J j} = {}" by blast
+          have "card {a \<in> J. a < pick J k} =
+                card ({a \<in> (J - {pick J j}). a < pick J k} \<union> {pick J j})"
+            using 28 by simp
+          also have "\<dots> = card {a \<in> (J - {pick J j}). a < pick J k} + card {pick J j}"
+            using fin1 disj by (simp add: card_Un_disjoint)
+          finally have "card {a \<in> J. a < pick J k} =
+                card {a \<in> (J - {pick J j}). a < pick J k} + card {pick J j}" .
+          then show ?thesis by simp
+        qed
         then have 32: "card {a\<in>(J - {pick J j}). a < pick J k} = k - 1" 
           using \<open>card {a \<in> J. a < pick J k} = k\<close> by presburger
         then have 29:"pick (J - {pick J j}) (k - 1) = pick J k" 
