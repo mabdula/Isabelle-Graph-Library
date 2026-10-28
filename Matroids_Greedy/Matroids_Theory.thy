@@ -3132,10 +3132,17 @@ next
     show "((insert x B') \<inter> B'' \<noteq> {})"
     proof (cases "B'' \<inter> B' = {}")
       case True
-      with \<open>B' = E - B\<close> have "B'' = B" 
-        by (metis Diff_eq_empty_iff Int_Diff \<open>indep_system.basis E indep B''\<close>
-            \<open>indep_system.basis E indep B\<close> assms(1) indep_system.basis_subset_carrier
-            indep_system.basis_subset_eq inf.orderE)
+      have "B'' = B"
+      proof -
+        have B''_subset_E: "B'' \<subseteq> E"
+          using indep_system.basis_subset_carrier[OF assms(1) \<open>indep_system.basis E indep B''\<close>] .
+        have "B'' \<inter> (E - B) = {}"
+          using True \<open>B' = E - B\<close> by simp
+        with B''_subset_E have "B'' \<subseteq> B" by blast
+        from indep_system.basis_subset_eq[OF assms(1) \<open>indep_system.basis E indep B''\<close>
+            \<open>indep_system.basis E indep B\<close> this]
+        show "B'' = B" .
+      qed
       with \<open>B' = E - B\<close> \<open>x \<in> E - B'\<close> have "x \<in> (insert x B') \<inter> B''" by simp
       then show ?thesis by blast
     next
