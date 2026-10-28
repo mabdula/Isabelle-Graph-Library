@@ -276,7 +276,18 @@ proof(induction arbitrary: xs rule: less_induct)
         hence "xs = []@[x]@as@[s]@bs@[s]@cs@[x]@fs \<and> distinct bs \<and> s \<notin> set bs"
           using local.Cons  gf_def  by force
         then show ?thesis  
-          by (metis append.assoc)
+        proof -
+          assume prem: "xs = [] @ [x] @ as @ [s] @ bs @ [s] @ cs @ [x] @ fs \<and> distinct bs \<and> s \<notin> set bs"
+          from prem have eq: "xs = [] @ [x] @ as @ [s] @ bs @ [s] @ cs @ [x] @ fs"
+            by (rule conjunct1)
+          from prem have ds: "distinct bs"
+            by (rule conjunct2[THEN conjunct1])
+          from prem have sn: "s \<notin> set bs"
+            by (rule conjunct2[THEN conjunct2])
+          from eq have w: "xs = ([x] @ as) @ [s] @ bs @ [s] @ (cs @ [x] @ fs)"
+            by (simp add: append.assoc)
+          from w ds sn show ?thesis by blast
+        qed
       qed
     next
       case False 
