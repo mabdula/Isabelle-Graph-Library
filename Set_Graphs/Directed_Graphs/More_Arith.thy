@@ -674,7 +674,27 @@ and P_of_minE_strict2:
 
 lemma add_non_min_element_Min:
   "\<lbrakk>finite A; A \<noteq> {}; y \<le> x; y \<in> A; B = insert x A\<rbrakk> \<Longrightarrow> Min B = Min A"
-  by (metis Min.boundedE Min.insert_not_elem insert_absorb min_def order_antisym)
+proof -
+  assume fin: "finite A" and ne: "A \<noteq> {}" and yx: "y \<le> x" and yA: "y \<in> A" and B_def: "B = insert x A"
+  have fin_B: "finite B" using fin B_def by simp
+  have MinA_in_A: "Min A \<in> A" using fin ne by (rule Min_in)
+  have MinA_in_B: "Min A \<in> B" using MinA_in_A B_def by simp
+  have MinA_le: "\<And>b. b \<in> B \<Longrightarrow> Min A \<le> b"
+  proof -
+    fix b assume "b \<in> B"
+    then consider (eq) "b = x" | (inA) "b \<in> A" using B_def by auto
+    then show "Min A \<le> b"
+    proof cases
+      case eq
+      have "Min A \<le> y" using fin yA by (rule Min_le)
+      with eq yx show ?thesis by simp
+    next
+      case inA
+      show ?thesis using fin inA by (rule Min_le)
+    qed
+  qed
+  from fin_B MinA_le MinA_in_B show "Min B = Min A" by (rule Min_eqI)
+qed
 
 subsection \<open>Integrality\<close>
 
