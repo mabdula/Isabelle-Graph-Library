@@ -1887,7 +1887,29 @@ qed
                          t1 < dim_row A \<and> 
                          t1 = pick I (insert_index i t)" 
       using asmi pick_le row_submatrix_UNIV 
-      by (metis (full_types) 16 24)
+    proof -
+      have card_bound: "insert_index i t < card {k. k < dim_row A \<and> k \<in> I}"
+      proof -
+        have "card {k. k < dim_row A \<and> k \<in> I} = dim_row B"
+          using "16" by simp
+        then show ?thesis
+          using "24" by simp
+      qed
+      have dim_eq: "dim_row (submatrix A I UNIV) = card {k. k < dim_row A \<and> k \<in> I}"
+        by (rule dim_submatrix(1))
+      have row_bound: "insert_index i t < dim_row (submatrix A I UNIV)"
+        using dim_eq card_bound by simp
+      have eq1: "row (submatrix A I UNIV) (insert_index i t) = row A (pick I (insert_index i t))"
+        using card_bound row_submatrix_UNIV by blast
+      have eq2: "pick I (insert_index i t) < dim_row A"
+        using card_bound pick_le by blast
+      have "row A (pick I (insert_index i t)) = row (submatrix A I UNIV) (insert_index i t) \<and>
+            pick I (insert_index i t) < dim_row A \<and>
+            pick I (insert_index i t) = pick I (insert_index i t)"
+        using eq1 eq2 by auto
+      then show thesis
+        using that by blast
+    qed
     obtain t2 where t2: "row A t2 = row (submatrix A (I - {pick I i}) UNIV) t \<and> 
                          t2 < dim_row A \<and> 
                          t2 = pick (I - {pick I i}) t"
