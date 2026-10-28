@@ -650,10 +650,53 @@ proof(rule invar_props_intros, goal_cases)
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-      apply (simp add: BestInGreedy_upd1_def carrier_pref_def Let_def num_iter_def)
-      using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-      apply (clarsimp elim!: invar_props_elims call_cond_elims)
-      by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+      proof -
+        have list_ne: "carrier_list best_in_greedy_state \<noteq> []"
+          using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close> by (auto elim!: call_cond_elims)
+        define n where n_def: "n = num_iter c order best_in_greedy_state"
+        have drop_n: "carrier_list best_in_greedy_state = drop n carrier_sorted"
+        proof -
+          have "carrier_list best_in_greedy_state = drop (num_iter c order best_in_greedy_state) carrier_sorted"
+            using \<open>invar_2 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
+          then show ?thesis by (simp add: n_def[symmetric])
+        qed
+        have n_less: "n < length carrier_sorted"
+        proof (rule ccontr)
+          assume "\<not> n < length carrier_sorted"
+          then have "length carrier_sorted \<le> n" by simp
+          then have "drop n carrier_sorted = []" by simp
+          with drop_n list_ne show False by simp
+        qed
+        have carrier_list_upd1: "carrier_list (BestInGreedy_upd1 best_in_greedy_state) = tl (carrier_list best_in_greedy_state)"
+          by (simp add: BestInGreedy_upd1_def Let_def)
+        have tl_eq: "tl (carrier_list best_in_greedy_state) = drop (Suc n) carrier_sorted"
+        proof -
+          have "tl (carrier_list best_in_greedy_state) = tl (drop n carrier_sorted)"
+            using drop_n by simp
+          also have "\<dots> = drop (Suc n) carrier_sorted"
+            by (simp add: drop_Suc tl_drop)
+          finally show ?thesis .
+        qed
+        have num_iter_upd1: "num_iter c order (BestInGreedy_upd1 best_in_greedy_state) = Suc n"
+        proof -
+          have len_upd1: "length (carrier_list (BestInGreedy_upd1 best_in_greedy_state)) = length carrier_sorted - Suc n"
+            by (simp add: carrier_list_upd1 tl_eq length_drop)
+          show ?thesis
+            unfolding num_iter_def using len_upd1 n_less by linarith
+        qed
+        have "carrier_pref c order (Suc n) = set (take (Suc n) carrier_sorted)"
+          by (simp add: carrier_pref_def)
+        also have "\<dots> = set (take n carrier_sorted @ [hd (drop n carrier_sorted)])"
+          using n_less by (simp add: take_hd_drop)
+        also have "\<dots> = insert (hd (drop n carrier_sorted)) (set (take n carrier_sorted))"
+          by simp
+        also have "\<dots> = insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order n)"
+          by (simp add: drop_n carrier_pref_def)
+        finally have key: "carrier_pref c order (Suc n) = 
+            insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order n)" .
+        then show ?thesis
+          by (simp add: num_iter_upd1 n_def[symmetric])
+      qed
 
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
