@@ -577,7 +577,18 @@ qed
 
 lemma awalk_verts_length:
   "awalk E u p v \<Longrightarrow> length (awalk_verts u p) = length p + 1"
-  by (metis Suc_eq_plus1 awalk_def awalk_verts_conv' length_Cons length_map list.size(3))
+proof -
+  assume "awalk E u p v"
+  then have cas: "cas u p v" by (auto simp: awalk_def)
+  show "length (awalk_verts u p) = length p + 1"
+  proof (cases p)
+    case Nil
+    with cas show ?thesis by (simp add: awalk_verts_conv')
+  next
+    case (Cons e es)
+    with cas show ?thesis by (simp add: awalk_verts_conv')
+  qed
+qed
 
 lemma cas_rev:
   "cas u p v \<Longrightarrow> cas v (rev (map prod.swap p)) u"
