@@ -207,8 +207,32 @@ proof-
          else case acc of None \<Rightarrow> Some e | Some d \<Rightarrow> if elements_costs c d < elements_costs c e then Some e else Some d)"
   have none_no_solution:"foldr ?iteration xs None = None \<Longrightarrow> \<not> ( \<exists> x \<in> set xs. x \<notin> X \<and> orcl x X)"
     for xs
-    by(induction xs)
-      (auto simp add: option.case_eq_if, meson option.discI, smt (verit, best) not_Some_eq option.simps(5))
+    proof(induction xs)
+      case Nil
+      then show ?case by simp
+    next
+      case (Cons e es)
+      show ?case
+      proof(cases "e \<in> X \<or> \<not> orcl e X")
+        case True
+        then have "foldr ?iteration (e # es) None = foldr ?iteration es None"
+          by simp
+        with Cons.prems have "foldr ?iteration es None = None"
+          by simp
+        with Cons.IH have "\<not> (\<exists>y \<in> set es. y \<notin> X \<and> orcl y X)"
+          by simp
+        with True show ?thesis
+          by auto
+      next
+        case False
+        then have "?iteration e (foldr ?iteration es None) \<noteq> None"
+          by (cases "foldr ?iteration es None") simp_all
+        then have "foldr ?iteration (e # es) None \<noteq> None"
+          by simp
+        with Cons.prems show ?thesis
+          by simp
+      qed
+    qed
   have "set es \<subseteq> E"
     by (simp add: set_assum(1))
   hence "\<exists> es1 es2. es = es1@[x]@es2 \<and> x \<notin> X \<and> (insert x X) \<in> F \<and>
