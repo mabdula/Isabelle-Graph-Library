@@ -4524,8 +4524,45 @@ lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
 
 lemma sorted_aux4:
   "\<lbrakk>distinct xs; xs = (filter P xs) @ ys\<rbrakk> \<Longrightarrow> ys = (filter (\<lambda>x. \<not> P x) xs)"
-  by (metis (no_types, lifting) filter_append filter_empty_conv filter_id_conv filter_set
-      member_filter self_append_conv self_append_conv2)
+proof -
+  assume dist: "distinct xs" and split: "xs = filter P xs @ ys"
+
+  from dist split have "distinct (filter P xs @ ys)" by simp
+  then have disjoint: "set (filter P xs) \<inter> set ys = {}"
+    by (simp add: distinct_append)
+
+  have subset_ys: "set ys \<subseteq> set xs" by (subst split) simp
+
+  have not_P: "\<forall>y \<in> set ys. \<not> P y"
+  proof
+    fix y
+    assume "y \<in> set ys"
+    show "\<not> P y"
+    proof
+      assume "P y"
+      from \<open>y \<in> set ys\<close> subset_ys have "y \<in> set xs" by blast
+      with \<open>P y\<close> have "y \<in> set (filter P xs)" by simp
+      with disjoint \<open>y \<in> set ys\<close> show False by blast
+    qed
+  qed
+
+  have filter_ys: "filter (\<lambda>x. \<not> P x) ys = ys"
+    using not_P by (simp add: filter_id_conv)
+
+  have all_P: "\<forall>x \<in> set (filter P xs). P x" by auto
+
+  have step2: "filter (\<lambda>x. \<not> P x) (filter P xs) = []"
+    using all_P by (simp add: filter_empty_conv)
+
+  have "filter (\<lambda>x. \<not> P x) xs = filter (\<lambda>x. \<not> P x) (filter P xs) @ filter (\<lambda>x. \<not> P x) ys"
+    by (subst split) (simp add: filter_append)
+  also have "\<dots> = [] @ filter (\<lambda>x. \<not> P x) ys"
+    using step2 by simp
+  also have "\<dots> = ys"
+    using filter_ys by simp
+  finally have "filter (\<lambda>x. \<not> P x) xs = ys" .
+  then show "ys = filter (\<lambda>x. \<not> P x) xs" by simp
+qed
 
 
 lemma sorted_aux5:
