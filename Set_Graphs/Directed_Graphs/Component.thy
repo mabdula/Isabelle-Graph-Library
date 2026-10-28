@@ -243,7 +243,7 @@ lemma awalk_induce:
     show "\<exists>v'\<in>S. (u, v') \<in> G \<or> (v', u) \<in> G"
       using snd_e_in_S uv'_in_G by blast
   qed
-  by (metis (no_types, lifting) CollectI awalkE' case_prodI fst_conv induce_subgraph_def snd_conv subsetD)
+  by (fastforce simp: induce_subgraph_def set_awalk_verts elim!: awalkE')
 
 lemma induce_subgraph_of_subgraph_verts[simp]:
   "subgraph H G \<Longrightarrow> dVs (G \<downharpoonright> dVs H) = dVs H"
