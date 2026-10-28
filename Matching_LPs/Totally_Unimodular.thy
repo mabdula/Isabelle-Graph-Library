@@ -3048,7 +3048,7 @@ proof rule
           by simp
         have 19: "submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J =
           submatrix (mat_of_rows n [(- (unit_vec n i) :: 'a vec)]) {0} J" 
-          by (metis 17 18)
+          using 17 18 by simp
         have 20: "B = submatrix A I J @\<^sub>r 
                       submatrix (mat_of_rows n [(- (unit_vec n i) :: 'a vec)]) {0} J" 
           by (simp add: 10 19)
