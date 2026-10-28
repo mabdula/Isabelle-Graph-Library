@@ -597,7 +597,20 @@ proof -
     have sg: "subgraph H G" using a3 by (auto simp: max_subgraph_def)
     then have "H = H'"
       using a1 a2 a3 a4
-      by (metis induced_subgraphD max_subgraph_def subgraphI)
+    proof -
+    show "H = H'"
+    proof (rule ccontr)
+      assume neq: "H \<noteq> H'"
+      have sub1: "subgraph H H'"
+        using a4 by (auto intro: subgraphI)
+      have sub2: "subgraph H' G"
+        using a2 by (auto dest: induced_subgraphD)
+      have "\<not> strongly_connected H'"
+        using a3 neq sub1 sub2 by (auto simp: max_subgraph_def)
+      then show False
+        using a1 by contradiction
+    qed
+    qed
   } note X = this
 
   { fix H
