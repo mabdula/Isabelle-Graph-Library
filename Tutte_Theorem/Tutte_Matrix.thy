@@ -111,10 +111,23 @@ lemma univ_is_finite:
 lemma oriented_edges[elim?]:
   assumes "(a, b) \<in> oriented_edges" 
   shows "{a, b} \<in> G" 
-  using assms 
-  unfolding oriented_edges_def  
-  unfolding get_oriented_def
-  by (smt (z3) fst_conv insert_commute mem_Collect_eq prod.sel(2))
+proof -
+  from assms obtain x y where xy: "(a, b) = get_oriented x y" and G: "{x, y} \<in> G"
+    by (auto simp: oriented_edges_def)
+  have "{a, b} = {x, y}"
+  proof (cases "get_oriented x y = (x, y)")
+    case True
+    with xy have "(a, b) = (x, y)" by simp
+    then show ?thesis by simp
+  next
+    case False
+    then have "get_oriented x y = (y, x)"
+      using get_oriented_either_direction[of x y] by blast
+    with xy have "(a, b) = (y, x)" by simp
+    then show ?thesis by (simp add: insert_commute)
+  qed
+  then show ?thesis using G by simp
+qed
 
 lemma one_direction_in_oriented:
   assumes "{a, b} \<in> G"
