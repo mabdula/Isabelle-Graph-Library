@@ -2033,8 +2033,28 @@ qed
           using True by fastforce
         have "j < dim_col B - 1"
           using "3" True by blast
-        then show ?thesis using pick_suc_diff_set 
-          by (metis False True 10 23 12 basic_trans_rules(22) card_mono insert_index_def)
+        then have j_lt: "Suc j < dim_col B"
+          by presburger
+        have "Suc j < card J \<or> infinite J"
+        proof(cases "infinite J")
+          case True
+          then show ?thesis by simp
+        next
+          case False
+          then have fin: "finite J" by simp
+          have "card {i. i < dim_col A \<and> i \<in> J} \<le> card J"
+            using 12 fin card_mono by blast
+          then show ?thesis using 10 j_lt by simp
+        qed
+        then have eq1: "pick J (Suc j) = pick (J - {pick J j}) j"
+          using pick_suc_diff_set by blast
+        have "pick J (insert_index j k) = pick J (Suc j)"
+          using \<open>pick J (insert_index j k) = pick J (Suc k)\<close> \<open>pick J (Suc k) = pick J (Suc j)\<close> by simp
+        also have "\<dots> = pick (J - {pick J j}) j"
+          using eq1 by simp
+        also have "\<dots> = pick (J - {pick J j}) k"
+          using True by simp
+        finally show ?thesis .
       next
         case False
         have "k > j"
