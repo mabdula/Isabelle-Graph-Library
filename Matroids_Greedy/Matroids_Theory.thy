@@ -4253,7 +4253,12 @@ proof-
 
   from \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close>
   have "card B1 \<le> card B2" 
-    by (metis X(1) lower_rank_le_upper_rank upper_rank_equiv_rank)
+  proof -
+    have "lower_rank_of X \<le> upper_rank_of X" using lower_rank_le_upper_rank[OF X(1)] .
+    also have "upper_rank_of X = rank X" using upper_rank_equiv_rank[OF X(1)] .
+    finally show "card B1 \<le> card B2"
+      using \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close> by simp
+  qed
   with X B1 B2 show ?thesis by metis
 qed
 
