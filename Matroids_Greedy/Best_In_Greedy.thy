@@ -1376,7 +1376,18 @@ proof-
     indep_system.basis_in (matroid.indep_abs indep_fn) F B1 \<and>
     indep_system.basis_in (matroid.indep_abs indep_fn) F B2 \<and>
     card B1 \<le> card B2 \<and>
-    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = Frac (int (card B1)) (int (card B2))" by metis
+    indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) = Frac (int (card B1)) (int (card B2))"
+  proof -
+    from indep_system.ex_rank_quotient_frac[OF indep_system_axioms_abs]
+    obtain F B1 B2 where
+      h1: "F \<subseteq> (matroid.carrier_abs carrier)" and
+      h2: "indep_system.basis_in (matroid.indep_abs indep_fn) F B1" and
+      h3: "indep_system.basis_in (matroid.indep_abs indep_fn) F B2" and
+      h4: "card B1 \<le> card B2" and
+      eq: "Frac (int (card B1)) (int (card B2)) = indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn)"
+      by blast
+    show ?thesis using h1 h2 h3 h4 eq[symmetric] by blast
+  qed
   then obtain F B1 B2 where "F \<subseteq> (matroid.carrier_abs carrier)"
     "indep_system.basis_in (matroid.indep_abs indep_fn) F B1"
     "indep_system.basis_in (matroid.indep_abs indep_fn) F B2"
