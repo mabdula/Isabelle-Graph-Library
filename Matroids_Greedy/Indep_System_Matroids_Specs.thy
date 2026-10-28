@@ -194,7 +194,21 @@ qed
 
 lemma indep_abs_to_impl:
   "set_inv X \<Longrightarrow> indep_abs indep_fn (to_set X) \<Longrightarrow> indep_fn X"
-  by (metis finite_indep_abs_expr from_set_correct indep_abs_finite invar invarE invar_from_set)
+proof -
+  assume "set_inv X" and "indep_abs indep_fn (to_set X)"
+  hence "finite (to_set X)" using indep_abs_finite by blast
+  have indep_eq: "indep_abs indep_fn (to_set X) = indep_fn (from_set (to_set X))"
+    using finite_indep_abs_expr[OF \<open>finite (to_set X)\<close>] .
+  from \<open>indep_abs indep_fn (to_set X)\<close> indep_eq
+  have indep_from_set: "indep_fn (from_set (to_set X))" by simp
+  have to_set_eq: "to_set (from_set (to_set X)) = to_set X"
+    using from_set_correct[OF \<open>finite (to_set X)\<close>] .
+  have inv_from_set: "set_inv (from_set (to_set X))"
+    by (rule invar_from_set)
+  have "indep_fn (from_set (to_set X)) = indep_fn X"
+    using invar inv_from_set \<open>set_inv X\<close> to_set_eq by blast
+  with indep_from_set show "indep_fn X" by simp
+qed
 
 lemma indep_abs_equiv:
   "set_inv X \<Longrightarrow> indep_fn X = indep_abs indep_fn (to_set X)"
