@@ -457,10 +457,57 @@ proof (intro invar_props_intros, goal_cases)
 
   have carrier_pref_expr: "carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)) = 
     insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-    apply (simp add: BestInGreedy_upd1_def carrier_pref_def Let_def num_iter_def)
-    using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-    apply (clarsimp elim!: invar_props_elims call_cond_elims)
-    by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+  proof -
+    obtain x xs where carrier_split: "carrier_list best_in_greedy_state = x # xs"
+      using \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close>
+      by (auto elim!: call_cond_elims)
+    let ?n = "num_iter c order best_in_greedy_state"
+    have drop_eq: "carrier_list best_in_greedy_state = drop ?n carrier_sorted"
+      using \<open>invar_2 c order best_in_greedy_state\<close>
+      by (auto elim!: invar_props_elims)
+    have n_less: "?n < length carrier_sorted"
+    proof (rule ccontr)
+      assume "\<not> ?n < length carrier_sorted"
+      then have "length carrier_sorted \<le> ?n" by simp
+      then have "drop ?n carrier_sorted = []" by simp
+      with drop_eq carrier_split show False by simp
+    qed
+    have upd1_list: "carrier_list (BestInGreedy_upd1 best_in_greedy_state) = xs"
+      by (simp add: BestInGreedy_upd1_def Let_def carrier_split)
+    have drop_xxs: "drop ?n carrier_sorted = x # xs"
+      using drop_eq carrier_split by simp
+    have len_carrier_sorted: "length carrier_sorted = Suc ?n + length xs"
+    proof -
+      have "length carrier_sorted - ?n = length (drop ?n carrier_sorted)"
+        by (simp add: length_drop)
+      also have "\<dots> = Suc (length xs)"
+        by (simp add: drop_xxs)
+      finally have diff_eq: "length carrier_sorted - ?n = Suc (length xs)" .
+      with n_less show ?thesis by linarith
+    qed
+    have num_iter_upd1: "num_iter c order (BestInGreedy_upd1 best_in_greedy_state) = Suc ?n"
+    proof -
+      have "num_iter c order (BestInGreedy_upd1 best_in_greedy_state) = length carrier_sorted - length xs"
+        by (simp add: num_iter_def upd1_list)
+      with len_carrier_sorted show ?thesis by linarith
+    qed
+    have hd_eq: "hd (drop ?n carrier_sorted) = hd (carrier_list best_in_greedy_state)"
+      using drop_eq by simp
+    have take_split: "take ?n carrier_sorted @ [hd (drop ?n carrier_sorted)] = take (Suc ?n) carrier_sorted"
+      using take_hd_drop[OF n_less] .
+    have "carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)) =
+      set (take (Suc ?n) carrier_sorted)"
+      by (simp add: carrier_pref_def num_iter_upd1)
+    also have "\<dots> = set (take ?n carrier_sorted @ [hd (drop ?n carrier_sorted)])"
+      using take_split by simp
+    also have "\<dots> = insert (hd (drop ?n carrier_sorted)) (set (take ?n carrier_sorted))"
+      by simp
+    also have "\<dots> = insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order ?n)"
+      using hd_eq by (simp add: carrier_pref_def)
+    finally show "carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state)) =
+      insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
+      .
+  qed
 
   show "to_set (result (BestInGreedy_upd1 best_in_greedy_state)) \<subseteq>
     carrier_pref c order (num_iter c order (BestInGreedy_upd1 best_in_greedy_state))"
