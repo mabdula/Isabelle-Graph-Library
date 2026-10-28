@@ -2459,7 +2459,7 @@ proof -
     have f2: "j < card ({0..<n} \<inter> J)"
       using \<open>j < card ({0..<n} \<inter> J)\<close> by fastforce
     have "dim_vec b = n"
-      by (smt (z3) assms carrier_vecD)
+      using assms by (rule carrier_vecD)
     then show ?thesis
       using f2 f1 by (simp add: list_of_vec_index nth_nths)
   qed
