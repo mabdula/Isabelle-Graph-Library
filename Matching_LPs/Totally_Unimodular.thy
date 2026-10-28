@@ -1914,7 +1914,21 @@ qed
                          t2 < dim_row A \<and> 
                          t2 = pick (I - {pick I i}) t"
       using asmi dim_submatrix(1) pick_le row_submatrix_UNIV 
-      by (metis (full_types))
+    proof -
+      have tbound: "t < card {a. a < dim_row A \<and> a \<in> (I - {pick I i})}" 
+        using asmi by (simp add: dim_submatrix(1))
+      have "row (submatrix A (I - {pick I i}) UNIV) t = row A (pick (I - {pick I i}) t)"
+        using row_submatrix_UNIV tbound by blast
+      moreover have "pick (I - {pick I i}) t < dim_row A"
+        using tbound pick_le by blast
+      ultimately have "row A (pick (I - {pick I i}) t)
+          = row (submatrix A (I - {pick I i}) UNIV) t
+          \<and> pick (I - {pick I i}) t < dim_row A
+          \<and> pick (I - {pick I i}) t = pick (I - {pick I i}) t"
+        by simp
+      then show thesis
+        using that by blast
+    qed
     have 7: "B = submatrix (submatrix A I UNIV) UNIV J" 
       using assms(2) submatrix_split2 by blast
     have 25:"B $$ (insert_index i t, insert_index j k) = 
