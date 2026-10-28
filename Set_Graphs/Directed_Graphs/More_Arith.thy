@@ -417,7 +417,13 @@ next
   case False
   have "(\<Sum>j = 0..<Suc i. card (S j)) = 
         (\<Sum>j = 0..<Suc i. card (S j - {x}))"
-    by (metis "2.prems"(3) False empty_Diff not_less_eq single_diff_remove)
+  proof (rule sum.cong, rule refl)
+    fix j assume "j \<in> {0..<Suc i}"
+    hence "j < Suc i" by simp
+    hence "x \<notin> S j" using False by blast
+    hence "S j - {x} = S j" by blast
+    thus "card (S j) = card (S j - {x})" by simp
+  qed
   also have "... \<le> (life_time + 1) * (card \<S>) "
     using 2(4) 2(2)  2(5) 2(6) 
     by (intro 2(3)) fastforce+
