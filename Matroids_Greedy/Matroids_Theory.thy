@@ -3173,7 +3173,8 @@ proof
 
   fix X
   have "(dual E (dual E indep)) X = 
-    (X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> (X \<inter> B' = {})))" using dual_def by metis
+    (X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> (X \<inter> B' = {})))"
+    unfolding dual_def by blast
   also have "... =
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> (X \<inter> (E - B) = {})))"
     using dual_basis_complement[OF assms] indep_system.basis_subset_carrier
