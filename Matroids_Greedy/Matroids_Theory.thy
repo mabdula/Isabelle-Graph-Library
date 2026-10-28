@@ -2837,7 +2837,12 @@ proof (rule ballI, rule ballI, rule ballI, rule ballI)
   have "indep (C2 - {e})" by blast
   with matroid.indep_iff_rank_of[OF assms(1) \<open>(C2 - {e}) \<subseteq> E\<close>] \<open>e \<in> C1 \<inter> C2\<close>
   have C2_minus_e_rank: "matroid.rank_of indep (C2 - {e}) = card C2 - 1"
-    by (metis IntD2 card_Diff_singleton)
+  proof -
+    from \<open>e \<in> C1 \<inter> C2\<close> have "e \<in> C2" by (rule IntD2)
+    then have "card (C2 - {e}) = card C2 - 1" by (rule card_Diff_singleton)
+    with matroid.indep_iff_rank_of[OF assms(1) \<open>(C2 - {e}) \<subseteq> E\<close>] \<open>indep (C2 - {e})\<close>
+    show "matroid.rank_of indep (C2 - {e}) = card C2 - 1" by simp
+  qed
 
   have 1: "card C1 - 1 + matroid.rank_of indep (C1 \<union> C2 - {e, f}) + card C2 - 1 =
     matroid.rank_of indep C1 + matroid.rank_of indep (C1 \<union> C2 - {e, f}) + matroid.rank_of indep C2"
