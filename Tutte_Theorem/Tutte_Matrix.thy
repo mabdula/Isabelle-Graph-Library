@@ -720,9 +720,18 @@ proof -
   have "(p^^0) i = i" by simp
   then have "support p i!0 = i" 
     by (simp add: assms least_power_of_permutation(2) p_is_permutation)
-  then show ?thesis 
-    by (metis assms least_power_of_permutation(2) length_map length_upt nth_mem p_is_permutation 
-        zero_less_diff)
+  have "permutation p"
+    using assms by (rule p_is_permutation)
+  then have lp_pos: "0 < least_power p i"
+    by (rule least_power_of_permutation(2))
+  then have "0 < length (support p i)"
+    by simp
+  then have "support p i ! 0 \<in> set (support p i)"
+    by (rule nth_mem)
+  moreover have "support p i ! 0 = i"
+    using lp_pos by simp
+  ultimately show ?thesis
+    by simp
 qed
 
 lemma p_diff_inv_p_pow:
