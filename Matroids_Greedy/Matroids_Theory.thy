@@ -4104,7 +4104,29 @@ proof-
   moreover have "\<forall>X \<subseteq> carrier. int (upper_rank_of X) \<ge> 0"
     by simp
   ultimately have 2: "\<forall>X \<subseteq> carrier. Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<ge> 0"
-    by (smt (verit, best) Frac_def One_rat_def lower_rank_le_upper_rank nat_int_comparison(3) zero_le_Fract_iff)
+  proof (intro allI impI)
+    fix X
+    assume X_subset: "X \<subseteq> carrier"
+    show "Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<ge> 0"
+    proof (cases "lower_rank_of X = upper_rank_of X")
+      case True
+      then show ?thesis unfolding Frac_def by simp
+    next
+      case False
+      from lower_rank_le_upper_rank[OF X_subset]
+      have le: "lower_rank_of X \<le> upper_rank_of X" .
+      have lt: "lower_rank_of X < upper_rank_of X"
+        using le False by linarith
+      have upper_pos: "0 < upper_rank_of X"
+        using lt by linarith
+      have pos: "(0::int) < int (upper_rank_of X)"
+        using upper_pos by simp
+      have nonneg: "(0::int) \<le> int (lower_rank_of X)" by simp
+      have fract_nonneg: "0 \<le> Fract (int (lower_rank_of X)) (int (upper_rank_of X))"
+        using zero_le_Fract_iff[OF pos] nonneg by simp
+      from fract_nonneg False show ?thesis unfolding Frac_def by simp
+    qed
+  qed
 
   from 1 2 Min_ge_iff[OF `finite ?fracs` `?fracs \<noteq> {}`] show ?thesis by auto
 qed
