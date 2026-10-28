@@ -4281,8 +4281,36 @@ proof (rule ccontr, goal_cases)
   have "rank_quotient = Fract (int (card B1)) (int (card B2))" by simp
 
   with rank_quotient_leq_1 have "card B1 \<le> card B2" (* unclean, TODO change *)
-    by (smt (verit, ccfv_SIG) Fract_le_one_iff \<open>F \<subseteq> carrier\<close> \<open>basis_in F B1\<close> \<open>basis_in F B2\<close>
-        basis_in_finite basis_in_subset_eq card_0_eq empty_subsetI of_nat_le_0_iff of_nat_le_iff)
+  proof -
+    from \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close> rank_quotient_leq_1
+    have le1: "Fract (int (card B1)) (int (card B2)) \<le> 1" by simp
+    show "card B1 \<le> card B2"
+    proof (cases "card B2 = 0")
+      case True
+      have "B2 = {}"
+        using True \<open>F \<subseteq> carrier\<close> \<open>basis_in F B2\<close> basis_in_finite by auto
+      with basis_in_max_indep_in[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B2\<close>]
+      have "\<forall>x \<in> F. \<not> indep_in F {x}" by simp
+      then have not_indep: "\<forall>x \<in> F. \<not> indep {x}" using indep_in_def by blast
+      have "B1 = {}"
+      proof (rule ccontr)
+        assume "B1 \<noteq> {}"
+        then obtain x where "x \<in> B1" by blast
+        from basis_in_subset_carrier[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B1\<close>] have "B1 \<subseteq> F" .
+        with \<open>x \<in> B1\<close> have "x \<in> F" by blast
+        from indep_in_indep[OF basis_in_indep_in[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B1\<close>]] have "indep B1" .
+        with indep_subset \<open>x \<in> B1\<close> have "indep {x}" by auto
+        with not_indep \<open>x \<in> F\<close> show False by blast
+      qed
+      with \<open>B2 = {}\<close> show ?thesis by simp
+    next
+      case False
+      then have pos_b: "int (card B2) > 0" by simp
+      from le1 pos_b have "int (card B1) \<le> int (card B2)"
+        by (simp add: Fract_le_one_iff)
+      then show ?thesis by simp
+    qed
+  qed
 
   with \<open>(int (card B1)) \<noteq> (int (card B2))\<close>
   have "card B1 < card B2" by simp
