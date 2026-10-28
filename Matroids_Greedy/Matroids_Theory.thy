@@ -983,7 +983,14 @@ qed
       assume "j < ?t"
 
       from \<open>set l = (J - K) \<and> length l = ?t\<close> \<open>j < ?t\<close>
-      have "l ! j \<in> J" by (metis Diff_iff nth_mem)
+      have "l ! j \<in> J"
+      proof -
+        from \<open>set l = (J - K) \<and> length l = ?t\<close> have set_l: "set l = J - K" and len_l: "length l = ?t" by auto
+        from \<open>j < ?t\<close> len_l have "j < length l" by simp
+        then have "l ! j \<in> set l" by (rule nth_mem)
+        with set_l have "l ! j \<in> J - K" by simp
+        then show "l ! j \<in> J" by (rule DiffD1)
+      qed
       with basis_in_subset_carrier[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F J\<close>] \<open>F \<subseteq> carrier\<close>
       have "l ! j \<in> carrier" by blast
 
