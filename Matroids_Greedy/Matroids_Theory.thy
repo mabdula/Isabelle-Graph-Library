@@ -1898,8 +1898,10 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "card X = card Y - 0" "X \<subseteq> Y" "P Y"
-    then show "P X" using assms(1) card_subset_eq finite_subset
-      by (metis assms(3) minus_nat.diff_0)
+    then have card_eq: "card X = card Y" by simp
+    from assms(1) assms(3) have "finite Y" using finite_subset by blast
+    from card_subset_eq[OF this \<open>X \<subseteq> Y\<close> card_eq] have "X = Y" .
+    with \<open>P Y\<close> show "P X" by simp
   qed
 next
   case (Suc n)
