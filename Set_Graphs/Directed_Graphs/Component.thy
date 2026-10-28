@@ -570,9 +570,16 @@ lemma sccs_dVs_restrict_eq:
 
 lemma in_sccs_dVsI_sccs:
   assumes "S \<in> dVs ` sccs G" shows "S \<in> sccs_dVs G"
-  using assms
-  apply (auto simp: sccs_dVs_eq in_sccs_iff wf_digraph.sccs_verts_conv image_iff)
-  by (metis ddfs.verts_eq)
+proof -
+  from assms obtain C where C: "C \<in> sccs G" and S: "S = dVs C" by auto
+  have wfd: "wf_digraph (ddfs.digraph_of G)" by (rule ddfs.wf_digraph_digraph_of)
+  have c: "ddfs.digraph_of C \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+    using C by (simp add: in_sccs_iff)
+  have "verts (ddfs.digraph_of C) \<in> pre_digraph.sccs_verts (ddfs.digraph_of G)"
+    unfolding wf_digraph.sccs_verts_conv[OF wfd] using c by (rule imageI)
+  then show "S \<in> sccs_dVs G"
+    by (auto simp: sccs_dVs_eq ddfs.verts_eq S)
+qed
 
 
 lemma arc_mono_strongly_connected[intro,simp]: "arc_mono strongly_connected"
