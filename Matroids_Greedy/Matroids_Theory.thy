@@ -2711,7 +2711,7 @@ next
     subgoal using assms(1) .
     subgoal by blast
     subgoal using indep_ex by blast
-    subgoal by (metis subset_trans)
+    subgoal by blast
     done
 
   have "\<forall>C. C \<in> \<C> = indep_system.circuit E ?indep C"
