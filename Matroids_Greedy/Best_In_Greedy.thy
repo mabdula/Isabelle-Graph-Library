@@ -1485,10 +1485,22 @@ proof-
 
   from \<open>length ?l_F = card F\<close> \<open>length ?l_not_F = card (?carrier_abs - F)\<close> order_expr1
   have "length ?order = card ?carrier_abs"
-    by (metis Diff_partition \<open>F \<subseteq> ?carrier_abs\<close> \<open>length ?l_not_B1 = card (?carrier_abs - B1)\<close>
-        \<open>set ?l_not_B1 = ?carrier_abs - B1\<close> \<open>set ?l_not_F = ?carrier_abs - F\<close>
-        \<open>set ?l_F = F\<close> \<open>set ?l_B1 \<inter> set ?l_not_B1 = {}\<close>
-        card_distinct distinct_append distinct_card set_append)
+  proof -
+    have finite_F: "finite F"
+      using \<open>F \<subseteq> matroid.carrier_abs carrier\<close> \<open>finite (matroid.carrier_abs carrier)\<close> finite_subset
+      by blast
+    have union_eq: "F \<union> (matroid.carrier_abs carrier - F) = matroid.carrier_abs carrier"
+      using \<open>F \<subseteq> matroid.carrier_abs carrier\<close> by blast
+    have disjoint: "F \<inter> (matroid.carrier_abs carrier - F) = {}"
+      by blast
+    have card_sum: "card (matroid.carrier_abs carrier) = card F + card (matroid.carrier_abs carrier - F)"
+      using card_Un_disjoint[OF finite_F \<open>finite (matroid.carrier_abs carrier - F)\<close> disjoint] union_eq
+      by simp
+    show ?thesis
+      using order_expr1 \<open>length ?l_F = card F\<close>
+        \<open>length ?l_not_F = card (matroid.carrier_abs carrier - F)\<close> card_sum
+      by simp
+  qed
   from \<open>set ?l_F = F\<close> \<open>set ?l_not_F = (?carrier_abs - F)\<close> order_expr1
   have "set ?order = ?carrier_abs"
     using \<open>F \<subseteq> matroid.carrier_abs carrier\<close> by auto
