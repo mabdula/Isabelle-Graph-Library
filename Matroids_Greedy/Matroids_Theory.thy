@@ -2083,8 +2083,10 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "card X = card Y - 0" "X \<subseteq> Y"
-    then show "r X \<le> r Y"
-      by (metis assms(1) assms(2) card_subset_eq diff_zero dual_order.eq_iff finite_subset)
+      have "card X = card Y" using \<open>card X = card Y - 0\<close> by simp
+      moreover have "finite Y" using assms(1) assms(2) finite_subset by blast
+      ultimately have "X = Y" using \<open>X \<subseteq> Y\<close> card_subset_eq by blast
+      then show "r X \<le> r Y" by simp
   qed
 next
   case (Suc n)
