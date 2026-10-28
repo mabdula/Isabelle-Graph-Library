@@ -672,7 +672,15 @@ proof(induction xs arbitrary: x)
     proof(cases "\<exists> z. z \<in> set list \<and> P z")
       case True
       then obtain y ys zs where "xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set zs \<and>  P z)" 
-        by (metis Cons.IH list.set_intros(2) local.Cons)
+      proof -
+        obtain w where w_mem: "w \<in> set list" and wP: "P w"
+          using True by blast
+        have "w \<in> set xs"
+          using local.Cons w_mem by (simp add: list.set_intros(2))
+        then obtain y ys zs where "xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set zs \<and>  P z)"
+          using Cons.IH wP by blast
+        then show thesis using that by blast
+      qed
       then show ?thesis 
         by (metis append_Cons)
     next
