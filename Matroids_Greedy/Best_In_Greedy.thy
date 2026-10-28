@@ -1622,7 +1622,30 @@ proof-
   have num_iter_not_in_B1: "\<And>best_in_greedy_state. hd (carrier_list best_in_greedy_state) \<notin> B1 \<Longrightarrow>
     (carrier_list best_in_greedy_state) = drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) \<Longrightarrow>
     num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
-    by (metis \<open>set ?l_B1 = B1\<close> carrier_sorted_expr drop_append drop_eq_Nil hd_append2 in_set_dropD list.set_sel(1))
+  proof -
+    fix best_in_greedy_state
+    assume hd_notin: "hd (carrier_list best_in_greedy_state) \<notin> B1"
+      and carrier_eq: "carrier_list best_in_greedy_state =
+        drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)"
+    show "num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
+    proof (rule ccontr)
+      assume "\<not> num_iter ?c ?order best_in_greedy_state \<ge> length ?l_B1"
+      then have n_less: "num_iter ?c ?order best_in_greedy_state < length ?l_B1" by simp
+      have drop_eq: "drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order) =
+          drop (num_iter ?c ?order best_in_greedy_state) ?l_B1 @ ?l_not_B1"
+        using carrier_sorted_expr n_less by (simp add: drop_append)
+      have drop_nonempty: "drop (num_iter ?c ?order best_in_greedy_state) ?l_B1 \<noteq> []"
+        using n_less by simp
+      have hd_eq: "hd (carrier_list best_in_greedy_state) =
+          hd (drop (num_iter ?c ?order best_in_greedy_state) ?l_B1)"
+        using carrier_eq drop_eq drop_nonempty by (simp add: hd_append2)
+      have "hd (drop (num_iter ?c ?order best_in_greedy_state) ?l_B1) \<in> set ?l_B1"
+        using set_drop_subset by (rule rev_subsetD[OF hd_in_set[OF drop_nonempty]])
+      with hd_eq \<open>set ?l_B1 = B1\<close> have "hd (carrier_list best_in_greedy_state) \<in> B1"
+        by simp
+      with hd_notin show False by simp
+    qed
+  qed
 
   let ?prop = "\<lambda>best_in_greedy_state.
     (set (take (num_iter ?c ?order best_in_greedy_state) ?l_B1) \<subseteq> to_set (result (best_in_greedy_state))) \<and>
