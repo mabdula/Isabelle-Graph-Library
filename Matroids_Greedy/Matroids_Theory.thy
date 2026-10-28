@@ -3353,7 +3353,14 @@ proof-
     with \<open>X \<subseteq> Y\<close> have
       "matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> 
       card Y - card X"
-      by (metis \<open>X \<subseteq> E\<close> assms(1) card_Diff_subset rev_finite_subset)
+    proof -
+      have "finite X" using rev_finite_subset[OF assms(1) \<open>X \<subseteq> E\<close>] .
+      have "card (Y - X) = card Y - card X"
+        using card_Diff_subset[OF \<open>finite X\<close> \<open>X \<subseteq> Y\<close>] .
+      then show ?thesis
+        using \<open>matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> card (Y - X)\<close>
+        by simp
+    qed
     then have
       "card X + matroid.rank_of indep (E - X) \<le> card Y + matroid.rank_of indep (E - Y)"
       by (smt (verit, ccfv_SIG) Nat.diff_cancel \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close> assms(1) card_mono diff_cancel2
