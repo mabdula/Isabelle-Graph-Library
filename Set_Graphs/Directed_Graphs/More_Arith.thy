@@ -778,8 +778,28 @@ lemma integer_multiple_sub:
   done
 
 lemma sum_integral: "\<lbrakk>finite A; \<And> x . x\<in> A \<Longrightarrow> is_integral (f x)\<rbrakk> \<Longrightarrow> is_integral (sum f A)"
-  by(induction rule: finite.induct, simp add: is_integral_def) 
-    (metis insert_absorb insert_iff is_integral_def of_int_add sum.insert)
+proof(induction rule: finite.induct)
+  case emptyI
+  then show ?case by (simp add: is_integral_def)
+next
+  case (insertI A x)
+  have IH: "is_integral (sum f A)"
+    using insertI.prems by (intro insertI.IH) simp
+  show ?case
+  proof (cases "x \<in> A")
+    case True
+    hence "insert x A = A" by (rule insert_absorb)
+    thus ?thesis using IH by simp
+  next
+    case False
+    have "is_integral (f x)"
+      using insertI.prems by simp
+    moreover have "sum f (insert x A) = f x + sum f A"
+      using insertI.hyps(1) False by (rule sum.insert)
+    ultimately show ?thesis
+      using IH by (simp add: integral_add)
+  qed
+qed
 
 subsection \<open>Multiples\<close>
 
