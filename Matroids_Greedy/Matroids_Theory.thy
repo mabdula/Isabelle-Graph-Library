@@ -4572,7 +4572,24 @@ lemma sorted_aux5:
 proof-
   from sorted_aux1[OF assms] sorted_aux2[OF assms] assms(3)
   have "\<forall>i < length xs. i < k \<longleftrightarrow> c (xs ! i) = 1"
-    by (metis linorder_le_less_linear zero_neq_one)
+  proof -
+    show "\<forall>i < length xs. i < k \<longleftrightarrow> c (xs ! i) = 1"
+    proof (rule allI, rule impI)
+      fix i
+      assume "i < length xs"
+      show "(i < k) = (c (xs ! i) = 1)"
+      proof (cases "i < k")
+        case True
+        then have "c (xs ! i) = 1" using sorted_aux1[OF assms] by blast
+        with True show ?thesis by simp
+      next
+        case False
+        then have "i \<ge> k" by simp
+        with sorted_aux2[OF assms] \<open>i < length xs\<close> have "c (xs ! i) = 0" by blast
+        with False show ?thesis by simp
+      qed
+    qed
+  qed
 
   then have "\<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
   proof-
