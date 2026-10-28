@@ -257,9 +257,18 @@ proof -
         using partition \<open>x \<in> Vs G - A\<close> by fastforce
       then have "u \<in> e" 
         by blast
-      then show "x \<in> neighbours_of_Vs G A" 
-        unfolding neighbours_of_Vs_def 
-        by (smt (verit) "2" \<open>e \<in> G \<and> x \<in> e\<close> mem_Collect_eq)
+      then show "x \<in> neighbours_of_Vs G A"
+      proof -
+        have "x \<noteq> u" using "2" by blast
+        have "u \<in> A" using "2" by blast
+        have "e \<in> G" using \<open>e \<in> G \<and> x \<in> e\<close> by blast
+        have "u \<in> e" using \<open>u \<in> e\<close> by blast
+        have "x \<in> e" using \<open>e \<in> G \<and> x \<in> e\<close> by blast
+        then show ?thesis
+          unfolding neighbours_of_Vs_def
+          using \<open>x \<noteq> u\<close> \<open>u \<in> A\<close> \<open>e \<in> G\<close> \<open>u \<in> e\<close> \<open>x \<in> e\<close>
+          by fastforce
+      qed
     qed
   qed
 qed
