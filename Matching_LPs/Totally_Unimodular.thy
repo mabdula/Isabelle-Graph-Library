@@ -1730,7 +1730,7 @@ proof
   show 21: "dim_col (mat_delete B i j) =  dim_col (submatrix A (I - {pick I i})  (J - {pick J j}))" 
     using 13 14 15 10 by presburger
   have 19:"dim_row (mat_delete B i j) = dim_row B - 1"
-    using mat_delete_dim(1) by metis 
+    by (simp add: mat_delete_dim(1))
   have 20:"dim_row (submatrix A (I - {pick I i}) (J - {pick J j})) = 
         card {k. k < dim_row A \<and> k \<in> (I - {pick I i})}" 
     using dim_submatrix(1) by blast
