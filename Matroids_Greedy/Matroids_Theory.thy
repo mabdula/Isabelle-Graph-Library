@@ -4801,8 +4801,13 @@ proof-
     using assms(5) by blast
 
   from assms(3) assms(5) \<open>y \<in> C - B2\<close> have "(insert x (B1 - {y})) \<subseteq> E"
-    by (metis DiffD1 \<open>indep_system E indep\<close> \<open>x \<in> E - B1\<close> \<open>y \<in> B1 - B2\<close> indep_system.basis_subset_carrier
-        insert_Diff insert_subset)
+  proof -
+    from \<open>x \<in> E - B1\<close> have "x \<in> E" by (rule DiffD1)
+    from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(3)]
+    have "B1 \<subseteq> E" .
+    then have "B1 - {y} \<subseteq> E" by blast
+    with \<open>x \<in> E\<close> show "insert x (B1 - {y}) \<subseteq> E" by (simp add: insert_subset)
+  qed
 
   have "\<not> C \<subseteq> (insert x (B1 - {y}))" using \<open>x \<in> B2 - B1\<close> \<open>y \<in> C - B2\<close> by blast
 
