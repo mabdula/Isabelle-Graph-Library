@@ -4484,8 +4484,40 @@ qed
 
 lemma sorted_aux3:
   "\<lbrakk>distinct xs; xs = ys @ zs; \<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)\<rbrakk> \<Longrightarrow> ys = filter P xs"
-  by (smt (verit, best) IntI UnCI distinct_append filter_append filter_empty_conv filter_id_conv list.set(1)
-      self_append_conv set_append)
+proof -
+  assume dist: "distinct xs"
+  assume decomp: "xs = ys @ zs"
+  assume mem_iff: "\<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)"
+
+  have distinct_ys_zs: "distinct (ys @ zs)" using dist decomp by simp
+  have disjoint: "set ys \<inter> set zs = {}" using distinct_ys_zs by (auto simp: distinct_append)
+
+  have ys_sub: "set ys \<subseteq> set xs" using decomp by auto
+  have zs_sub: "set zs \<subseteq> set xs" using decomp by auto
+
+  have all_ys_P: "\<forall>x \<in> set ys. P x"
+  proof
+    fix x
+    assume "x \<in> set ys"
+    with ys_sub mem_iff show "P x" by blast
+  qed
+
+  have none_zs_P: "\<forall>x \<in> set zs. \<not> P x"
+  proof
+    fix x
+    assume "x \<in> set zs"
+    with disjoint have "x \<notin> set ys" by blast
+    with zs_sub \<open>x \<in> set zs\<close> mem_iff show "\<not> P x" by blast
+  qed
+
+  have filter_ys: "filter P ys = ys" using all_ys_P filter_id_conv by blast
+  have filter_zs: "filter P zs = []" using none_zs_P filter_empty_conv by blast
+
+  have filter_eq: "filter P xs = ys"
+    using decomp filter_ys filter_zs by simp
+
+  from filter_eq show "ys = filter P xs" by simp
+qed
 
 lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
   by simp
