@@ -1797,7 +1797,20 @@ proof-
           qed
 
           with ex_B1_B2 show ?case
-            by (metis DiffD1 DiffD2 ex_x ex_y insert_Diff linorder_not_less subset_insert subset_insertI subset_trans)
+          proof -
+            from ex_B1_B2 have B1_in: "B1 \<in> \<B>" by blast
+            from ex_x have B2'_in: "insert x (B2 - {y}) \<in> \<B>" by blast
+            from ex_B1_B2 have X_sub_B1: "X \<subseteq> B1" by blast
+            from ex_B1_B2 have Y_sub_B2: "Y \<subseteq> B2" by blast
+            from ex_y have y_notin_Y: "y \<notin> Y" by blast
+            from Y_sub_B2 y_notin_Y have Y_sub: "Y \<subseteq> insert x (B2 - {y})" by blast
+            from ex_B1_B2 have max_prop:
+              "\<forall>B1' B2'. B1' \<in> \<B> \<longrightarrow> B2' \<in> \<B> \<longrightarrow> X \<subseteq> B1' \<and> Y \<subseteq> B2' \<longrightarrow> card (B1' \<inter> B2') \<le> card (B1 \<inter> B2)"
+              by blast
+            from max_prop B1_in B2'_in X_sub_B1 Y_sub
+            have "card (B1 \<inter> insert x (B2 - {y})) \<le> card (B1 \<inter> B2)" by blast
+            with card_inter_greater show False by simp
+          qed
         qed
       next
         case False
