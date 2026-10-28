@@ -2131,8 +2131,25 @@ qed
           qed
           then show ?thesis by simp
         qed
-        then have "pick (J - {pick J j}) k = pick J (Suc k)" 
-          by (metis Suc_eq_plus1 31 32 \<open>card {a \<in> J. a < pick J k} = k\<close> 33 34)
+        then have LEQ: "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) =
+                (LEAST a. a \<in> J \<and> pick J k < a)"
+          .
+        have "pick (J - {pick J j}) k = pick J (Suc k)"
+        proof -
+          have k_pos: "0 < k"
+            using \<open>k > j\<close> by linarith
+          have Suc_eq: "Suc (k - 1) = k"
+            using k_pos by (simp add: Suc_pred)
+          have "pick (J - {pick J j}) k = pick (J - {pick J j}) (Suc (k - 1))"
+            by (rule arg_cong, rule Suc_eq[symmetric])
+          also have "\<dots> = (LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a)"
+            by (rule 33)
+          also have "\<dots> = (LEAST a. a \<in> J \<and> pick J k < a)"
+            by (rule LEQ)
+          also have "\<dots> = pick J (Suc k)"
+            by (rule 34[symmetric])
+          finally show ?thesis .
+        qed
         then show ?thesis 
           using \<open>pick J (insert_index j k) = pick J (Suc k)\<close> by presburger
       qed
