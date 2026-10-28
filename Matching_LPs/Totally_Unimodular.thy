@@ -1775,8 +1775,23 @@ proof
     with card_le show ?thesis by simp
   qed
   have t_less_card: "t < card I \<or> infinite I"
-    by (smt (verit, ccfv_threshold) Diff_iff asmi basic_trans_rules(21) card_mono 
-        dim_submatrix(1) mem_Collect_eq not_less subsetI)
+  proof (cases "infinite I")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    then have fin_I: "finite I" by simp
+    have dim_eq: "dim_row (submatrix A (I - {pick I i}) (J - {pick J j})) =
+                  card {k. k < dim_row A \<and> k \<in> (I - {pick I i})}"
+      using dim_submatrix(1) by blast
+    from asmi dim_eq have t_less: "t < card {k. k < dim_row A \<and> k \<in> (I - {pick I i})}"
+      by simp
+    have subs: "{k. k < dim_row A \<and> k \<in> (I - {pick I i})} \<subseteq> I"
+      by blast
+    have "t < card I"
+      using t_less card_mono[OF fin_I subs] by linarith
+    then show ?thesis by blast
+  qed
   show "(mat_delete B i j) $$ (t, k) =  submatrix A (I - {pick I i}) (J - {pick J j}) $$ (t, k)"
   proof(cases "dim_col B = 0")
     case True
