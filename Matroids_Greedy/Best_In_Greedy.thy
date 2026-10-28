@@ -1009,9 +1009,30 @@ proof-
     by (auto elim!: invar_props_elims)
 
   have d_geq_0: "\<forall>j \<in> {1..?n}. ?d j \<ge> 0"
-    unfolding c_diff_def using sorted_wrt_iff_nth_less
-    by (smt (verit, ccfv_SIG) c_carrier_sorted_nonneg carrier_sorted_sorted_desc diff_ge_0_iff_ge
-        diff_le_self dual_order.refl nat_less_le)
+  proof
+    fix j
+    assume j_mem: "j \<in> {1..?n}"
+    then have j_ge: "1 \<le> j" and j_le: "j \<le> ?n" by auto
+    show "?d j \<ge> 0"
+    proof (cases "j < ?n")
+      case True
+      have j1_less_j: "j - 1 < j" using j_ge by arith
+      have j1_less_n: "j - 1 < ?n" using j1_less_j True by arith
+      from carrier_sorted_sorted_desc[unfolded sorted_wrt_iff_nth_less]
+      have ge: "c (carrier_sorted ! (j - 1)) \<ge> c (carrier_sorted ! j)"
+        using j1_less_n True j1_less_j by blast
+      have eq: "?d j = c (carrier_sorted ! (j - 1)) - c (carrier_sorted ! j)"
+        using True by (simp add: c_diff_def)
+      show ?thesis using eq ge by linarith
+    next
+      case False
+      have eq: "?d j = c (carrier_sorted ! (j - 1))"
+        using False by (simp add: c_diff_def)
+      have nonneg: "c (carrier_sorted ! (j - 1)) \<ge> 0"
+        using c_carrier_sorted_nonneg j_mem by blast
+      show ?thesis using eq nonneg by linarith
+    qed
+  qed
 
   from G_j_geq_lower_rank_E_j d_geq_0 have G_j_prod_geq_lower_rank_E_j_prod:
     "\<forall>j \<in> {1..?n}. rat_of_nat (card (pref c order ?G j)) * (?d j) \<ge>
