@@ -2581,7 +2581,14 @@ proof -
                 using zhyp by fastforce
             qed 
             then show ?thesis 
-              by (metis list.set_sel(1) p_walk walk_betw_def)
+            proof (rule bspec)
+              have p_ne: "p \<noteq> []"
+                using p_walk unfolding walk_betw_def by simp
+              have hd_x: "hd p = x"
+                using p_walk unfolding walk_betw_def by simp
+              show "x \<in> set p"
+                using hd_in_set[OF p_ne] hd_x by simp
+            qed
           qed
         qed
         then have connC'XY:"connected_component (graph_diff G (X \<union> Y)) c = C'"
