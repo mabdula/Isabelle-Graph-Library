@@ -716,7 +716,23 @@ qed
 
 lemma dist_not_inf': 
   "distance_set G U v \<noteq> \<infinity> \<Longrightarrow>\<exists>u\<in>U. distance G u v = distance_set G U v \<and> reachable G u v"
-  by (metis dist_reachable dist_set_not_inf enat_ord_simps(4))
+proof -
+  assume asm: "distance_set G U v \<noteq> \<infinity>"
+  obtain u where u_in: "u \<in> U" and u_eq: "distance G u v = distance_set G U v"
+    using dist_set_not_inf[OF asm] by blast
+  have "distance G u v \<noteq> \<infinity>"
+    using asm u_eq by simp
+  hence lt: "distance G u v < \<infinity>"
+    by (simp add: less_top)
+  have rch: "reachable G u v"
+    by (rule dist_reachable[OF lt])
+  show ?thesis
+  proof (rule bexI[where x = u])
+    show "u \<in> U" by (rule u_in)
+    show "distance G u v = distance_set G U v \<and> reachable G u v"
+      using u_eq rch by simp
+  qed
+qed
 
 lemma infty_dist_is_unreachable:
   "distance_set G S u = \<infinity> \<longleftrightarrow> \<not> (\<exists> s \<in> S. reachable G s u)"
