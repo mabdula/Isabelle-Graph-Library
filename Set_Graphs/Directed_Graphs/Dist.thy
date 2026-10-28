@@ -975,7 +975,34 @@ lemma distance_set_parent':
   "\<lbrakk>0 < distance_set G Vs v; distance_set G Vs v < \<infinity>; Vs \<noteq> {}\<rbrakk> \<Longrightarrow> 
      \<exists>w. distance_set G Vs w + 1 = distance_set G Vs v \<and> v \<in> neighbourhood G w"
   using distance_set_parent
-  by (metis antisym_conv2 dist_set_inf distance_0 distance_set_def less_INF_D order.strict_implies_order)
+proof -
+  assume pos: "0 < distance_set G Vs v"
+     and fin: "distance_set G Vs v < \<infinity>"
+     and ne: "Vs \<noteq> {}"
+  have v_in: "v \<in> dVs G"
+  proof (rule ccontr)
+    assume "v \<notin> dVs G"
+    hence "distance_set G Vs v = \<infinity>"
+      by (rule dist_set_inf)
+    with fin show False by simp
+  qed
+  have ne0: "distance_set G Vs v \<noteq> 0"
+    using pos by simp
+  have v_notin: "v \<notin> Vs"
+  proof
+    assume "v \<in> Vs"
+    have "distance_set G Vs v \<le> distance G v v"
+      using dist_set_mem \<open>v \<in> Vs\<close> by blast
+    also have "distance G v v = 0"
+      by (rule distance_0I[OF refl v_in])
+    finally have "distance_set G Vs v = 0"
+      by simp
+    with ne0 show False
+      by simp
+  qed
+  from distance_set_parent[OF fin ne v_notin]
+  show ?thesis .
+qed
 
 lemma distance_set_0[simp]: "\<lbrakk>v \<in> dVs G\<rbrakk> \<Longrightarrow> distance_set G Vs v = 0 \<longleftrightarrow> v \<in> Vs"
 proof(safe, goal_cases)
