@@ -1386,7 +1386,26 @@ proof
     obtain i' where i':"row A i' = row (submatrix A I UNIV) i \<and> i' < dim_row A \<and> i' = pick I i"
       by (metis (full_types) asmi dim_submatrix(1) pick_le row_submatrix_UNIV)
     have 19:"insert_index j k < dim_col B" 
-      by (metis "3" "4"17 basic_trans_rules(20) carrier_matD(2) insert_index_def not_less_eq)
+    proof (cases "k < j")
+      case True
+      then have "insert_index j k = k"
+        by (simp add: insert_index_def)
+      also have "\<dots> < dim_col B - 1"
+        using "3" by linarith
+      also have "\<dots> \<le> dim_col B"
+        by simp
+      finally show ?thesis .
+    next
+      case False
+      then have eq: "insert_index j k = Suc k"
+        by (simp add: insert_index_def)
+      have "Suc k \<le> dim_col B - 1"
+        using "3" by linarith
+      also have "\<dots> < dim_col B"
+        using assms(4) by linarith
+      finally show ?thesis
+        using eq by simp
+    qed
     then obtain k1 where k1: "col A k1 = col (submatrix A UNIV J) (insert_index j k) \<and> 
                                          k1 < dim_col A \<and> 
                                          k1 = pick J (insert_index j k)" 
