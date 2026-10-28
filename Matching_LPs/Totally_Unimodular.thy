@@ -2061,10 +2061,14 @@ qed
           using `\<not> k < j` False nat_neq_iff by blast
         then have 30: "pick J k > pick J j"
           using k_less_card pick_mono_inf pick_mono_le by presburger
-        have "pick J k \<in> J - {pick J j}" 
-          using k_less_card
-          by (metis Diff_iff 30 nat_neq_iff pick_in_set_inf 
-              pick_in_set_le singletonD)
+        have "pick J k \<in> J - {pick J j}"
+        proof -
+          have "pick J k \<in> J"
+            using pick_in_set[OF k_less_card] by blast
+          moreover have "pick J k \<noteq> pick J j"
+            using 30 by linarith
+          ultimately show ?thesis by blast
+        qed
         then have 1: "pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J k}) = pick J k"
           using pick_card_in_set 
           by presburger
