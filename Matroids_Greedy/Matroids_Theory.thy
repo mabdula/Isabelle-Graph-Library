@@ -4040,8 +4040,15 @@ proof-
     also have "... =
     (\<Sum>j = 1..n. g j * (c (j - 1) - c j)) + g (Suc n) * c (Suc n - 1)"
       using Suc
-      by (smt (verit, best) Suc_pred' add_cancel_right_right assms(3) diff_Suc_1 diff_is_0_eq
-          less_add_same_cancel1 linorder_not_less mult_zero_left nle_le plus_1_eq_Suc sum_split_last)
+      proof (cases "n = 0")
+        case True
+        then show ?thesis by simp
+      next
+        case False
+        then have "1 \<le> n" by simp
+        from sum_split_last[OF this, of "\<lambda>j. g j * (c (j - 1) - c j)"]
+        show ?thesis by simp
+      qed
     also have "... =
     (\<Sum>j = 1..(Suc n - 1). g j * (c (j - 1) - c j)) + g (Suc n) * c (Suc n - 1)"
       by simp
