@@ -441,7 +441,17 @@ proof ((rule allI)+, (rule impI)+)
   with \<open>indep_fn (set_insert x (from_set T))\<close>
   have "indep_fn (from_set (Set.insert x T))" by blast
   then have "indep_abs indep_fn (Set.insert x T)"
-    by (metis \<open>finite_sets\<close> \<open>to_set (set_insert x (from_set T)) = insert x T\<close> finite_setsE finite_indep_abs_expr)
+  proof -
+    have "\<And>X. finite (to_set X)"
+      using finite_sets unfolding finite_sets_def by blast
+    from this[of "set_insert x (from_set T)"]
+      \<open>to_set (set_insert x (from_set T)) = insert x T\<close>
+    have "finite (insert x T)" by simp
+    then have "indep_abs indep_fn (Set.insert x T) = indep_fn (from_set (Set.insert x T))"
+      by (rule finite_indep_abs_expr)
+    then show "indep_abs indep_fn (Set.insert x T)"
+      using \<open>indep_fn (from_set (Set.insert x T))\<close> by simp
+  qed
 
   from \<open>x \<in> S - T\<close> \<open>indep_abs indep_fn (Set.insert x T)\<close>
   show "\<exists>e. e \<in> S - T \<and> indep_abs indep_fn (Set.insert e T)" by auto
