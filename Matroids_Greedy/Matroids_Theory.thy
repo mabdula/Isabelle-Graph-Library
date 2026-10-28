@@ -2496,7 +2496,7 @@ proof-
     have "\<forall>x \<in> X - Y. (r (insert x Y) < card (insert x Y))"
       by (metis Diff_iff dual_order.trans insert_subsetI order_less_le)
     then have "\<forall>x \<in> X - Y. (r (insert x Y) < card Y + 1)"
-      by (metis DiffD2 Suc_eq_plus1 \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close> assms(1) card_insert_if rev_finite_subset)
+      using \<open>Y \<subseteq> E\<close> assms(1) finite_subset by fastforce
     then have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> card Y)" by force
     with \<open>r Y = card Y\<close>
     have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> r Y)" by auto
