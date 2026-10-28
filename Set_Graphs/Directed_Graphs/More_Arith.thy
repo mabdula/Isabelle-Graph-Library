@@ -125,7 +125,12 @@ lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> 
          using assm insertI by(auto intro: sum.union_disjoint)
        finally show "sum f {xa + k |xa. xa \<in> {x} \<union> X} = (\<Sum>x\<in>insert x X. f (x + k))" by simp
      qed
-   qed (smt (verit, best) Collect_cong insert_absorb)
+    next
+      case True
+      then show ?thesis
+        using insertI.IH by (simp add: insert_absorb)
+    qed
+
  qed simp
 
 lemma distinct_sum: "distinct xs \<Longrightarrow> sum f (set xs)  = foldr (\<lambda> x acc. acc + f x) xs 0"
