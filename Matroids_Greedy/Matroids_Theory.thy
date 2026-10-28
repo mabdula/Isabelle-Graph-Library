@@ -1997,8 +1997,27 @@ proof (induction n arbitrary: A rule: less_induct)
         case False
         with Pos have "n \<ge> 2" by auto
         with \<open>n = card A\<close> have "\<exists>x y. x \<in> A \<and> y \<in> A \<and> x \<noteq> y"
-          by (metis One_nat_def Suc_1 \<open>A \<subseteq> X - Y\<close> assms(1) assms(2) card_le_Suc0_iff_eq finite_Diff
-              finite_subset not_less_eq_eq)
+        proof -
+          have A_subset_E: "A \<subseteq> E"
+            using \<open>A \<subseteq> X - Y\<close> assms(2) by blast
+          have finite_A: "finite A"
+            using assms(1) A_subset_E finite_subset by blast
+          have card_A_ge_2: "card A \<ge> 2"
+            using \<open>n \<ge> 2\<close> \<open>n = card A\<close> by simp
+          have not_subset_singleton: "\<not> (\<exists>a. A \<subseteq> {a})"
+            using card_le_Suc0_iff_eq[OF finite_A] card_A_ge_2 by auto
+          have "A \<noteq> {}"
+          proof
+            assume "A = {}"
+            with card_A_ge_2 show False by simp
+          qed
+          then obtain x where x_in: "x \<in> A" by blast
+          have "\<not> A \<subseteq> {x}"
+            using not_subset_singleton by blast
+          then obtain y where y_in: "y \<in> A" and y_neq: "y \<noteq> x"
+            by blast
+          from x_in y_in y_neq show "\<exists>x y. x \<in> A \<and> y \<in> A \<and> x \<noteq> y" by blast
+        qed
         then obtain x y where "x \<in> A" "y \<in> A" "x \<noteq> y" by blast
 
         from \<open>n \<ge> 2\<close> have "n - 1 < n" by simp
