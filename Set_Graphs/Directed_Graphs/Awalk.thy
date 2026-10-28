@@ -715,9 +715,13 @@ proof (cases "(v, w) = last p")
     show "fst (hd p) = u" using cas_simp[OF p_ne] cas_pu by auto
   qed
 
-  from \<open>v \<noteq> w\<close> \<open>fst (hd p) = u\<close> \<open>u = w\<close>
-    have "(hd p) \<noteq> (v, w)"
-    by (metis fst_conv)
+  have "(hd p) \<noteq> (v, w)"
+  proof (rule notI)
+    assume "hd p = (v, w)"
+    hence "fst (hd p) = v" by simp
+    with \<open>fst (hd p) = u\<close> \<open>u = w\<close> have "v = w" by simp
+    with \<open>v \<noteq> w\<close> show False by simp
+  qed
 
   from \<open>(v, w) = last p\<close> \<open>(hd p) \<noteq> (v, w)\<close>
     have "\<exists>xs. p = [hd p] @ xs @ [(v, w)]" 
