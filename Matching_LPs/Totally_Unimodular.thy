@@ -3000,7 +3000,10 @@ proof rule
       have 25: "row ?A' nr = (- (unit_vec n i) :: 'a vec)" 
         using append_rows_nth(2)[OF A 1] mat_of_rows_row by simp 
       have 2: "B \<in> carrier_mat (dim_row B) (dim_row B)" 
-        by (metis False carrier_matI)
+        proof (rule carrier_matI)
+          show "dim_row B = dim_row B" by (rule refl)
+          show "dim_col B = dim_row B" using False by auto
+        qed
       let ?f = "(\<lambda> i. i - nr)"
       have 10:"B = submatrix A I J @\<^sub>r
                submatrix (mat_of_rows n [(- (unit_vec n i) :: 'a vec)]) (?f ` (I - {0..<nr})) J"
