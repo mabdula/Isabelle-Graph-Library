@@ -1722,7 +1722,7 @@ proof-
       qed
       moreover have "\<forall>x \<in> F - B1. insert x B1 \<subseteq> insert x (B1 \<union> Y)" by blast
       ultimately have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn) (insert x (B1 \<union> Y))"
-        using indep_system.indep_subset[OF indep_system_axioms_abs] by metis
+        using indep_system.indep_subset[OF indep_system_axioms_abs] by blast
       then have "\<forall>x \<in> F - B1. \<not>(matroid.indep_abs indep_fn)
         (insert x (to_set (result best_in_greedy_state)))"
         using \<open>to_set (result best_in_greedy_state) = Y \<union> B1\<close>
