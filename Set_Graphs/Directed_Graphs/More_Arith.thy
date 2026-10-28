@@ -611,7 +611,24 @@ lemma  obtain_min:
 
 lemma Min_bigger: 
   "\<lbrakk>finite X; finite Y; X \<noteq> {}; \<And> a b. \<lbrakk>a \<in> X; b \<in> Y\<rbrakk> \<Longrightarrow> b \<ge> a\<rbrakk> \<Longrightarrow> Min X = Min (X \<union> Y)"
-  by (metis Min_Un Min_in min_def sup_bot_right)
+proof -
+  assume fin_X: "finite X" and fin_Y: "finite Y" and X_ne: "X \<noteq> {}"
+     and ge: "\<And>a b. a \<in> X \<Longrightarrow> b \<in> Y \<Longrightarrow> b \<ge> a"
+  show "Min X = Min (X \<union> Y)"
+  proof (cases "Y = {}")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    have MinX_in: "Min X \<in> X" using fin_X X_ne by (rule Min_in)
+    have MinY_in: "Min Y \<in> Y" using fin_Y False by (rule Min_in)
+    have le: "Min X \<le> Min Y" using ge[OF MinX_in MinY_in] by simp
+    have "Min (X \<union> Y) = min (Min X) (Min Y)"
+      using fin_X fin_Y X_ne False by (simp add: Min_Un)
+    also have "\<dots> = Min X" using le by (simp add: min_def)
+    finally show ?thesis by simp
+  qed
+qed
 
 lemma obtain_Max: "\<lbrakk>finite X; X \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists> x . f x = Max { f x| x. x \<in> X} \<and> x \<in> X"
   apply(induction X rule: finite_induct, simp)
