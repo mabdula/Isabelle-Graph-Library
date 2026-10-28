@@ -1357,9 +1357,29 @@ proof
       using 16 by presburger
     have "(B @\<^sub>r mat_of_rows (dim_col B) [b]) $$ (i, insert_index j k) = 
         B $$ (i, insert_index j k)"
-      by (smt (verit, best) "2" "4" Missing_Matrix.append_rows_nth(1) Suc_eq_plus1 17 10
-          asmk' carrier_matD(1) carrier_matD(2) carrier_matI index_row(1) insert_index_def 
-          mat_of_rows_carrier(1) nat_add_left_cancel_less plus_1_eq_Suc trans_less_add1)
+    proof -
+      have Bcarr: "B \<in> carrier_mat (dim_row B) (dim_col B)"
+        by (rule carrier_matI) simp_all
+      have Ccarr: "mat_of_rows (dim_col B) [b] \<in> carrier_mat 1 (dim_col B)"
+        using mat_of_rows_carrier(1)[of "dim_col B" "[b]"] by simp
+      have row_eq: "row (B @\<^sub>r mat_of_rows (dim_col B) [b]) i = row B i"
+        using Missing_Matrix.append_rows_nth(1)[OF Bcarr Ccarr 2] .
+      have idx_lt: "insert_index j k < dim_col B"
+        unfolding insert_index_def
+        using 1 3 by (cases "k < j") auto
+      have i_lt: "i < dim_row (B @\<^sub>r mat_of_rows (dim_col B) [b])"
+        using 15 2 by (simp add: carrier_matD(1))
+      have ijk_lt: "insert_index j k < dim_col (B @\<^sub>r mat_of_rows (dim_col B) [b])"
+        using 17 idx_lt by simp
+      have "(B @\<^sub>r mat_of_rows (dim_col B) [b]) $$ (i, insert_index j k) =
+            row (B @\<^sub>r mat_of_rows (dim_col B) [b]) i $ insert_index j k"
+        using index_row(1)[symmetric] i_lt ijk_lt by simp
+      also have "\<dots> = row B i $ insert_index j k"
+        using row_eq by simp
+      also have "\<dots> = B $$ (i, insert_index j k)"
+        using index_row(1)[symmetric] 2 idx_lt by simp
+      finally show ?thesis .
+    qed
     then have 6: "mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j $$ (i, k) =
                   B $$ (i, insert_index j k)"
       using 16 18 by presburger
