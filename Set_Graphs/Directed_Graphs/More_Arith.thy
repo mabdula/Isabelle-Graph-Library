@@ -324,8 +324,20 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
                    ((\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j))+
                    (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j)))"
     apply(rule sum_eq_split, simp)
-    by (metis j_min_prop(1) less_add_Suc1 linorder_not_le min.commute min_absorb1 not_less_eq
-            order_less_imp_le sum.atLeastLessThan_concat)
+  proof -
+    have j_le_i: "j_min \<le> i"
+      using j_min_prop(1) by simp
+    have min_ge: "j_min \<le> min (j_min + life_time) i"
+      using le_add1 j_le_i by simp
+    have le1: "j_min \<le> Suc (min (j_min + life_time) i)"
+      using min_ge by simp
+    have le2: "Suc (min (j_min + life_time) i) \<le> Suc i"
+      using min.cobounded2 by simp
+    show "(\<Sum>j = j_min..< Suc i. card (S j)) =
+          (\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j)) +
+          (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j))"
+      by (rule sym[OF sum.atLeastLessThan_concat[OF le1 le2]])
+  qed
   also have "... = (\<Sum>j = 0..<j_min. card (S j - {x})) +
                    ((\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j))+
                    (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j - {x})))"
