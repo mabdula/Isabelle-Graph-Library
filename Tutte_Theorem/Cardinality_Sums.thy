@@ -294,8 +294,55 @@ next
   moreover have  "\<forall>a\<in>insert x F. \<exists>b\<in> (C \<union> {b}). b \<in> a" 
     using \<open>b \<in> B \<and> b \<in> x\<close> calculation(1) by blast
   ultimately show ?case 
-    by (metis Un_insert_right \<open>finite (B - {b})\<close> card.insert insert.hyps(1) insert.hyps(2) 
-        rev_finite_subset subset_Diff_insert sup_bot.right_neutral)
+  proof -
+    obtain b0 where b0B: "b0 \<in> B" and b0x: "b0 \<in> x"
+      using insert.prems(3) by blast
+    show ?thesis
+    proof (cases "F = {}")
+      case True
+      have "{b0} \<subseteq> B \<and>
+            (\<forall>a\<in>insert x F. \<exists>b1\<in>{b0}. b1 \<in> a \<and> card (insert x F) = card {b0})"
+        using True b0B b0x by auto
+      then show ?thesis by blast
+    next
+      case False
+      then obtain a0 where a0: "a0 \<in> F" by blast
+      have notin: "\<forall>a\<in>F. b0 \<notin> a"
+      proof (intro ballI notI)
+        fix a assume aF: "a \<in> F" and b0a: "b0 \<in> a"
+        have "a \<noteq> x" using aF insert.hyps(2) by blast
+        then have "a \<inter> x = {}" using insert.prems(2) aF by blast
+        moreover have "b0 \<in> a \<inter> x" using b0a b0x by simp
+        ultimately show False by simp
+      qed
+      have fin': "finite (B - {b0})" using insert.prems(1) by blast
+      have disj': "\<forall>a1\<in>F. \<forall>a2\<in>F. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}"
+        using insert.prems(2) by blast
+      have cov': "\<forall>a\<in>F. \<exists>b1\<in>B - {b0}. b1 \<in> a"
+        using insert.prems(3) notin by blast
+      obtain C0 where C0sub: "C0 \<subseteq> B - {b0}"
+        and C0cov: "\<forall>a\<in>F. \<exists>b1\<in>C0. b1 \<in> a \<and> card F = card C0"
+        using insert.hyps(3)[OF fin' disj' cov'] by blast
+      have cardFC0: "card F = card C0" using a0 C0cov by blast
+      have b0C0: "b0 \<notin> C0" using C0sub by blast
+      have C0B: "C0 \<subseteq> B" using C0sub by blast
+      have finC0: "finite C0" using C0B insert.prems(1) by (rule finite_subset)
+      have card1: "card (insert b0 C0) = Suc (card C0)"
+        using finC0 b0C0 by (rule card_insert_disjoint)
+      have card2: "card (insert x F) = Suc (card F)"
+        using insert.hyps(1) insert.hyps(2) by (rule card_insert_disjoint)
+      have cardeq: "card (insert x F) = card (insert b0 C0)"
+        using card1 card2 cardFC0 by simp
+      have sub: "insert b0 C0 \<subseteq> B" using b0B C0B by blast
+      have cov: "\<forall>a\<in>insert x F. \<exists>b1\<in>insert b0 C0. b1 \<in> a"
+        using b0x C0cov by blast
+      have "insert b0 C0 \<subseteq> B \<and>
+            (\<forall>a\<in>insert x F. \<exists>b1\<in>insert b0 C0. b1 \<in> a \<and>
+               card (insert x F) = card (insert b0 C0))"
+        using sub cov cardeq by blast
+      then show ?thesis by blast
+    qed
+  qed
 qed
 
 end
