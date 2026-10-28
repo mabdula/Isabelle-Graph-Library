@@ -900,9 +900,24 @@ proof (cases "u \<in> dVs G")
     have "G \<downharpoonright> scc_of G v \<in> sccs G"
       using \<open>u \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> \<open>v \<in> dVs G\<close> in_sccs_dVsD_sccs scc_of_in_sccs_dVs by fastforce
 
-    then have False
-      by (smt Sup_upper \<open>scc_of G v \<in> sccs_dVs G\<close> \<open>u \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> \<open>v \<in> scc_of G v\<close> assms
-              dVs_subset empty_iff induce_sccs_dVs insert_Diff insert_iff insert_subset)
+    have False
+    proof -
+      have "G \<downharpoonright> scc_of G v \<subseteq> \<Union>(sccs G)"
+        using \<open>G \<downharpoonright> scc_of G v \<in> sccs G\<close> by (rule Sup_upper)
+      hence dVs_le: "dVs (G \<downharpoonright> scc_of G v) \<subseteq> dVs (\<Union>(sccs G))"
+        by (rule dVs_subset)
+      have "scc_of G v \<noteq> {u}"
+        using \<open>v \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> by auto
+      hence "dVs (G \<downharpoonright> scc_of G v) = scc_of G v"
+        using induce_sccs_dVs[OF \<open>scc_of G v \<in> sccs_dVs G\<close> \<open>u \<in> scc_of G v\<close>]
+        by fastforce
+      hence "u \<in> dVs (G \<downharpoonright> scc_of G v)"
+        using \<open>u \<in> scc_of G v\<close> by simp
+      with dVs_le have "u \<in> dVs (\<Union>(sccs G))"
+        by blast
+      with assms show False
+        by contradiction
+    qed
   }
   then show ?thesis
     by blast
