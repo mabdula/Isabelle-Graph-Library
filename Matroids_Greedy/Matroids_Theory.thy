@@ -71,7 +71,20 @@ proof-
   let ?indep_cards = "{card Y | Y. indep_in X Y}"
   from assms(1) indep_in_ex have "?indep_cards \<noteq> {}" by simp
   from assms(1) carrier_finite finite_Pow_iff finite_imageI have "finite ?indep_cards"
-    by (smt (verit) card_mono finite_nat_set_iff_bounded_le indep_in_def indep_subset_carrier mem_Collect_eq)
+  proof -
+    have "\<forall>n \<in> ?indep_cards. n \<le> card carrier"
+    proof
+      fix n
+      assume "n \<in> ?indep_cards"
+      then obtain Y where "n = card Y" "indep_in X Y" by blast
+      from indep_in_indep[OF `indep_in X Y`] have "indep Y" .
+      from indep_subset_carrier[OF this] have "Y \<subseteq> carrier" .
+      with carrier_finite have "card Y \<le> card carrier" by (simp add: card_mono)
+      with `n = card Y` show "n \<le> card carrier" by simp
+    qed
+    then show "finite ?indep_cards"
+      using finite_nat_set_iff_bounded_le by blast
+  qed
 
   have "\<forall>n. (upper_rank_of X = n) \<longleftrightarrow> (rank X = n)"
   proof
