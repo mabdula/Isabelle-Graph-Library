@@ -3485,12 +3485,54 @@ qed
           using empty_set_submatrix_iz_zero_mat 
           by (smt (verit) Collect_cong dim_submatrix(2) mat_of_rows_carrier(3))
         have "B = submatrix A I J" 
-          apply rule
-            apply (metis "10" append_rows_def index_mat_four_block(1) trans_less_add1)
-           apply (metis (no_types, lifting) "10" "11" 32 add.right_neutral append_rows_def 
-              index_mat_four_block(2) index_zero_mat(2))
-          using A  I_J 25 carrier_matD(2) dim_submatrix(2) index_row(2) index_unit_vec(3)
-          by (metis (mono_tags) index_uminus_vec(2))
+        proof
+          let ?M = "submatrix (mat_of_rows n [(- unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J"
+          have M_col: "dim_col ?M = dim_col (submatrix A I J)"
+          proof -
+            have "dim_col ?M = card {j. j < dim_col (mat_of_rows n [(- unit_vec n i) :: 'a vec]) \<and> j \<in> J}"
+              using dim_submatrix(2) by blast
+            also have "... = card {j. j < n \<and> j \<in> J}"
+              using 1 by (simp add: carrier_matD(2))
+            also have "... = dim_col (submatrix A I J)"
+              using A by (simp add: dim_submatrix(2) carrier_matD(2))
+            finally show ?thesis .
+          qed
+          have M_zero: "?M = 0\<^sub>m 0 (dim_col ?M)"
+          proof -
+            have "?M = submatrix (mat_of_rows n [(- unit_vec n i) :: 'a vec]) {} J"
+              using 32 by simp
+            also have "... = 0\<^sub>m 0 (dim_col ?M)"
+              using 11 by simp
+            finally show ?thesis .
+          qed
+          have M_row: "dim_row ?M = 0"
+            by (simp add: 32 dim_submatrix(1))
+          have subA_carrier: "submatrix A I J \<in> carrier_mat (dim_row (submatrix A I J)) (dim_col (submatrix A I J))"
+            by (intro carrier_matI) simp_all
+          have M_carrier: "?M \<in> carrier_mat 0 (dim_col (submatrix A I J))"
+            using M_row M_col by (intro carrier_matI) simp_all
+          have B_carrier: "B \<in> carrier_mat (dim_row (submatrix A I J)) (dim_col (submatrix A I J))"
+            using carrier_append_rows[OF subA_carrier M_carrier] by (simp add: 10)
+          show "dim_row B = dim_row (submatrix A I J)"
+            using B_carrier carrier_matD(1) by blast
+          show "dim_col B = dim_col (submatrix A I J)"
+            using B_carrier carrier_matD(2) by blast
+          fix i0 j0
+          assume i0: "i0 < dim_row (submatrix A I J)"
+             and j0: "j0 < dim_col (submatrix A I J)"
+          have row_eq: "row B i0 = row (submatrix A I J) i0"
+            using append_rows_nth(1)[OF subA_carrier M_carrier i0] by (simp add: 10)
+          show "B $$ (i0, j0) = submatrix A I J $$ (i0, j0)"
+          proof -
+            have "B $$ (i0, j0) = row B i0 $ j0"
+              using i0 j0 B_carrier by (simp add: index_row(1) carrier_matD(1) carrier_matD(2))
+            also have "... = row (submatrix A I J) i0 $ j0"
+              using row_eq by simp
+            also have "... = submatrix A I J $$ (i0, j0)"
+              using i0 j0 B_carrier by (simp add: index_row(1) carrier_matD(1) carrier_matD(2))
+            finally show ?thesis .
+          qed
+        qed
         then show ?thesis
           using assms(2) unfolding tot_unimodular_def by auto
       qed
