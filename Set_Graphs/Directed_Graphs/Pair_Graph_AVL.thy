@@ -54,7 +54,7 @@ interpretation G: Adj_Map_Specs
   subgoal using S_C.Set_Choose_axioms .
 (* subgoal  apply unfold_locales
     apply(simp add: M.invar_def)
-    by (metis avl_fold_works avl_map_dom_inorder)
+    by (simp add: avl_fold_works avl_map_dom_inorder)
   done*)
   done
 *)
