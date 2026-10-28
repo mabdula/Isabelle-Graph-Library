@@ -2359,7 +2359,30 @@ qed
             by (rule arg_cong)
         qed
         then have "pick (I - {pick I i}) t = pick I (Suc t)" 
-          by (metis Suc_eq_plus1 40 41 37 42 43)
+          proof -
+            have pt_eq: "(\<lambda>a. a \<in> (I - {pick I i}) \<and> pick I t < a) = (\<lambda>a. a \<in> I \<and> pick I t < a)"
+            proof (rule ext)
+              fix a
+              show "(a \<in> (I - {pick I i}) \<and> pick I t < a) = (a \<in> I \<and> pick I t < a)"
+                using 39 by auto
+            qed
+            have least_eq: "(LEAST a. a \<in> (I - {pick I i}) \<and> pick I t < a) =
+                            (LEAST a. a \<in> I \<and> pick I t < a)"
+              using pt_eq by simp
+            have suc_eq: "Suc (t - 1) = t"
+              using 40 41 37 by linarith
+            have "pick (I - {pick I i}) t = pick (I - {pick I i}) (Suc (t - 1))"
+              using suc_eq by simp
+            also have "\<dots> = (LEAST a. a \<in> (I - {pick I i}) \<and> pick (I - {pick I i}) (t - 1) < a)"
+              using 42 by simp
+            also have "\<dots> = (LEAST a. a \<in> (I - {pick I i}) \<and> pick I t < a)"
+              using 38 by simp
+            also have "\<dots> = (LEAST a. a \<in> I \<and> pick I t < a)"
+              using least_eq by simp
+            also have "\<dots> = pick I (Suc t)"
+              using 43 by simp
+            finally show ?thesis .
+          qed
         then show ?thesis 
           using \<open>pick I (insert_index i t) = pick I (Suc t)\<close> by presburger
       qed
