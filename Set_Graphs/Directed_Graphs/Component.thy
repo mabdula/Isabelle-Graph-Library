@@ -424,7 +424,15 @@ lemma induce_sccs_dVs_digraph_of_eq:
   assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "ddfs.digraph_of (G \<downharpoonright> S) = ddfs.digraph_of G \<restriction> S"
   using assms
-  by (metis (no_types, lifting) induced_subgraphI ddfs.verts_eq ddfs.wf_digraph_digraph_of in_induce_subgraphI induce_sccs_dVs induced_subgraph_iff subgraph_induce_subgraph wf_digraph.induce_eq_iff_induced)
+proof -
+  have vs_eq: "dVs (G \<downharpoonright> S) = S"
+    using assms by (rule induce_sccs_dVs)
+  then have vs_eq': "dVs {(u, v). (u, v) \<in> G \<and> u \<in> S \<and> v \<in> S} = S"
+    unfolding induce_subgraph_def .
+  show ?thesis
+    unfolding digraph_of_induce_eq vs_eq' induce_subgraph_def Digraph_Component.induce_subgraph_def ddfs.digraph_of_def
+    by auto
+qed
 
 lemma induce_subgraph_singleton_conv:
   "v \<in> dVs (G \<downharpoonright> {u}) \<longleftrightarrow> v = u \<and> (u,u) \<in> G"
