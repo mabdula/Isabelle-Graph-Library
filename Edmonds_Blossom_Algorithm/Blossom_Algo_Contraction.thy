@@ -1853,7 +1853,22 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
         using alt_paths'(3) from_tree(1) from_tree(2) pfx1_nempty pfx2_nempty
         by auto
       moreover have "{last pfx2, hd p} \<notin> M"
-        by (metis (no_types, lifting) Nil_is_rev_conv \<open>last (edges_of_path (rev p @ [last pfx1])) \<notin> M\<close> \<open>p \<noteq> []\<close> edges_of_path_snoc insert_commute last_pfx1_eq last_rev snoc_eq_iff_butlast)
+        proof -
+          have rev_p_nonempty: "rev p \<noteq> []"
+            using \<open>p \<noteq> []\<close> by (simp add: Nil_is_rev_conv)
+          have last_rev_p: "last (rev p) = hd p"
+            using \<open>p \<noteq> []\<close> by (simp add: last_rev)
+          have edge_eq: "last (edges_of_path (rev p @ [last pfx1])) = {last (rev p), last pfx1}"
+            using edges_of_path_snoc[OF rev_p_nonempty, of "last pfx1", symmetric] by simp
+          have nbr: "{last (rev p), last pfx1} \<notin> M"
+            using edge_eq \<open>last (edges_of_path (rev p @ [last pfx1])) \<notin> M\<close> by simp
+          then have "{hd p, last pfx1} \<notin> M"
+            using last_rev_p by simp
+          then have "{last pfx1, hd p} \<notin> M"
+            by (simp add: insert_commute)
+          then show "{last pfx2, hd p} \<notin> M"
+            by (simp add: last_pfx1_eq)
+        qed
       ultimately show ?thesis
         using alt_paths(2) \<open>length pfx1 \<ge> 2\<close> \<open>length pfx2 = 1\<close> \<open>p \<noteq> []\<close>
         by(auto simp add: from_tree numeral_2_eq_2 Suc_le_length_iff length_Suc_conv neq_Nil_conv alt_list_step alt_list_empty)
