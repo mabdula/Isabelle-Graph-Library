@@ -2411,7 +2411,11 @@ proof-
         let ?n = "card Y - card X"
         have "?n \<le> card Y" by auto
         have "card X = card Y - ?n" 
-          by (metis \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close> assms(1) card_mono diff_diff_cancel rev_finite_subset)
+        proof -
+          have "finite Y" using assms(1) \<open>Y \<subseteq> E\<close> by (rule rev_finite_subset)
+          from card_mono[OF this \<open>X \<subseteq> Y\<close>] have le: "card X \<le> card Y" .
+          show ?thesis by (rule diff_diff_cancel[OF le, symmetric])
+        qed
 
         from R2' have R2'_part: "\<forall>X\<subseteq>E. \<forall>y\<in>E. r X \<le> r (X \<union> {y})" by auto
 
