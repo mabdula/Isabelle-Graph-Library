@@ -1231,7 +1231,7 @@ proof(intro invar_props_intros, goal_cases)
               using that \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u (p' @ [v']) v'\<close>[simplified bfs_state'_def[symmetric]]
               apply (auto dest: v_in_edge_in_vwalk elim!: vwalk_bet_props intro!: no_outgoing_last)
                apply (insert "2"(2); fastforce simp: last_snoc dest: no_outgoing_last v_in_edge_in_vwalk(2))
-              by (metis "2"(2) last_snoc no_outgoing_last v_in_edge_in_vwalk(2))
+              using "2"(2) by (fastforce simp: last_snoc dest: no_outgoing_last v_in_edge_in_vwalk(2))
             hence "v' = v''"
               using that
               by auto
