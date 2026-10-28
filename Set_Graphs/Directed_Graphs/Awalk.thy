@@ -914,7 +914,19 @@ qed
         qed
       with \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close> awalk_verts_conv Nil
         have "awalk_verts u p = [v, x, y] @ (map fst zs) @ [v]"
-        by (metis (no_types, lifting) append_Cons append_Nil fst_conv list.simps(3) list.simps(9))
+        proof -
+          have p_eq: "p = [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs"
+            using \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close> Nil by simp
+          have p_nonempty: "p \<noteq> []" using p_eq by simp
+          have "awalk_verts u p = map fst p @ [snd (last p)]"
+            using p_nonempty by (simp add: awalk_verts_conv)
+          also have "\<dots> = map fst p @ [v]"
+            using \<open>snd (last p) = v\<close> by simp
+          also have "\<dots> = [v, x, y] @ map fst zs @ [v]"
+            using p_eq by simp
+          finally show "awalk_verts u p = [v, x, y] @ (map fst zs) @ [v]"
+            by simp
+        qed
       then have "tl (awalk_verts u p) = [x, y] @ (map fst zs) @ [v]" by simp
       with \<open>distinct (tl (awalk_verts u p))\<close>
         show ?thesis by auto
