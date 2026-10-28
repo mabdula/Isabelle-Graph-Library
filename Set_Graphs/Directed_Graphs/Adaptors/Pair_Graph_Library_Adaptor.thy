@@ -271,7 +271,13 @@ lemmas ddfs_library_adaptor_simps[simp] = ddfs.arc_to_ends_eq ddfs.arcs_ends_eq 
   ddfs.wf_digraph_digraph_of ddfs.pair_wf_digraph_pair_digraph_of
 
 lemma digraph_of_eq_imp_eq: "ddfs.digraph_of G = ddfs.digraph_of H \<Longrightarrow> G = H"
-  by (metis ddfs.arcs_eq)
+proof -
+  assume "ddfs.digraph_of G = ddfs.digraph_of H"
+  hence "arcs (ddfs.digraph_of G) = arcs (ddfs.digraph_of H)"
+    by simp
+  thus "G = H"
+    by (simp add: ddfs.arcs_eq)
+qed
 
 lemma eq_iff_digraph_of_eq: "ddfs.digraph_of G = ddfs.digraph_of H \<longleftrightarrow> G = H"
   using digraph_of_eq_imp_eq
