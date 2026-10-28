@@ -3206,7 +3206,12 @@ proof
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<subseteq> B))"
     by auto
   also have "... = indep X" using indep_system.indep_iff_subset_basis[OF assms]
-    by (metis assms indep_system_def)
+  proof -
+    from assms have cont: "\<And>Y. indep Y \<Longrightarrow> Y \<subseteq> E"
+      by (auto simp: indep_system_def)
+    show ?thesis
+      using indep_system.indep_iff_subset_basis[OF assms] cont by blast
+  qed
   finally show "(dual E (dual E indep)) X = indep X" .
 qed
 
