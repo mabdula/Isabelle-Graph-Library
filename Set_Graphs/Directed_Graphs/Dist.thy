@@ -414,9 +414,33 @@ qed
 lemma diet_eq': 
   "\<lbrakk>\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
-  apply(auto simp: shortest_path_def)
-  by (metis One_nat_def Orderings.order_eq_iff order.strict_implies_order reachable_dist
-            reachable_dist_2 unreachable_dist)
+  proof -
+    assume H: "\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v"
+    show "distance G u v \<le> distance G' u v"
+    proof (cases "distance G' u v = \<infinity>")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      have reach: "reachable G' u v"
+      proof (rule ccontr)
+        assume "\<not> reachable G' u v"
+        hence "distance G' u v = \<infinity>" by (rule unreachable_dist)
+        with False show False by simp
+      qed
+      obtain p where sp: "shortest_path G' u p v"
+        using reach by (rule shortest_path_exists)
+      have step: "shortest_path G u (map f p) v"
+        using H[OF sp] .
+      have dist_u: "distance G u v = length (map f p) - 1"
+        using step by (rule shortest_path_dist)
+      have dist_u': "distance G' u v = length p - 1"
+        using sp by (rule shortest_path_dist)
+      have "distance G u v = distance G' u v"
+        using dist_u dist_u' by (simp add: length_map)
+      then show ?thesis by simp
+    qed
+  qed
 
 lemma distance_0:
   "(u = v \<and> v \<in> dVs G) \<longleftrightarrow> distance G u v = 0"
