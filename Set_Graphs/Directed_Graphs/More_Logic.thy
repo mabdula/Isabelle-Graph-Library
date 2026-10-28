@@ -42,7 +42,21 @@ lemma option_caseE:
   "\<lbrakk>P (case arg of None \<Rightarrow> a | Some x \<Rightarrow> b x);
    \<lbrakk>arg = None; P a\<rbrakk> \<Longrightarrow> Q; \<And> x. \<lbrakk>arg = Some x; P (b x)\<rbrakk> \<Longrightarrow> Q\<rbrakk>
    \<Longrightarrow> Q"
-  by (metis option.case_eq_if option.collapse)
+proof -
+  assume P: "P (case arg of None \<Rightarrow> a | Some x \<Rightarrow> b x)"
+  assume none: "\<lbrakk>arg = None; P a\<rbrakk> \<Longrightarrow> Q"
+  assume some: "\<And>x. \<lbrakk>arg = Some x; P (b x)\<rbrakk> \<Longrightarrow> Q"
+  show Q
+  proof (cases arg)
+    case None
+    then have "P a" using P by simp
+    with None show ?thesis using none by simp
+  next
+    case (Some x)
+    then have "P (b x)" using P by simp
+    with Some show ?thesis using some by simp
+  qed
+qed
 
 lemma option_some_simp: 
   "x = Some a \<Longrightarrow> (case x of Some a \<Rightarrow> z a | None \<Rightarrow> y) = z a"
