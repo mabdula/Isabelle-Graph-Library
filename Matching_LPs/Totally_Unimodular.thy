@@ -2111,7 +2111,26 @@ qed
           using DL_Missing_Sublist.pick.simps(2) by blast
         have "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
               (LEAST a. a \<in> J \<and> pick J k < a)" 
-          by (metis Diff_iff 29 30 basic_trans_rules(19) less_not_refl2 singletonD)
+        proof -
+          have pred_eq: "\<And>a. (a \<in> J - {pick J j} \<and> pick (J - {pick J j}) (k - 1) < a) =
+                      (a \<in> J \<and> pick J k < a)"
+          proof -
+            fix a
+            show "(a \<in> J - {pick J j} \<and> pick (J - {pick J j}) (k - 1) < a) =
+          (a \<in> J \<and> pick J k < a)"
+            proof (cases "a \<in> J \<and> pick J k < a")
+              case True
+              then have aJ: "a \<in> J" and lt: "pick J k < a" by auto
+              from lt 30 have "a \<noteq> pick J j" by linarith
+              with aJ have "a \<in> J - {pick J j}" by simp
+              with 29 lt True show ?thesis by auto
+            next
+              case False
+              then show ?thesis using 29 by auto
+            qed
+          qed
+          then show ?thesis by simp
+        qed
         then have "pick (J - {pick J j}) k = pick J (Suc k)" 
           by (metis Suc_eq_plus1 31 32 \<open>card {a \<in> J. a < pick J k} = k\<close> 33 34)
         then show ?thesis 
