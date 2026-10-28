@@ -339,12 +339,55 @@ lemma dVs_arcs_subset_verts:
 lemma strongly_connected_induced_is_digraph_of_verts:
   assumes "induced_subgraph_digraph H (ddfs.digraph_of G)" "u \<in> verts H" "strongly_connected_digraph H" "verts H \<noteq> {u}"
   shows "verts H = dVs (arcs H)"
-  using assms
-  unfolding dVs_def
-  apply (auto elim!: Digraph_Component.induced_subgraphE Digraph_Component.strongly_connectedE)
-  by (metis (no_types, lifting) Digraph_Component.subgraph_def compatible_digraph_of_arcs_ends
-            insertI1 mem_Collect_eq pre_digraph.converse_reachable_cases snd_conv
-            subgraph_digraph_of_arcs)
+proof -
+  from assms(1) have sub: "subgraph_digraph H (ddfs.digraph_of G)"
+    by (auto elim: Digraph_Component.induced_subgraphE)
+  from assms(3) have reach: "\<And>a b. a \<in> verts H \<Longrightarrow> b \<in> verts H \<Longrightarrow> a \<rightarrow>\<^sup>*\<^bsub>H\<^esub> b"
+    by (auto elim: Digraph_Component.strongly_connectedE)
+  have compat_H: "compatible H (ddfs.digraph_of G)"
+    using sub by (auto simp: Digraph_Component.subgraph_def intro: compatible_sym)
+  have compat: "arcs_ends H = arcs H"
+    using compat_H by (rule compatible_digraph_of_arcs_ends)
+  have "\<not> verts H \<subseteq> {u}"
+  proof
+    assume "verts H \<subseteq> {u}"
+    with assms(2) have "verts H = {u}" by blast
+    with assms(4) show False by simp
+  qed
+  then obtain w where w1: "w \<in> verts H" and w2: "w \<noteq> u"
+    by blast
+  have fwd: "verts H \<subseteq> dVs (arcs H)"
+  proof
+    fix v assume v: "v \<in> verts H"
+    obtain v' where v'1: "v' \<in> verts H" and v'2: "v' \<noteq> v"
+    proof (cases "v = u")
+      case True
+      have "w \<in> verts H" by (rule w1)
+      moreover have "w \<noteq> v" using True w2 by blast
+      ultimately show thesis by (rule that)
+    next
+      case False
+      have "u \<in> verts H" by (rule assms(2))
+      moreover have "u \<noteq> v" using False by blast
+      ultimately show thesis by (rule that)
+    qed
+    have vv': "v \<rightarrow>\<^sup>*\<^bsub>H\<^esub> v'"
+      using reach[OF v v'1] .
+    have "\<exists>x. v \<rightarrow>\<^bsub>H\<^esub> x"
+      using vv' v'2
+      by (auto elim: pre_digraph.converse_reachable_cases)
+    then obtain x where vx: "v \<rightarrow>\<^bsub>H\<^esub> x"
+      by blast
+    have vx': "(v, x) \<in> arcs H"
+      using vx compat by simp
+    show "v \<in> dVs (arcs H)"
+      using vx' by (blast intro: Pair_Graph.dVsI)
+  qed
+  have bwd: "dVs (arcs H) \<subseteq> verts H"
+    using sub by (rule subgraph_digraph_of_dVs_arcs_subset)
+  show ?thesis
+    using fwd bwd by (rule subset_antisym)
+qed
 
 lemma strongly_connected_induced_is_digraph_of:
   assumes "strongly_connected_digraph H"
