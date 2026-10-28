@@ -483,7 +483,22 @@ qed
         assume subassm: "eiv' \<in> \<delta>\<^sup>- u \<and> eiv' \<in>  set ES" "eiv' \<noteq> eiv"
         then obtain j where j_def: "j < length ES" "ES ! j = eiv'" 
                                    "j \<noteq> nat ((int i - 1) mod int b_len)"
-          by (metis eiv_def in_set_conv_nth)
+        proof -
+          have eiv'_in: "eiv' \<in> set ES" using subassm(1) by simp
+          have j_ex: "\<exists>j<length ES. ES ! j = eiv'"
+            using eiv'_in by (simp add: in_set_conv_nth)
+          then obtain j where j_len: "j < length ES" and j_eq: "ES ! j = eiv'"
+            by blast
+          have j_ne: "j \<noteq> nat ((int i - 1) mod int b_len)"
+          proof
+            assume "j = nat ((int i - 1) mod int b_len)"
+            with j_eq eiv_def have "eiv' = eiv" by simp
+            with subassm(2) show False by simp
+          qed
+          assume case_j: "\<And>j. j < length ES \<Longrightarrow> ES ! j = eiv' \<Longrightarrow>
+                                  j \<noteq> nat ((int i - 1) mod int b_len) \<Longrightarrow> thesis"
+          with j_len j_eq j_ne show thesis by blast
+        qed
         hence "snd (ES ! j) = ([x] @ bs) ! ((j+1) mod b_len)" 
           using ES_prop' by blast 
         moreover have "snd (ES ! i) =  ([x] @ bs) ! ((i+1)  mod b_len)"
