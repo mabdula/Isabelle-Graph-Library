@@ -7,7 +7,21 @@ begin
 subsection \<open>Auxiliary Lemmas\<close>
 
 lemma max_n: "(\<And> n. P n \<Longrightarrow> n \<le> bound) \<Longrightarrow> P (n::nat) \<Longrightarrow> (\<exists> nmax. P nmax \<and> (\<nexists> m. m > nmax \<and> P m))"
-  by (metis bounded_Max_nat leD)
+proof -
+  assume bound_hyp: "\<And>n. P n \<Longrightarrow> n \<le> bound"
+  assume "P n"
+  let ?S = "{n. P n}"
+  have "n \<in> ?S" using \<open>P n\<close> by simp
+  hence S_nonempty: "?S \<noteq> {}" by auto
+  have "?S \<subseteq> {0..bound}" using bound_hyp by auto
+  hence S_finite: "finite ?S" using finite_subset by auto
+  define nmax where "nmax = Max ?S"
+  have nmax_in: "nmax \<in> ?S" using Max_in[OF S_finite S_nonempty] nmax_def by simp
+  hence "P nmax" by simp
+  have "\<forall>m \<in> ?S. m \<le> nmax" using Max_ge[OF S_finite] nmax_def by simp
+  hence "\<nexists>m. m > nmax \<and> P m" by auto
+  thus ?thesis using \<open>P nmax\<close> by auto
+qed
 
 lemma exists_list_with_first_element:
   assumes "finite X" "x \<in> X"
