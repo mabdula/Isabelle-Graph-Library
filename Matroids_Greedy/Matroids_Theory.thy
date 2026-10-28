@@ -1134,9 +1134,41 @@ qed
     then show ?thesis by simp
   qed
   moreover have "rank_quotient = Min ?fracs"
-    unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
+  proof -
+    have rw1: "\<And>X. X \<subseteq> carrier \<Longrightarrow>
+      Frac (int (lower_rank_of X)) (int (rank X)) = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+      using upper_rank_equiv_rank by simp
+    have rw2: "\<And>X. X \<subseteq> carrier \<Longrightarrow>
+      Frac (int (lower_rank_of X)) (int (upper_rank_of X)) = Frac (int (lower_rank_of X)) (int (rank X))"
+      using upper_rank_equiv_rank by simp
+    have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+                  {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (rule set_eqI)
+      fix q
+      show "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} \<longleftrightarrow>
+            q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      proof
+        assume "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        then obtain X where "X \<subseteq> carrier"
+          and "q = Frac (int (lower_rank_of X)) (int (rank X))" by blast
+        then have "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+          using rw1 by simp
+        then show "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+          using \<open>X \<subseteq> carrier\<close> by blast
+      next
+        assume "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        then obtain X where "X \<subseteq> carrier"
+          and "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by blast
+        then have "q = Frac (int (lower_rank_of X)) (int (rank X))"
+          using rw2 by simp
+        then show "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+          using \<open>X \<subseteq> carrier\<close> by blast
+      qed
+    qed
+    then show ?thesis
+      unfolding rank_quotient_def by simp
+  qed
   ultimately have "rank_quotient = Frac (int (card J)) (int (card K))" by simp
-
   from basis_cards_ineq \<open>F \<subseteq> carrier\<close> \<open>basis_in F J\<close> \<open>basis_in F K\<close>
   have "card K \<le> p * card J" by blast
 
