@@ -2505,8 +2505,16 @@ lemma only_one_nonzero_is_sum:
   assumes "a \<in> S"
   assumes "\<forall> x \<in> S. x \<noteq> a \<longrightarrow> f x = 0"
   shows "sum f S = f a" 
-  by (metis (mono_tags, opaque_lifting) Diff_iff add.right_neutral assms
-      insert_iff sum.neutral sum.remove)
+proof -
+  have "sum f S = f a + sum f (S - {a})"
+    using sum.remove[OF assms(1) assms(2)] by simp
+  also have "sum f (S - {a}) = 0"
+  proof (rule sum.neutral)
+    show "\<forall>x \<in> S - {a}. f x = 0"
+      using assms(3) by auto
+  qed
+  finally show ?thesis by simp
+qed
 
 lemma empty_set_submatrix_iz_zero_mat:
   shows "submatrix A {} J = 0\<^sub>m 0 (dim_col (submatrix A {} J))"
