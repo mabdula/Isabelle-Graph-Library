@@ -1676,7 +1676,7 @@ proof-
         (\<forall>x\<in>E - B. \<not> insert x B \<subseteq> E \<or> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B')))" by blast
     then have
       "\<forall>B. (B \<in> \<B>) = ((B \<subseteq> E \<and> (\<exists>B'\<in>\<B>. B \<subseteq> B')) \<and> 
-        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> \<not> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B'))))" by metis
+        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> \<not> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B'))))" by meson
     then have
       "\<forall>B. (B \<in> \<B>) = ((B \<subseteq> E \<and> (\<exists>B'\<in>\<B>. B \<subseteq> B')) \<and> 
         (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> (\<exists>B' \<in> \<B>. insert x B \<subseteq> B'))))" by meson
