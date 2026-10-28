@@ -789,7 +789,14 @@ proof (cases "(v, w) = last p")
   then have "tl (awalk_verts u p) = [snd (hd p)] @ tl ys @ [v, w]" by simp 
   moreover have "distinct (tl (awalk_verts u p))"
     using \<open>cycle' E p\<close> cycle'_def cycle_def
-    by (metis \<open>awalk E u p u\<close> awalk_ends)
+  proof -
+    obtain u' where u'_props: "awalk E u' p u'" "distinct (tl (awalk_verts u' p))" "p \<noteq> []"
+      using \<open>cycle' E p\<close> unfolding cycle'_def cycle_def by blast
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_props(1)] u'_props(3) by blast
+    then show ?thesis
+      using u'_props(2) by simp
+  qed
   ultimately have "snd (hd p) \<noteq> v" by simp
 
   from \<open>fst (hd p) = u\<close> \<open>u = w\<close> \<open>snd (hd p) \<noteq> v\<close>
