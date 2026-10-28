@@ -1969,7 +1969,13 @@ proof (induction n arbitrary: A rule: less_induct)
     proof ((rule impI)+)
       assume "n = card A" "A \<subseteq> X - Y"
       with Zero show "r (Y \<union> A) = r Y"
-        by (metis assms(1) assms(2) card_eq_0_iff finite_Diff finite_subset sup_bot.right_neutral)
+      proof -
+        have "card A = 0" using \<open>n = card A\<close> Zero by simp
+        have "A \<subseteq> E" using \<open>A \<subseteq> X - Y\<close> assms(2) by blast
+        then have "finite A" using assms(1) finite_subset by blast
+        with \<open>card A = 0\<close> have "A = {}" by (simp add: card_eq_0_iff)
+        then show "r (Y \<union> A) = r Y" by simp
+      qed
     qed
   next
     case Pos
