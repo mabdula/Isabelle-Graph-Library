@@ -2906,7 +2906,7 @@ proof -
           using False by auto
         have 30: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J = 
             submatrix (mat_of_rows n [unit_vec n i]) {} J" 
-          by (metis 28 29)
+          by (simp only: 29 28)
         then have 11: "submatrix (mat_of_rows n [unit_vec n i]) {} J  = 
               0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J))"
           using empty_set_submatrix_iz_zero_mat 
