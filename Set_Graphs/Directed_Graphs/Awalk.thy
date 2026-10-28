@@ -567,10 +567,13 @@ qed
 
 lemma awalk_verts_snoc:
   "l = xs @ [(x, y)] \<Longrightarrow> \<exists>ys. awalk_verts u l = ys @ [x, y]"
-  apply (induction l arbitrary: xs x y u)
-  apply blast
-  by (smt (z3) append.left_neutral append_Cons awalk_verts.simps(1) awalk_verts.simps(2) list.exhaust
-  list.inject old.prod.exhaust)
+proof -
+  assume l_eq: "l = xs @ [(x, y)]"
+  have eq: "awalk_verts u l = map fst xs @ [x, y]"
+    using awalk_verts_conv[of u l] l_eq by simp
+  show "\<exists>ys. awalk_verts u l = ys @ [x, y]"
+    using eq by auto
+qed
 
 lemma awalk_verts_length:
   "awalk E u p v \<Longrightarrow> length (awalk_verts u p) = length p + 1"
