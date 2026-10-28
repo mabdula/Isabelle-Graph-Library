@@ -546,8 +546,24 @@ qed
   
 lemma awalk_verts_cons:
   "awalk E u ([(x, y)] @ xs) v \<Longrightarrow> awalk_verts u ([(x, y)] @ xs) = [x, y] @ tl (awalk_verts u xs)"
-  by (smt (verit, best) append.left_neutral append_Cons awalkE awalk_verts.elims awalk_verts.simps(2)
-  cas.simps(2) list.sel(3))
+proof -
+  assume asm: "awalk E u ([(x, y)] @ xs) v"
+  then have awalk_cons: "awalk E u ((x, y) # xs) v" by simp
+  have awalk_tl: "awalk E y xs v"
+    using awalk_cons by (auto simp add: awalk_Cons_iff)
+  show "awalk_verts u ([(x, y)] @ xs) = [x, y] @ tl (awalk_verts u xs)"
+  proof (cases xs)
+    case Nil
+    then show ?thesis by simp
+  next
+    case (Cons e es)
+    obtain a b where e_def: "e = (a, b)"
+      by (rule prod.exhaust)
+    have y_eq: "a = y"
+      using awalk_tl Cons e_def by (auto simp add: awalk_Cons_iff)
+    from Cons e_def y_eq show ?thesis by simp
+  qed
+qed
 
 lemma awalk_verts_snoc:
   "l = xs @ [(x, y)] \<Longrightarrow> \<exists>ys. awalk_verts u l = ys @ [x, y]"
