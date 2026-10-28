@@ -725,8 +725,36 @@ proof (cases "(v, w) = last p")
 
   from \<open>(v, w) = last p\<close> \<open>(hd p) \<noteq> (v, w)\<close>
     have "\<exists>xs. p = [hd p] @ xs @ [(v, w)]" 
-    by (metis (no_types, opaque_lifting) \<open>(v, w) \<in> set p\<close> append.left_neutral append_Cons
-    append_butlast_last_id last_snoc list.distinct(1) list.exhaust_sel split_list)
+  proof -
+    have "p \<noteq> []" using \<open>(v, w) \<in> set p\<close> by auto
+    then have p_eq: "p = butlast p @ [last p]"
+      by (simp add: append_butlast_last_id)
+    with \<open>(v, w) = last p\<close> have p_eq2: "p = butlast p @ [(v, w)]" by simp
+    have "butlast p \<noteq> []"
+    proof
+      assume "butlast p = []"
+      with p_eq2 have "p = [(v, w)]" by simp
+      then have "hd p = (v, w)" by simp
+      with \<open>(hd p) \<noteq> (v, w)\<close> show False by simp
+    qed
+    then obtain y ys where bl_eq: "butlast p = y # ys"
+      by (cases "butlast p") auto
+    have hd_eq: "y = hd p"
+    proof -
+      have "hd p = hd (butlast p @ [(v, w)])" using p_eq2 by (rule arg_cong)
+      moreover have "hd (butlast p @ [(v, w)]) = y"
+        using bl_eq \<open>butlast p \<noteq> []\<close> by (simp add: hd_append2)
+      ultimately show ?thesis by simp
+    qed
+    have "p = [hd p] @ ys @ [(v, w)]"
+    proof -
+      have "p = butlast p @ [(v, w)]" using p_eq2 .
+      also have "\<dots> = (y # ys) @ [(v, w)]" using bl_eq by simp
+      also have "\<dots> = [hd p] @ ys @ [(v, w)]" using hd_eq by simp
+      finally show ?thesis .
+    qed
+    then show "\<exists>xs. p = [hd p] @ xs @ [(v, w)]" by auto
+  qed
   then obtain xs where "p = [(fst (hd p), snd (hd p))] @ xs @ [(v, w)]" by auto
   with awalk_verts_cons \<open>awalk E u p u\<close>
     have awalk_verts_p: "awalk_verts u ([(fst (hd p), snd (hd p))] @ (xs @ [(v, w)])) =
