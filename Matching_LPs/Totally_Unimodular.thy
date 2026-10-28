@@ -2000,7 +2000,7 @@ qed
         using pick_card_in_set 
         by presburger
       have 26: "card {a\<in>J. a < pick J k} = k" 
-        by (metis True 10 23 12 card_mono card_pick insert_index(1) order_trans_rules(22))
+        using card_pick k_less_card by blast
       have "pick J k < pick J j" 
         by (metis True 10 12 assms(4) card_mono order_trans_rules(22) pick_mono_inf pick_mono_le)
       then  have "{a\<in>J. a < pick J k} = {a\<in>(J - {pick J j}). a < pick J k}"
