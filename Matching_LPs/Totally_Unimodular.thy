@@ -3128,7 +3128,26 @@ proof rule
             assume asm: "k < dim_col B" "pick J k \<noteq> i"
             have "pick J k < n" using 12 
                 "5" Collect_cong 22 asm(1)  pick_le row_carrier vec_carrier_vec 
-              by (metis (no_types, lifting) carrier_vecD)
+proof -
+  have dim_n: "dim_vec (- (unit_vec n i) :: 'a vec) = n"
+    using 12 carrier_vecD by blast
+  have row_eq: "row B (dim_row B - 1) =
+                  vec (card {ia. ia < n \<and> ia \<in> J})
+                      (\<lambda>ia. (- (unit_vec n i) :: 'a vec) $ (pick J ia))"
+    using 22 5 dim_n by simp
+  have "row B (dim_row B - 1) \<in> carrier_vec (dim_col B)"
+    using row_carrier by blast
+  then have "dim_vec (row B (dim_row B - 1)) = dim_col B"
+    using carrier_vecD by blast
+  moreover have "dim_vec (row B (dim_row B - 1)) = card {ia. ia < n \<and> ia \<in> J}"
+    using row_eq by simp
+  ultimately have dim_col_eq: "dim_col B = card {ia. ia < n \<and> ia \<in> J}"
+    by simp
+  then have "k < card {ia. ia < n \<and> ia \<in> J}"
+    using asm(1) by simp
+  then show ?thesis
+    using pick_le by blast
+qed
             have 8:"- Matrix.vec n (\<lambda>j. if j = i then 1 else (0::'a)) = 
            Matrix.vec n (\<lambda>j. if j = i then - 1 else (0::'a))"
             proof rule
