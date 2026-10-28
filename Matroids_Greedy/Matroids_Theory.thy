@@ -1630,9 +1630,28 @@ proof-
       qed
 
       from ex_y have card_inter_greater: "card ((insert y (B1 - {x})) \<inter> B2) > card (B1 \<inter> B2)"
-        by (metis (no_types, lifting) DiffD1 DiffD2 Int_insert_left_if0 Int_insert_left_if1 
-            card.infinite card_greater ex_x finite_Int finite_insert inf_le1 insert_Diff psubset_card_mono 
-            psubset_insert_iff subsetD subset_insert subset_insertI)
+        proof -
+          have "B1 \<in> \<B>" using ex_B1_B2 by blast
+          then have "B1 \<subseteq> E" using assms(2) by auto
+          have finB1: "finite B1"
+            using \<open>B1 \<subseteq> E\<close> assms(1) by (rule finite_subset)
+          have "x \<notin> B2" using ex_x by blast
+          have "y \<in> B2" using ex_y by blast
+          have "y \<notin> B1" using ex_y by blast
+          have eq1: "insert y (B1 - {x}) \<inter> B2 = insert y ((B1 - {x}) \<inter> B2)"
+            using \<open>y \<in> B2\<close> by blast
+          have eq2: "(B1 - {x}) \<inter> B2 = B1 \<inter> B2"
+            using \<open>x \<notin> B2\<close> by blast
+          have eq: "insert y (B1 - {x}) \<inter> B2 = insert y (B1 \<inter> B2)"
+            using eq1 eq2 by simp
+          have finBI: "finite (B1 \<inter> B2)" using finB1 by blast
+          have notin: "y \<notin> B1 \<inter> B2" using \<open>y \<notin> B1\<close> by blast
+          have card_eq: "card (insert y (B1 \<inter> B2)) = card (B1 \<inter> B2) + 1"
+            using card_insert_disjoint[OF finBI notin] by simp
+          have "card (insert y (B1 - {x}) \<inter> B2) = card (B1 \<inter> B2) + 1"
+            using eq card_eq by simp
+          then show ?thesis by simp
+        qed
 
       from card_insert_greater card_inter_greater ex_B1_B2 ex_y show ?case by fastforce
     qed
