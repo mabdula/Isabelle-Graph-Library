@@ -1738,7 +1738,24 @@ proof-
           then have 4: "card (Y - B1) + card ((B2 - B1) - Y) \<ge> card (X - Y)" by simp
 
           from `finite B1` `finite B2` ex_B1_B2 card_less_sym_Diff card_X_Y 
-          have 5: "card (X - Y) > card (Y - X)" by (metis finite_subset lessI) 
+          have X_sub_B1: "X \<subseteq> B1" using ex_B1_B2 by blast
+          have Y_sub_B2: "Y \<subseteq> B2" using ex_B1_B2 by blast
+          have "finite X" using \<open>finite B1\<close> X_sub_B1 finite_subset by blast
+          have "finite Y" using \<open>finite B2\<close> Y_sub_B2 finite_subset by blast
+          have finite_int: "finite (X \<inter> Y)" using \<open>finite X\<close> by blast
+          have finite_XY: "finite (X - Y)" using \<open>finite X\<close> by blast
+          have finite_YX: "finite (Y - X)" using \<open>finite Y\<close> by blast
+          have X_eq: "X = (X \<inter> Y) \<union> (X - Y)" by blast
+          have Y_eq: "Y = (X \<inter> Y) \<union> (Y - X)" by blast
+          have disj_X: "(X \<inter> Y) \<inter> (X - Y) = {}" by blast
+          have disj_Y: "(X \<inter> Y) \<inter> (Y - X) = {}" by blast
+          have card_X_eq: "card X = card (X \<inter> Y) + card (X - Y)"
+            using X_eq card_Un_disjoint[OF finite_int finite_XY disj_X] by simp
+          have card_Y_eq: "card Y = card (X \<inter> Y) + card (Y - X)"
+            using Y_eq card_Un_disjoint[OF finite_int finite_YX disj_Y] by simp
+          have 5: "card (X - Y) > card (Y - X)"
+            using card_X_eq card_Y_eq card_X_Y by linarith
+
 
           from `finite B1` `finite B2` ex_B1_B2 card_mono Diff_mono 
           have 6: "card (Y - X) \<ge> card (Y - B1)" by (metis equalityD1 finite_Diff finite_subset)
