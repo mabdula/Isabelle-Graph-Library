@@ -491,7 +491,16 @@ qed
 lemma distance_neighbourhood':
   "\<lbrakk>v \<in> neighbourhood G u\<rbrakk> \<Longrightarrow> distance G x v \<le> distance G x u + 1"
   using triangle_ineq distance_neighbourhood
-  by (metis add.commute add_mono_thms_linordered_semiring(3) order_trans)
+proof -
+  assume hyp: "v \<in> neighbourhood G u"
+  have dist_uv: "distance G u v \<le> 1"
+    using hyp by (rule distance_neighbourhood)
+  have "distance G x v \<le> distance G x u + distance G u v"
+    by (rule triangle_ineq)
+  also have "\<dots> \<le> distance G x u + 1"
+    using dist_uv by (rule add_left_mono)
+  finally show ?thesis .
+qed
 
 lemma Suc_le_length_iff_2:
   "(Suc n \<le> length xs) = (\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys)"
