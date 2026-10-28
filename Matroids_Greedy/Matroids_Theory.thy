@@ -1312,7 +1312,12 @@ proof-
         assume "x \<in> E - B" "B' \<in> S"
         from `x \<in> E - B` have "x \<notin> B" by blast
         from `B \<in> S` assms `x \<notin> B` card_insert_disjoint finite_subset
-        have "card (insert x B) = Suc (card B)" by metis
+        have "card (insert x B) = Suc (card B)"
+        proof -
+          from assms(3) \<open>B \<in> S\<close> have "B \<subseteq> E" by blast
+          with assms(1) have "finite B" by (blast intro: finite_subset)
+          from card_insert_disjoint[OF this \<open>x \<notin> B\<close>] show ?thesis .
+        qed
         with `B' \<in> S` assms show "\<not>(insert x B) \<subseteq> B'"
           by (metis `B \<in> S` Suc_n_not_le_n card_mono infinite_super)
       qed
