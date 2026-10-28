@@ -601,7 +601,18 @@ proof (cases "n = 0", simp)
       by (induct k) (simp_all add: funpow_add)
 
     have "(p ^^ (n mod ?lpow a)) ((p ^^ (n - (n mod ?lpow a))) a) = (p ^^ n) a"
-      by (metis add_diff_inverse_nat funpow_add mod_less_eq_dividend not_less o_apply)
+    proof -
+      have le: "n mod (least_power p a) \<le> n"
+        by (rule mod_less_eq_dividend)
+      have eq: "(n mod (least_power p a)) + (n - (n mod (least_power p a))) = n"
+        by (rule le_add_diff_inverse[OF le])
+      have "(p ^^ (n mod (least_power p a))) ((p ^^ (n - (n mod (least_power p a)))) a)
+              = (p ^^ ((n mod (least_power p a)) + (n - (n mod (least_power p a))))) a"
+        by (simp only: funpow_add o_apply)
+      also have "\<dots> = (p ^^ n) a"
+        by (simp add: eq)
+      finally show ?thesis .
+    qed
     with \<open>(p ^^ n) a = b\<close> 
     show "(p ^^ (n mod ?lpow a)) a = b"
       using aux_lemma by (simp add: minus_mod_eq_mult_div) 
