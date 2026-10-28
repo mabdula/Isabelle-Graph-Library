@@ -2913,7 +2913,7 @@ proof -
           by (smt (verit) Collect_cong dim_submatrix(2) mat_of_rows_carrier(3))
         have "B = submatrix A I J" 
           apply rule
-            apply (metis "10" append_rows_def index_mat_four_block(1) trans_less_add1)
+            apply (simp add: "10" "30" "11" append_rows_def index_mat_four_block(1) index_zero_mat(1))
            apply (metis (no_types, lifting) "10" "11" 30 add.right_neutral append_rows_def
               index_mat_four_block(2) index_zero_mat(2))
           by (metis (no_types, lifting) A Collect_cong I_J 24 carrier_matD(2) dim_submatrix(2) 
