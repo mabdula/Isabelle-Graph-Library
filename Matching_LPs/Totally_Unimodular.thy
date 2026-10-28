@@ -2340,7 +2340,24 @@ qed
           using DL_Missing_Sublist.pick.simps(2) by blast
         have "(LEAST a. a \<in> (I - {pick I i}) \<and> pick (I - {pick I i}) (t - 1) < a) = 
               (LEAST a. a \<in> I \<and> pick I t < a)" 
-          by (metis Diff_iff 38 39 basic_trans_rules(19) less_not_refl2 singletonD)
+        proof -
+          have "(\<lambda>a. a \<in> I - {pick I i} \<and> pick (I - {pick I i}) (t - 1) < a) =
+                (\<lambda>a. a \<in> I \<and> pick I t < a)"
+          proof (rule ext)
+            fix a
+            have "pick (I - {pick I i}) (t - 1) < a \<longleftrightarrow> pick I t < a"
+              using 38 by simp
+            moreover have "a \<in> I - {pick I i} \<longleftrightarrow> a \<in> I \<and> a \<noteq> pick I i"
+              by (simp add: Diff_iff)
+            moreover have "pick I t < a \<Longrightarrow> a \<noteq> pick I i"
+              using 39 by auto
+            ultimately show "(a \<in> I - {pick I i} \<and> pick (I - {pick I i}) (t - 1) < a) =
+                             (a \<in> I \<and> pick I t < a)"
+              by blast
+          qed
+          then show ?thesis
+            by (rule arg_cong)
+        qed
         then have "pick (I - {pick I i}) t = pick I (Suc t)" 
           by (metis Suc_eq_plus1 40 41 37 42 43)
         then show ?thesis 
