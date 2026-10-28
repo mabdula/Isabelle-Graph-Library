@@ -163,7 +163,25 @@ proof(goal_cases)
 qed
 
 lemma list_inter_mem_iff: "set xs \<inter> s \<noteq> {} \<longleftrightarrow> (\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> x \<in> s)"
-  by (metis append.left_neutral append_Cons disjoint_iff in_set_conv_decomp)
+proof
+  assume "set xs \<inter> s \<noteq> {}"
+  then obtain x where x_mem: "x \<in> set xs" "x \<in> s"
+    by auto
+  from x_mem(1) obtain xs1 xs2 where "xs = xs1 @ x # xs2"
+    by (auto simp: in_set_conv_decomp)
+  hence "xs = xs1 @ [x] @ xs2"
+    by simp
+  thus "\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> x \<in> s"
+    using x_mem by blast
+next
+  assume "\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> x \<in> s"
+  then obtain xs1 x xs2 where "xs = xs1 @ [x] @ xs2" "x \<in> s"
+    by blast
+  hence "x \<in> set xs"
+    by simp
+  thus "set xs \<inter> s \<noteq> {}"
+    using \<open>x \<in> s\<close> by auto
+qed
 
 lemma list_P_switch: 
   "\<lbrakk>x \<in> set xs; P x; y \<in> set xs; \<not> P y\<rbrakk>
