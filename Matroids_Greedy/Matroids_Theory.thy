@@ -4341,7 +4341,10 @@ proof (rule ccontr, goal_cases)
   then have "\<forall>x \<in> F. \<not>indep {x}" using indep_in_def by blast
 
   from \<open>card B2 > 0\<close> have "\<exists>x. x \<in> B2"
-    by (metis \<open>B1 = {}\<close> \<open>int (card B1) \<noteq> int (card B2)\<close> all_not_in_conv)
+  proof -
+    from \<open>card B2 > 0\<close> have "B2 \<noteq> {}" by auto
+    then show "\<exists>x. x \<in> B2" by blast
+  qed
   then obtain x where "x \<in> B2" by blast
 
   from indep_in_indep[OF basis_in_indep_in[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B2\<close>]]
