@@ -627,12 +627,35 @@ lemma in_union_of_sets_append:
 
 lemma extract_first_x:
   "\<lbrakk>x \<in> set xs; P x\<rbrakk> \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set ys \<and>  P z)"
-  apply(induction xs, simp)
-  subgoal for a xs
-    apply(cases "P a") 
-    apply fastforce
-    by (metis append_Cons set_ConsD)
-  done
+proof(induction xs)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a xs)
+  show ?case
+  proof(cases "P a")
+    case True
+    have "a # xs = [] @ [a] @ xs" by simp
+    moreover have "\<nexists>z. z \<in> set [] \<and> P z" by simp
+    ultimately show ?thesis
+      using True by blast
+  next
+    case False
+    have x_neq_a: "x \<noteq> a"
+      using False Cons.prems(2) by blast
+    have x_in_xs: "x \<in> set xs"
+      using Cons.prems(1) x_neq_a by simp
+    obtain y ys zs where witness:
+      "xs = ys @ [y] @ zs" "P y" "\<nexists>z. z \<in> set ys \<and> P z"
+      using Cons.IH x_in_xs Cons.prems(2) by blast
+    have eq: "a # xs = (a # ys) @ [y] @ zs"
+      using witness(1) by simp
+    have none: "\<nexists>z. z \<in> set (a # ys) \<and> P z"
+      using False witness(3) by auto
+    show ?thesis
+      using eq witness(2) none by blast
+  qed
+qed
 
 lemma extract_last_x:
   "\<lbrakk>x \<in> set xs; P x\<rbrakk> \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set zs \<and>  P z)"
