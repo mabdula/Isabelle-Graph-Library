@@ -1924,7 +1924,40 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
           by (simp add: last_pfx1_eq)
         show ?thesis
           using p_nempty_even[OF p_nempty len_pf2_ge_2 pfx1_nempty from_tree(2,1) odd_lens(2,1) \<open>last pfx2 = last pfx1\<close> hds_neq[symmetric] \<open>set (butlast pfx2) \<inter> set pfx1 = {}\<close> distinct(2) alt_paths(2,1) \<open>last p2 \<notin> Vs M\<close>]
-          by (metis \<open>drop (length pfx1) p1 = p\<close> calculation edges_of_path_rev hd_rev last_pfx1_eq length_rev pfx1_nempty rev.simps(2))
+        proof -
+          note hd_rev_pfx1 = \<open>hd (rev pfx1 @ pfx2) = hd (rev pfx1)\<close>
+          note drop_p1_eq = \<open>drop (length pfx1) p1 = p\<close>
+          have not_odd: "even (length (edges_of_path (last pfx2 # p)))"
+          proof (rule ccontr)
+            assume "\<not> even (length (edges_of_path (last pfx2 # p)))"
+            then have odd_len: "odd (length (edges_of_path (last pfx2 # p)))"
+              by simp
+            show False
+              using p_nempty_even[OF p_nempty len_pf2_ge_2 pfx1_nempty from_tree(2,1) odd_lens(2,1)
+                                      \<open>last pfx2 = last pfx1\<close> hds_neq[symmetric]
+                                      \<open>set (butlast pfx2) \<inter> set pfx1 = {}\<close> distinct(2) alt_paths(2,1)
+                                      \<open>last p2 \<notin> Vs M\<close>]
+                      odd_len
+              by blast
+          qed
+          have hd_eq: "hd (rev pfx1 @ pfx2) = last pfx2"
+          proof -
+            have "hd (rev pfx1 @ pfx2) = hd (rev pfx1)" by (rule hd_rev_pfx1)
+            also have "\<dots> = last pfx1" by (rule hd_rev)
+            also have "\<dots> = last pfx2" by (rule last_pfx1_eq)
+            finally show ?thesis .
+          qed
+          have list_eq: "rev (drop (length pfx1) p1) @ [hd (rev pfx1 @ pfx2)] = rev (last pfx2 # p)"
+            using drop_p1_eq hd_eq by simp
+          have "edges_of_path (rev (drop (length pfx1) p1) @ [hd (rev pfx1 @ pfx2)])
+              = rev (edges_of_path (last pfx2 # p))"
+            using list_eq by (simp add: edges_of_path_rev)
+          then have "length (edges_of_path (rev (drop (length pfx1) p1) @ [hd (rev pfx1 @ pfx2)]))
+                   = length (edges_of_path (last pfx2 # p))"
+            by simp
+          with not_odd show ?thesis
+            by simp
+        qed
       next
         case len_pf2_le_1: False
         then show ?thesis
