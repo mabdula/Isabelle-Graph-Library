@@ -208,7 +208,26 @@ qed
 
 lemma distance_subset: 
   "G \<subseteq> G' \<Longrightarrow> distance G' u v \<le> distance G u v"
-  by (metis enat_ord_simps(3) reachable_dist_2 unreachable_dist vwalk_bet_dist vwalk_bet_subset)
+proof -
+  assume asm: "G \<subseteq> G'"
+  show "distance G' u v \<le> distance G u v"
+  proof (cases "reachable G u v")
+    case True
+    then obtain p where p1: "vwalk_bet G u p v" and p2: "distance G u v = length p - 1"
+      by (rule reachable_dist_2)
+    have "vwalk_bet G' u p v"
+      using p1 asm by (rule vwalk_bet_subset)
+    hence "distance G' u v \<le> length p - 1"
+      by (rule vwalk_bet_dist)
+    thus ?thesis
+      using p2 by simp
+  next
+    case False
+    hence "distance G u v = \<infinity>"
+      by (rule unreachable_dist)
+    thus ?thesis by simp
+  qed
+qed
 
 lemma distance_neighbourhood:
   "\<lbrakk>v \<in> neighbourhood G u\<rbrakk> \<Longrightarrow> distance G u v \<le> 1"
