@@ -1048,9 +1048,17 @@ qed
   with awalk_verts_p \<open>p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]\<close>
     have "awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])" by argo
   moreover have "ys \<noteq> []"
-    by (metis One_nat_def Suc_eq_plus1 cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] awalk_verts_conv butlast_snoc
-    \<open>awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])\<close>
-    length_map linorder_neq_iff list.sel(3) list.size(3) list.size(4) nat_1_add_1 self_append_conv2)
+  proof (rule notI)
+    assume ys_nil: "ys = []"
+    have "awalk_verts u p = [w, v, snd (last p)]"
+      using ys_nil \<open>awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])\<close> by simp
+    then have "length (awalk_verts u p) = 3" by simp
+    moreover have "length (awalk_verts u p) = length p + 1"
+      using awalk_verts_length[OF \<open>awalk E u p u\<close>] .
+    moreover have "length p > 2"
+      using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] .
+    ultimately show False by simp
+  qed
   ultimately have "awalk_verts u p = [w, v] @ tl ys @ [fst (last p), snd (last p)]"
     by auto
   then have "tl (awalk_verts u p) = [v] @ tl ys @ [fst (last p), snd (last p)]" by simp 
