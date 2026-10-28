@@ -698,7 +698,7 @@ proof(rule compute_alt_path.intro)
        (use ugraph_abs_graph_invar[OF graph_input_G[OF Compute_Alt_Path_axiom]]
          matching_invar_props[OF matching_invar_M[OF Compute_Alt_Path_axiom]] in auto)
   show "alternating_forest_ordinary_extension_spec fset_invar fset_to_set evens odds get_path
-    abstract_forest forest_invar roots extend_forest_even_unclassified empty_forest K"
+    abstract_forest forest_invar roots extend_forest_even_unclassified empty_forest K fset_empty"
     by (rule Forest.alternating_forest_ordinary_extension_spec_axioms)
 qed
 
