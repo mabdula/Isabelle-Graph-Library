@@ -651,8 +651,17 @@ proof-
   assume "cycle' E p" "awalk E u p u"
   from cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] awalk_verts_length[OF \<open>awalk E u p u\<close>]
     have "\<exists>xs. awalk_verts u p = [fst (hd p)] @ xs @ [snd (last p)]"    
-    by (smt (verit) \<open>cycle' E p\<close> append_Cons append_Nil awalk_verts.elims awalk_verts_conv cycle'_def
-      cycle_def fst_conv list.sel(1) list.sel(3) tl_append2)
+  proof -
+    have "length p > 2" using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] .
+    then have p_nonempty: "p \<noteq> []" by (cases p) simp_all
+    then have "awalk_verts u p = map fst p @ [snd (last p)]"
+      by (simp add: awalk_verts_conv)
+    moreover from p_nonempty have "map fst p = fst (hd p) # map fst (tl p)"
+      by (cases p) simp_all
+    ultimately have "awalk_verts u p = [fst (hd p)] @ map fst (tl p) @ [snd (last p)]"
+      by simp
+    then show ?thesis by (intro exI[where x = "map fst (tl p)"]) simp
+  qed
   with \<open>awalk E u p u\<close>
     have "\<exists>xs. awalk_verts u p = [u] @ xs @ [u]" by auto
   then obtain xs where "awalk_verts u p = [u] @ xs @ [u]" by blast
