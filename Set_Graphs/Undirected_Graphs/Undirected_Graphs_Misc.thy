@@ -3,7 +3,11 @@
   Author: Mohammad Abdulaziz
 *)
 
+<<<<<<<< HEAD:Set_Graphs/Undirected_Graphs/Undirected_Graphs_Misc.thy
 theory Undirected_Graphs_Misc
+========
+theory Undirected_Misc
+>>>>>>>> main:Set_Graphs/Undirected_Graphs/Undirected_Misc.thy
   imports "Directed_Set_Graphs.enat_misc" "HOL-Eisbach.Eisbach_Tools" "HOL-Library.FuncSet" 
           "HOL-Library.Disjoint_Sets" Main "Data_Structures.More_Lists"
 begin

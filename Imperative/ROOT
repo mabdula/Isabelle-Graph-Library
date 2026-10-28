@@ -7,6 +7,14 @@ session "Imperative" = "Separation_Logic_Imperative_HOL_Partial" +
     Imperative_Base
     Imperative_DS
     Array_Range_Iteration
+<<<<<<< HEAD
     Imperative_HOL_Go
     Code_Target_Machine_Int
+=======
+    Array_Folds
+    Bounded_Stack_Specs
+    Bounded_Stack_Specs_Imp
+    Fixed_Univ_Set_Specs
+    Fixed_Univ_Set_Specs_Imp
+>>>>>>> main
 
