@@ -2680,7 +2680,24 @@ proof rule
           by force
         then have 6:"\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = (unit_vec n i) $ (pick J j)" 
           using 5 
-          by (smt (verit, best) Matrix.row_def 22 index_vec row_carrier vec_carrier_vec)
+        proof (intro allI impI)
+          fix j
+          assume j: "j < dim_col B"
+          have row_eq: "row B (dim_row B - 1) =
+              vec (card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J})
+                  (\<lambda>ia. (unit_vec n i) $ (pick J ia))"
+            using 22 5 by simp
+          have dim_row_eq: "dim_vec (row B (dim_row B - 1)) = dim_col B"
+            using index_row(2) by simp
+          have j_lt: "j < card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}"
+            using j row_eq dim_row_eq by simp
+          have "row B (dim_row B - 1) $ j = (unit_vec n i) $ (pick J j)"
+            using row_eq index_vec[OF j_lt] by simp
+          moreover have "row B (dim_row B - 1) $ j = B $$ (dim_row B - 1, j)"
+            using index_row(1) \<open>dim_row B - 1 < dim_row B\<close> j by blast
+          ultimately show "B $$ (dim_row B - 1, j) = (unit_vec n i) $ (pick J j)"
+            by simp
+        qed
         show ?thesis
         proof(cases "i < n")
           case True
