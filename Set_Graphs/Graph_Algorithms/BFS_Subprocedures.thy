@@ -129,7 +129,17 @@ proof-
        "[next_frontier frontier vis]\<^sub>s =
           [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
     using fold_vset[OF assms(1)]
-    by(auto simp add: next_frontier_def) metis  
+ proof -
+  obtain xs where xs_set: "set xs = [frontier]\<^sub>s"
+    and xs_eq: "fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N =
+                foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N"
+    using fold_vset[OF assms(1)] by blast
+  have p2: "[next_frontier frontier vis]\<^sub>s =
+          [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
+    by (simp add: next_frontier_def xs_eq)
+  show thesis
+    by (rule that[OF xs_set p2])
+qed
   ultimately obtain xs' where xs'_props: 
        "set xs' = [frontier]\<^sub>s"
        "[next_frontier frontier vis]\<^sub>s =
