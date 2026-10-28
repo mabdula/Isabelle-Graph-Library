@@ -1084,3 +1084,9 @@ columns:
     - no `sublocale` connects algorithms;
     - a concrete correctness statement, if any, is an `interpretation` of the
       proofs locale plus a `[folded …]` re-export in the `_Example` theory.
+      
+---
+
+## 8. Encoding
+
+  Only ascii characters may be used. Unicode is not allowed in Isabelle theories. Only ascii escapes of the corresponding symbols may be used. Non-ascii characters make the a library build fail.

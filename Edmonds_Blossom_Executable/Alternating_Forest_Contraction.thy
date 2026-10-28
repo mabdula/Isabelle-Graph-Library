@@ -11,46 +11,46 @@ context alternating_forest_spec
 begin
 
 definition 
-   "contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr = 
-    (forest_invar ℳ F ∧  matching ℳ ∧ dblton_graph ℳ ∧ 
-     get_path F v = B1@[u]@P ∧ get_path F v' = B2@[u]@P ∧ set B1 ∩ set B2 ={} ∧
-     v ∈ vset_to_set (evens F) ∧ v' ∈ vset_to_set (evens F) ∧ 
-     new_vert ∉ Vs ℳ ∪ vset_to_set (evens F) ∪ vset_to_set (odds F) - (set B1 ∪ set B2 ∪ {u}) ∧
-     contr = (λ v. if v ∈ {u} ∪ set B1 ∪ set B2 then new_vert else v))"
+   "contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr = 
+    (forest_invar \<M> F \<and>  matching \<M> \<and> dblton_graph \<M> \<and> 
+     get_path F v = B1@[u]@P \<and> get_path F v' = B2@[u]@P \<and> set B1 \<inter> set B2 ={} \<and>
+     v \<in> vset_to_set (evens F) \<and> v' \<in> vset_to_set (evens F) \<and> 
+     new_vert \<notin> Vs \<M> \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - (set B1 \<union> set B2 \<union> {u}) \<and>
+     contr = (\<lambda> v. if v \<in> {u} \<union> set B1 \<union> set B2 then new_vert else v))"
 
 lemma contract_fork_precondI:
- "⟦forest_invar ℳ F; matching ℳ; dblton_graph ℳ; get_path F v = B1@[u]@P;
-   get_path F v' = B2@[u]@P; set B1 ∩ set B2 = {}; v ∈ vset_to_set (evens F);
-   v' ∈ vset_to_set (evens F); 
-   new_vert ∉ Vs ℳ ∪ vset_to_set (evens F) ∪ vset_to_set (odds F) - (set B1 ∪ set B2 ∪ {u});
-   contr = (λ v. if v ∈ {u} ∪ set B1 ∪ set B2 then new_vert else v)⟧
-   ⟹ contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr"
+ "\<lbrakk>forest_invar \<M> F; matching \<M>; dblton_graph \<M>; get_path F v = B1@[u]@P;
+   get_path F v' = B2@[u]@P; set B1 \<inter> set B2 = {}; v \<in> vset_to_set (evens F);
+   v' \<in> vset_to_set (evens F); 
+   new_vert \<notin> Vs \<M> \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - (set B1 \<union> set B2 \<union> {u});
+   contr = (\<lambda> v. if v \<in> {u} \<union> set B1 \<union> set B2 then new_vert else v)\<rbrakk>
+   \<Longrightarrow> contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr"
 and contract_fork_precondE:
- "contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹
- (⟦forest_invar ℳ F; matching ℳ; dblton_graph ℳ; get_path F v = B1@[u]@P;
-   get_path F v' = B2@[u]@P; set B1 ∩ set B2 = {}; v ∈ vset_to_set (evens F);
-   v' ∈ vset_to_set (evens F); 
-   new_vert ∉ Vs ℳ ∪ vset_to_set (evens F) ∪ vset_to_set (odds F) - (set B1 ∪ set B2 ∪ {u});
-   contr = (λ v. if v ∈ {u} ∪ set B1 ∪ set B2 then new_vert else v)⟧
-   ⟹ Q)
-  ⟹ Q"
+ "contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow>
+ (\<lbrakk>forest_invar \<M> F; matching \<M>; dblton_graph \<M>; get_path F v = B1@[u]@P;
+   get_path F v' = B2@[u]@P; set B1 \<inter> set B2 = {}; v \<in> vset_to_set (evens F);
+   v' \<in> vset_to_set (evens F); 
+   new_vert \<notin> Vs \<M> \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - (set B1 \<union> set B2 \<union> {u});
+   contr = (\<lambda> v. if v \<in> {u} \<union> set B1 \<union> set B2 then new_vert else v)\<rbrakk>
+   \<Longrightarrow> Q)
+  \<Longrightarrow> Q"
   by(auto simp add: contract_fork_precond_def)
 
 definition 
- "odd_expansion_precond ℳ F u mu p = 
-  (forest_invar ℳ F ∧ matching ℳ ∧ u ∈ vset_to_set (odds F) ∧ {u, mu} ∈ ℳ ∧
-  odd (length p) ∧ set p ∩ (Vs (abstract_forest F) ∪ vset_to_set (roots F) ∪ Vs ℳ) ⊆ {u} ∧ 
+ "odd_expansion_precond \<M> F u mu p = 
+  (forest_invar \<M> F \<and> matching \<M> \<and> u \<in> vset_to_set (odds F) \<and> {u, mu} \<in> \<M> \<and>
+  odd (length p) \<and> set p \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F) \<union> Vs \<M>) \<subseteq> {u} \<and> 
   distinct p)"
 
 lemma odd_expansion_precondE:
-  "⟦odd_expansion_precond ℳ F u mu p; 
-    ⟦forest_invar ℳ F; matching ℳ; u ∈ vset_to_set (odds F); {u, mu} ∈ ℳ; odd (length p);
-     set p ∩ (Vs (abstract_forest F) ∪ vset_to_set (roots F) ∪ Vs ℳ) ⊆ {u};  distinct p⟧ ⟹ P ⟧
-   ⟹ P"
+  "\<lbrakk>odd_expansion_precond \<M> F u mu p; 
+    \<lbrakk>forest_invar \<M> F; matching \<M>; u \<in> vset_to_set (odds F); {u, mu} \<in> \<M>; odd (length p);
+     set p \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F) \<union> Vs \<M>) \<subseteq> {u};  distinct p\<rbrakk> \<Longrightarrow> P \<rbrakk>
+   \<Longrightarrow> P"
 and odd_expansion_precondI:
-  "⟦forest_invar ℳ F; matching ℳ; u ∈ vset_to_set (odds F); {u, mu} ∈ ℳ; odd (length p);
-     set p ∩ (Vs (abstract_forest F) ∪ vset_to_set (roots F) ∪ Vs ℳ) ⊆ {u};  distinct p⟧ 
-   ⟹ odd_expansion_precond ℳ F u mu p"
+  "\<lbrakk>forest_invar \<M> F; matching \<M>; u \<in> vset_to_set (odds F); {u, mu} \<in> \<M>; odd (length p);
+     set p \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F) \<union> Vs \<M>) \<subseteq> {u};  distinct p\<rbrakk> 
+   \<Longrightarrow> odd_expansion_precond \<M> F u mu p"
   by(auto simp add: odd_expansion_precond_def)
 
 
@@ -59,10 +59,10 @@ end
 context forest_manipulation_spec
 begin
 
-abbreviation "parent_put k v P ≡ parent_upd P k v"
-abbreviation "origin_put k v Q ≡ origin_upd Q k v"
-abbreviation "parent_delete k P ≡ parent_upd P k nil"
-abbreviation "origin_delete k Q ≡ origin_upd Q k nil"
+abbreviation "parent_put k v P \<equiv> parent_upd P k v"
+abbreviation "origin_put k v Q \<equiv> origin_upd Q k v"
+abbreviation "parent_delete k P \<equiv> parent_upd P k nil"
+abbreviation "origin_delete k Q \<equiv> origin_upd Q k nil"
 
 end
 
@@ -70,71 +70,71 @@ context forest_manipulation
 begin
 
 lemma parent_put_lookup:
-  "⟦parent_invar P; k ∈ K; v ≠ nil⟧ ⟹
-    parent_lookup (parent_put k v P) = (parent_lookup P)(k ↦ v)"
+  "\<lbrakk>parent_invar P; k \<in> K; v \<noteq> nil\<rbrakk> \<Longrightarrow>
+    parent_lookup (parent_put k v P) = (parent_lookup P)(k \<mapsto> v)"
   by (rule parent_lookup_upd)
 
 lemma origin_put_lookup:
-  "⟦origin_invar Q; k ∈ K; v ≠ nil⟧ ⟹
-    origin_lookup (origin_put k v Q) = (origin_lookup Q)(k ↦ v)"
+  "\<lbrakk>origin_invar Q; k \<in> K; v \<noteq> nil\<rbrakk> \<Longrightarrow>
+    origin_lookup (origin_put k v Q) = (origin_lookup Q)(k \<mapsto> v)"
   by (rule origin_lookup_upd)
 
 lemma parent_delete_lookup:
-  "⟦parent_invar P; k ∈ K⟧ ⟹
+  "\<lbrakk>parent_invar P; k \<in> K\<rbrakk> \<Longrightarrow>
     parent_lookup (parent_delete k P) = (parent_lookup P)(k := None)"
   by (auto simp: parent_lookup_def parent_map.fixed_univ_map_upd)
 
 lemma origin_delete_lookup:
-  "⟦origin_invar Q; k ∈ K⟧ ⟹
+  "\<lbrakk>origin_invar Q; k \<in> K\<rbrakk> \<Longrightarrow>
     origin_lookup (origin_delete k Q) = (origin_lookup Q)(k := None)"
   by (auto simp: origin_lookup_def origin_map.fixed_univ_map_upd)
 
 lemma parent_lookup_not_nil:
-  "parent_lookup P x = Some y ⟹ y ≠ nil"
+  "parent_lookup P x = Some y \<Longrightarrow> y \<noteq> nil"
   by (auto simp: parent_lookup_def split: if_splits)
 
 lemma origin_lookup_not_nil:
-  "origin_lookup Q x = Some y ⟹ y ≠ nil"
+  "origin_lookup Q x = Some y \<Longrightarrow> y \<noteq> nil"
   by (auto simp: origin_lookup_def split: if_splits)
 
 
 lemma parent_delete_list:
-  assumes "parent_invar P" "set xs ⊆ K"
-  shows "parent_invar (foldl (λA x. parent_delete x A) P xs)"
-    "parent_lookup (foldl (λA x. parent_delete x A) P xs) =
-      (λx. if x ∈ set xs then None else parent_lookup P x)"
+  assumes "parent_invar P" "set xs \<subseteq> K"
+  shows "parent_invar (foldl (\<lambda>A x. parent_delete x A) P xs)"
+    "parent_lookup (foldl (\<lambda>A x. parent_delete x A) P xs) =
+      (\<lambda>x. if x \<in> set xs then None else parent_lookup P x)"
   using assms
   by (induction xs arbitrary: P)
     (auto simp: parent_map.fixed_univ_map_upd_invar parent_delete_lookup fun_eq_iff)
 
 lemma parent_redirect_list:
   fixes C
-  assumes "parent_invar P" "set xs ⊆ K" "v ≠ nil"
-  defines "step ≡ λA x. if C (parent_lookup A x) then parent_put x v A else A"
+  assumes "parent_invar P" "set xs \<subseteq> K" "v \<noteq> nil"
+  defines "step \<equiv> \<lambda>A x. if C (parent_lookup A x) then parent_put x v A else A"
   shows "parent_invar (foldl step P xs)"
     "parent_lookup (foldl step P xs) =
-      (λx. if x ∈ set xs ∧ C (parent_lookup P x) then Some v else parent_lookup P x)"
+      (\<lambda>x. if x \<in> set xs \<and> C (parent_lookup P x) then Some v else parent_lookup P x)"
   using assms
   by (induction xs arbitrary: P)
     (auto simp: step_def parent_map.fixed_univ_map_upd_invar parent_put_lookup fun_eq_iff
       split: if_splits)
 
 lemma origin_delete_list:
-  assumes "origin_invar Q" "set xs ⊆ K"
-  shows "origin_invar (foldl (λA x. origin_delete x A) Q xs)"
-    "origin_lookup (foldl (λA x. origin_delete x A) Q xs) =
-      (λx. if x ∈ set xs then None else origin_lookup Q x)"
+  assumes "origin_invar Q" "set xs \<subseteq> K"
+  shows "origin_invar (foldl (\<lambda>A x. origin_delete x A) Q xs)"
+    "origin_lookup (foldl (\<lambda>A x. origin_delete x A) Q xs) =
+      (\<lambda>x. if x \<in> set xs then None else origin_lookup Q x)"
   using assms
   by (induction xs arbitrary: Q)
     (auto simp: origin_map.fixed_univ_map_upd_invar origin_delete_lookup fun_eq_iff)
 
 lemma origin_redirect_list:
   fixes C
-  assumes "origin_invar Q" "set xs ⊆ K" "v ≠ nil"
-  defines "step ≡ λA x. if C (origin_lookup A x) then origin_put x v A else A"
+  assumes "origin_invar Q" "set xs \<subseteq> K" "v \<noteq> nil"
+  defines "step \<equiv> \<lambda>A x. if C (origin_lookup A x) then origin_put x v A else A"
   shows "origin_invar (foldl step Q xs)"
     "origin_lookup (foldl step Q xs) =
-      (λx. if x ∈ set xs ∧ C (origin_lookup Q x) then Some v else origin_lookup Q x)"
+      (\<lambda>x. if x \<in> set xs \<and> C (origin_lookup Q x) then Some v else origin_lookup Q x)"
   using assms
   by (induction xs arbitrary: Q)
     (auto simp: step_def origin_map.fixed_univ_map_upd_invar origin_put_lookup fun_eq_iff
@@ -142,50 +142,50 @@ lemma origin_redirect_list:
 
 lemma vset_delete_list:
   assumes "vset_invar S"
-  shows "vset_invar (foldl (λA x. vset_delete x A) S xs)"
-    "vset_to_set (foldl (λA x. vset_delete x A) S xs) = vset_to_set S - set xs"
+  shows "vset_invar (foldl (\<lambda>A x. vset_delete x A) S xs)"
+    "vset_to_set (foldl (\<lambda>A x. vset_delete x A) S xs) = vset_to_set S - set xs"
   using assms
   by (induction xs arbitrary: S) (auto simp: vset.fixed_univ_set_delete)
 
 lemma forest_vertices_in_universe:
   assumes "forest_invar M F"
-  shows "verts F ⊆ K"
+  shows "verts F \<subseteq> K"
   using invar_basicD(1,2,3,6)[OF forest_invarD(1)[OF assms]]
     vset.fixed_univ_set_universe
   by blast
 
 
 lemma forest_invar_odd_is_parent:
-  "forest_invar M F ⟹ invar_odd_is_parent F"
+  "forest_invar M F \<Longrightarrow> invar_odd_is_parent F"
   by (rule forest_invarD(8))
 
 lemma odds_unique_child:
-  assumes "forest_invar ℳ F" "x ∈ vset_to_set (odds F)" "matching ℳ"
-  obtains y where "parent_lookup (parents F) y = Some x" "{x, y} ∈ ℳ"
-    "y ∈ vset_to_set (evens F)"
-    "⋀ y'. parent_lookup (parents F) y' = Some x ⟹ y = y'"
+  assumes "forest_invar \<M> F" "x \<in> vset_to_set (odds F)" "matching \<M>"
+  obtains y where "parent_lookup (parents F) y = Some x" "{x, y} \<in> \<M>"
+    "y \<in> vset_to_set (evens F)"
+    "\<And> y'. parent_lookup (parents F) y' = Some x \<Longrightarrow> y = y'"
 proof(goal_cases)
   case 1
   obtain y where y: "parent_lookup (parents F) y = Some x"
     using assms(2) forest_invar_odd_is_parent[OF assms(1)] invar_odd_is_parentD by blast
-  hence xy_in_forest: "{x, y} ∈ abstract_forest F"
+  hence xy_in_forest: "{x, y} \<in> abstract_forest F"
     by (auto simp: abstract_forest_def insert_commute)
-  hence  y_even: "y ∈ vset_to_set (evens F)" 
+  hence  y_even: "y \<in> vset_to_set (evens F)" 
     using invar_forest_even_and_oddD[of F y x] assms
     by (simp add: forest_invarD(3) insert_commute)
-  hence yx_match: "{x, y} ∈ ℳ"  
+  hence yx_match: "{x, y} \<in> \<M>"  
     using y  assms(1)
     by(auto  elim!: forest_invarE simp add: insert_commute[of x y]
         dest!: invar_even_to_parent_matchingD)
   show ?thesis
   proof(rule 1[OF y yx_match y_even], goal_cases)
     case (1 y')
-    hence xy'_in_forest: "{x, y'} ∈ abstract_forest F"
+    hence xy'_in_forest: "{x, y'} \<in> abstract_forest F"
       by (auto simp: abstract_forest_def insert_commute)
-    hence  y'_even: "y' ∈ vset_to_set (evens F)" 
+    hence  y'_even: "y' \<in> vset_to_set (evens F)" 
       using invar_forest_even_and_oddD[of F y' x] assms
       by (simp add: forest_invarD(3) insert_commute)
-    hence "{x, y'} ∈ ℳ" 
+    hence "{x, y'} \<in> \<M>" 
       using 1 y'_even assms(1)
       by(auto elim!: forest_invarE simp add: insert_commute[of x y']
           dest!: invar_even_to_parent_matchingD)
@@ -195,16 +195,16 @@ proof(goal_cases)
 qed
 
 lemma odds_unique_child':
-  assumes "forest_invar ℳ F" "x ∈ vset_to_set (odds F)" "matching ℳ"
+  assumes "forest_invar \<M> F" "x \<in> vset_to_set (odds F)" "matching \<M>"
     "parent_lookup (parents F) y = Some x" "parent_lookup (parents F) y' = Some x"
   shows "y = y'"
-  using assms odds_unique_child[of ℳ F x] by auto
+  using assms odds_unique_child[of \<M> F x] by auto
 
 lemma odds_child:
-  assumes "forest_invar ℳ F" "x ∈ vset_to_set (odds F)" "matching ℳ"
-  obtains y where "parent_lookup (parents F) y = Some x" "{x, y} ∈ ℳ"
-    "y ∈ vset_to_set (evens F)"
-  using assms odds_unique_child[of ℳ F x] by metis
+  assumes "forest_invar \<M> F" "x \<in> vset_to_set (odds F)" "matching \<M>"
+  obtains y where "parent_lookup (parents F) y = Some x" "{x, y} \<in> \<M>"
+    "y \<in> vset_to_set (evens F)"
+  using assms odds_unique_child[of \<M> F x] by metis
 
 
 definition "Dabstract_forest F = {(x, y) | x y. Some x = parent_lookup (parents F) y}"
@@ -214,11 +214,11 @@ lemma Dabstract_forest_UD:
   by(force simp add: Dabstract_forest_def abstract_forest_def UD_def)
 
 lemma invar_parent_Dabstract_forest_wf:
-  "invar_parent_wf F ⟷ wf (Dabstract_forest F)"
+  "invar_parent_wf F \<longleftrightarrow> wf (Dabstract_forest F)"
   by (auto simp add: invar_parent_wf_def Dabstract_forest_def parent_spec_def)
 
 lemma finite_abstract_Dabstract_forest:
-  "finite (abstract_forest F) ⟷ finite (Dabstract_forest F)"
+  "finite (abstract_forest F) \<longleftrightarrow> finite (Dabstract_forest F)"
   by(auto simp add: Dabstract_forest_UD[symmetric] simp add: finite_UD)
 
 lemma dVs_Vs_Dabstract_abstract_forest:
@@ -241,77 +241,77 @@ qed
 end
 
 
-lemma exI2: "P x y ⟹ ∃ x y. P x y"
+lemma exI2: "P x y \<Longrightarrow> \<exists> x y. P x y"
   by auto
 
 locale alternating_forest_fork_contraction_spec = 
 alternating_forest_spec evens odds get_path abstract_forest forest_invar roots
-    for evens::"'forest ⇒ 'vset"
-    and odds::"'forest ⇒ 'vset"
-    and get_path::"'forest ⇒ 'v ⇒ 'v list"
-    and abstract_forest::"'forest ⇒ 'v set set"
-    and forest_invar::"'v set set ⇒ 'forest ⇒ bool"
-    and roots::"'forest ⇒ 'vset"
+    for evens::"'forest \<Rightarrow> 'vset"
+    and odds::"'forest \<Rightarrow> 'vset"
+    and get_path::"'forest \<Rightarrow> 'v \<Rightarrow> 'v list"
+    and abstract_forest::"'forest \<Rightarrow> 'v set set"
+    and forest_invar::"'v set set \<Rightarrow> 'forest \<Rightarrow> bool"
+    and roots::"'forest \<Rightarrow> 'vset"
     and K::"'v set" +
-  fixes contract_fork::"'forest ⇒ 'v list ⇒ 'v list ⇒ 'v ⇒ 'forest" 
+  fixes contract_fork::"'forest \<Rightarrow> 'v list \<Rightarrow> 'v list \<Rightarrow> 'v \<Rightarrow> 'forest" 
   assumes contract_fork_basis:
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
-     forest_invar (quot_graph contr ℳ - {{new_vert}})
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
+     forest_invar (quot_graph contr \<M> - {{new_vert}})
                   (contract_fork F (B1@[u]) (B2@[u]) new_vert)"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
      abstract_forest (contract_fork F (B1@[u]) (B2@[u]) new_vert) 
      = quot_graph contr (abstract_forest F) - {{new_vert}}"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
       vset_to_set (evens (contract_fork F (B1@[u]) (B2@[u]) new_vert)) 
-    = vset_to_set (evens F) - ({u} ∪ set B1 ∪ set B2) ∪ {new_vert}"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+    = vset_to_set (evens F) - ({u} \<union> set B1 \<union> set B2) \<union> {new_vert}"
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
      vset_to_set (roots (contract_fork F (B1@[u]) (B2@[u]) new_vert)) =
-    (if u ∈ vset_to_set (roots F) then vset_to_set (roots F) - {u} ∪ {new_vert} 
+    (if u \<in> vset_to_set (roots F) then vset_to_set (roots F) - {u} \<union> {new_vert} 
      else vset_to_set (roots F))"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
-     matching (quot_graph contr ℳ - {{new_vert}})"
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
+     matching (quot_graph contr \<M> - {{new_vert}})"
 begin
 
 lemma contract_fork_spec:
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
-     forest_invar (quot_graph contr ℳ - {{new_vert}})
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
+     forest_invar (quot_graph contr \<M> - {{new_vert}})
                   (contract_fork F (B1@[u]) (B2@[u]) new_vert)"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
      abstract_forest (contract_fork F (B1@[u]) (B2@[u]) new_vert) 
      = quot_graph contr (abstract_forest F) - {{new_vert}}"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
      vset_to_set (odds (contract_fork F (B1@[u]) (B2@[u]) new_vert)) 
-     = vset_to_set (odds F) - ({u} ∪ set B1 ∪ set B2)"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+     = vset_to_set (odds F) - ({u} \<union> set B1 \<union> set B2)"
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
       vset_to_set (evens (contract_fork F (B1@[u]) (B2@[u]) new_vert)) 
-    = vset_to_set (evens F) - ({u} ∪ set B1 ∪ set B2) ∪ {new_vert}"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
+    = vset_to_set (evens F) - ({u} \<union> set B1 \<union> set B2) \<union> {new_vert}"
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
      vset_to_set (roots (contract_fork F (B1@[u]) (B2@[u]) new_vert)) =
-    (if u ∈ vset_to_set (roots F) then vset_to_set (roots F) - {u} ∪ {new_vert} 
+    (if u \<in> vset_to_set (roots F) then vset_to_set (roots F) - {u} \<union> {new_vert} 
      else vset_to_set (roots F))"
-   "⋀ℳ F v v' B1 B2 u new_vert P contr.
-     contract_fork_precond ℳ F v v' B1 B2 u new_vert P contr ⟹ new_vert ∈ K ⟹
-     matching (quot_graph contr ℳ - {{new_vert}})"
+   "\<And>\<M> F v v' B1 B2 u new_vert P contr.
+     contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow> new_vert \<in> K \<Longrightarrow>
+     matching (quot_graph contr \<M> - {{new_vert}})"
   subgoal by (rule contract_fork_basis(1))
   subgoal by (rule contract_fork_basis(2))
   subgoal premises prems for M F v v' B1 B2 u new_vert P contr
   proof -
-    let ?C = "{u} ∪ set B1 ∪ set B2"
+    let ?C = "{u} \<union> set B1 \<union> set B2"
     have inv: "forest_invar M F"
-      and fresh: "new_vert ∉ Vs M ∪ vset_to_set (evens F) ∪ vset_to_set (odds F) - ?C"
-      and contr: "contr = (λx. if x ∈ ?C then new_vert else x)"
+      and fresh: "new_vert \<notin> Vs M \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - ?C"
+      and contr: "contr = (\<lambda>x. if x \<in> ?C then new_vert else x)"
       using prems(1) by (auto elim!: contract_fork_precondE)
-    have fresh_forest: "new_vert ∉ Vs (abstract_forest F) - ?C"
+    have fresh_forest: "new_vert \<notin> Vs (abstract_forest F) - ?C"
       using fresh evens_and_odds_basis(3)[OF inv] by blast
     have erase: "Vs (G - {{new_vert}}) - {new_vert} = Vs G - {new_vert}" for G
       by (auto simp: Vs_def)
@@ -336,14 +336,14 @@ locale forest_contract_manipulation_spec=
   where vset_insert = vset_insert
     and parent_empty = parent_empty
     and origin_empty = origin_empty
-  for vset_insert::"'v ⇒ 'vset ⇒ 'vset"
+  for vset_insert::"'v \<Rightarrow> 'vset \<Rightarrow> 'vset"
     and parent_empty ::'parent
     and origin_empty::'origin + 
-  fixes vset_iterate_parent :: "('parent ⇒ 'v ⇒ 'parent) ⇒ 'parent ⇒ 'vset ⇒ 'parent"
-    and vset_union::"'vset ⇒ 'vset ⇒ 'vset"
+  fixes vset_iterate_parent :: "('parent \<Rightarrow> 'v \<Rightarrow> 'parent) \<Rightarrow> 'parent \<Rightarrow> 'vset \<Rightarrow> 'parent"
+    and vset_union::"'vset \<Rightarrow> 'vset \<Rightarrow> 'vset"
 begin
 
-definition "vset_from_list xs = foldl (λ S x. vset_insert x S) vset_empty xs"
+definition "vset_from_list xs = foldl (\<lambda> S x. vset_insert x S) vset_empty xs"
 
 definition 
   "contract_path (F::('vset, 'vset, 'vset, 'parent, 'origin) alt_forest) p new_vert =
@@ -355,24 +355,24 @@ definition
         evs_in_p = take_evens p;
         ods_in_p = take_odds p;
         evs_in_p_set = vset_from_list evs_in_p;
-        ods_new = foldl (λ S x. vset_delete x S) ods ods_in_p;
-        evs_new' = foldl (λ S x. vset_delete x S) evs evs_in_p;
-        prnts_wthout_p = foldl (λ x pmap. parent_delete pmap x) prnts p;
+        ods_new = foldl (\<lambda> S x. vset_delete x S) ods ods_in_p;
+        evs_new' = foldl (\<lambda> S x. vset_delete x S) evs evs_in_p;
+        prnts_wthout_p = foldl (\<lambda> x pmap. parent_delete pmap x) prnts p;
         prnts_new_connected = 
             vset_iterate_parent 
-               (λ cprnts x. if vset_isin evs_in_p_set (the (parent_lookup cprnts x)) 
+               (\<lambda> cprnts x. if vset_isin evs_in_p_set (the (parent_lookup cprnts x)) 
                             then parent_put x new_vert cprnts
                             else cprnts)
                 prnts_wthout_p ods_new;
         new_prnts = (case parent_lookup prnts (last p)
-                     of None ⇒ prnts_new_connected 
-                     | Some xpred ⇒ parent_put new_vert xpred prnts_new_connected);
-        orns_wthout_p = foldl (λ x omap. origin_delete omap x) orngs p;
+                     of None \<Rightarrow> prnts_new_connected 
+                     | Some xpred \<Rightarrow> parent_put new_vert xpred prnts_new_connected);
+        orns_wthout_p = foldl (\<lambda> x omap. origin_delete omap x) orngs p;
         old_orgn = the (origin_lookup orngs (last p));
-        new_orgns = (if old_orgn ≠ (last p)
+        new_orgns = (if old_orgn \<noteq> (last p)
                      then origin_put new_vert old_orgn orns_wthout_p
                      else origin_put new_vert new_vert (vset_iterate 
-                           (λ org x. if the (origin_lookup org x) = old_orgn
+                           (\<lambda> org x. if the (origin_lookup org x) = old_orgn
                                      then origin_put x new_vert org
                                      else org) orns_wthout_p 
                           (vset_union ods_new evs_new')))
@@ -380,7 +380,7 @@ definition
                  then vset_insert new_vert (vset_delete (last p) rts) 
                  else rts )
 
-                 (vset_insert new_vert (foldl (λ S x. vset_delete x S) evs evs_in_p))
+                 (vset_insert new_vert (foldl (\<lambda> S x. vset_delete x S) evs evs_in_p))
 
                  ods_new
                  
@@ -403,21 +403,21 @@ locale forest_contract_manipulation
   where vset_insert = vset_insert
     and parent_empty = parent_empty
     and origin_empty = origin_empty
-  for vset_insert::"'v ⇒ 'vset ⇒ 'vset"
+  for vset_insert::"'v \<Rightarrow> 'vset \<Rightarrow> 'vset"
     and parent_empty ::'parent
     and origin_empty::'origin + 
   assumes vset_iterate_parent:
-    "⋀ V f init. vset_invar V ⟹ 
-          ∃ vs. vset_to_set V = set vs ∧ distinct vs ∧
+    "\<And> V f init. vset_invar V \<Longrightarrow> 
+          \<exists> vs. vset_to_set V = set vs \<and> distinct vs \<and>
             vset_iterate_parent f init V = foldl f init vs"
     and vset_union:
-    "⋀ S T. ⟦vset_invar S; vset_invar T⟧ ⟹ vset_invar (vset_union S T)"
-    "⋀ S T. ⟦vset_invar S; vset_invar T⟧ 
-       ⟹ vset_to_set (vset_union S T) = vset_to_set S ∪ vset_to_set T"
+    "\<And> S T. \<lbrakk>vset_invar S; vset_invar T\<rbrakk> \<Longrightarrow> vset_invar (vset_union S T)"
+    "\<And> S T. \<lbrakk>vset_invar S; vset_invar T\<rbrakk> 
+       \<Longrightarrow> vset_to_set (vset_union S T) = vset_to_set S \<union> vset_to_set T"
 begin
 
 lemma vset_from_list:
-  assumes "set xs ⊆ K"
+  assumes "set xs \<subseteq> K"
   shows
   "vset_invar (vset_from_list xs)"
   "vset_to_set (vset_from_list xs) = set xs"
@@ -425,7 +425,7 @@ proof-
   define xs' where "xs' = rev xs"
   have set_same: "set xs = set xs'"
     by(simp add: xs'_def)
-  have  "vset_invar (vset_from_list xs) ∧
+  have  "vset_invar (vset_from_list xs) \<and>
         vset_to_set (vset_from_list xs) = set xs"
     unfolding vset_from_list_def foldl_conv_foldr xs'_def[symmetric] set_same
     using assms[unfolded set_same]
@@ -441,8 +441,8 @@ lemma effect_of_contract_path:
     "vset_invar rts" "parent_invar prnts" "origin_invar orngs"
     and new_forest_def:
     "new_forest = contract_path (Forest rts evs ods prnts orngs) p new_vert"
-  and bounds: "set p ⊆ K" "new_vert ∈ K"
-    "origin_lookup orngs (last p) ≠ None"
+  and bounds: "set p \<subseteq> K" "new_vert \<in> K"
+    "origin_lookup orngs (last p) \<noteq> None"
   shows   "vset_invar (roots new_forest)"
     "vset_invar (evens new_forest)"
     "vset_invar (odds new_forest)"
@@ -450,66 +450,66 @@ lemma effect_of_contract_path:
     "origin_invar (origins new_forest)"
     and 
     "vset_to_set (roots new_forest) =
-  (if (last p) ∈ vset_to_set rts then vset_to_set rts - {last p} ∪ {new_vert}
+  (if (last p) \<in> vset_to_set rts then vset_to_set rts - {last p} \<union> {new_vert}
          else vset_to_set rts)" (is ?th1)
     and "vset_to_set (odds new_forest) =
-     vset_to_set ods - {p ! i | i. i < length p ∧ odd i}" (is ?th2)
+     vset_to_set ods - {p ! i | i. i < length p \<and> odd i}" (is ?th2)
     and "vset_to_set (evens new_forest) =
-     vset_to_set evs - {p ! i | i. i < length p ∧ even i} ∪ {new_vert}" (is ?th3)
+     vset_to_set evs - {p ! i | i. i < length p \<and> even i} \<union> {new_vert}" (is ?th3)
     and "parent_lookup (parents new_forest) = 
-    (λx. if x = new_vert ∧ parent_lookup prnts (last p) ≠ None 
+    (\<lambda>x. if x = new_vert \<and> parent_lookup prnts (last p) \<noteq> None 
            then parent_lookup prnts (last p)
-      else if (x ∈ set p ⟶
-               the None ∈ {p ! i |i. i < length p ∧ even i} ∧
-               x ∈ vset_to_set ods - {p ! i |i. i < length p ∧ odd i}) ∧
-              (x ∉ set p ⟶
-               the (parent_lookup prnts x) ∈ {p ! i |i. i < length p ∧ even i} ∧
-               x ∈ vset_to_set ods - {p ! i |i. i < length p ∧ odd i})
-           then Some new_vert else if x ∈ set p then None else parent_lookup prnts x)" (is ?th4)
+      else if (x \<in> set p \<longrightarrow>
+               the None \<in> {p ! i |i. i < length p \<and> even i} \<and>
+               x \<in> vset_to_set ods - {p ! i |i. i < length p \<and> odd i}) \<and>
+              (x \<notin> set p \<longrightarrow>
+               the (parent_lookup prnts x) \<in> {p ! i |i. i < length p \<and> even i} \<and>
+               x \<in> vset_to_set ods - {p ! i |i. i < length p \<and> odd i})
+           then Some new_vert else if x \<in> set p then None else parent_lookup prnts x)" (is ?th4)
     and "origin_lookup (origins new_forest) =
-    (λ x. if x = new_vert ∧ the (origin_lookup orngs (last p)) ≠ last p 
+    (\<lambda> x. if x = new_vert \<and> the (origin_lookup orngs (last p)) \<noteq> last p 
                 then Some (the (origin_lookup orngs (last p)))
-          else if x ∈ set p ∧ the (origin_lookup orngs (last p)) ≠ last p then None
-          else if the (origin_lookup orngs (last p)) ≠ last p then origin_lookup orngs x
+          else if x \<in> set p \<and> the (origin_lookup orngs (last p)) \<noteq> last p then None
+          else if the (origin_lookup orngs (last p)) \<noteq> last p then origin_lookup orngs x
           else if x = new_vert then Some new_vert
-          else if x ∈ vset_to_set ods - {p ! i |i. i < length p ∧ odd i} ∪
-                            (vset_to_set evs - {p ! i |i. i < length p ∧ even i}) ∧
-                       the (if x ∈ set p then None else origin_lookup orngs x) =
+          else if x \<in> vset_to_set ods - {p ! i |i. i < length p \<and> odd i} \<union>
+                            (vset_to_set evs - {p ! i |i. i < length p \<and> even i}) \<and>
+                       the (if x \<in> set p then None else origin_lookup orngs x) =
                        the (origin_lookup orngs (last p))
                then Some new_vert
-          else if x ∈ set p then None 
+          else if x \<in> set p then None 
           else origin_lookup orngs x)" (is ?th5)
 proof-
   define evs_in_p where "evs_in_p = take_evens p"
   define ods_in_p where "ods_in_p = take_odds p"
   define evs_in_p_set where "evs_in_p_set = vset_from_list evs_in_p"
-  define ods_new where "ods_new = foldl (λ S x. vset_delete x S) ods ods_in_p"
-  define evs_new' where "evs_new' = foldl (λ S x. vset_delete x S) evs evs_in_p"
+  define ods_new where "ods_new = foldl (\<lambda> S x. vset_delete x S) ods ods_in_p"
+  define evs_new' where "evs_new' = foldl (\<lambda> S x. vset_delete x S) evs evs_in_p"
   define prnts_wthout_p where 
-    "prnts_wthout_p = foldl (λ x pmap. parent_delete pmap x) prnts p"
+    "prnts_wthout_p = foldl (\<lambda> x pmap. parent_delete pmap x) prnts p"
   define prnts_new_connected where "prnts_new_connected = 
             vset_iterate_parent 
-               (λ cprnts x. if vset_isin evs_in_p_set (the (parent_lookup cprnts x)) 
+               (\<lambda> cprnts x. if vset_isin evs_in_p_set (the (parent_lookup cprnts x)) 
                             then parent_put x new_vert cprnts
                             else cprnts)
                 prnts_wthout_p ods_new"
   define new_prnts where "new_prnts = (case parent_lookup prnts (last p)
-                     of None ⇒ prnts_new_connected 
-                     | Some xpred ⇒ parent_put new_vert xpred prnts_new_connected)"
+                     of None \<Rightarrow> prnts_new_connected 
+                     | Some xpred \<Rightarrow> parent_put new_vert xpred prnts_new_connected)"
   define orns_wthout_p where  
-    "orns_wthout_p = foldl (λ x omap. origin_delete omap x) orngs p"
+    "orns_wthout_p = foldl (\<lambda> x omap. origin_delete omap x) orngs p"
   define old_orgn where "old_orgn = the (origin_lookup orngs (last p))"
-  define new_orgns where "new_orgns = (if old_orgn ≠ (last p)
+  define new_orgns where "new_orgns = (if old_orgn \<noteq> (last p)
                      then origin_put new_vert old_orgn orns_wthout_p
                      else origin_put new_vert new_vert (vset_iterate 
-                           (λ org x. if the (origin_lookup org x) = old_orgn
+                           (\<lambda> org x. if the (origin_lookup org x) = old_orgn
                                      then origin_put x new_vert org
                                      else org) orns_wthout_p 
                           (vset_union ods_new evs_new')))"
   define new_roots where "new_roots = (if vset_isin rts (last p) 
                  then vset_insert new_vert (vset_delete (last p) rts) 
                  else rts)"
-  define evs_new where "evs_new = vset_insert new_vert (foldl (λ S x. vset_delete x S) evs evs_in_p)"
+  define evs_new where "evs_new = vset_insert new_vert (foldl (\<lambda> S x. vset_delete x S) evs evs_in_p)"
 
   have news: "roots new_forest = new_roots"
     "evens new_forest = evs_new"
@@ -523,17 +523,17 @@ proof-
         split: option.split)
 
 
-  have new_vert_not_nil: "new_vert ≠ nil"
+  have new_vert_not_nil: "new_vert \<noteq> nil"
     using bounds(2) nil by auto
-  have evs_in_p_bound: "set evs_in_p ⊆ K"
+  have evs_in_p_bound: "set evs_in_p \<subseteq> K"
     using bounds(1) by (auto simp: evs_in_p_def take_evens_set)
-  have old_orgn_not_nil: "old_orgn ≠ nil"
+  have old_orgn_not_nil: "old_orgn \<noteq> nil"
     using bounds(3) origin_lookup_not_nil[of orngs "last p"]
     by (cases "origin_lookup orngs (last p)") (auto simp: old_orgn_def)
   have new_roots_props:
     "vset_invar new_roots"
     "vset_to_set new_roots =
-      (if last p ∈ vset_to_set rts then vset_to_set rts - {last p} ∪ {new_vert}
+      (if last p \<in> vset_to_set rts then vset_to_set rts - {last p} \<union> {new_vert}
        else vset_to_set rts)"
     using assms(3) bounds(2)
     by (auto simp: new_roots_def vset.fixed_univ_set_isin vset.fixed_univ_set_delete
@@ -550,7 +550,7 @@ proof-
     by (simp_all only: evs_new'_def)
   have evs_new_props:
     "vset_invar evs_new"
-    "vset_to_set evs_new = vset_to_set evs - set evs_in_p ∪ {new_vert}"
+    "vset_to_set evs_new = vset_to_set evs - set evs_in_p \<union> {new_vert}"
     using evs_new'_props bounds(2)
     by (auto simp: evs_new_def evs_new'_def[symmetric] vset.fixed_univ_set_insert)
   have evs_in_p_set_props:
@@ -559,73 +559,73 @@ proof-
     by (simp_all only: evs_in_p_set_def)
   have prnts_wthout_p_props:
     "parent_invar prnts_wthout_p"
-    "parent_lookup prnts_wthout_p = (λx. if x ∈ set p then None else parent_lookup prnts x)"
+    "parent_lookup prnts_wthout_p = (\<lambda>x. if x \<in> set p then None else parent_lookup prnts x)"
     using parent_delete_list[OF assms(4) bounds(1)]
     by (simp_all only: prnts_wthout_p_def)
-  define f1 where "f1 = (λA x. if vset_isin evs_in_p_set (the (parent_lookup A x))
+  define f1 where "f1 = (\<lambda>A x. if vset_isin evs_in_p_set (the (parent_lookup A x))
     then parent_put x new_vert A else A)"
   obtain vs1 where vs1: "vset_to_set ods_new = set vs1" "distinct vs1"
     "vset_iterate_parent f1 prnts_wthout_p ods_new = foldl f1 prnts_wthout_p vs1"
     using vset_iterate_parent[OF ods_new_props(1), of f1 prnts_wthout_p] by auto
-  have vs1_bound: "set vs1 ⊆ K"
+  have vs1_bound: "set vs1 \<subseteq> K"
     using vset.fixed_univ_set_universe[OF ods_new_props(1)] vs1(1) by simp
   have prnts_new_connected_props:
     "parent_invar prnts_new_connected"
     "parent_lookup prnts_new_connected =
-      (λx. if the (parent_lookup prnts_wthout_p x) ∈ set evs_in_p ∧ x ∈ vset_to_set ods_new
+      (\<lambda>x. if the (parent_lookup prnts_wthout_p x) \<in> set evs_in_p \<and> x \<in> vset_to_set ods_new
        then Some new_vert else parent_lookup prnts_wthout_p x)"
     using parent_redirect_list[OF prnts_wthout_p_props(1) vs1_bound new_vert_not_nil,
-      where C="λq. vset_isin evs_in_p_set (the q)"]
+      where C="\<lambda>q. vset_isin evs_in_p_set (the q)"]
     unfolding prnts_new_connected_def vs1(3)[unfolded f1_def]
     by (simp_all add: vset.fixed_univ_set_isin[OF evs_in_p_set_props(1)] evs_in_p_set_props(2) vs1(1) conj_commute)
   have new_prnts_props:
     "parent_invar new_prnts"
     "parent_lookup new_prnts =
-      (λx. if x = new_vert ∧ parent_lookup prnts (last p) ≠ None
+      (\<lambda>x. if x = new_vert \<and> parent_lookup prnts (last p) \<noteq> None
        then parent_lookup prnts (last p)
-       else if (x ∈ set p ⟶ the None ∈ set evs_in_p ∧ x ∈ vset_to_set ods_new) ∧
-         (x ∉ set p ⟶ the (parent_lookup prnts x) ∈ set evs_in_p ∧ x ∈ vset_to_set ods_new)
-       then Some new_vert else if x ∈ set p then None else parent_lookup prnts x)"
+       else if (x \<in> set p \<longrightarrow> the None \<in> set evs_in_p \<and> x \<in> vset_to_set ods_new) \<and>
+         (x \<notin> set p \<longrightarrow> the (parent_lookup prnts x) \<in> set evs_in_p \<and> x \<in> vset_to_set ods_new)
+       then Some new_vert else if x \<in> set p then None else parent_lookup prnts x)"
     using parent_lookup_not_nil[of prnts "last p"] bounds(2)
     by (auto simp: new_prnts_def parent_put_lookup parent_map.fixed_univ_map_upd_invar
         prnts_new_connected_props prnts_wthout_p_props fun_eq_iff split: option.splits)
   have orns_wthout_p_props:
     "origin_invar orns_wthout_p"
-    "origin_lookup orns_wthout_p = (λx. if x ∈ set p then None else origin_lookup orngs x)"
+    "origin_lookup orns_wthout_p = (\<lambda>x. if x \<in> set p then None else origin_lookup orngs x)"
     using origin_delete_list[OF assms(5) bounds(1)]
     by (simp_all only: orns_wthout_p_def)
-  define f2 where "f2 = (λA x. if the (origin_lookup A x) = old_orgn
+  define f2 where "f2 = (\<lambda>A x. if the (origin_lookup A x) = old_orgn
     then origin_put x new_vert A else A)"
   define intermed_orgn where
     "intermed_orgn = vset_iterate f2 orns_wthout_p (vset_union ods_new evs_new')"
   have vset_uniony:
     "vset_invar (vset_union ods_new evs_new')"
-    "vset_to_set (vset_union ods_new evs_new') = vset_to_set ods_new ∪ vset_to_set evs_new'"
+    "vset_to_set (vset_union ods_new evs_new') = vset_to_set ods_new \<union> vset_to_set evs_new'"
     using vset_union[OF ods_new_props(1) evs_new'_props(1)] by auto
   obtain vs2 where vs2: "vset_to_set (vset_union ods_new evs_new') = set vs2" "distinct vs2"
     "vset_iterate f2 orns_wthout_p (vset_union ods_new evs_new') = foldl f2 orns_wthout_p vs2"
     using vseta[OF vset_uniony(1), of f2 orns_wthout_p] by auto
-  have vs2_bound: "set vs2 ⊆ K"
+  have vs2_bound: "set vs2 \<subseteq> K"
     using vset.fixed_univ_set_universe[OF vset_uniony(1)] vs2(1) by simp
   have intermed_orgn_props:
     "origin_invar intermed_orgn"
     "origin_lookup intermed_orgn =
-      (λx. if x ∈ vset_to_set ods_new ∪ vset_to_set evs_new' ∧
+      (\<lambda>x. if x \<in> vset_to_set ods_new \<union> vset_to_set evs_new' \<and>
         the (origin_lookup orns_wthout_p x) = old_orgn
        then Some new_vert else origin_lookup orns_wthout_p x)"
     using origin_redirect_list[OF orns_wthout_p_props(1) vs2_bound new_vert_not_nil,
-      where C="λq. the q = old_orgn"]
+      where C="\<lambda>q. the q = old_orgn"]
     unfolding intermed_orgn_def f2_def vs2(3)[unfolded f2_def]
     by (simp_all add: vs2(1)[symmetric] vset_uniony(2))
   have new_orgns_eq: "new_orgns =
-      (if old_orgn ≠ last p then origin_put new_vert old_orgn orns_wthout_p
+      (if old_orgn \<noteq> last p then origin_put new_vert old_orgn orns_wthout_p
        else origin_put new_vert new_vert intermed_orgn)"
     by (simp only: new_orgns_def intermed_orgn_def f2_def)
   have new_orgns_props:
     "origin_invar new_orgns"
     "origin_lookup new_orgns =
-      (if old_orgn ≠ last p then (origin_lookup orns_wthout_p)(new_vert ↦ old_orgn)
-       else (origin_lookup intermed_orgn)(new_vert ↦ new_vert))"
+      (if old_orgn \<noteq> last p then (origin_lookup orns_wthout_p)(new_vert \<mapsto> old_orgn)
+       else (origin_lookup intermed_orgn)(new_vert \<mapsto> new_vert))"
     using bounds(2) new_vert_not_nil old_orgn_not_nil
     by (auto simp: new_orgns_eq origin_map.fixed_univ_map_upd_invar
         origin_put_lookup orns_wthout_p_props(1) intermed_orgn_props(1))
@@ -644,7 +644,7 @@ proof-
 qed
 
 definition Dquot_graph where
-  "Dquot_graph P G = {(P u, P v)| u v. (u,v) ∈ G}"
+  "Dquot_graph P G = {(P u, P v)| u v. (u,v) \<in> G}"
 
 lemma Dquot_id:  "Dquot_graph id G = G"
   by(auto simp add: Dquot_graph_def)
@@ -653,18 +653,18 @@ lemma Dquot_quot_UD:"UD (Dquot_graph P G) = quot_graph P (UD G)"
   by(auto simp add: Dquot_graph_def quot_graph_def UD_def)
 
 lemma Dquot_graph_alt_def:
-  assumes contr_def: "contr = (λ v. if v ∈ set p then new_vert else v)"
-    and new_vert_where: "new_vert ∉ dVs G - set p"
+  assumes contr_def: "contr = (\<lambda> v. if v \<in> set p then new_vert else v)"
+    and new_vert_where: "new_vert \<notin> dVs G - set p"
   shows "Dquot_graph contr G - {(new_vert, new_vert)} =
-    G - ⋃ {δ⇧+ G x |x. x ∈ set p} - ⋃ {δ⇧- G x |x. x ∈ set p} ∪
-    {(new_vert, y) |y. y ∈ Γ⇧+ G set p} ∪
-    {(y, new_vert) |y. y ∈ Γ⇧- G set p}"
-proof(rule, all ‹rule›, goal_cases)
+    G - \<Union> {\<delta>\<^sup>+ G x |x. x \<in> set p} - \<Union> {\<delta>\<^sup>- G x |x. x \<in> set p} \<union>
+    {(new_vert, y) |y. y \<in> \<Gamma>\<^sup>+ G set p} \<union>
+    {(y, new_vert) |y. y \<in> \<Gamma>\<^sup>- G set p}"
+proof(rule, all \<open>rule\<close>, goal_cases)
   case (1 e)
   then obtain u v where uv: "e = (u, v)"
     by(cases e) auto
-  then obtain u' v' where  "u = contr u'" "v = contr v'" "(u', v') ∈ G"
-       "u ≠ new_vert ∨ v ≠ new_vert"
+  then obtain u' v' where  "u = contr u'" "v = contr v'" "(u', v') \<in> G"
+       "u \<noteq> new_vert \<or> v \<noteq> new_vert"
     using 1 by(auto simp add: Dquot_graph_def)
   then show ?case 
     using new_vert_where
@@ -678,30 +678,30 @@ next
     then show ?case
     proof(rule UnE, goal_cases)
       case 1
-      then obtain u v where uv: "e = (u, v)" "(u, v) ∈ G"
+      then obtain u v where uv: "e = (u, v)" "(u, v) \<in> G"
         by(cases e) auto
       have "e = (contr u, contr v)"
-        if "u ∉ set p" "v ∉ set p"
+        if "u \<notin> set p" "v \<notin> set p"
         using that by(auto simp add: uv contr_def)
       moreover have False
-        if "u ∈ set p" 
+        if "u \<in> set p" 
       proof-
-        have "e ∈ δ⇧+ G u"
+        have "e \<in> \<delta>\<^sup>+ G u"
           using 1 by(auto simp add: uv delta_plus_def delta_minus_def) 
-        hence "e∈ ⋃ {δ⇧+ G x |x. x ∈ set p}" using that by auto
+        hence "e\<in> \<Union> {\<delta>\<^sup>+ G x |x. x \<in> set p}" using that by auto
         thus False
           using 1 by simp
       qed
       moreover have False
-        if "v ∈ set p"
+        if "v \<in> set p"
       proof-
-        have "e ∈ δ⇧- G v"
+        have "e \<in> \<delta>\<^sup>- G v"
           using 1 by(auto simp add: uv delta_plus_def delta_minus_def) 
-        hence "e∈ ⋃ {δ⇧- G x |x. x ∈ set p}" using that by auto
+        hence "e\<in> \<Union> {\<delta>\<^sup>- G x |x. x \<in> set p}" using that by auto
         thus False
           using 1 by simp
       qed
-      moreover have "e ≠ (new_vert, new_vert)"
+      moreover have "e \<noteq> (new_vert, new_vert)"
         using "1" calculation(2) new_vert_where uv by blast
       ultimately show ?case
         using uv by(auto simp add: Dquot_graph_def)
@@ -720,29 +720,29 @@ next
 qed
 
 lemma contract_path_correct:
-  assumes "forest_invar ℳ (Forest rts evs ods prnts orngs)" 
+  assumes "forest_invar \<M> (Forest rts evs ods prnts orngs)" 
     "follow (parent_lookup prnts) v = p1@[u]@p2"
-    "v ∈ vset_to_set evs"
-    "u ∈ vset_to_set evs" "matching ℳ"
-    "new_vert ∉ Vs ℳ ∪ vset_to_set evs ∪ vset_to_set ods -  set (p1@[u])"
-    "dblton_graph ℳ"
-    and contr_def: "contr = (λ v. if v ∈ set (p1@[u]) then new_vert else v)"
+    "v \<in> vset_to_set evs"
+    "u \<in> vset_to_set evs" "matching \<M>"
+    "new_vert \<notin> Vs \<M> \<union> vset_to_set evs \<union> vset_to_set ods -  set (p1@[u])"
+    "dblton_graph \<M>"
+    and contr_def: "contr = (\<lambda> v. if v \<in> set (p1@[u]) then new_vert else v)"
     and new_forest_def:
     "new_forest = contract_path (Forest rts evs ods prnts orngs) (p1@[u]) new_vert"
-  and new_vert_in_universe: "new_vert ∈ K"
-  shows "forest_invar (quot_graph contr ℳ - {{new_vert}}) new_forest" (is ?th1)
+  and new_vert_in_universe: "new_vert \<in> K"
+  shows "forest_invar (quot_graph contr \<M> - {{new_vert}}) new_forest" (is ?th1)
     and  "abstract_forest new_forest 
          = quot_graph contr (abstract_forest (Forest rts evs ods prnts orngs)) - {{new_vert}}" (is ?th2)
     and "vset_to_set (odds new_forest) = vset_to_set ods - set (p1 @ [u])" 
-    and "vset_to_set (evens new_forest) = vset_to_set evs - set (p1 @ [u]) ∪ {new_vert}"
+    and "vset_to_set (evens new_forest) = vset_to_set evs - set (p1 @ [u]) \<union> {new_vert}"
     and "vset_to_set (roots new_forest) =
-    (if u ∈ vset_to_set rts
-     then vset_to_set rts - {u} ∪ {new_vert} else vset_to_set rts)" (is ?th3)
-    and "matching (quot_graph contr ℳ - {{new_vert}})" (is ?th4)
-    and "⟦follow (parent_lookup prnts) v' = p1'@[u]@p2; set p1 ∩ set p1' = {}⟧ ⟹
+    (if u \<in> vset_to_set rts
+     then vset_to_set rts - {u} \<union> {new_vert} else vset_to_set rts)" (is ?th3)
+    and "matching (quot_graph contr \<M> - {{new_vert}})" (is ?th4)
+    and "\<lbrakk>follow (parent_lookup prnts) v' = p1'@[u]@p2; set p1 \<inter> set p1' = {}\<rbrakk> \<Longrightarrow>
      follow (parent_lookup (parents new_forest)) 
      (if p1' = [] then new_vert else v') = p1'@[new_vert]@p2"
-    (is "⟦?asm1;?asm2⟧⟹ ?th5")
+    (is "\<lbrakk>?asm1;?asm2\<rbrakk>\<Longrightarrow> ?th5")
 proof-
   note forest_invar_F = forest_invarD[OF assms(1)]
   note invar_basic_F = invar_basicD[OF forest_invar_F(1), simplified]
@@ -763,11 +763,11 @@ proof-
   note invar_odd_is_parentD_here = 
        invar_odd_is_parentD[OF forest_invar_F(8), simplified alt_forest.sel]
 
-  have path_in_universe: "set (p1 @ [u]) ⊆ K"
+  have path_in_universe: "set (p1 @ [u]) \<subseteq> K"
     using path_follow_verts_in_verts_F[OF forest_invar_F(1,6,4), of v]
       forest_vertices_in_universe[OF assms(1)] assms(2,3) invar_basic_F(6)
     by auto blast+
-  have origin_defined: "origin_lookup orngs (last (p1 @ [u])) ≠ None"
+  have origin_defined: "origin_lookup orngs (last (p1 @ [u])) \<noteq> None"
     using invar_rootsD(2)[OF forest_invar_F(6), of u] assms(4) invar_basic_F(6)
     by (auto simp only: alt_forest.sel last_snoc)
   note effect_of_contract_path =
@@ -778,40 +778,40 @@ proof-
       simplified, OF assms(2)[symmetric] assms(3)]
 
   have alternating_p:
-    "alt_list (λx. x ∈ vset_to_set evs) (λx. x ∈ vset_to_set ods) (p1 @ [u])"
+    "alt_list (\<lambda>x. x \<in> vset_to_set evs) (\<lambda>x. x \<in> vset_to_set ods) (p1 @ [u])"
     using alt_list_append_1[OF follow_alt_here(2)[unfolded append.assoc[symmetric]]]
     by blast
   have path_parity:
-    "(p1 @ [u]) ! i ∈ vset_to_set evs ⟷ even i"
-    "(p1 @ [u]) ! i ∈ vset_to_set ods ⟷ odd i"
+    "(p1 @ [u]) ! i \<in> vset_to_set evs \<longleftrightarrow> even i"
+    "(p1 @ [u]) ! i \<in> vset_to_set ods \<longleftrightarrow> odd i"
     if "i < length (p1 @ [u])" for i
     using alternating_list_even_index[OF alternating_p _ that]
       alternating_list_odd_index[OF alternating_p _ that] invar_basic_F(7)
     by auto
-  have evens_in_p_are: "{(p1 @ [u]) ! i |i. i < length (p1 @ [u]) ∧ even i} =
-        vset_to_set evs ∩ set (p1 @ [u])"
+  have evens_in_p_are: "{(p1 @ [u]) ! i |i. i < length (p1 @ [u]) \<and> even i} =
+        vset_to_set evs \<inter> set (p1 @ [u])"
     using path_parity(1)
     by (auto simp only: mem_Collect_eq Int_iff in_set_conv_nth; blast)
-  have odds_in_p_are: "{(p1 @ [u]) ! i |i. i < length (p1 @ [u]) ∧ odd i} =
-        vset_to_set ods ∩ set (p1 @ [u])"
+  have odds_in_p_are: "{(p1 @ [u]) ! i |i. i < length (p1 @ [u]) \<and> odd i} =
+        vset_to_set ods \<inter> set (p1 @ [u])"
     using path_parity(2)
     by (auto simp only: mem_Collect_eq Int_iff in_set_conv_nth; blast)
 
   have new_parents_are: "parent_lookup (parents new_forest) =
-    (λx. if x = new_vert ∧ parent_lookup prnts u ≠ None
+    (\<lambda>x. if x = new_vert \<and> parent_lookup prnts u \<noteq> None
           then parent_lookup prnts u
-          else if (x ∉ set (p1 @ [u]) ∧ the (parent_lookup prnts x)
-                   ∈ set (p1 @ [u]) ∩ vset_to_set evs ∧
-                   x ∈ vset_to_set ods - set (p1@[u]))
+          else if (x \<notin> set (p1 @ [u]) \<and> the (parent_lookup prnts x)
+                   \<in> set (p1 @ [u]) \<inter> vset_to_set evs \<and>
+                   x \<in> vset_to_set ods - set (p1@[u]))
                then Some new_vert
-          else if x ∈ set (p1 @ [u]) then None 
+          else if x \<in> set (p1 @ [u]) then None 
           else parent_lookup prnts x)"
     by(rule ext, unfold effect_of_contract_path(9) evens_in_p_are odds_in_p_are)
        auto
-  have prnts_no_loop:"parent_lookup prnts u = Some u ⟹ False" for u
+  have prnts_no_loop:"parent_lookup prnts u = Some u \<Longrightarrow> False" for u
     using forest_invar_F(4)
     by(auto intro!: wf_no_loop dest!: invar_parent_wfD parent_specD)
-  have DAF_no_loop:"(u,u) ∈ Dabstract_forest (Forest rts evs ods prnts orngs) ⟹ False" for u
+  have DAF_no_loop:"(u,u) \<in> Dabstract_forest (Forest rts evs ods prnts orngs) \<Longrightarrow> False" for u
     by(auto simp add: Dabstract_forest_def intro!: prnts_no_loop[OF sym])
 
   interpret parents_here: parent "(parent_lookup prnts)"
@@ -832,21 +832,21 @@ proof-
   note follow_cons_2 = parents_here.follow_cons_2[folded follow_def]
 
   have  parent_adj_pu_helper:
-   "⟦parent_lookup prnts x = Some y; x ∉ vset_to_set ods ∨ y ∉ vset_to_set evs;
-     p1 = ys @ y # zs; x ∉ set ys ∨ y = u⟧ ⟹ False"
+   "\<lbrakk>parent_lookup prnts x = Some y; x \<notin> vset_to_set ods \<or> y \<notin> vset_to_set evs;
+     p1 = ys @ y # zs; x \<notin> set ys \<or> y = u\<rbrakk> \<Longrightarrow> False"
     for ys zs x y
   proof(goal_cases)
     case 1
-    have y_not_u:"y ≠ u"
+    have y_not_u:"y \<noteq> u"
       using follow_distinct[of v] 1(3) assms(2) by auto
-    have xy_af:"{x, y} ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+    have xy_af:"{x, y} \<in> abstract_forest (Forest rts evs ods prnts orngs)"
       using 1 abstract_forest_def by fastforce
-    hence "x ∈ vset_to_set evs ⟷  x ∉ vset_to_set ods"
-          "y ∈ vset_to_set evs ⟷ y ∉ vset_to_set ods"
+    hence "x \<in> vset_to_set evs \<longleftrightarrow>  x \<notin> vset_to_set ods"
+          "y \<in> vset_to_set evs \<longleftrightarrow> y \<notin> vset_to_set ods"
       using edges_are_Vs[OF xy_af] edges_are_Vs_2[OF xy_af] invar_basic_F(6,7)
       by blast+
-    hence even_x: "x ∈ vset_to_set evs"
-      and odd_y: "y ∈ vset_to_set ods"
+    hence even_x: "x \<in> vset_to_set evs"
+      and odd_y: "y \<in> vset_to_set ods"
       using 1(2)  xy_af forest_invar_F(3)
       by(auto elim!: invar_forest_even_and_oddE)
     obtain y' ys' where  y'ys': "ys=ys'@[y']" 
@@ -861,10 +861,10 @@ proof-
     hence "y' = x" 
       using odds_unique_child'[OF assms(1) _ assms(5), of y]  odd_y 1 by simp
     show False
-      using "1"(4) ‹y' = x› y'ys' y_not_u by auto
+      using "1"(4) \<open>y' = x\<close> y'ys' y_not_u by auto
   qed
 
-  have Dabstract_forest_new_in_Qquot: "Dabstract_forest new_forest ⊆
+  have Dabstract_forest_new_in_Qquot: "Dabstract_forest new_forest \<subseteq>
     Dquot_graph contr (Dabstract_forest (Forest rts evs ods prnts orngs))"
     unfolding abstract_forest_def
   proof(rule, goal_cases)
@@ -873,13 +873,13 @@ proof-
       by(auto simp add: Dabstract_forest_def)
     show ?case
       using xy(2) unfolding xy(1) new_parents_are 
-    proof(cases "x = new_vert ∧ parent_lookup prnts u ≠ None", goal_cases)
+    proof(cases "x = new_vert \<and> parent_lookup prnts u \<noteq> None", goal_cases)
       case 1
       note 1 = 1[simplified if_P[OF 1(2)]]
       then show ?case 
         using in_set_conv_decomp[of y p1] assms(2) follow_not_again_parent[of v _ y _ u p2] 
-        by(auto intro!: exI[of "λ y. (_ y ⟶ (_ y ∧ _ y)) ∧ (_ y ⟶ (_ y ∧ _ y))
-                             ∧ (_ y ⟶ (_ y ∧ _ y))" y]
+        by(auto intro!: exI[of "\<lambda> y. (_ y \<longrightarrow> (_ y \<and> _ y)) \<and> (_ y \<longrightarrow> (_ y \<and> _ y))
+                             \<and> (_ y \<longrightarrow> (_ y \<and> _ y))" y]
                  intro: exI[of _ u]
                   dest: prnts_no_loop 
               simp add: Dquot_graph_def contr_def Dabstract_forest_def)    
@@ -887,9 +887,9 @@ proof-
       case 2
       note 2 = 2[simplified if_not_P[OF 2(2)]]
       then show ?case 
-      proof(cases "x ∉ set (p1 @ [u]) ∧
-        the (parent_lookup prnts x) ∈ set (p1 @ [u]) ∩ vset_to_set evs ∧
-        x ∈ vset_to_set ods - set (p1 @ [u])", goal_cases)
+      proof(cases "x \<notin> set (p1 @ [u]) \<and>
+        the (parent_lookup prnts x) \<in> set (p1 @ [u]) \<inter> vset_to_set evs \<and>
+        x \<in> vset_to_set ods - set (p1 @ [u])", goal_cases)
         case 1
         note 1 = 1[simplified if_P[OF 1(3)]]
         hence "parent_lookup prnts x = Some (the (parent_lookup prnts x))"
@@ -897,23 +897,23 @@ proof-
           by(auto elim!: invar_odd_to_parent_non_matchingE)
         then show ?case 
           using 1
-          by(auto intro!: exI[of "λ ua. (_ ua ⟶ (∃ v. _ ua v)) ∧ _  ua ∧ _  ua " 
+          by(auto intro!: exI[of "\<lambda> ua. (_ ua \<longrightarrow> (\<exists> v. _ ua v)) \<and> _  ua \<and> _  ua " 
                             "(the (parent_lookup prnts x))"] 
-                          exI[of "λ y. (_ y ⟶ (_ y ∧ _ y)) ∧ (_ y ⟶ (_ y ∧ _ y))
-                             ∧ (_ y ⟶ (_ y ∧ _ y))" x] 
+                          exI[of "\<lambda> y. (_ y \<longrightarrow> (_ y \<and> _ y)) \<and> (_ y \<longrightarrow> (_ y \<and> _ y))
+                             \<and> (_ y \<longrightarrow> (_ y \<and> _ y))" x] 
                 simp add: Dquot_graph_def contr_def Dabstract_forest_def)
       next
         case 2
         note 2 = 2[simplified if_not_P[OF 2(3)]]
         then show ?case
-        proof(cases "x ∈ set (p1 @ [u])", goal_cases)
+        proof(cases "x \<in> set (p1 @ [u])", goal_cases)
           case 2
           note 2 = 2[simplified if_not_P[OF 2(4)]]
           have helper2:
-           "⟦parent_lookup prnts x = Some y; x ∉ vset_to_set ods ∨ y ∉ vset_to_set evs;
-             p1 = ys @ y # zs; x ∉ set ys ∨ y = u⟧ ⟹ False" for ys zs 
+           "\<lbrakk>parent_lookup prnts x = Some y; x \<notin> vset_to_set ods \<or> y \<notin> vset_to_set evs;
+             p1 = ys @ y # zs; x \<notin> set ys \<or> y = u\<rbrakk> \<Longrightarrow> False" for ys zs 
             using parent_adj_pu_helper[of x y ys zs] by blast
-          have x_not_oddD:"x ∉ vset_to_set ods ⟹ x ∈ vset_to_set evs"
+          have x_not_oddD:"x \<notin> vset_to_set ods \<Longrightarrow> x \<in> vset_to_set evs"
             using "2"(1) invar_basic_F(14,6) by auto
           from 2 show ?case 
             using assms(4) invar_basic_F(6,7)
@@ -929,14 +929,14 @@ proof-
     qed
   qed
 
-  have parent_u_not_new: "parent_lookup prnts u ≠ Some new_vert"
+  have parent_u_not_new: "parent_lookup prnts u \<noteq> Some new_vert"
   proof
     assume parent_u: "parent_lookup prnts u = Some new_vert"
-    have "{u,new_vert} ∈ ℳ"
+    have "{u,new_vert} \<in> \<M>"
       by (rule invar_even_to_parent_matchingD_here[OF assms(4) parent_u])
-    then have "new_vert ∈ set (p1 @ [u])"
-      using edges_are_Vs_2[of u new_vert ℳ] assms(6) by blast
-    moreover have "new_vert ≠ u"
+    then have "new_vert \<in> set (p1 @ [u])"
+      using edges_are_Vs_2[of u new_vert \<M>] assms(6) by blast
+    moreover have "new_vert \<noteq> u"
       using parent_u prnts_no_loop[of u] by auto
     ultimately obtain xs ys where p1: "p1 = xs @ [new_vert] @ ys"
       by (auto dest: split_list)
@@ -944,7 +944,7 @@ proof-
       using follow_not_again_parent[of v xs new_vert ys u p2] assms(2) parent_u
       by (simp add: p1)
   qed
-  have new_vert_loop_not_in_new: "(new_vert,new_vert) ∉ Dabstract_forest new_forest"
+  have new_vert_loop_not_in_new: "(new_vert,new_vert) \<notin> Dabstract_forest new_forest"
   proof -
     show ?thesis
       using parent_u_not_new assms(6) prnts_no_loop[of new_vert]
@@ -952,28 +952,28 @@ proof-
   qed
 
   have Qquot_in_Dabstract_forest_new: 
-   "Dabstract_forest new_forest ⊇ 
+   "Dabstract_forest new_forest \<supseteq> 
     Dquot_graph contr (Dabstract_forest (Forest rts evs ods prnts orngs)) 
       - {(new_vert,new_vert)}"
   proof(rule, goal_cases)
     case (1 e)
     then obtain u' v' where uv: "e = (contr u', contr v')" 
       "Some u' = parent_lookup prnts v'"
-      "contr u' ≠ new_vert ∨ contr v' ≠ new_vert"
+      "contr u' \<noteq> new_vert \<or> contr v' \<noteq> new_vert"
       by (auto simp add: Dquot_graph_def Dabstract_forest_def)
-    have u_neq_v: "u' ≠ v'"
+    have u_neq_v: "u' \<noteq> v'"
       using uv(2) prnts_no_loop[of u'] by auto
-    have u'v'_AF:"{u', v'} ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+    have u'v'_AF:"{u', v'} \<in> abstract_forest (Forest rts evs ods prnts orngs)"
       unfolding abstract_forest_def
       apply (rule CollectI, rule exI[of _ v'], rule exI[of _ u'])
       using uv(2) by (simp add: insert_commute)
-    hence u'v'_evens_and_odds: "{u', v'} ⊆ vset_to_set evs ∪ vset_to_set ods"
+    hence u'v'_evens_and_odds: "{u', v'} \<subseteq> vset_to_set evs \<union> vset_to_set ods"
       using uv(2) by (simp add: edges_are_Vs edges_are_Vs_2 invar_basic_F(6))
     have ?case
-      if "u' ∈ set (p1 @ [u])" "v' ∈ set (p1 @ [u])"
+      if "u' \<in> set (p1 @ [u])" "v' \<in> set (p1 @ [u])"
       using uv that u_neq_v by(auto simp add: contr_def)
     moreover have ?case
-      if asm: "u' ∉ set (p1 @ [u])" "v' ∈ set (p1 @ [u])"    
+      if asm: "u' \<notin> set (p1 @ [u])" "v' \<in> set (p1 @ [u])"    
     proof-
       note uv = uv[simplified contr_def if_not_P[OF asm(1)] if_P[OF asm(2)], simplified]
       have "v' = u" 
@@ -993,20 +993,20 @@ proof-
         by(auto intro: exI[of _ u'] simp add: Dabstract_forest_def new_parents_are) 
     qed
     moreover have ?case
-      if asm: "u' ∈ set (p1 @ [u])" "v' ∉ set (p1 @ [u])"           
+      if asm: "u' \<in> set (p1 @ [u])" "v' \<notin> set (p1 @ [u])"           
     proof-
       note uv = uv[simplified contr_def if_P[OF asm(1)] if_not_P[OF asm(2)], simplified]
-      have u'v'_even_odd_eqiv: "u' ∈ vset_to_set evs ⟷ v' ∈ vset_to_set ods" 
+      have u'v'_even_odd_eqiv: "u' \<in> vset_to_set evs \<longleftrightarrow> v' \<in> vset_to_set ods" 
         using uv(2) invar_forest_even_and_oddD[OF forest_invar_F(3), of u' v']
         by(force simp add: abstract_forest_def doubleton_eq_iff)
       obtain p1a p1b where p1a_p1b: "p1a@[u']@p1b = p1@[u]"
         using asm(1) split_list_last[of u' "p1 @ [u]"] by auto
-      have u'_v'_parities: "u' ∈ vset_to_set evs ∧ v' ∈ vset_to_set ods"
+      have u'_v'_parities: "u' \<in> vset_to_set evs \<and> v' \<in> vset_to_set ods"
       proof(rule ccontr, goal_cases)
         case 1
-        hence u'_odd: "u' ∈ vset_to_set ods" and v'_even: "v' ∈ vset_to_set evs"
+        hence u'_odd: "u' \<in> vset_to_set ods" and v'_even: "v' \<in> vset_to_set evs"
           using u'v'_even_odd_eqiv u'v'_evens_and_odds by auto
-        hence "p1a ≠ []"
+        hence "p1a \<noteq> []"
           using "1" assms(2,3) follow_hd[of v]  u'v'_even_odd_eqiv p1a_p1b
           by(cases p1) auto
         then obtain v'' p1a' where v'': "p1@[u] = p1a'@[v'',u']@p1b"
@@ -1025,10 +1025,10 @@ proof-
         by (auto simp add: uv(2)[symmetric] Dabstract_forest_def new_parents_are)
     qed
     moreover have ?case
-      if asm: "u' ∉ set (p1 @ [u])" "v' ∉ set (p1 @ [u])"
+      if asm: "u' \<notin> set (p1 @ [u])" "v' \<notin> set (p1 @ [u])"
     proof-
       note uv = uv[simplified contr_def if_not_P[OF asm(1)] if_not_P[OF asm(2)], simplified]
-      hence no_new_vert: "u' ≠ new_vert" "v' ≠ new_vert"
+      hence no_new_vert: "u' \<noteq> new_vert" "v' \<noteq> new_vert"
         using assms(6) that(1,2) u'v'_evens_and_odds by auto
       show ?thesis
         using uv(1) uv(2)[symmetric] asm no_new_vert(2) 
@@ -1043,16 +1043,16 @@ proof-
        = Dabstract_forest new_forest"
     using Dabstract_forest_new_in_Qquot Qquot_in_Dabstract_forest_new new_vert_loop_not_in_new
     by blast
-  have AF_in_quot:"abstract_forest new_forest ⊆
+  have AF_in_quot:"abstract_forest new_forest \<subseteq>
     quot_graph contr (abstract_forest (Forest rts evs ods prnts orngs))"
     using Dabstract_forest_new_in_Qquot UD_subseteq 
     by(auto simp add: Dabstract_forest_UD[symmetric] Dquot_quot_UD[symmetric])
-  have new_vert_not_in_AF:"{new_vert} ∉ abstract_forest new_forest"
+  have new_vert_not_in_AF:"{new_vert} \<notin> abstract_forest new_forest"
     using new_vert_loop_not_in_new
     by(auto simp add: Dabstract_forest_def abstract_forest_def)
   have quot_in_AF: 
       "quot_graph contr (abstract_forest (Forest rts evs ods prnts orngs)) - {{new_vert}}
-       ⊆ abstract_forest new_forest"
+       \<subseteq> abstract_forest new_forest"
     using Qquot_in_Dabstract_forest_new
     unfolding Dabstract_forest_UD[symmetric] Dquot_quot_UD[symmetric]
     by(auto simp add: UD_def) 
@@ -1060,14 +1060,14 @@ proof-
       "quot_graph contr (abstract_forest (Forest rts evs ods prnts orngs)) - {{new_vert}}
        = abstract_forest new_forest"
     using AF_in_quot new_vert_not_in_AF quot_in_AF by blast
-  have Vs_contracted:"Vs (abstract_forest new_forest) ∪ {new_vert}= 
-        Vs (abstract_forest (Forest rts evs ods prnts orngs)) - set (p1@[u]) ∪ {new_vert}"
+  have Vs_contracted:"Vs (abstract_forest new_forest) \<union> {new_vert}= 
+        Vs (abstract_forest (Forest rts evs ods prnts orngs)) - set (p1@[u]) \<union> {new_vert}"
     unfolding quot_is_AF[symmetric]
     by(auto simp add: quot_graph_def Vs_def contr_def)
   have Vs_contracted':
      "Vs (abstract_forest new_forest) = 
-      Vs (abstract_forest (Forest rts evs ods prnts orngs)) - set (p1@[u]) ∪ {new_vert} "
-  if asm: "last (p1 @ [u]) ∉ vset_to_set rts"
+      Vs (abstract_forest (Forest rts evs ods prnts orngs)) - set (p1@[u]) \<union> {new_vert} "
+  if asm: "last (p1 @ [u]) \<notin> vset_to_set rts"
   proof(goal_cases)
     case 1
     obtain up where "parent_lookup prnts u = Some up"
@@ -1075,15 +1075,15 @@ proof-
       by blast
     hence "parent_lookup (parents new_forest) new_vert = Some up"
       by(simp add: new_parents_are)
-    hence "new_vert ∈ Vs (abstract_forest new_forest)"
+    hence "new_vert \<in> Vs (abstract_forest new_forest)"
       by(auto simp add: abstract_forest_def)
     thus ?case
       by(unfold Vs_contracted[symmetric]) auto
   qed
-  have p1_no_roots:"set p1 ∩ vset_to_set rts = {}" 
+  have p1_no_roots:"set p1 \<inter> vset_to_set rts = {}" 
   proof(rule ccontr, goal_cases)
     case 1
-    then obtain x where x: "x ∈ set p1" "x ∈  vset_to_set rts"
+    then obtain x where x: "x \<in> set p1" "x \<in>  vset_to_set rts"
       by auto
     then obtain p1a p1b where "p1=p1a@[x]@p1b" 
       using split_list_first[of x p1] by auto
@@ -1093,12 +1093,12 @@ proof-
     then show ?case
       using x(2) invar_basic_F(13) by auto
   qed
-  have u_roots_p2_Nil:"u ∈ vset_to_set rts ⟷ p2 = Nil"
+  have u_roots_p2_Nil:"u \<in> vset_to_set rts \<longleftrightarrow> p2 = Nil"
     using invar_basic_F(13,6)[symmetric] follow_simps[of u] assms(2,4) 
           invar_rootsD_here(2)[of u] p1_no_roots follow_None[of u] follow_append
       by auto+
-  have parents_ev_od: "x ∈ vset_to_set evs ⟷ y ∈ vset_to_set ods"
-    "x ∈ vset_to_set ods ⟷ y ∈ vset_to_set evs"
+  have parents_ev_od: "x \<in> vset_to_set evs \<longleftrightarrow> y \<in> vset_to_set ods"
+    "x \<in> vset_to_set ods \<longleftrightarrow> y \<in> vset_to_set evs"
     if "parent_lookup prnts x = Some y" for x y
     using invar_forest_even_and_oddD[OF forest_invar_F(3), of x y]
       invar_forest_even_and_oddD[OF forest_invar_F(3), of y x] that
@@ -1107,35 +1107,35 @@ proof-
     using hd_append[of p1 "[u]"] 
       parents_here.follow_hd[of v] assms(2) follow_def[of "parent_lookup prnts"]
     by auto
-  have rev_alt_path_M: "rev_alt_path ℳ (p1 @ [u])"
+  have rev_alt_path_M: "rev_alt_path \<M> (p1 @ [u])"
     using follow_alt_here(1) edges_of_path_append_2[of "u # p2" p1] alt_list_append_1 
     by auto
   have M_quot: 
-    "quot_graph contr ℳ - {{new_vert}} 
-     = ℳ - ((if u ∈ vset_to_set rts then {} 
-              else {{u, the (parent_lookup prnts u)}}) ∪ set (edges_of_path (p1@[u]))) ∪ 
-                     (if u ∈ vset_to_set rts then {} 
+    "quot_graph contr \<M> - {{new_vert}} 
+     = \<M> - ((if u \<in> vset_to_set rts then {} 
+              else {{u, the (parent_lookup prnts u)}}) \<union> set (edges_of_path (p1@[u]))) \<union> 
+                     (if u \<in> vset_to_set rts then {} 
                       else {{new_vert, the (parent_lookup prnts u)}})"
-  proof(rule, all ‹rule›, goal_cases)
+  proof(rule, all \<open>rule\<close>, goal_cases)
     case (1 e)
-    then obtain x y where xy: "e = contr ` {x, y}" "{x, y} ∈ ℳ" "x ≠ y"
+    then obtain x y where xy: "e = contr ` {x, y}" "{x, y} \<in> \<M>" "x \<noteq> y"
       using assms(7) by(force simp add: quot_graph_def) 
-    hence  x_or_y_not_contracted:"x ∉ set (p1@[u]) ∨ y ∉ set (p1@[u])"
+    hence  x_or_y_not_contracted:"x \<notin> set (p1@[u]) \<or> y \<notin> set (p1@[u])"
       using 1 by(auto simp add: contr_def)
-    hence xy_not_in_edges:"{x, y} ∉ set (edges_of_path (p1 @ [u]))"
+    hence xy_not_in_edges:"{x, y} \<notin> set (edges_of_path (p1 @ [u]))"
       by (simp add: edge_not_in_edges_in_path)
     show ?case 
-    proof(cases  "x ∉ set (p1@[u]) ∧ y ∉ set (p1@[u])")
+    proof(cases  "x \<notin> set (p1@[u]) \<and> y \<notin> set (p1@[u])")
       case True
-      hence "e ∈ ℳ" "e = {x, y}"
+      hence "e \<in> \<M>" "e = {x, y}"
         using  xy by (auto simp add: contr_def)
       then show ?thesis
         using  xy_not_in_edges True 
         by(auto simp add: doubleton_eq_iff)
     next
       case False
-      then obtain x' y' where xy: "e = contr ` {x', y'}" "{x', y'} ∈ ℳ" "x' ≠ y'"
-        "x' ∈ set (p1@[u])" "y' ∉ set (p1@[u])" "{x, y} = {x', y'}"
+      then obtain x' y' where xy: "e = contr ` {x', y'}" "{x', y'} \<in> \<M>" "x' \<noteq> y'"
+        "x' \<in> set (p1@[u])" "y' \<notin> set (p1@[u])" "{x, y} = {x', y'}"
         using xy(1,2) x_or_y_not_contracted doubleton_eq_iff[of x y y x] by fastforce
       have x'_is_u:"x' = u"
       proof(rule ccontr, goal_cases)
@@ -1145,7 +1145,7 @@ proof-
           by auto
         then obtain xp where xp: "parent_lookup prnts x' = Some xp"
           using assms(2) by(cases p2a) (auto simp add: follow_subsequent_parent)
-        have x_not_odd:"x' ∈ vset_to_set ods ⟹ False"
+        have x_not_odd:"x' \<in> vset_to_set ods \<Longrightarrow> False"
         proof(goal_cases)
           case 1
           then obtain xc p1aa where xc: " p1a = p1aa@[xc]" 
@@ -1154,11 +1154,11 @@ proof-
           hence xc_child_x:"parent_lookup prnts xc = Some x'" 
             using assms(2) p1ap2a 
             by (simp add: follow_def parents_here.follow_subsequent_parent)
-          hence "xc ∈ vset_to_set evs"
+          hence "xc \<in> vset_to_set evs"
             using assms(1,5) "1"
-                  odds_unique_child[of ℳ "Forest rts evs ods prnts orngs" x'] 
+                  odds_unique_child[of \<M> "Forest rts evs ods prnts orngs" x'] 
             by auto
-          hence "{x', xc} ∈ ℳ" 
+          hence "{x', xc} \<in> \<M>" 
             using  xc_child_x 
               invar_even_to_parent_matchingD[OF forest_invar_F(5)] 
             by (auto simp add: edge_commute)
@@ -1167,21 +1167,21 @@ proof-
           then show ?case 
             using p1ap2a xc xy(5) by auto
         qed
-        hence x'_even:"x' ∈ vset_to_set evs"
+        hence x'_even:"x' \<in> vset_to_set evs"
           using xp  invar_basic_F(14) invar_basic_F(6)[symmetric] by auto
-        hence "xp ∈ vset_to_set ods" 
+        hence "xp \<in> vset_to_set ods" 
           by (simp add: parents_ev_od(1) xp)
         then obtain p2aa where "p2a = xp#p2aa"
           using p1ap2a xp assms(2,4) x_not_odd assms(4)follow_subsequent_parent parents_ev_od(2)
           by (cases p2a) auto
-        have "{x', xp} ∈ ℳ"
+        have "{x', xp} \<in> \<M>"
           by (rule invar_even_to_parent_matchingD_here[OF x'_even xp])
         hence "xp = y'" 
           using assms(5) xy(2) by(auto intro!: doubleton_in_matching(1))
         thus False
-          using ‹p2a = xp # p2aa› p1ap2a xy(5) by auto
+          using \<open>p2a = xp # p2aa\<close> p1ap2a xy(5) by auto
       qed
-      have u_no_root: "u ∉ vset_to_set rts"
+      have u_no_root: "u \<notin> vset_to_set rts"
         using edges_are_Vs[OF xy(2), unfolded x'_is_u] invar_basic_F(11)
         by auto
       have parent_x'_is:"parent_lookup prnts x' = Some y'"
@@ -1189,15 +1189,15 @@ proof-
         case None
         then show ?thesis 
           using u_no_root x'_is_u assms(4) domIff[of u "origin_lookup orngs"] invar_basic_F(13,15,6)
-             imageI[of u "vset_to_set evs ∪ vset_to_set ods" "origin_lookup orngs"]
+             imageI[of u "vset_to_set evs \<union> vset_to_set ods" "origin_lookup orngs"]
           by auto
       next
         case (Some a)
-        hence "a ∈ vset_to_set ods" 
+        hence "a \<in> vset_to_set ods" 
           using assms(4) parents_ev_od(1) x'_is_u by blast
         then show ?thesis 
           using assms(4,5) x'_is_u xy(2) Some invar_even_to_parent_matchingD_here[of u a]
-          by (auto dest!: doubleton_in_matching(1)[of ℳ u y' a])
+          by (auto dest!: doubleton_in_matching(1)[of \<M> u y' a])
       qed
       have "e = {new_vert, the (parent_lookup prnts u)}" 
         using parent_x'_is  x'_is_u xy(3,5)
@@ -1211,9 +1211,9 @@ proof-
     proof(rule UnE[OF 2], goal_cases)
       case 1
       note one = this
-      then obtain x y where xy: "e = {x, y}" "x ≠ y"
+      then obtain x y where xy: "e = {x, y}" "x \<noteq> y"
         using assms(7) by auto
-      have e_in_M: "e ∈ ℳ"
+      have e_in_M: "e \<in> \<M>"
         using "1" by blast
       show ?case
       proof(rule matching_edge_rev_alt_path_cases[OF rev_alt_path_M e_in_M, simplified], goal_cases)
@@ -1226,7 +1226,7 @@ proof-
           by (simp add: assms(5))
       next
         case (3 u' v' i)
-        hence "{u', v'} ∈ set (edges_of_path (p1@[u]))"
+        hence "{u', v'} \<in> set (edges_of_path (p1@[u]))"
           using edges_of_path_length[of "p1 @ [u]"] 
                 in_set_conv_nth[of "edges_of_path (p1 @ [u]) ! i" ]
           by auto
@@ -1235,13 +1235,13 @@ proof-
       next
         case (4 u' v')
         hence "v' = the (parent_lookup prnts u)" 
-          using assms(4,5)  e_in_M invar_basic_F(11,13,6)[symmetric] edges_are_Vs[of u v' ℳ]
+          using assms(4,5)  e_in_M invar_basic_F(11,13,6)[symmetric] edges_are_Vs[of u v' \<M>]
                 domIff[of u "origin_lookup orngs"] domIff[of u "parent_lookup prnts"]
                 invar_basicD_here(15) invar_even_to_parent_matchingD_here[of u ]
-          by (auto dest!: doubleton_in_matching(1)[of ℳ u "the (parent_lookup prnts u)" v'])
+          by (auto dest!: doubleton_in_matching(1)[of \<M> u "the (parent_lookup prnts u)" v'])
         then show ?case
-          using one 4 invar_basic_F(11) edges_are_Vs[of u v' ℳ]
-          by(cases "u ∈ vset_to_set rts")(auto simp add: quot_graph_def)
+          using one 4 invar_basic_F(11) edges_are_Vs[of u v' \<M>]
+          by(cases "u \<in> vset_to_set rts")(auto simp add: quot_graph_def)
       next
         case 5
         then show ?case
@@ -1250,25 +1250,25 @@ proof-
       qed
     next
       case 2
-      hence  e_is: "e = {new_vert, the (parent_lookup prnts u)}" "u ∉ vset_to_set rts"
-        by(all ‹cases "u ∈ vset_to_set rts"›) auto
-      moreover hence u_pu_M:"{u, the (parent_lookup prnts u)} ∈ℳ" 
+      hence  e_is: "e = {new_vert, the (parent_lookup prnts u)}" "u \<notin> vset_to_set rts"
+        by(all \<open>cases "u \<in> vset_to_set rts"\<close>) auto
+      moreover hence u_pu_M:"{u, the (parent_lookup prnts u)} \<in>\<M>" 
         using assms(4) invar_basic_F(13,6)[symmetric] domIff[of u "parent_lookup prnts"]
               invar_basicD_here(15) invar_even_to_parent_matchingD_here[of u]
-              imageI[of u "vset_to_set evs ∪ vset_to_set ods" "origin_lookup orngs"]
+              imageI[of u "vset_to_set evs \<union> vset_to_set ods" "origin_lookup orngs"]
         by auto 
       moreover obtain pu where parent_u: "parent_lookup prnts u = Some pu"
       proof -
-        have "∃r. origin_lookup orngs u = Some r"
+        have "\<exists>r. origin_lookup orngs u = Some r"
           using origin_defined by simp
-        hence "u ∈ dom (origin_lookup orngs)"
+        hence "u \<in> dom (origin_lookup orngs)"
           by auto
         with invar_basic_F(13) e_is(2) show thesis
           by (auto intro: that)
       qed
-      moreover have "new_vert ≠ pu"
+      moreover have "new_vert \<noteq> pu"
         using parent_u_not_new parent_u by auto
-      moreover have "pu ∉ set (p1 @ [u])"
+      moreover have "pu \<notin> set (p1 @ [u])"
         using follow_subsequent_parent_there[OF assms(2) parent_u] follow_distinct[of v]
         by (auto simp: assms(2))
       ultimately show ?case
@@ -1277,27 +1277,27 @@ proof-
   qed
   have distinct_path:"distinct (p1@[u]@p2)"
     using follow_distinct[of v] by (simp only: assms(2))
-  have alt_ev_od_p: "alt_list (λx. x ∈ vset_to_set evs) (λx. x ∈ vset_to_set ods) (p1 @ [u])"
+  have alt_ev_od_p: "alt_list (\<lambda>x. x \<in> vset_to_set evs) (\<lambda>x. x \<in> vset_to_set ods) (p1 @ [u])"
     using alt_list_append_1[of _ _ "p1@[u]"] append.assoc follow_alt_here(2) by simp
   have odd_length_p:"odd (length (p1@[u]))" 
     using assms(4) invar_basic_F(7) alt_ev_od_p alt_list_or 
     by (intro last_odd_P1'[OF alt_ev_od_p]) fastforce+
-  have org_lookup_last:"the (origin_lookup orngs u) = u ⟷  u ∈ vset_to_set rts"
+  have org_lookup_last:"the (origin_lookup orngs u) = u \<longleftrightarrow>  u \<in> vset_to_set rts"
   proof -
-    have "origin_lookup orngs u ∈ Some ` vset_to_set rts"
+    have "origin_lookup orngs u \<in> Some ` vset_to_set rts"
       using imageI[OF UnI1[OF assms(4), of "vset_to_set ods"], of "origin_lookup orngs"]
       by (simp only: invar_basic_F(6,15))
-    then obtain r where "origin_lookup orngs u = Some r" "r ∈ vset_to_set rts"
+    then obtain r where "origin_lookup orngs u = Some r" "r \<in> vset_to_set rts"
       by auto
     then show ?thesis
       using invar_rootsD_here(1)[of u] by auto
   qed
-  have lookup_u_not_none_roots: "parent_lookup prnts u = None ⟷ u ∈ vset_to_set rts"
-    using arg_cong[OF invar_basic_F(13), of "λA. u ∈ A"] origin_defined
+  have lookup_u_not_none_roots: "parent_lookup prnts u = None \<longleftrightarrow> u \<in> vset_to_set rts"
+    using arg_cong[OF invar_basic_F(13), of "\<lambda>A. u \<in> A"] origin_defined
     by (simp only: domIff Diff_iff last_snoc; blast)
-  have Diff_Int_idem: "A - (A ∩ B) = A - B" "A - (B ∩ A) = A - B" for A B
+  have Diff_Int_idem: "A - (A \<inter> B) = A - B" "A - (B \<inter> A) = A - B" for A B
     by blast+
-  have Union_of_same_diff: "(A - B) ∪ (C - B) = (A ∪ C) - B" for A B C
+  have Union_of_same_diff: "(A - B) \<union> (C - B) = (A \<union> C) - B" for A B C
     by blast
 
   note origin_new_def = effect_of_contract_path(10)
@@ -1308,45 +1308,45 @@ proof-
     dom (origin_lookup (origins new_forest)) - vset_to_set (roots new_forest)"
   proof(rule set_eqI)
     fix x
-    have odd_parent: "x ∈ vset_to_set ods ⟹ parent_lookup prnts x ≠ None"
+    have odd_parent: "x \<in> vset_to_set ods \<Longrightarrow> parent_lookup prnts x \<noteq> None"
       using forest_invar_F(7)
       by (auto simp only: invar_odd_to_parent_non_matching_def alt_forest.sel)
-    have seen_origin: "x ∈ vset_to_set evs ∪ vset_to_set ods ⟹ origin_lookup orngs x ≠ None"
+    have seen_origin: "x \<in> vset_to_set evs \<union> vset_to_set ods \<Longrightarrow> origin_lookup orngs x \<noteq> None"
       using invar_rootsD_here(2)[of x] invar_basic_F(6) by blast
-    have fresh_parent: "x = new_vert ⟹ x ∉ set (p1 @ [u]) ⟹ parent_lookup prnts x = None"
+    have fresh_parent: "x = new_vert \<Longrightarrow> x \<notin> set (p1 @ [u]) \<Longrightarrow> parent_lookup prnts x = None"
       using assms(6) invar_basic_F(14,6)
       by (cases "parent_lookup prnts x") auto
-    have parent_domain: "parent_lookup (parents new_forest) x ≠ None ⟷
-        (if x = new_vert then parent_lookup prnts u ≠ None
-         else x ∉ set (p1 @ [u]) ∧ parent_lookup prnts x ≠ None)"
+    have parent_domain: "parent_lookup (parents new_forest) x \<noteq> None \<longleftrightarrow>
+        (if x = new_vert then parent_lookup prnts u \<noteq> None
+         else x \<notin> set (p1 @ [u]) \<and> parent_lookup prnts x \<noteq> None)"
       using odd_parent fresh_parent assms(6)
-      by (cases "x = new_vert"; cases "x ∈ set (p1 @ [u])")
+      by (cases "x = new_vert"; cases "x \<in> set (p1 @ [u])")
          (auto simp: new_parents_are)
-    have origin_domain: "origin_lookup (origins new_forest) x ≠ None ⟷
-        x = new_vert ∨ (x ∉ set (p1 @ [u]) ∧ origin_lookup orngs x ≠ None)"
+    have origin_domain: "origin_lookup (origins new_forest) x \<noteq> None \<longleftrightarrow>
+        x = new_vert \<or> (x \<notin> set (p1 @ [u]) \<and> origin_lookup orngs x \<noteq> None)"
       using seen_origin
       unfolding effect_of_contract_path(10) evens_in_p_are odds_in_p_are
-      by (cases "x = new_vert"; cases "x ∈ set (p1 @ [u])";
+      by (cases "x = new_vert"; cases "x \<in> set (p1 @ [u])";
           cases "the (origin_lookup orngs u) = u") auto
-    have old_domains: "parent_lookup prnts x ≠ None ⟷
-        origin_lookup orngs x ≠ None ∧ x ∉ vset_to_set rts"
-      using arg_cong[OF invar_basic_F(13), of "λA. x ∈ A"]
+    have old_domains: "parent_lookup prnts x \<noteq> None \<longleftrightarrow>
+        origin_lookup orngs x \<noteq> None \<and> x \<notin> vset_to_set rts"
+      using arg_cong[OF invar_basic_F(13), of "\<lambda>A. x \<in> A"]
       by (simp only: domIff Diff_iff)
-    have lookup_dom: "a ∈ dom f ⟷ f a ≠ None" for a f
+    have lookup_dom: "a \<in> dom f \<longleftrightarrow> f a \<noteq> None" for a f
       by (rule domIff)
-    show "x ∈ dom (parent_lookup (parents new_forest)) ⟷ x ∈ dom (origin_lookup (origins new_forest)) - vset_to_set (roots new_forest)"
+    show "x \<in> dom (parent_lookup (parents new_forest)) \<longleftrightarrow> x \<in> dom (origin_lookup (origins new_forest)) - vset_to_set (roots new_forest)"
       using assms(6) invar_basic_F(10) p1_no_roots
       unfolding Diff_iff lookup_dom parent_domain origin_domain old_domains effect_of_contract_path(6)
         lookup_u_not_none_roots
-      by (cases "x = new_vert"; cases "u ∈ vset_to_set rts") auto
+      by (cases "x = new_vert"; cases "u \<in> vset_to_set rts") auto
   qed
 
   have Vs_evens_odds_roots_helper:
-    " vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest) =
-    vset_to_set (roots new_forest) ∪ Vs (abstract_forest new_forest)"
-  proof(cases "last (p1 @ [u]) ∈ vset_to_set rts")
+    " vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest) =
+    vset_to_set (roots new_forest) \<union> Vs (abstract_forest new_forest)"
+  proof(cases "last (p1 @ [u]) \<in> vset_to_set rts")
     case True
-    have helper:"⟦x ∈ set p1; x ∈ vset_to_set rts⟧ ⟹ x = u" for x
+    have helper:"\<lbrakk>x \<in> set p1; x \<in> vset_to_set rts\<rbrakk> \<Longrightarrow> x = u" for x
       using p1_no_roots by auto
     from True show ?thesis
       using Vs_contracted invar_basic_F(6) 
@@ -1362,49 +1362,49 @@ proof-
   qed
 
   have old_origin_in_roots:
-    "origin_lookup orngs x ∈ Some ` vset_to_set rts"
-    if "x ∈ vset_to_set evs ∪ vset_to_set ods" for x
+    "origin_lookup orngs x \<in> Some ` vset_to_set rts"
+    if "x \<in> vset_to_set evs \<union> vset_to_set ods" for x
     using imageI[OF that, of "origin_lookup orngs"]
     by (simp only: invar_basic_F(6,15))
   have origin_at_new: "origin_lookup (origins new_forest) new_vert =
-    Some (if u ∈ vset_to_set rts then new_vert else the (origin_lookup orngs u))"
+    Some (if u \<in> vset_to_set rts then new_vert else the (origin_lookup orngs u))"
     by (simp add: effect_of_contract_path(10) org_lookup_last)
   have origin_outside:
     "origin_lookup (origins new_forest) x =
-      (if u ∈ vset_to_set rts ∧ the (origin_lookup orngs x) = u
+      (if u \<in> vset_to_set rts \<and> the (origin_lookup orngs x) = u
        then Some new_vert else origin_lookup orngs x)"
-    if "x ∈ vset_to_set evs ∪ vset_to_set ods"
-       "x ∉ set (p1 @ [u])" "x ≠ new_vert" for x
+    if "x \<in> vset_to_set evs \<union> vset_to_set ods"
+       "x \<notin> set (p1 @ [u])" "x \<noteq> new_vert" for x
     using that org_lookup_last
     unfolding effect_of_contract_path(10) evens_in_p_are odds_in_p_are
-    by (cases "u ∈ vset_to_set rts") auto
+    by (cases "u \<in> vset_to_set rts") auto
   have roots_new_seen:
-    "vset_to_set (roots new_forest) ⊆
-      vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest)"
+    "vset_to_set (roots new_forest) \<subseteq>
+      vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest)"
     using invar_basic_F(10) p1_no_roots
     unfolding effect_of_contract_path(6-8) evens_in_p_are odds_in_p_are
     by auto
   have roots_new_origin: "origin_lookup (origins new_forest) r = Some r"
-    if "r ∈ vset_to_set (roots new_forest)" for r
+    if "r \<in> vset_to_set (roots new_forest)" for r
   proof (cases "r = new_vert")
     case True
     with that assms(6) invar_basic_F(10) p1_no_roots show ?thesis
       by (auto simp: effect_of_contract_path(6) origin_at_new)
   next
     case False
-    with that have root: "r ∈ vset_to_set rts" and not_u: "r ≠ u"
+    with that have root: "r \<in> vset_to_set rts" and not_u: "r \<noteq> u"
       by (auto simp: effect_of_contract_path(6) split: if_splits)
-    have seen: "r ∈ vset_to_set evs ∪ vset_to_set ods"
+    have seen: "r \<in> vset_to_set evs \<union> vset_to_set ods"
       using root invar_basic_F(10) by blast
-    have outside: "r ∉ set (p1 @ [u])"
+    have outside: "r \<notin> set (p1 @ [u])"
       using root not_u p1_no_roots by auto
     show ?thesis
       using not_u
       by (simp add: origin_outside[OF seen outside False] invar_rootsD_here(1)[OF root])
   qed
   have origins_new_in_roots:
-    "origin_lookup (origins new_forest) x ∈ Some ` vset_to_set (roots new_forest)"
-    if "x ∈ vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest)" for x
+    "origin_lookup (origins new_forest) x \<in> Some ` vset_to_set (roots new_forest)"
+    if "x \<in> vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest)" for x
   proof (cases "x = new_vert")
     case True
     then show ?thesis
@@ -1412,8 +1412,8 @@ proof-
       by (auto simp: origin_at_new effect_of_contract_path(6))
   next
     case False
-    with that have seen: "x ∈ vset_to_set evs ∪ vset_to_set ods"
-      and outside: "x ∉ set (p1 @ [u])"
+    with that have seen: "x \<in> vset_to_set evs \<union> vset_to_set ods"
+      and outside: "x \<notin> set (p1 @ [u])"
       unfolding effect_of_contract_path(7,8) evens_in_p_are odds_in_p_are
       by auto
     show ?thesis
@@ -1422,45 +1422,45 @@ proof-
   qed
   have org_lookup_helper:
     "origin_lookup (origins new_forest) `
-      (vset_to_set (roots new_forest) ∪ Vs (abstract_forest new_forest)) =
+      (vset_to_set (roots new_forest) \<union> Vs (abstract_forest new_forest)) =
       Some ` vset_to_set (roots new_forest)"
     unfolding Vs_evens_odds_roots_helper[symmetric]
   proof (rule equalityI)
     show "origin_lookup (origins new_forest) `
-        (vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest)) ⊆
+        (vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest)) \<subseteq>
         Some ` vset_to_set (roots new_forest)"
       by (rule image_subsetI, rule origins_new_in_roots, assumption)
-    show "Some ` vset_to_set (roots new_forest) ⊆
+    show "Some ` vset_to_set (roots new_forest) \<subseteq>
         origin_lookup (origins new_forest) `
-        (vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest))"
+        (vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest))"
     proof (rule image_subsetI)
       fix r
-      assume root: "r ∈ vset_to_set (roots new_forest)"
-      have "r ∈ vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest)"
+      assume root: "r \<in> vset_to_set (roots new_forest)"
+      have "r \<in> vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest)"
         by (rule subsetD[OF roots_new_seen root])
-      then have "origin_lookup (origins new_forest) r ∈
+      then have "origin_lookup (origins new_forest) r \<in>
           origin_lookup (origins new_forest) `
-          (vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest))"
+          (vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest))"
         by (rule imageI)
-      then show "Some r ∈ origin_lookup (origins new_forest) `
-          (vset_to_set (evens new_forest) ∪ vset_to_set (odds new_forest))"
+      then show "Some r \<in> origin_lookup (origins new_forest) `
+          (vset_to_set (evens new_forest) \<union> vset_to_set (odds new_forest))"
         by (simp only: roots_new_origin[OF root])
     qed
   qed
 
-  show new_evs_are: "vset_to_set (evens new_forest) = vset_to_set evs - set (p1@[u])∪ {new_vert} "
+  show new_evs_are: "vset_to_set (evens new_forest) = vset_to_set evs - set (p1@[u])\<union> {new_vert} "
     using effect_of_contract_path(8) evens_in_p_are by auto
   show new_ods_are: "vset_to_set (odds new_forest) = vset_to_set ods - set (p1@[u])"
     using effect_of_contract_path(7) odds_in_p_are by auto
   have invar_even_to_parent_matching_after: 
-    "invar_even_to_parent_matching (quot_graph contr ℳ - {{new_vert}}) new_forest"
+    "invar_even_to_parent_matching (quot_graph contr \<M> - {{new_vert}}) new_forest"
   proof(rule invar_even_to_parent_matchingI, goal_cases)
     case (1 u' v')
     then show ?case 
       unfolding new_evs_are
     proof(elim UnE, goal_cases)
       case 1
-      hence not_P:"¬ (u' = new_vert ∧ parent_lookup prnts u ≠ None)" 
+      hence not_P:"\<not> (u' = new_vert \<and> parent_lookup prnts u \<noteq> None)" 
         using assms(6) by blast
       from 1 show ?case 
         unfolding new_parents_are if_not_P[OF not_P]
@@ -1471,16 +1471,16 @@ proof-
       next
         case 2
         then show ?case 
-      proof(cases "u' ∈ set (p1 @ [u])", goal_cases)
+      proof(cases "u' \<in> set (p1 @ [u])", goal_cases)
         case 2
         note 2 = 2[simplified if_not_P[OF 2(3)]]
-        moreover have e_in_M: "{u', v'} ∈ ℳ"
+        moreover have e_in_M: "{u', v'} \<in> \<M>"
           using calculation(1,2) invar_even_to_parent_matchingD_here by auto
         moreover have "{u', v'} =  contr `{u', v'}"
         proof(rule matching_edge_rev_alt_path_cases[OF 
               rev_alt_path_M e_in_M assms(7) assms(5)], goal_cases)
           case (1 u'' v'' i)
-          have "{u', v'} ∈ set (edges_of_path (p1 @ [u]))"
+          have "{u', v'} \<in> set (edges_of_path (p1 @ [u]))"
             using 1(3)
             by(auto intro!: nth_mem[of i "edges_of_path (p1 @ [u])"] 
                   simp add: 1(4)[symmetric] edges_of_path_length)
@@ -1492,7 +1492,7 @@ proof-
             using assms(4) calculation(1,2) invar_basic_F(7) parents_ev_od(1)[of u' u]
             by (auto simp add: doubleton_eq_iff)
         qed (auto simp add: contr_def)
-        moreover hence "{u', v'} ≠ {new_vert}"
+        moreover hence "{u', v'} \<noteq> {new_vert}"
           using calculation(1) prnts_no_loop by (auto simp add: contr_def)
         ultimately show ?case
           by (auto intro!: bexI[of _ "{u', v'}"] simp add: quot_graph_def )
@@ -1506,12 +1506,12 @@ proof-
         unfolding new_parents_are
       proof(cases "parent_lookup prnts u = None", goal_cases)
         case 1
-        hence cond_not: "¬ (u' = new_vert ∧ parent_lookup prnts u ≠ None)" by auto
+        hence cond_not: "\<not> (u' = new_vert \<and> parent_lookup prnts u \<noteq> None)" by auto
         from 1 show ?case 
           unfolding if_not_P[OF cond_not]
-        proof(cases "u' ∉ set (p1 @ [u]) ∧
-                     the (parent_lookup prnts u') ∈ set (p1 @ [u]) ∩ vset_to_set evs ∧
-                     u' ∈ vset_to_set ods - set (p1 @ [u])", goal_cases)
+        proof(cases "u' \<notin> set (p1 @ [u]) \<and>
+                     the (parent_lookup prnts u') \<in> set (p1 @ [u]) \<inter> vset_to_set evs \<and>
+                     u' \<in> vset_to_set ods - set (p1 @ [u])", goal_cases)
           case 1
           note 1 = 1[simplified if_P[OF 1(4)]]
           then show ?case 
@@ -1519,9 +1519,9 @@ proof-
         next
           case 2
           note 2 = 2[simplified if_not_P[OF 2(4)]]
-          hence u'_not_in_p:"u' ∉ set (p1 @ [u])" by force
+          hence u'_not_in_p:"u' \<notin> set (p1 @ [u])" by force
           note 2 = 2[simplified if_not_P[OF u'_not_in_p]] u'_not_in_p
-          moreover hence "new_vert ∈ Vs (abstract_forest (Forest rts evs ods prnts orngs))"
+          moreover hence "new_vert \<in> Vs (abstract_forest (Forest rts evs ods prnts orngs))"
             using invar_basic_F(14) by auto
           ultimately show ?case
             using assms(6) invar_basic_F(6) by auto
@@ -1532,7 +1532,7 @@ proof-
         then show ?case 
         proof(subst (asm) if_P, goal_cases)
           case 2
-          hence "v' ∈ vset_to_set ods"
+          hence "v' \<in> vset_to_set ods"
             using assms(4) parents_ev_od(1) by force
           then show ?case 
             using 2(2) two(1) M_quot lookup_u_not_none_roots by simp
@@ -1547,7 +1547,7 @@ proof-
     then obtain v' where v': "parent_lookup prnts v' = Some u'"
       using forest_invar_F(8)
       by(auto dest!: invar_odd_is_parentD simp add: new_ods_are)
-    moreover hence "v' ∈ vset_to_set evs" 
+    moreover hence "v' \<in> vset_to_set evs" 
       using "1" new_ods_are parents_ev_od(1) by auto
     ultimately show ?case
       using 1
@@ -1559,7 +1559,7 @@ proof-
     next
       case 2
       note two = this
-      hence u'v'_in_M:"{u', v'} ∈ ℳ"
+      hence u'v'_in_M:"{u', v'} \<in> \<M>"
         using forest_invar_F(5)
         by(auto dest!: invar_even_to_parent_matchingD simp add: insert_commute)    
       show ?case 
@@ -1584,18 +1584,18 @@ proof-
   qed
 
   have roots_unmatched_after: 
-    "vset_to_set (roots new_forest) ∩ Vs (quot_graph contr ℳ - {{new_vert}}) = {}"
+    "vset_to_set (roots new_forest) \<inter> Vs (quot_graph contr \<M> - {{new_vert}}) = {}"
     unfolding effect_of_contract_path(7,8) 
       evens_in_p_are odds_in_p_are effect_of_contract_path(6)
   proof(goal_cases)
     case 1
     have sg1: 
-      "⟦u ∈ vset_to_set rts; new_vert ∈ Vs (quot_graph contr ℳ - {{new_vert}})⟧ ⟹ False"
+      "\<lbrakk>u \<in> vset_to_set rts; new_vert \<in> Vs (quot_graph contr \<M> - {{new_vert}})\<rbrakk> \<Longrightarrow> False"
       proof(goal_cases)
       case 1 
       note one = this
-      then obtain e where e: "e ∈ ℳ - set (edges_of_path (p1 @ [u]))" "new_vert ∈ e" 
-        "⋀ e'. ⟦e' ∈ ℳ - set (edges_of_path (p1 @ [u])); new_vert ∈ e'⟧ ⟹ e = e'"
+      then obtain e where e: "e \<in> \<M> - set (edges_of_path (p1 @ [u]))" "new_vert \<in> e" 
+        "\<And> e'. \<lbrakk>e' \<in> \<M> - set (edges_of_path (p1 @ [u])); new_vert \<in> e'\<rbrakk> \<Longrightarrow> e = e'"
         using matching_unique_match[OF assms(5)]
         by(auto simp add: M_quot vs_member)
       show ?case 
@@ -1618,7 +1618,7 @@ proof-
           by (auto simp add: edges_of_path_length)
       next
         case (5 u' v')
-        hence "u' ∉ vset_to_set rts" "v' ∉ vset_to_set rts"
+        hence "u' \<notin> vset_to_set rts" "v' \<notin> vset_to_set rts"
           using e(1) "5"(5) invar_basic_F(11) 
           by (auto dest: edges_are_Vs_2 edges_are_Vs)
         then show ?thesis
@@ -1631,12 +1631,12 @@ proof-
       qed
     qed
     have sg2: 
-     "⟦u ∈ vset_to_set rts;x ∈ Vs (quot_graph contr ℳ - {{new_vert}});
-       x ∈ vset_to_set rts⟧ ⟹ x = u" for x
-    using invar_basic_F(11) subsetD[OF Vs_subset[of "ℳ - _" ℳ, simplified]]
+     "\<lbrakk>u \<in> vset_to_set rts;x \<in> Vs (quot_graph contr \<M> - {{new_vert}});
+       x \<in> vset_to_set rts\<rbrakk> \<Longrightarrow> x = u" for x
+    using invar_basic_F(11) subsetD[OF Vs_subset[of "\<M> - _" \<M>, simplified]]
     by (auto simp add: M_quot)
-  have sg3: "⟦u ∉ vset_to_set rts;x ∈ vset_to_set rts;
-       x ∈ Vs (quot_graph contr ℳ - {{new_vert}})⟧ ⟹ False" for x
+  have sg3: "\<lbrakk>u \<notin> vset_to_set rts;x \<in> vset_to_set rts;
+       x \<in> Vs (quot_graph contr \<M> - {{new_vert}})\<rbrakk> \<Longrightarrow> False" for x
     unfolding M_quot 
   proof((subst (asm) if_not_P, assumption)+, elim vs_member_elim, goal_cases)
     case (1 e)
@@ -1647,12 +1647,12 @@ proof-
         using inf_sup_aci(1) insert_absorb invar_basic_F(11) by auto
     next
       case 2
-      hence "{u, the (parent_lookup prnts u)} ∈ ℳ"
+      hence "{u, the (parent_lookup prnts u)} \<in> \<M>"
         by (simp add: assms(4) invar_even_to_parent_matchingD_here lookup_u_not_none_roots)
       then show ?case
         using assms(6) "2"(2,3,4) invar_basic_F(10,11) p1_no_roots
-          vs_member_intro[of new_vert "{new_vert, the (parent_lookup prnts u)}" ℳ]
-          vs_member_intro[of x "{u, the (parent_lookup prnts u)}" ℳ]
+          vs_member_intro[of new_vert "{new_vert, the (parent_lookup prnts u)}" \<M>]
+          vs_member_intro[of x "{u, the (parent_lookup prnts u)}" \<M>]
         by auto
     qed
   qed  
@@ -1661,32 +1661,32 @@ proof-
   qed
 
   have unmatched_forest_Vs_are_roots:
-    "Vs (abstract_forest new_forest) - Vs (quot_graph contr ℳ - {{new_vert}})
-    ⊆ vset_to_set (roots new_forest)"
+    "Vs (abstract_forest new_forest) - Vs (quot_graph contr \<M> - {{new_vert}})
+    \<subseteq> vset_to_set (roots new_forest)"
   proof(rule , rule ccontr, goal_cases)
     case (1 x)
     then obtain y where y: "parent_lookup (parents new_forest) x = Some y"
       using dom_samer org_lookup_helper
-           imageI[of x "vset_to_set (roots new_forest) ∪ Vs (abstract_forest new_forest)"
+           imageI[of x "vset_to_set (roots new_forest) \<union> Vs (abstract_forest new_forest)"
           "origin_lookup (origins new_forest)"] 
       by(cases "parent_lookup (parents new_forest) x") auto
     then show ?case 
-    proof(cases "x ∈ vset_to_set (evens new_forest)")
+    proof(cases "x \<in> vset_to_set (evens new_forest)")
       case True
       then show ?thesis 
         using invar_even_to_parent_matching_after y 1(1)
         by(auto dest!: invar_even_to_parent_matchingD)
     next
       case False
-      hence x_odd: "x ∈ vset_to_set (odds new_forest)"
+      hence x_odd: "x \<in> vset_to_set (odds new_forest)"
         using "1"(1) Vs_evens_odds_roots_helper by auto
       then obtain y where y: "parent_lookup (parents new_forest) y = Some x"
         using invar_odd_is_parent_after
         by(auto dest!: invar_odd_is_parentD) 
-      hence y_even:  "y ∈ vset_to_set (evens new_forest)"
+      hence y_even:  "y \<in> vset_to_set (evens new_forest)"
         using assms(6)  new_ods_are parents_ev_od(1) x_odd 
-        by(auto simp add: new_evs_are new_parents_are if_split[of "λ x. x = Some _"])
-      hence "{x, y} ∈ quot_graph contr ℳ - {{new_vert}}"
+        by(auto simp add: new_evs_are new_parents_are if_split[of "\<lambda> x. x = Some _"])
+      hence "{x, y} \<in> quot_graph contr \<M> - {{new_vert}}"
         using invar_even_to_parent_matching_after y
         by(auto dest!: invar_even_to_parent_matchingD simp add: insert_commute)
       then show ?thesis
@@ -1694,7 +1694,7 @@ proof-
     qed
   qed
 
-  have invar_basic_after: "invar_basic (quot_graph contr ℳ - {{new_vert}}) new_forest"
+  have invar_basic_after: "invar_basic (quot_graph contr \<M> - {{new_vert}}) new_forest"
   proof(rule invar_basicI[OF effect_of_contract_path(1,2,3,4,5)], goal_cases)
     case 1
     then show ?case 
@@ -1731,35 +1731,35 @@ proof-
       using roots_unmatched_after by force
   next
     case 7
-    have c1: "card (vset_to_set ods - vset_to_set ods ∩ set (p1 @ [u])) = 
-         card (vset_to_set ods) - card (vset_to_set ods ∩ set (p1 @ [u]))"
+    have c1: "card (vset_to_set ods - vset_to_set ods \<inter> set (p1 @ [u])) = 
+         card (vset_to_set ods) - card (vset_to_set ods \<inter> set (p1 @ [u]))"
       by (simp add: card_Diff_subset)
-    have le1: "card (vset_to_set ods) ≥ card (vset_to_set ods ∩ set (p1 @ [u]))"
+    have le1: "card (vset_to_set ods) \<ge> card (vset_to_set ods \<inter> set (p1 @ [u]))"
       by (simp add: card_mono invar_basic_F(9))
-    have c3: "card (vset_to_set evs - vset_to_set evs ∩ set (p1 @ [u]) ∪ {new_vert}) = 
-             1 + card (vset_to_set evs) - card (vset_to_set evs ∩ set (p1 @ [u]))" 
+    have c3: "card (vset_to_set evs - vset_to_set evs \<inter> set (p1 @ [u]) \<union> {new_vert}) = 
+             1 + card (vset_to_set evs) - card (vset_to_set evs \<inter> set (p1 @ [u]))" 
       using assms(6)
       by (subst card_Un_disjoint[of _ "{new_vert}"])
          (auto simp add: card_Diff_subset Suc_diff_le card_mono invar_basic_F(8))
-    have le2: "card (vset_to_set evs) ≥ card (vset_to_set evs ∩ set (p1 @ [u]))"
+    have le2: "card (vset_to_set evs) \<ge> card (vset_to_set evs \<inter> set (p1 @ [u]))"
       by (simp add: card_mono invar_basic_F(8))
-    have c4: "card (vset_to_set evs ∩ set (p1 @ [u])) = 1+ card (vset_to_set ods ∩ set (p1 @ [u]))"
+    have c4: "card (vset_to_set evs \<inter> set (p1 @ [u])) = 1+ card (vset_to_set ods \<inter> set (p1 @ [u]))"
       unfolding evens_in_p_are[symmetric] odds_in_p_are[symmetric]
     proof(goal_cases)
       case 1
-      have " card {(p1 @ [u]) ! i |i. i < length (p1 @ [u]) ∧ even i} = 
-             card { i |i. i < length (p1 @ [u]) ∧ even i}"
+      have " card {(p1 @ [u]) ! i |i. i < length (p1 @ [u]) \<and> even i} = 
+             card { i |i. i < length (p1 @ [u]) \<and> even i}"
        using distinct_path
-       by(subst card_image[of "λ i. (p1 @ [u]) ! i", symmetric])
+       by(subst card_image[of "\<lambda> i. (p1 @ [u]) ! i", symmetric])
          (auto simp add: inj_on_def nth_eq_iff_index_eq intro!: arg_cong[of _ _ card])
-      moreover have "card { i |i. i < length (p1 @ [u]) ∧ even i} =
-                 card { i |i. i < length (p1 @ [u]) ∧ odd i} + 1"
+      moreover have "card { i |i. i < length (p1 @ [u]) \<and> even i} =
+                 card { i |i. i < length (p1 @ [u]) \<and> odd i} + 1"
         unfolding card_of_odd_numbers_upto card_of_even_numbers_upto
         using odd_length_p by auto
-      moreover have " card {(p1 @ [u]) ! i |i. i < length (p1 @ [u]) ∧ odd i} = 
-             card { i |i. i < length (p1 @ [u]) ∧ odd i}"
+      moreover have " card {(p1 @ [u]) ! i |i. i < length (p1 @ [u]) \<and> odd i} = 
+             card { i |i. i < length (p1 @ [u]) \<and> odd i}"
         using distinct_path
-        by(subst card_image[of "λ i. (p1 @ [u]) ! i", symmetric])
+        by(subst card_image[of "\<lambda> i. (p1 @ [u]) ! i", symmetric])
           (auto simp add: inj_on_def nth_eq_iff_index_eq intro!: arg_cong[of _ _ card])
       ultimately show ?case by simp
     qed
@@ -1767,9 +1767,9 @@ proof-
       unfolding effect_of_contract_path(7,8) 
         evens_in_p_are odds_in_p_are effect_of_contract_path(6)
         c1 c3 c4
-    proof (cases "last (p1 @ [u]) ∈ vset_to_set rts", goal_cases)
+    proof (cases "last (p1 @ [u]) \<in> vset_to_set rts", goal_cases)
       case 1
-      have c2: "card (vset_to_set rts - {last (p1 @ [u])} ∪ {new_vert}) = 
+      have c2: "card (vset_to_set rts - {last (p1 @ [u])} \<union> {new_vert}) = 
            card (vset_to_set rts)"
       proof(subst card_Un_disjoint, goal_cases)
         case 1
@@ -1818,25 +1818,25 @@ proof-
       using  Vs_contracted 
       by(auto intro!: finite_Vs_then_finite 
                       finite_subset[of "Vs (abstract_forest new_forest)"
-                        "Vs (abstract_forest new_forest) ∪ {new_vert}",
+                        "Vs (abstract_forest new_forest) \<union> {new_vert}",
                         simplified Vs_contracted])
   next
     case 13
     show ?case
-      using Vs_subset[of "quot_graph contr ℳ - {{new_vert}}" "quot_graph contr ℳ"]
+      using Vs_subset[of "quot_graph contr \<M> - {{new_vert}}" "quot_graph contr \<M>"]
         invar_basic_F(18) new_vert_in_universe
       by (auto simp: Vs_quot_graph_is_img contr_def)
   qed
 
   have invar_matching_both_or_none_after:
-    "invar_matching_both_or_none (quot_graph contr ℳ - {{new_vert}}) new_forest"
+    "invar_matching_both_or_none (quot_graph contr \<M> - {{new_vert}}) new_forest"
   proof(rule invar_matching_both_or_noneI, goal_cases)
     case (1 u' v')
     then show ?case 
       unfolding M_quot
-    proof(cases "u ∈ vset_to_set rts", goal_cases)
+    proof(cases "u \<in> vset_to_set rts", goal_cases)
       case 1
-      hence one: "{u', v'} ∈ ℳ" "{u', v'} ∉ set (edges_of_path (p1 @ [u]))"
+      hence one: "{u', v'} \<in> \<M>" "{u', v'} \<notin> set (edges_of_path (p1 @ [u]))"
         by auto
       show ?case 
       proof(rule matching_edge_rev_alt_path_cases[OF 
@@ -1853,29 +1853,29 @@ proof-
           by(auto dest: edges_are_Vs)
       next
         case 3
-        hence u'_v'_not_in_p:"u' ∉ set (p1@[u])" "v' ∉ set (p1@[u])"
+        hence u'_v'_not_in_p:"u' \<notin> set (p1@[u])" "v' \<notin> set (p1@[u])"
           by auto
         hence eq1: "contr u' = u'" "contr v' = v'" 
           by(auto simp add: contr_def)
-        moreover have e2: "contr u'' = u' ⟹ u'' = u'" for u''
-          using "3" assms(6) one(1) by(cases " u'' ∈ set (p1 @ [u])") (auto simp add: contr_def)
-        moreover have eq3: "contr v'' = v' ⟹ v'' = v'" for v''
-            using "3" assms(6) one(1) by(cases " v'' ∈ set (p1 @ [u])") (auto simp add: contr_def)
+        moreover have e2: "contr u'' = u' \<Longrightarrow> u'' = u'" for u''
+          using "3" assms(6) one(1) by(cases " u'' \<in> set (p1 @ [u])") (auto simp add: contr_def)
+        moreover have eq3: "contr v'' = v' \<Longrightarrow> v'' = v'" for v''
+            using "3" assms(6) one(1) by(cases " v'' \<in> set (p1 @ [u])") (auto simp add: contr_def)
         ultimately have "e = {u', v'}"
-          if "e ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+          if "e \<in> abstract_forest (Forest rts evs ods prnts orngs)"
             "contr ` e = {u', v'}" for e
           using that (2) 
-          by auto (force intro: imageE[of u' contr e "u' ∈ e"] imageE[of v' contr e "v' ∈ e"])+
-        hence AF_equiv:"{u', v'} ∈ abstract_forest new_forest ⟷ 
-                 {u', v'} ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+          by auto (force intro: imageE[of u' contr e "u' \<in> e"] imageE[of v' contr e "v' \<in> e"])+
+        hence AF_equiv:"{u', v'} \<in> abstract_forest new_forest \<longleftrightarrow> 
+                 {u', v'} \<in> abstract_forest (Forest rts evs ods prnts orngs)"
           using "1"(1)[simplified M_quot[symmetric]]
           by (auto intro!: bexI[of _ "{u', v'}"] 
                  simp add: eq1 quot_graph_def quot_is_AF[symmetric])
         have disjoint_AF_equiv:
-          "{u', v'} ∩ (Vs (abstract_forest new_forest) ∪ vset_to_set (roots new_forest)) = {}
-               ⟷ 
-           {u', v'} ∩ (Vs (abstract_forest (Forest rts evs ods prnts orngs)) 
-                     ∪ vset_to_set rts) = {}"
+          "{u', v'} \<inter> (Vs (abstract_forest new_forest) \<union> vset_to_set (roots new_forest)) = {}
+               \<longleftrightarrow> 
+           {u', v'} \<inter> (Vs (abstract_forest (Forest rts evs ods prnts orngs)) 
+                     \<union> vset_to_set rts) = {}"
           using invar_basic_F(6)  assms(4) u'_v'_not_in_p assms(6) one(1) 
           by (unfold Vs_evens_odds_roots_helper[simplified Un_commute[of 
                 "vset_to_set (roots new_forest)"], symmetric])
@@ -1895,14 +1895,14 @@ proof-
          using "2"(2) lookup_u_not_none_roots prnts_no_loop up
                 distinct_path  assms(2) up follow_subsequent_parent_there[of v p1 u p2 up]
          by(auto simp add: contr_def in_set_conv_decomp[of up] up)
-        hence "{u', v'} ∈ abstract_forest new_forest"
+        hence "{u', v'} \<in> abstract_forest new_forest"
           using True quot_is_AF[symmetric] 1 up 
           by(auto intro!:  bexI[of _ "{u, up}"] simp add: quot_graph_def abstract_forest_def)
         then show ?thesis by simp
       next
         case False
-        hence two: "{u', v'} ∈ ℳ" "{u', v'} ∉ set (edges_of_path (p1 @ [u]))"
-          "u ∉ vset_to_set rts"  
+        hence two: "{u', v'} \<in> \<M>" "{u', v'} \<notin> set (edges_of_path (p1 @ [u]))"
+          "u \<notin> vset_to_set rts"  
           using  M_quot 2 by auto
         show ?thesis
         proof(rule matching_edge_rev_alt_path_cases[OF 
@@ -1919,31 +1919,31 @@ proof-
             by (auto dest: doubleton_in_matching(1)[OF assms(5)] simp add: M_quot)
         next
           case 3
-          hence u'_v'_not_in_p:"u' ∉ set (p1@[u])" "v' ∉ set (p1@[u])"
+          hence u'_v'_not_in_p:"u' \<notin> set (p1@[u])" "v' \<notin> set (p1@[u])"
             by auto
           hence eq1: "contr u' = u'" "contr v' = v'" 
             by(auto simp add: contr_def)
-          moreover have e2: "contr u'' = u' ⟹ u'' = u'" for u''
+          moreover have e2: "contr u'' = u' \<Longrightarrow> u'' = u'" for u''
             using "3" assms(6) two(1) 
-            by(cases " u'' ∈ set (p1 @ [u])") (auto simp add: contr_def)
-          moreover have eq3: "contr v'' = v' ⟹ v'' = v'" for v''
+            by(cases " u'' \<in> set (p1 @ [u])") (auto simp add: contr_def)
+          moreover have eq3: "contr v'' = v' \<Longrightarrow> v'' = v'" for v''
             using "3" assms(6) two(1) 
-            by(cases " v'' ∈ set (p1 @ [u])") (auto simp add: contr_def)
+            by(cases " v'' \<in> set (p1 @ [u])") (auto simp add: contr_def)
           ultimately have "e = {u', v'}"
-            if "e ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+            if "e \<in> abstract_forest (Forest rts evs ods prnts orngs)"
               "contr ` e = {u', v'}" for e
             using that (2) 
-            by auto (force intro: imageE[of u' contr e "u' ∈ e"] imageE[of v' contr e "v' ∈ e"])+
-          hence AF_equiv:"{u', v'} ∈ abstract_forest new_forest ⟷ 
-                 {u', v'} ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+            by auto (force intro: imageE[of u' contr e "u' \<in> e"] imageE[of v' contr e "v' \<in> e"])+
+          hence AF_equiv:"{u', v'} \<in> abstract_forest new_forest \<longleftrightarrow> 
+                 {u', v'} \<in> abstract_forest (Forest rts evs ods prnts orngs)"
             using "1"(1)[simplified M_quot[symmetric]]
             by (auto intro!: bexI[of _ "{u', v'}"] 
                    simp add: eq1 quot_graph_def quot_is_AF[symmetric])   
           have disjoint_AF_equiv:
-            "{u', v'} ∩ (Vs (abstract_forest new_forest) ∪ vset_to_set (roots new_forest)) = {}
-               ⟷ 
-               {u', v'} ∩ (Vs (abstract_forest (Forest rts evs ods prnts orngs)) 
-                     ∪ vset_to_set rts) = {}"
+            "{u', v'} \<inter> (Vs (abstract_forest new_forest) \<union> vset_to_set (roots new_forest)) = {}
+               \<longleftrightarrow> 
+               {u', v'} \<inter> (Vs (abstract_forest (Forest rts evs ods prnts orngs)) 
+                     \<union> vset_to_set rts) = {}"
             using invar_basic_F(6)  assms(4) u'_v'_not_in_p assms(6) two(1) 
             by (unfold Vs_evens_odds_roots_helper[simplified Un_commute[of 
                 "vset_to_set (roots new_forest)"], symmetric])
@@ -1959,31 +1959,31 @@ proof-
   have invar_forest_even_and_odd_after: "invar_forest_even_and_odd new_forest"
   proof(rule invar_forest_even_and_oddI, goal_cases)
     case (1 u' v')
-    then obtain e where e: "e∈abstract_forest (Forest rts evs ods prnts orngs)"
-      "{u', v'} = contr ` e" "contr ` e ≠ {new_vert}"
+    then obtain e where e: "e\<in>abstract_forest (Forest rts evs ods prnts orngs)"
+      "{u', v'} = contr ` e" "contr ` e \<noteq> {new_vert}"
       by(unfold quot_is_AF[symmetric] quot_graph_def) blast
-    moreover then obtain u'' v'' where u''_v'': "e = {u'', v''}" "u'' ≠ v''"
+    moreover then obtain u'' v'' where u''_v'': "e = {u'', v''}" "u'' \<noteq> v''"
       using abstract_forest_dblton_graph assms(1) by force
     ultimately obtain u'' v'' where "u' = contr u''" "v' = contr v''"
-      "u'' ≠ new_vert ∨ v'' ≠ new_vert" "{u'', v''} = e"
+      "u'' \<noteq> new_vert \<or> v'' \<noteq> new_vert" "{u'', v''} = e"
       by (auto simp add: doubleton_eq_iff)
     hence u''_v'':  "u' = contr u''" "v' = contr v''"
-      "u'' ≠ new_vert ∨ v'' ≠ new_vert" 
-      "{u'', v''} ∈ abstract_forest (Forest rts evs ods prnts orngs)"
+      "u'' \<noteq> new_vert \<or> v'' \<noteq> new_vert" 
+      "{u'', v''} \<in> abstract_forest (Forest rts evs ods prnts orngs)"
       using u''_v'' e by auto
-    moreover then have u''_v''_even_odd: "(u'' ∈ vset_to_set evs) = (v'' ∈ vset_to_set ods)"
+    moreover then have u''_v''_even_odd: "(u'' \<in> vset_to_set evs) = (v'' \<in> vset_to_set ods)"
       using forest_invar_F(3)
       by(auto dest!: invar_forest_even_and_oddD)
-    have u''_v''_parent:"parent_lookup prnts u'' = Some v'' ∨ parent_lookup prnts v'' = Some u''"
+    have u''_v''_parent:"parent_lookup prnts u'' = Some v'' \<or> parent_lookup prnts v'' = Some u''"
       using u''_v''(4) by(auto simp add: abstract_forest_def doubleton_eq_iff)
-    have alternative_case: "?case ⟷
-          (u' ∈ vset_to_set (odds new_forest)) = (v' ∈ vset_to_set (evens new_forest))"
+    have alternative_case: "?case \<longleftrightarrow>
+          (u' \<in> vset_to_set (odds new_forest)) = (v' \<in> vset_to_set (evens new_forest))"
       using "1"  Vs_evens_odds_roots_helper invar_basicD[OF invar_basic_after] edges_are_Vs_2[of v' u']
       by (auto dest: edges_are_Vs_2[of u' v']  simp add: insert_commute)
     have alternative_u''_v''_even_odd:
-      "(v'' ∈ vset_to_set evs) = (u'' ∈ vset_to_set ods)"
+      "(v'' \<in> vset_to_set evs) = (u'' \<in> vset_to_set ods)"
       using parents_ev_od(1,2) u''_v''_parent by presburger
-    have ?case if asm: "u'' ∉ set (p1@[u])" "v'' ∉ set (p1@[u])"
+    have ?case if asm: "u'' \<notin> set (p1@[u])" "v'' \<notin> set (p1@[u])"
     proof-
       have "u' = u''" "v' = v''"
         using asm by(auto simp add: u''_v'' contr_def)
@@ -1991,30 +1991,30 @@ proof-
         using  u''_v''_even_odd asm u''_v''(3) assms(6) invar_basic_F(6) u''_v''(4)
         by (auto simp add: new_evs_are new_ods_are dest: edges_are_Vs)
     qed
-    moreover have ?case if asm: "u'' ∈ set (p1@[u])" "v'' ∉ set (p1@[u])"
+    moreover have ?case if asm: "u'' \<in> set (p1@[u])" "v'' \<notin> set (p1@[u])"
     proof-
       have "u' = new_vert" "v' = v''"
         using asm by(auto simp add: u''_v'' contr_def)
       moreover have 
-         "⟦v'' ≠ u; parent_lookup prnts u'' = Some v''; p1 = ys @ u'' # zs;
-           v'' ∉ set zs⟧ ⟹ v'' ∈ vset_to_set ods" for ys zs
+         "\<lbrakk>v'' \<noteq> u; parent_lookup prnts u'' = Some v''; p1 = ys @ u'' # zs;
+           v'' \<notin> set zs\<rbrakk> \<Longrightarrow> v'' \<in> vset_to_set ods" for ys zs
        using assms(2) follow_subsequent_parent_there[of v _ u'' "_@[u]@p2" v'']
              hd_append[of "[]" "u # p2"] hd_append[of zs "u # p2"]  by fastforce
      ultimately show ?case  
         using asm assms(4) u''_v''_even_odd  parent_adj_pu_helper[of v'' u'' ] u''_v''_parent
         by(auto simp add: in_set_conv_decomp[of u''] new_evs_are new_ods_are )+
     qed
-    moreover have ?case if asm: "u'' ∉ set (p1@[u])" "v'' ∈ set (p1@[u])"
+    moreover have ?case if asm: "u'' \<notin> set (p1@[u])" "v'' \<in> set (p1@[u])"
       unfolding alternative_case
     proof(goal_cases)
       case 1
       have "v' = new_vert" "u' = u''"
         using asm by(auto simp add: u''_v'' contr_def)
-      moreover hence "u' ≠ new_vert" 
+      moreover hence "u' \<noteq> new_vert" 
         using e(2,3) by force
       moreover have 
-        "⟦u'' ≠ u;parent_lookup prnts v'' = Some u'';p1 = ys @ v'' # zs;
-          u'' ∉ set zs⟧ ⟹ u'' ∈ vset_to_set ods" for ys zs
+        "\<lbrakk>u'' \<noteq> u;parent_lookup prnts v'' = Some u'';p1 = ys @ v'' # zs;
+          u'' \<notin> set zs\<rbrakk> \<Longrightarrow> u'' \<in> vset_to_set ods" for ys zs
         using assms(2) follow_subsequent_parent_there[of v ys v'' "zs@[u]@p2" u'']
               hd_append[of zs "u # p2"] 
         by auto
@@ -2022,7 +2022,7 @@ proof-
         using asm assms(4) alternative_u''_v''_even_odd parent_adj_pu_helper[of u'' v'' _ _ ] u''_v''_parent
         by(auto simp add: in_set_conv_decomp[of v''] new_evs_are new_ods_are)+
     qed
-    moreover have False if asm: "u'' ∈ set (p1@[u])" "v'' ∈ set (p1@[u])"
+    moreover have False if asm: "u'' \<in> set (p1@[u])" "v'' \<in> set (p1@[u])"
     proof-
       have "v' = new_vert" "u' = new_vert"
         using asm by(auto simp add: u''_v'' contr_def)
@@ -2034,18 +2034,18 @@ proof-
   qed
 
   have parents_of_u_props: 
-   "∃ pu ppu. parent_lookup prnts u = Some pu ∧ parent_lookup prnts pu = Some ppu
-        ∧ pu ∉ set (p1@[u]) ∧ ppu ∉ set (p1@[u])"
-    if "u ∉ vset_to_set rts"
+   "\<exists> pu ppu. parent_lookup prnts u = Some pu \<and> parent_lookup prnts pu = Some ppu
+        \<and> pu \<notin> set (p1@[u]) \<and> ppu \<notin> set (p1@[u])"
+    if "u \<notin> vset_to_set rts"
   proof-
     obtain pu where pu:"parent_lookup prnts u = Some pu"
-      using ‹u ∉ vset_to_set rts› lookup_u_not_none_roots by auto
-    have "pu ∈ vset_to_set ods"
+      using \<open>u \<notin> vset_to_set rts\<close> lookup_u_not_none_roots by auto
+    have "pu \<in> vset_to_set ods"
       using assms(4) parents_ev_od(1) pu by blast
     then obtain ppu where ppu: "parent_lookup prnts pu = Some ppu"
       using forest_invar_F(7)
       by (auto elim!: invar_odd_to_parent_non_matchingE)
-    moreover have "pu ∉ set (p1@[u])"
+    moreover have "pu \<notin> set (p1@[u])"
     proof(rule ccontr, unfold not_not, unfold in_set_conv_decomp, goal_cases)
       case 1
       then obtain ys zs where "p1 @ [u] = ys @ pu # zs" by auto
@@ -2054,7 +2054,7 @@ proof-
         by(cases zs rule: rev_cases)
           (auto intro: prnts_no_loop follow_not_again_parent[of v _ pu _ u p2])
     qed 
-    moreover have "ppu ∉ set (p1@[u])"
+    moreover have "ppu \<notin> set (p1@[u])"
     proof(rule ccontr, unfold not_not, unfold in_set_conv_decomp, goal_cases)
       case 1
       then obtain ys zs where "p1 @ [u] = ys @ ppu # zs" by auto
@@ -2069,29 +2069,29 @@ proof-
   qed
 
   have invar_odd_to_parent_non_matching_after:
-    "invar_odd_to_parent_non_matching (quot_graph contr ℳ - {{new_vert}}) new_forest"
+    "invar_odd_to_parent_non_matching (quot_graph contr \<M> - {{new_vert}}) new_forest"
   proof(rule invar_odd_to_parent_non_matchingI, goal_cases)
     case (1 u')
     note u'_odd = this
     then obtain v' where v': "parent_lookup (parents new_forest) u' = Some v'"
       using assms(6) invar_odd_to_parent_non_matchingE[OF forest_invar_F(7)]
-      by(auto simp add: new_ods_are new_parents_are if_split[of "λ x. x = Some _"])
-    moreover have "{u', v'} ∉ quot_graph contr ℳ - {{new_vert}}"
+      by(auto simp add: new_ods_are new_parents_are if_split[of "\<lambda> x. x = Some _"])
+    moreover have "{u', v'} \<notin> quot_graph contr \<M> - {{new_vert}}"
     proof(rule ccontr, goal_cases)
       case 1
-      hence u'_v'_in_quot:"{u', v'} ∈ quot_graph contr ℳ - {{new_vert}}" by auto
+      hence u'_v'_in_quot:"{u', v'} \<in> quot_graph contr \<M> - {{new_vert}}" by auto
       then show ?case 
         unfolding M_quot
-      proof(cases "u ∈ vset_to_set rts", goal_cases)
+      proof(cases "u \<in> vset_to_set rts", goal_cases)
         case 1
-        hence one: "{u', v'} ∈ ℳ" "{u', v'} ∉ set (edges_of_path (p1 @ [u]))"
-          "u ∈ vset_to_set rts"
+        hence one: "{u', v'} \<in> \<M>" "{u', v'} \<notin> set (edges_of_path (p1 @ [u]))"
+          "u \<in> vset_to_set rts"
           by auto
         show ?thesis 
         proof(rule matching_edge_rev_alt_path_cases[OF 
               rev_alt_path_M one(1) assms(7) assms(5)], goal_cases)
           case (1 u'' v'' i)
-          hence "{u', v'} ∈ set (edges_of_path (p1@[u]))"
+          hence "{u', v'} \<in> set (edges_of_path (p1@[u]))"
             using edges_of_path_length[of "p1 @ [u]"] nth_mem[of i "edges_of_path (p1 @ [u])"]
             by auto
           then show ?case 
@@ -2099,15 +2099,15 @@ proof-
         next
           case (2 u'' v'')
           then show ?case 
-            using one(1,3) invar_basic_F(11) edges_are_Vs[of u v'' ℳ]
+            using one(1,3) invar_basic_F(11) edges_are_Vs[of u v'' \<M>]
             by auto
         next
           case 3
-          moreover have "¬ (∃y. parent_lookup prnts u = Some y)"
+          moreover have "\<not> (\<exists>y. parent_lookup prnts u = Some y)"
             by (simp add: lookup_u_not_none_roots one(3))
           ultimately have "parent_lookup prnts u' = Some v'"
             using v' assms(6) edges_are_Vs_2  one(1) 
-            by(auto simp add: new_parents_are if_split[of "λ x. x = Some _"])
+            by(auto simp add: new_parents_are if_split[of "\<lambda> x. x = Some _"])
           then show ?case 
             using invar_odd_to_parent_non_matchingD_here new_ods_are one(1) u'_odd 
             by auto
@@ -2115,13 +2115,13 @@ proof-
       next
         case 2
         note 2 = 2[simplified if_not_P[OF 2(2)]]
-        have v'_even: "v' ∈ vset_to_set (evens new_forest)" 
+        have v'_even: "v' \<in> vset_to_set (evens new_forest)" 
           using assms(6) effect_of_contract_path(8) evens_in_p_are 
                 parents_ev_od(2) u'_odd v'
-          by(auto simp add: new_ods_are new_parents_are if_split[of "λ x. x = Some _"])
-        have u'_old_odd:"u' ∈ vset_to_set ods"
+          by(auto simp add: new_ods_are new_parents_are if_split[of "\<lambda> x. x = Some _"])
+        have u'_old_odd:"u' \<in> vset_to_set ods"
           using new_ods_are u'_odd by force
-        have u_pu_in_M:"{u, the (parent_lookup prnts u)} ∈ ℳ"
+        have u_pu_in_M:"{u, the (parent_lookup prnts u)} \<in> \<M>"
           using "2"(2) assms(4) invar_even_to_parent_matchingD_here
             lookup_u_not_none_roots by auto
         show ?thesis 
@@ -2134,18 +2134,18 @@ proof-
              "parent_lookup (parents new_forest) u' = parent_lookup prnts u'"
             using 1 new_ods_are u'_odd  parents_of_u_props[OF 2(2)] 
             by (force simp add:  new_parents_are)
-          hence "{the (parent_lookup prnts u), u} ∈ ℳ"
+          hence "{the (parent_lookup prnts u), u} \<in> \<M>"
             using "2"(2) assms(4) invar_even_to_parent_matchingD_here lookup_u_not_none_roots
             by(auto simp add: insert_commute)
-          moreover have "the (parent_lookup prnts u) ∈ vset_to_set ods" 
+          moreover have "the (parent_lookup prnts u) \<in> vset_to_set ods" 
             using u'_old_odd u'_v'_are(1) by auto
           ultimately show ?thesis
             using "2"(2) assms(6) parent_u' parents_ev_od(2) parents_of_u_props v' by fastforce
         next
           case False
           hence u'_v'_props:
-            "{u', v'} ∈ ℳ" "{u', v'} ≠ {u, the (parent_lookup prnts u)}"
-            "{u', v'} ∉ set (edges_of_path (p1 @ [u]))"
+            "{u', v'} \<in> \<M>" "{u', v'} \<noteq> {u, the (parent_lookup prnts u)}"
+            "{u', v'} \<notin> set (edges_of_path (p1 @ [u]))"
             using "2"(1) by fastforce+
           show False
           proof(rule matching_edge_rev_alt_path_cases[OF 
@@ -2164,13 +2164,13 @@ proof-
               using "2"(2,5) u'_v'_props(2) by force
           next
             case 3
-            hence v'_even_old: "v' ∈ vset_to_set evs"
+            hence v'_even_old: "v' \<in> vset_to_set evs"
               using assms(6) edges_are_Vs_2 effect_of_contract_path(8) u'_v'_props(1) v'_even
               by fastforce
             moreover hence parent_u':
                "parent_lookup (parents new_forest) u' = parent_lookup prnts u'"
               using 3 assms(6) u'_odd v' 
-                by (auto simp add: new_ods_are new_parents_are if_split[of "λ x. x = Some _"])
+                by (auto simp add: new_ods_are new_parents_are if_split[of "\<lambda> x. x = Some _"])
             then show ?case
               using forest_invar_F(7) invar_odd_to_parent_non_matchingD u'_old_odd u'_v'_props(1) v'
               by fastforce
@@ -2186,13 +2186,13 @@ proof-
     by(auto simp add: Dabstract_forest_def)
 
   have new_vert_not_Dabstract:
-    "new_vert ∉ dVs (Dabstract_forest (Forest rts evs ods prnts orngs)) - set (p1 @ [u])"
+    "new_vert \<notin> dVs (Dabstract_forest (Forest rts evs ods prnts orngs)) - set (p1 @ [u])"
     using assms(6) invar_basic_F(6) 
     by(auto simp add: dVs_Vs_Dabstract_abstract_forest)
 
   have self_gamma_false:
-    "u ∈ γ⇧- Dabstract_forest (Forest rts evs ods prnts orngs) u ⟹False"
-    "u ∈ γ⇧+ Dabstract_forest (Forest rts evs ods prnts orngs) u ⟹False"for u
+    "u \<in> \<gamma>\<^sup>- Dabstract_forest (Forest rts evs ods prnts orngs) u \<Longrightarrow>False"
+    "u \<in> \<gamma>\<^sup>+ Dabstract_forest (Forest rts evs ods prnts orngs) u \<Longrightarrow>False"for u
     by(auto intro!: DAF_no_loop[of u] simp add: gamma_minus_def gamma_plus_def)
 
   have invar_parent_wf_after:
@@ -2247,7 +2247,7 @@ proof-
       qed
     next
       case False
-      hence "¬ follow (parent_lookup prnts) v = [v]"
+      hence "\<not> follow (parent_lookup prnts) v = [v]"
         using set_singleton_list[of v] in_set_conv_decomp[of u "p1 @ u # p2"] assms(2)
         by fastforce
       hence vwalk_bet_p:"vwalk_bet (Dabstract_forest (Forest rts evs ods prnts orngs)) (last ([u]@p2))
@@ -2297,7 +2297,7 @@ proof-
   have " parent_spec_i.follow_dom (parent_lookup (parents new_forest)) v" for v
     by (simp add: parents_new.follow_dom) 
   have follow_new_induct:
-    " (⋀v. (⋀x2. parent_lookup (parents new_forest) v = Some x2 ⟹ P x2) ⟹ P v) ⟹
+    " (\<And>v. (\<And>x2. parent_lookup (parents new_forest) v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v) \<Longrightarrow>
         P a" for P a
     using parent_spec_i.follow.pinduct parents_new.follow_dom by metis
   note follow_new_simps = parent_spec_i.follow.psimps[OF parents_new.follow_dom]
@@ -2306,13 +2306,13 @@ proof-
 
   have lookup_self_implies_root:
     "origin_lookup (origins new_forest) r = Some r" 
-    if "r ∈ vset_to_set (roots new_forest)" for r
+    if "r \<in> vset_to_set (roots new_forest)" for r
   proof -
-    have "r ≠ last (p1 @ [u]) ∨ r ≠ the (Some r) ∨ the (origin_lookup orngs (last (p1 @ [u]))) ≠ the (Some r) ∨ last (p1 @ [u]) = the (origin_lookup orngs (last (p1 @ [u])))"
+    have "r \<noteq> last (p1 @ [u]) \<or> r \<noteq> the (Some r) \<or> the (origin_lookup orngs (last (p1 @ [u]))) \<noteq> the (Some r) \<or> last (p1 @ [u]) = the (origin_lookup orngs (last (p1 @ [u])))"
       by argo
     thus ?thesis 
       using org_lookup_last that p1_no_roots assms(6) invar_basic_F(10)
-      by(auto simp add: effect_of_contract_path(10,6) if_split[of "λ x. x = Some _"]
+      by(auto simp add: effect_of_contract_path(10,6) if_split[of "\<lambda> x. x = Some _"]
                         invar_rootsD_here(1))
   qed
 
@@ -2322,13 +2322,13 @@ proof-
   proof-
     obtain rest where "follow (parent_lookup prnts) x = x#y#rest"
       using asm follow_cons_3' follow_cons_4 by auto
-    moreover have "x ∈ Vs (abstract_forest (Forest rts evs ods prnts orngs))" 
+    moreover have "x \<in> Vs (abstract_forest (Forest rts evs ods prnts orngs))" 
       using invar_basic_F(14) that by auto
     ultimately show ?thesis
       using forest_invar_F(6) by(auto elim!: invar_rootsE)
   qed
 
-  have x_in_p1_org_is_u's_org: "x ∈ set (p1@[u]) ⟹ origin_lookup orngs x = origin_lookup orngs u" for x
+  have x_in_p1_org_is_u's_org: "x \<in> set (p1@[u]) \<Longrightarrow> origin_lookup orngs x = origin_lookup orngs u" for x
     using invar_basicD_here(6) UnI1[of v "vset_to_set evs" "vset_to_set ods"]
           invar_rootsD_here(3)[of v x] invar_rootsD_here(3)[of v u] assms(2,3) 
     by auto
@@ -2338,8 +2338,8 @@ proof-
     if "parent_lookup (parents new_forest) x = Some y" for x y
   proof-
     note new_edge = that
-    have edge_vertices: "a ∈ vset_to_set evs ∪ vset_to_set ods"
-      "b ∈ vset_to_set evs ∪ vset_to_set ods"
+    have edge_vertices: "a \<in> vset_to_set evs \<union> vset_to_set ods"
+      "b \<in> vset_to_set evs \<union> vset_to_set ods"
       if "parent_lookup prnts a = Some b" for a b
       using that invar_basic_F(14,6) parents_ev_od[OF that] by auto
     have origin_u: "origin_lookup orngs u = Some (the (origin_lookup orngs u))"
@@ -2347,16 +2347,16 @@ proof-
     have new_origin:
       "origin_lookup (origins new_forest) a =
         (if a = new_vert then
-           (if u ∈ vset_to_set rts then Some new_vert else origin_lookup orngs u)
-         else if a ∈ set (p1 @ [u]) then None
-         else if u ∈ vset_to_set rts ∧ a ∈ vset_to_set evs ∪ vset_to_set ods ∧
+           (if u \<in> vset_to_set rts then Some new_vert else origin_lookup orngs u)
+         else if a \<in> set (p1 @ [u]) then None
+         else if u \<in> vset_to_set rts \<and> a \<in> vset_to_set evs \<union> vset_to_set ods \<and>
              the (origin_lookup orngs a) = u then Some new_vert
          else origin_lookup orngs a)" for a
       using origin_u org_lookup_last
       unfolding effect_of_contract_path(10) evens_in_p_are odds_in_p_are
       by auto
-    have outside_parent: "a ∈ vset_to_set ods ∧ b ∈ vset_to_set evs"
-      if "parent_lookup prnts a = Some b" "a ∉ set (p1 @ [u])" "b ∈ set (p1 @ [u])" for a b
+    have outside_parent: "a \<in> vset_to_set ods \<and> b \<in> vset_to_set evs"
+      if "parent_lookup prnts a = Some b" "a \<notin> set (p1 @ [u])" "b \<in> set (p1 @ [u])" for a b
     proof(cases "b = u")
       case True
       then show ?thesis
@@ -2364,7 +2364,7 @@ proof-
     next
       case False
       then obtain ys zs where split: "p1 = ys @ b # zs"
-        using ‹b ∈ set (p1 @ [u])› by (auto simp: in_set_conv_decomp)
+        using \<open>b \<in> set (p1 @ [u])\<close> by (auto simp: in_set_conv_decomp)
       show ?thesis
         using parent_adj_pu_helper[OF that(1) _ split] that(2)
         by (auto simp: split)
@@ -2372,11 +2372,11 @@ proof-
     show ?thesis
       using new_edge
       unfolding new_parents_are
-    proof(cases "x = new_vert ∧ parent_lookup prnts u ≠ None")
+    proof(cases "x = new_vert \<and> parent_lookup prnts u \<noteq> None")
       case True
       then have old_parent: "parent_lookup prnts u = Some y"
         using new_edge by (simp add: new_parents_are)
-      have "y ∉ set (p1 @ [u])" "y ≠ new_vert" "u ∉ vset_to_set rts"
+      have "y \<notin> set (p1 @ [u])" "y \<noteq> new_vert" "u \<notin> vset_to_set rts"
         using old_parent True parents_of_u_props lookup_u_not_none_roots
           edge_vertices[OF old_parent] assms(6) by auto
       then show ?thesis
@@ -2384,19 +2384,19 @@ proof-
         by (simp add: new_origin)
     next
       case False
-      have not_root: "x ∉ vset_to_set (roots new_forest)"
-        using arg_cong[OF dom_samer, of "λA. x ∈ A"] new_edge
+      have not_root: "x \<notin> vset_to_set (roots new_forest)"
+        using arg_cong[OF dom_samer, of "\<lambda>A. x \<in> A"] new_edge
         by (simp add: domIff)
-      have not_new: "x ≠ new_vert"
+      have not_new: "x \<noteq> new_vert"
         using False not_root
         by (auto simp: effect_of_contract_path(6) lookup_u_not_none_roots split: if_splits)
-      have x_out: "x ∉ set (p1 @ [u])" "x ≠ new_vert"
+      have x_out: "x \<notin> set (p1 @ [u])" "x \<noteq> new_vert"
         using False new_edge not_new by (auto simp: new_parents_are)
       obtain px where px: "parent_lookup prnts x = Some px"
         using False new_edge x_out forest_invar_F(7)
         by (auto simp: new_parents_are elim!: invar_odd_to_parent_non_matchingE split: if_splits)
       show ?thesis
-      proof(cases "px ∈ set (p1 @ [u])")
+      proof(cases "px \<in> set (p1 @ [u])")
         case True
         then have "y = new_vert"
           using outside_parent[OF px x_out(1)] x_out px new_edge
@@ -2409,7 +2409,7 @@ proof-
         case False
         then have "y = px"
           using new_edge x_out by (simp add: new_parents_are px)
-        moreover have "px ≠ new_vert"
+        moreover have "px \<noteq> new_vert"
           using False edge_vertices[OF px] assms(6) by auto
         ultimately show ?thesis
           using x_out False parent_same_org_old[OF px] edge_vertices[OF px]
@@ -2420,16 +2420,16 @@ proof-
 
   have big_origin_conjunction_after:
     "origin_lookup (origins new_forest) v =
-         Some (last (follow (parent_lookup (parents new_forest)) v)) ∧
-        (∀ u ∈ set (follow (parent_lookup (parents new_forest)) v).
-           origin_lookup (origins new_forest) v = origin_lookup (origins new_forest) u) ∧
+         Some (last (follow (parent_lookup (parents new_forest)) v)) \<and>
+        (\<forall> u \<in> set (follow (parent_lookup (parents new_forest)) v).
+           origin_lookup (origins new_forest) v = origin_lookup (origins new_forest) u) \<and>
        set (edges_of_path (follow (parent_lookup (parents new_forest)) v))
-         ⊆ abstract_forest new_forest"
-    if "v ∈ vset_to_set (roots new_forest) ∪ Vs (abstract_forest new_forest)" for v
+         \<subseteq> abstract_forest new_forest"
+    if "v \<in> vset_to_set (roots new_forest) \<union> Vs (abstract_forest new_forest)" for v
     using that
   proof(induction v rule: follow_new_induct)
     case (1 vv)
-    have tirple_conjD: "A ∧ B ∧ C ⟹ A" "A ∧ B ∧ C ⟹ B" "A ∧ B ∧ C ⟹ C"
+    have tirple_conjD: "A \<and> B \<and> C \<Longrightarrow> A" "A \<and> B \<and> C \<Longrightarrow> B" "A \<and> B \<and> C \<Longrightarrow> C"
       for A B C 
       by auto
     note IH = tirple_conjD[OF 1(1)]
@@ -2437,7 +2437,7 @@ proof-
     show ?case
     proof(cases "parent_lookup (parents new_forest) vv")
       case None
-      hence vv_root: "vv ∈ vset_to_set (roots new_forest)" 
+      hence vv_root: "vv \<in> vset_to_set (roots new_forest)" 
         using "1.prems" dom_samer
               domIff[of vv "origin_lookup (origins new_forest)"] org_lookup_helper
         by auto
@@ -2445,13 +2445,13 @@ proof-
         using None by (auto simp add: lookup_self_implies_root vv_root follow_new_simps[of vv])
     next
       case (Some pvv)
-      have triple_conjI: "⟦A;B;C⟧ ⟹ A ∧ B ∧ C" for A B C
+      have triple_conjI: "\<lbrakk>A;B;C\<rbrakk> \<Longrightarrow> A \<and> B \<and> C" for A B C
         by auto
-      have vv_pvv_in_new_F: "{vv, pvv} ∈ abstract_forest new_forest"
+      have vv_pvv_in_new_F: "{vv, pvv} \<in> abstract_forest new_forest"
         using Some
         by(auto simp add:abstract_forest_def)
       hence pvv_is_new_F_vert:
-        "pvv ∈ vset_to_set (roots new_forest) ∪ Vs (abstract_forest new_forest)"
+        "pvv \<in> vset_to_set (roots new_forest) \<union> Vs (abstract_forest new_forest)"
         by auto
       note IH = IH[OF Some pvv_is_new_F_vert]
       show ?thesis
@@ -2503,7 +2503,7 @@ proof-
   proof(rule matchingI, goal_cases)
     case (1 e1 e2)
     then show ?case 
-    proof(cases "u ∈ vset_to_set rts", goal_cases)
+    proof(cases "u \<in> vset_to_set rts", goal_cases)
       case 1
       note 1 = 1[simplified if_P[OF 1(4)] Un_empty_right Un_empty_left]
       then show ?case 
@@ -2511,15 +2511,15 @@ proof-
     next
       case 2
       note 2 = 2[simplified if_not_P[OF 2(4)]]
-      have u_pu_in_M: "{u, the (parent_lookup prnts u)} ∈ ℳ"
+      have u_pu_in_M: "{u, the (parent_lookup prnts u)} \<in> \<M>"
         using "2"(4) assms(4) forest_invar_F(5) invar_even_to_parent_matchingD parents_of_u_props
         by fastforce
-      have case1: "e1 ∩ e2 = {}"
-        if asm :"e1 ∈ ℳ - ({{u, the (parent_lookup prnts u)}} ∪ set (edges_of_path (p1 @ [u])))"
+      have case1: "e1 \<inter> e2 = {}"
+        if asm :"e1 \<in> \<M> - ({{u, the (parent_lookup prnts u)}} \<union> set (edges_of_path (p1 @ [u])))"
            "e2 = {new_vert, the (parent_lookup prnts u)}" for e1 e2
       proof-
-        have e1_props: "e1 ∈ ℳ" "e1 ≠ {u, the (parent_lookup prnts u)}" 
-                    "e1 ∉ set (edges_of_path (p1 @ [u]))"
+        have e1_props: "e1 \<in> \<M>" "e1 \<noteq> {u, the (parent_lookup prnts u)}" 
+                    "e1 \<notin> set (edges_of_path (p1 @ [u]))"
           using asm(1) by auto
         show ?thesis
         proof(rule matching_edge_rev_alt_path_cases[OF 
@@ -2533,19 +2533,19 @@ proof-
           case (2 u v)
           hence "v = the (parent_lookup prnts u)"
             using assms(5) e1_props(1) last_snoc[of p1 u] u_pu_in_M
-              doubleton_in_matching(1)[of ℳ u "the (parent_lookup prnts u)" v] by simp
+              doubleton_in_matching(1)[of \<M> u "the (parent_lookup prnts u)" v] by simp
           then show ?case
             using "2"(2,5) e1_props(2) by auto
         next
           case 3
           hence if_u_or_new_in_e1:
-             "new_vert ∈ e1 ⟹ e1 = {u, the (parent_lookup prnts u)}"
-             "u ∈ e1 ⟹ e1 = {u, the (parent_lookup prnts u)}"
+             "new_vert \<in> e1 \<Longrightarrow> e1 = {u, the (parent_lookup prnts u)}"
+             "u \<in> e1 \<Longrightarrow> e1 = {u, the (parent_lookup prnts u)}"
             using assms(6)  e1_props(1) by auto
-          have if_pu_in_e1: "the (parent_lookup prnts u) ∈ e1 
-                 ⟹ e1 = {u, the (parent_lookup prnts u)}" 
+          have if_pu_in_e1: "the (parent_lookup prnts u) \<in> e1 
+                 \<Longrightarrow> e1 = {u, the (parent_lookup prnts u)}" 
             using assms(5) e1_props(1) u_pu_in_M
-              matching_unique_match[of ℳ "the (parent_lookup prnts u)" e1
+              matching_unique_match[of \<M> "the (parent_lookup prnts u)" e1
                 "{u, the (parent_lookup prnts u)}"] 
             by simp
           from 3 show ?case 
@@ -2556,50 +2556,50 @@ proof-
           if "e1 = {new_vert, the (parent_lookup prnts u)}"
              "e2 = {new_vert, the (parent_lookup prnts u)}"
         using 2(3) that by simp
-      have case3:"e1 ∩ e2 = {}"
-        if "e1 ∈ ℳ - ({{u, the (parent_lookup prnts u)}} ∪ set (edges_of_path (p1 @ [u])))"
-           "e2 ∈ ℳ - ({{u, the (parent_lookup prnts u)}} ∪ set (edges_of_path (p1 @ [u])))"
+      have case3:"e1 \<inter> e2 = {}"
+        if "e1 \<in> \<M> - ({{u, the (parent_lookup prnts u)}} \<union> set (edges_of_path (p1 @ [u])))"
+           "e2 \<in> \<M> - ({{u, the (parent_lookup prnts u)}} \<union> set (edges_of_path (p1 @ [u])))"
         using that 1(3) by(intro matchingD[OF assms(5)]) auto
       show ?case
-        apply(rule UnE[OF 2(1)], all ‹rule UnE[OF 2(2)]›)
+        apply(rule UnE[OF 2(1)], all \<open>rule UnE[OF 2(2)]\<close>)
         using  case1[of e1 e2] case1[of e2 e1] case2 case3
         by auto
     qed
   qed
 
   have new_parent_new_vert_None_pu_None:
-      "parent_lookup (parents new_forest) new_vert = None ⟹
+      "parent_lookup (parents new_forest) new_vert = None \<Longrightarrow>
         parent_lookup prnts u = None"
     by(cases "parent_lookup prnts u")(auto simp add: new_parents_are)
 
-  have parent_new_vert_is_pu:"parent_lookup (parents new_forest) new_vert = Some pu ⟹
+  have parent_new_vert_is_pu:"parent_lookup (parents new_forest) new_vert = Some pu \<Longrightarrow>
        parent_lookup prnts u = Some pu" for pu
    using assms(6)  invar_basic_F(14,6) lookup_u_not_none_roots
-   by(auto simp add: new_parents_are if_split[of "λ x. x = Some pu"])
+   by(auto simp add: new_parents_are if_split[of "\<lambda> x. x = Some pu"])
 
-  have assms6': "new_vert ∉ vset_to_set evs ∪ vset_to_set ods - set (p1 @ [u])"
+  have assms6': "new_vert \<notin> vset_to_set evs \<union> vset_to_set ods - set (p1 @ [u])"
     using assms(6) by auto
 
   have edges_p_in_F:
-    "set (edges_of_path (p1@[u]@p2)) ⊆ abstract_forest (Forest rts evs ods prnts orngs)"
+    "set (edges_of_path (p1@[u]@p2)) \<subseteq> abstract_forest (Forest rts evs ods prnts orngs)"
     using assms(2,3)  invar_basic_F(6)
       forest_invar_F(6) UnI1[of v "vset_to_set evs" "vset_to_set ods"]
       invar_rootsD(4)[of "Forest rts evs ods prnts orngs" v]
     by auto
-  hence p_inVs_of_F:"set (p1@[u]@p2) ⊆ vset_to_set evs ∪ vset_to_set ods"
+  hence p_inVs_of_F:"set (p1@[u]@p2) \<subseteq> vset_to_set evs \<union> vset_to_set ods"
     using assms(2,3) forest_invar_F(1,4,6)
-      path_follow_verts_in_verts_F[of ℳ "Forest rts evs ods prnts orngs" v]
-      invar_basicE[of ℳ "Forest rts evs ods prnts orngs"] invar_basic_F(6) 
+      path_follow_verts_in_verts_F[of \<M> "Forest rts evs ods prnts orngs" v]
+      invar_basicE[of \<M> "Forest rts evs ods prnts orngs"] invar_basic_F(6) 
     by auto
 
   have coincide_parents_in_p2:
-    "v' ∈ set p2 ⟹ 
+    "v' \<in> set p2 \<Longrightarrow> 
      parent_lookup prnts v' = parent_lookup (parents new_forest) v'" for v'
     unfolding new_parents_are
   proof(subst if_not_P, goal_cases)
     case 1
     note one = this
-    have "v' ≠ new_vert"
+    have "v' \<noteq> new_vert"
     proof(rule ccontr, goal_cases)
       case 1
       then obtain p1a p1b where "p1@[u] = p1a@[v']@p1b"
@@ -2619,7 +2619,7 @@ proof-
     proof(subst if_not_P, goal_cases)
       case 1
       note one = this
-      have "⟦v' ∈ vset_to_set ods; the (parent_lookup prnts v') ∈ set (p1@[u])⟧ ⟹ False"
+      have "\<lbrakk>v' \<in> vset_to_set ods; the (parent_lookup prnts v') \<in> set (p1@[u])\<rbrakk> \<Longrightarrow> False"
       proof(goal_cases)
         case 1
         then obtain pv' where pv': "parent_lookup prnts v' = Some pv'"
@@ -2628,7 +2628,7 @@ proof-
           using p2_split_middle assms(2) 
                 follow_subsequent_parent_there[of v "(p1 @ [u]) @ p2a" v' p2b pv']
           by auto
-        moreover have "pv' ≠ v'"
+        moreover have "pv' \<noteq> v'"
           using prnts_no_loop pv' by blast
         ultimately obtain p2bi p2bii where p2b'_split: "p2b' = p2bi@[pv']@p2bii"
           using "1"(2) distinct_path p2_split_middle pv' by force
@@ -2677,14 +2677,14 @@ proof-
   qed
 
   have parent_in_p1u_new_parent_new_vert:
-    "⟦parent_lookup prnts v' = Some pv'; pv' ∈ set (p1@[u]); v' ∉ set (p1@[u])⟧ ⟹
+    "\<lbrakk>parent_lookup prnts v' = Some pv'; pv' \<in> set (p1@[u]); v' \<notin> set (p1@[u])\<rbrakk> \<Longrightarrow>
     parent_lookup (parents new_forest) v' = Some new_vert" for v' pv'
     unfolding new_parents_are
   proof(subst if_not_P, goal_cases)
     case 1
-    hence "v' ∈ vset_to_set evs ∪ vset_to_set ods"
+    hence "v' \<in> vset_to_set evs \<union> vset_to_set ods"
       using p_inVs_of_F parents_ev_od(1,2) by auto
-    hence "v' ≠ new_vert"
+    hence "v' \<noteq> new_vert"
       using "1"(3) assms6' by blast
     then show ?case
       by simp
@@ -2707,14 +2707,14 @@ proof-
     using assms(2) follow_append[of v p1 u p2] by auto
 
   have parent_not_in_p1u_new_parent_is_old:
-    "⟦parent_lookup prnts v' = Some pv'; pv' ∉ set (p1@[u]); v' ∉ set (p1@[u])⟧ ⟹
+    "\<lbrakk>parent_lookup prnts v' = Some pv'; pv' \<notin> set (p1@[u]); v' \<notin> set (p1@[u])\<rbrakk> \<Longrightarrow>
     parent_lookup (parents new_forest) v' = parent_lookup prnts v'" for v' pv'
     unfolding new_parents_are
   proof(subst if_not_P, goal_cases)
     case 1
-    hence "v' ∈ vset_to_set evs ∪ vset_to_set ods" 
+    hence "v' \<in> vset_to_set evs \<union> vset_to_set ods" 
       using invar_basic_F(14,6) by auto
-    hence "v' ≠ new_vert"
+    hence "v' \<noteq> new_vert"
       using "1"(3) assms6' by blast
     then show ?case
       by simp
@@ -2724,7 +2724,7 @@ proof-
       by auto
   qed
 
-  show "⟦?asm1;?asm2⟧⟹ ?th5"
+  show "\<lbrakk>?asm1;?asm2\<rbrakk>\<Longrightarrow> ?th5"
   proof(induction p1' arbitrary: v')
     case Nil
     then show ?case 
@@ -2736,7 +2736,7 @@ proof-
       by auto
     moreover hence distinct_path:"distinct ((v' # p1') @ [u] @ p2)"
       using follow_distinct[of a] Cons.prems(1) by auto
-    hence v'_not_in_p1u: "v' ∉ set (p1 @ [u])" 
+    hence v'_not_in_p1u: "v' \<notin> set (p1 @ [u])" 
       using Cons.prems(2) calculation by auto
     note Cons = Cons
     then show ?case 
@@ -2753,7 +2753,7 @@ proof-
                  split: option.split)     
     next
       case (2 pv' list)
-      hence p1'_not_Nil:"p1' ≠ []" and p1_not_Nil: "v' # p1' ≠ []"
+      hence p1'_not_Nil:"p1' \<noteq> []" and p1_not_Nil: "v' # p1' \<noteq> []"
         by auto
       note Cons = 2(1-3)[simplified if_not_P[OF p1'_not_Nil] 2(4)] 2(4)
       have pv':"parent_lookup prnts v' = Some pv'"
@@ -2761,7 +2761,7 @@ proof-
         using calculation Cons
               parents_here.follow_cons_2[folded follow_def, of a pv' "list @ u # p2"]
         by auto
-      have to_old_precond: "pv' ∉ set (p1 @ [u])" "v' ∉ set (p1 @ [u])"
+      have to_old_precond: "pv' \<notin> set (p1 @ [u])" "v' \<notin> set (p1 @ [u])"
         using distinct_path local.Cons(3,4) by auto
       note same_par = parent_not_in_p1u_new_parent_is_old[OF pv'(1) to_old_precond]
       show ?case
@@ -2773,29 +2773,29 @@ proof-
   qed
 qed
 theorem contract_fork_correct:
-  assumes "forest_invar ℳ (Forest rts evs ods prnts orngs)" 
+  assumes "forest_invar \<M> (Forest rts evs ods prnts orngs)" 
     "follow (parent_lookup prnts) v = p1@[u]@p2"
     "follow (parent_lookup prnts) v' = p1'@[u]@p2"
-    "v ∈ vset_to_set evs"
-    "v' ∈ vset_to_set evs"
-    "set p1 ∩ set p1' = {}"
-    "matching ℳ"
-    "new_vert ∉ Vs ℳ ∪ vset_to_set evs ∪ vset_to_set ods - (set p1 ∪ set p1' ∪ {u})"
-    "dblton_graph ℳ"
-    and contr_def: "contr = (λ v. if v ∈ {u} ∪ set p1 ∪ set p1' then new_vert else v)"
+    "v \<in> vset_to_set evs"
+    "v' \<in> vset_to_set evs"
+    "set p1 \<inter> set p1' = {}"
+    "matching \<M>"
+    "new_vert \<notin> Vs \<M> \<union> vset_to_set evs \<union> vset_to_set ods - (set p1 \<union> set p1' \<union> {u})"
+    "dblton_graph \<M>"
+    and contr_def: "contr = (\<lambda> v. if v \<in> {u} \<union> set p1 \<union> set p1' then new_vert else v)"
     and new_forest_def:
     "new_forest = contract_fork (Forest rts evs ods prnts orngs) (p1@[u]) (p1'@[u]) new_vert"
-  and new_vert_in_universe: "new_vert ∈ K"
-  shows "forest_invar (quot_graph contr ℳ - {{new_vert}}) new_forest" (is ?th1)
+  and new_vert_in_universe: "new_vert \<in> K"
+  shows "forest_invar (quot_graph contr \<M> - {{new_vert}}) new_forest" (is ?th1)
     and  "abstract_forest new_forest 
          = quot_graph contr (abstract_forest (Forest rts evs ods prnts orngs))
              - {{new_vert}}" (is ?th2)
-and "vset_to_set (odds new_forest) = vset_to_set ods - ({u} ∪ set p1 ∪ set p1')" (is ?th3)
-and "vset_to_set (evens new_forest) = (vset_to_set evs - ({u} ∪ set p1 ∪ set p1')) ∪ {new_vert}" (is?th4)
+and "vset_to_set (odds new_forest) = vset_to_set ods - ({u} \<union> set p1 \<union> set p1')" (is ?th3)
+and "vset_to_set (evens new_forest) = (vset_to_set evs - ({u} \<union> set p1 \<union> set p1')) \<union> {new_vert}" (is?th4)
 and "vset_to_set (roots new_forest) =
-    (if u ∈ vset_to_set rts
-     then vset_to_set rts - {u} ∪ {new_vert} else vset_to_set rts)" (is ?th5)
-and "matching (quot_graph contr ℳ - {{new_vert}})" (is ?th6)
+    (if u \<in> vset_to_set rts
+     then vset_to_set rts - {u} \<union> {new_vert} else vset_to_set rts)" (is ?th5)
+and "matching (quot_graph contr \<M> - {{new_vert}})" (is ?th6)
 proof-
 
   note forest_invarD = forest_invarD[OF assms(1)] 
@@ -2818,50 +2818,50 @@ proof-
   have hd_p'_is_v': "hd (p1' @ [u] @ p2) = v'"
     using assms(3) follow_hd[of v'] by simp
 
-  have u_even:"u ∈ vset_to_set evs"
+  have u_even:"u \<in> vset_to_set evs"
   proof(rule ccontr, goal_cases)
     case 1
-    hence u_odd: "u ∈ vset_to_set ods" 
+    hence u_odd: "u \<in> vset_to_set ods" 
       using assms(1,2,4) forest_invarD(1,4,6) invar_basicD(6)
            path_follow_verts_in_verts_F[OF forest_invarD(1,6,4), of v]
       by auto
     then obtain cu p1a where p1_split: "p1 = p1a@[cu]" 
       using 1 assms(4) hd_p_is_v by(cases "p1" rule: rev_cases) auto
-    hence cu_u_in_F:"{cu, u} ∈ abstract_forest (Forest rts evs ods prnts orngs)" 
+    hence cu_u_in_F:"{cu, u} \<in> abstract_forest (Forest rts evs ods prnts orngs)" 
       using assms(2) follow_append follow_cons_2(2)[of cu u p2]
       by (fastforce simp add: abstract_forest_def)
     have pcu: "parent_lookup prnts cu = Some u"
       using p1_split assms(2) follow_subsequent_parent[of v p1a cu u p2]
       by auto
-    hence cuu_M: "{cu, u} ∈ ℳ"
+    hence cuu_M: "{cu, u} \<in> \<M>"
       using  cu_u_in_F  assms(1) forest_invarD(5) complex_invariant_consequences(2)
           invar_even_to_parent_matchingD  u_odd 
       by force
     obtain c'u p1'a where p1'_split: "p1' = p1'a@[c'u]" 
       using 1 assms(5) hd_p'_is_v' by(cases "p1'" rule: rev_cases) auto
-    hence c'u_u_in_F:"{c'u, u} ∈ abstract_forest (Forest rts evs ods prnts orngs)" 
+    hence c'u_u_in_F:"{c'u, u} \<in> abstract_forest (Forest rts evs ods prnts orngs)" 
       using assms(3) follow_append follow_cons_2(2)[of c'u u p2]
       by (fastforce simp add: abstract_forest_def)
     have pc'u: "parent_lookup prnts c'u = Some u"
       using p1'_split assms(3) follow_subsequent_parent[of v' p1'a c'u u p2]
       by auto
-    hence c'uu_M: "{c'u, u} ∈ ℳ"
+    hence c'uu_M: "{c'u, u} \<in> \<M>"
       using  c'u_u_in_F  assms(1) forest_invarD(5) complex_invariant_consequences(2)
           invar_even_to_parent_matchingD u_odd 
       by force
     hence "c'u = cu" 
       using assms(7) cuu_M by(auto intro!: matching_partner_eqI)
-    hence "c'u ∈ set p1 ∩ set p1'"
+    hence "c'u \<in> set p1 \<inter> set p1'"
       using p1'_split p1_split by simp
     then show ?case 
       using assms(6) by simp
   qed
-  define contr1 where "contr1 = (λv. if v ∈ set (p1 @ [u]) then u else v)"
+  define contr1 where "contr1 = (\<lambda>v. if v \<in> set (p1 @ [u]) then u else v)"
   define intermedF where 
     "intermedF = contract_path (Forest rts evs ods prnts orngs) (p1 @ [u]) u"
-  have u_not_there: "u ∉ Vs ℳ ∪ vset_to_set evs ∪ vset_to_set ods - set (p1 @ [u])"
+  have u_not_there: "u \<notin> Vs \<M> \<union> vset_to_set evs \<union> vset_to_set ods - set (p1 @ [u])"
     by auto
-  have u_in_universe: "u ∈ K"
+  have u_in_universe: "u \<in> K"
     using vset.fixed_univ_set_universe[OF invar_basicD(2)[simplified]] u_even by auto
   note after_first =
      contract_path_correct[OF assms(1,2,4) u_even assms(7) u_not_there assms(9) contr1_def intermedF_def u_in_universe]
@@ -2869,27 +2869,27 @@ proof-
   have intermedF_split: "intermedF = Forest (roots intermedF) (evens intermedF)
           (odds intermedF) (parents intermedF) (origins intermedF)"
     by(cases intermedF) auto
-  have invar_after_first: "forest_invar (quot_graph contr1 ℳ - {{u}}) 
+  have invar_after_first: "forest_invar (quot_graph contr1 \<M> - {{u}}) 
            (Forest (roots intermedF) (evens intermedF)
           (odds intermedF) (parents intermedF) (origins intermedF))"
     using after_first(1)  intermedF_split by simp
-  have final_precond1: "(if p1' = [] then u else v') ∈ vset_to_set (evens intermedF)"
+  have final_precond1: "(if p1' = [] then u else v') \<in> vset_to_set (evens intermedF)"
     using after_first(4) hd_p'_is_v' hd_p_is_v assms(3,5,6) follow_append[of u _ u p2] 
     by(cases p1') auto
-  have final_precond2: "u ∈ vset_to_set (evens intermedF)"
+  have final_precond2: "u \<in> vset_to_set (evens intermedF)"
     by (simp add: after_first(4))
-  have final_precond3: "new_vert ∉ Vs (quot_graph contr1 ℳ - {{u}}) ∪ vset_to_set (evens intermedF) ∪
+  have final_precond3: "new_vert \<notin> Vs (quot_graph contr1 \<M> - {{u}}) \<union> vset_to_set (evens intermedF) \<union>
        vset_to_set (odds intermedF) -
        set (p1' @ [u])"
     using assms(8)
     by (auto dest!: set_mp[OF Vs_subset[of 
-                          "quot_graph contr1 ℳ - {{u}}" "quot_graph contr1 ℳ"],
+                          "quot_graph contr1 \<M> - {{u}}" "quot_graph contr1 \<M>"],
                           simplified contr1_def, simplified]
           simp add: Vs_quot_graph_is_img contr1_def after_first(4,3))
-  have final_precond4: "dblton_graph (quot_graph contr1 ℳ - {{u}})"
+  have final_precond4: "dblton_graph (quot_graph contr1 \<M> - {{u}})"
    using assms(8) 
    by(auto intro!: dblton_graph_contract_into_one_vert[OF assms(9) contr1_def])
-  define contr2 where "contr2 = (λv. if v ∈ set (p1' @ [u]) then new_vert else v)"
+  define contr2 where "contr2 = (\<lambda>v. if v \<in> set (p1' @ [u]) then new_vert else v)"
   have final_precond5: "new_forest = contract_path intermedF (p1' @ [u]) new_vert"
     by(simp add: new_forest_def contract_fork_def intermedF_def)
   have quot_graphId: 
@@ -2922,18 +2922,18 @@ proof(goal_cases)
       vset_invar vset_to_set
     using satisified by (auto simp: alternating_forest_ordinary_extension_spec_def)
   have correct:
-    "forest_invar (quot_graph contr M - {{new_vert}}) (contract_fork F (B1 @ [u]) (B2 @ [u]) new_vert) ∧
+    "forest_invar (quot_graph contr M - {{new_vert}}) (contract_fork F (B1 @ [u]) (B2 @ [u]) new_vert) \<and>
      abstract_forest (contract_fork F (B1 @ [u]) (B2 @ [u]) new_vert) =
-      quot_graph contr (abstract_forest F) - {{new_vert}} ∧
+      quot_graph contr (abstract_forest F) - {{new_vert}} \<and>
      vset_to_set (odds (contract_fork F (B1 @ [u]) (B2 @ [u]) new_vert)) =
-      vset_to_set (odds F) - ({u} ∪ set B1 ∪ set B2) ∧
+      vset_to_set (odds F) - ({u} \<union> set B1 \<union> set B2) \<and>
      vset_to_set (evens (contract_fork F (B1 @ [u]) (B2 @ [u]) new_vert)) =
-      vset_to_set (evens F) - ({u} ∪ set B1 ∪ set B2) ∪ {new_vert} ∧
+      vset_to_set (evens F) - ({u} \<union> set B1 \<union> set B2) \<union> {new_vert} \<and>
      vset_to_set (roots (contract_fork F (B1 @ [u]) (B2 @ [u]) new_vert)) =
-      (if u ∈ vset_to_set (roots F) then vset_to_set (roots F) - {u} ∪ {new_vert}
-       else vset_to_set (roots F)) ∧
+      (if u \<in> vset_to_set (roots F) then vset_to_set (roots F) - {u} \<union> {new_vert}
+       else vset_to_set (roots F)) \<and>
      matching (quot_graph contr M - {{new_vert}})"
-    if "af_spec_here.contract_fork_precond M F v v' B1 B2 u new_vert P contr" "new_vert ∈ K"
+    if "af_spec_here.contract_fork_precond M F v v' B1 B2 u new_vert P contr" "new_vert \<in> K"
     for M F v v' B1 B2 u new_vert P contr
   proof(cases F)
     case (Forest rts evs ods prnts orgns)
