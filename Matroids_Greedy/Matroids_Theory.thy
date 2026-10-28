@@ -929,7 +929,13 @@ proof-
 (* We establish an order on the elements by using a list *)
     from `finite (J - K)` 
     have "\<exists>l. set l = (J - K) \<and> length l = ?t"
-      by (metis distinct_card finite_distinct_list)
+    proof -
+  from finite_distinct_list[OF \<open>finite (J - K)\<close>]
+  obtain xs where xs_set: "set xs = J - K" and xs_distinct: "distinct xs" by blast
+  from distinct_card[OF xs_distinct] have "card (set xs) = length xs" .
+  with xs_set have "length xs = card (J - K)" by simp
+  with xs_set show "\<exists>l. set l = (J - K) \<and> length l = ?t" by blast
+qed
     then obtain l where "set l = (J - K) \<and> length l = ?t" by blast
 
     from K_seq_props[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F J\<close> \<open>basis_in F K\<close> refl] 
