@@ -1565,9 +1565,13 @@ proof
         then have "pick J k > pick J j" 
           using k_less_card  pick_mono_inf pick_mono_le by presburger 
         then have "pick J k \<in> J - {pick J j}" 
-          by (metis (no_types, lifting) DiffI 12 19 9 basic_trans_rules(22) card_mono 
-              insert_index_def le_eq_less_or_eq lessI nat_neq_iff pick_in_set_inf 
-              pick_in_set_le singletonD)
+        proof -
+  have "pick J k \<in> J"
+    using pick_in_set[OF k_less_card] by blast
+  moreover have "pick J k \<noteq> pick J j"
+    using \<open>pick J k > pick J j\<close> by linarith
+  ultimately show "pick J k \<in> J - {pick J j}" by blast
+qed
         then have 1: "pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J k}) = pick J k"
           using pick_card_in_set 
           by presburger
