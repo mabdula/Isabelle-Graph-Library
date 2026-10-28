@@ -3546,9 +3546,26 @@ proof-
             indep'_iff_dual by simp
       next
         case False
-        then show ?thesis using indep_system.indep_in_def[OF \<open>indep_system E indep'\<close>]
-            indep_system.indep_in_def[OF \<open>indep_system E (dual E indep)\<close>]
-          by (metis \<open>X \<subseteq> E\<close> subset_trans)
+        then show ?thesis
+        proof -
+          have not_indep': "\<not> (indep_system.indep_in indep' X) Y"
+          proof (rule notI)
+            assume "(indep_system.indep_in indep' X) Y"
+            from indep_system.indep_in_subset_carrier[OF \<open>indep_system E indep'\<close> this]
+            have "Y \<subseteq> X" .
+            with \<open>X \<subseteq> E\<close> have "Y \<subseteq> E" using subset_trans by blast
+            with False show False by blast
+          qed
+          have not_dual: "\<not> (indep_system.indep_in (dual E indep) X) Y"
+          proof (rule notI)
+            assume "(indep_system.indep_in (dual E indep) X) Y"
+            from indep_system.indep_in_subset_carrier[OF \<open>indep_system E (dual E indep)\<close> this]
+            have "Y \<subseteq> X" .
+            with \<open>X \<subseteq> E\<close> have "Y \<subseteq> E" using subset_trans by blast
+            with False show False by blast
+          qed
+          from not_indep' not_dual show ?thesis by simp
+        qed
       qed
     qed
 
