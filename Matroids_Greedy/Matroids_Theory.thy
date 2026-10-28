@@ -3334,9 +3334,10 @@ proof-
       "matroid.rank_of indep (E - X) + matroid.rank_of indep ((E - Y) \<inter> (Y - X)) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
       by (simp add: \<open>E - Y \<union> (Y - X) = E - X\<close>)
-    then have "matroid.rank_of indep (E - X) + matroid.rank_of indep ({}) \<le>
+    moreover have "(E - Y) \<inter> (Y - X) = {}" by blast
+    ultimately have "matroid.rank_of indep (E - X) + matroid.rank_of indep ({}) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
-      by (metis Diff_disjoint Int_Diff inf_commute)
+      by simp
     with \<open>matroid.rank_of indep {} = 0\<close> have
       "matroid.rank_of indep (E - X) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
