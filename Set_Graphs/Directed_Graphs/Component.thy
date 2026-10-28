@@ -312,9 +312,86 @@ lemma in_induce_subgraph_dVsI_reachable:
     and "S \<noteq> {u} \<or> (u,v) \<in> G"
     and "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   shows "u \<in> dVs (G \<downharpoonright> S)" "v \<in> dVs (G \<downharpoonright> S)"
-  using assms
-  by (auto intro!: in_induce_subgraph_dVsI simp: sccs_dVs_def)
-     (metis (no_types, lifting) converse_tranclE reachable1_reachable reachable_neq_reachable1 trancl.intros(1) trancl_trans)+
+proof -
+  have scc_reach: "\<And>a b. a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> b"
+    and scc_out: "\<And>a b. a \<in> S \<Longrightarrow> b \<notin> S \<Longrightarrow> \<not> a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> b \<or> \<not> b \<rightarrow>\<^sup>*\<^bsub>G\<^esub> a"
+    using assms(3) by (auto simp: sccs_dVs_def)
+  have helper: "\<And>a. a \<in> S \<Longrightarrow> (\<exists>b\<in>S. b \<noteq> a) \<or> (a, a) \<in> G \<Longrightarrow> a \<in> dVs (G \<downharpoonright> S)"
+  proof -
+    fix a assume aS: "a \<in> S" and cond: "(\<exists>b\<in>S. b \<noteq> a) \<or> (a, a) \<in> G"
+    consider (loop) "(a, a) \<in> G" | (other) b where "b \<in> S" "b \<noteq> a"
+      using cond by blast
+    then show "a \<in> dVs (G \<downharpoonright> S)"
+    proof cases
+      case loop
+      with aS show ?thesis by (auto intro: in_induce_subgraph_dVsI)
+    next
+      case other
+      have ab: "a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> b" using aS other scc_reach by blast
+      have ba: "b \<rightarrow>\<^sup>*\<^bsub>G\<^esub> a" using aS other scc_reach by blast
+      have "a \<rightarrow>\<^sup>+\<^bsub>G\<^esub> b" using ab other reachable_neq_reachable1 by blast
+      then consider (edge) "(a, b) \<in> G" | (step) x where "(a, x) \<in> G" "x \<rightarrow>\<^sup>+\<^bsub>G\<^esub> b"
+        by (auto elim: converse_tranclE)
+      then show ?thesis
+      proof cases
+        case edge
+        with aS other show ?thesis by (auto intro: in_induce_subgraph_dVsI)
+      next
+        case step
+        have xb: "x \<rightarrow>\<^sup>*\<^bsub>G\<^esub> b" using step(2) reachable1_reachable by blast
+        have xa: "x \<rightarrow>\<^sup>*\<^bsub>G\<^esub> a" using xb ba rtrancl_trans by blast
+        have ax: "a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> x" using step(1) reachable1_reachable trancl.intros(1) by blast
+        have "x \<in> S"
+        proof (rule ccontr)
+          assume "x \<notin> S"
+          with aS scc_out have "\<not> a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> x \<or> \<not> x \<rightarrow>\<^sup>*\<^bsub>G\<^esub> a" by blast
+          with ax xa show False by blast
+        qed
+        with step(1) aS show ?thesis by (auto intro: in_induce_subgraph_dVsI)
+      qed
+    qed
+  qed
+  have cond_u: "(\<exists>b\<in>S. b \<noteq> u) \<or> (u, u) \<in> G"
+  proof (cases "u = v")
+    case True
+    consider (a) "S \<noteq> {u}" | (b) "(u, v) \<in> G" using assms(4) by blast
+    then show ?thesis
+    proof cases
+      case a
+      with assms(1) obtain w where "w \<in> S" "w \<noteq> u" by blast
+      then show ?thesis by blast
+    next
+      case b
+      then have "(u, u) \<in> G" using True by simp
+      then show ?thesis by blast
+    qed
+  next
+    case False
+    with assms(2) show ?thesis by (blast dest: not_sym)
+  qed
+  have cond_v: "(\<exists>b\<in>S. b \<noteq> v) \<or> (v, v) \<in> G"
+  proof (cases "u = v")
+    case True
+    have vS: "v \<in> S" using assms(1) True by simp
+    consider (a) "S \<noteq> {u}" | (b) "(u, v) \<in> G" using assms(4) by blast
+    then show ?thesis
+    proof cases
+      case a
+      then have "S \<noteq> {v}" using True by simp
+      with vS obtain w where "w \<in> S" "w \<noteq> v" by blast
+      then show ?thesis by blast
+    next
+      case b
+      then have "(v, v) \<in> G" using True by simp
+      then show ?thesis by blast
+    qed
+  next
+    case False
+    with assms(1) show ?thesis by blast
+  qed
+  from helper[OF assms(1) cond_u] show "u \<in> dVs (G \<downharpoonright> S)" .
+  from helper[OF assms(2) cond_v] show "v \<in> dVs (G \<downharpoonright> S)" .
+qed
 
 lemma induce_sccs_dVs:
   assumes "S \<in> sccs_dVs G"
