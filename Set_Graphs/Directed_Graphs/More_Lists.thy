@@ -310,8 +310,21 @@ qed
 
 lemma double_occur_non_dist: 
   "\<lbrakk>set (xs) \<subseteq> X; card X < length xs; finite X; xs \<noteq> []\<rbrakk> \<Longrightarrow> \<not> distinct xs"
-  by(induction "card X" arbitrary: X xs, auto)
-    (metis card_mono distinct_card linorder_not_less)
+proof -
+  assume xs_subset: "set xs \<subseteq> X"
+     and card_lt: "card X < length xs"
+     and finX: "finite X"
+     and "xs \<noteq> []"
+  show "\<not> distinct xs"
+  proof
+    assume dist: "distinct xs"
+    from finX xs_subset have "card (set xs) \<le> card X"
+      by (rule card_mono)
+    with dist have "length xs \<le> card X"
+      by (simp add: distinct_card)
+    with card_lt show False by simp
+  qed
+qed
 
 lemma subset_big_union_diff:
 assumes "set C = (set D) - A " "A = set D - set C" "D \<in> CCC" "C \<notin> CCC" "C \<noteq> D"
