@@ -127,7 +127,33 @@ proof(goal_cases)
     by auto
   hence "(\<forall>z\<in>set ys2. \<not>P1 z \<and> \<not> P2 z)"
     using \<open>(\<forall>y\<in>set xs2. \<not> P1 y)\<close> \<open>P2 x\<close>
-    by (metis Un_iff insert_iff list.simps(15) set_append)
+  proof -
+    have subset: "set ys2 \<subseteq> set (x # xs2)"
+      using \<open>x # xs2 = ys1 @ [y] @ ys2\<close> by auto
+    {
+      fix z
+      assume z_ys2: "z \<in> set ys2"
+      have not_P2: "\<not> P2 z"
+        using z_ys2 \<open>\<forall>z\<in>set ys2. \<not> P2 z\<close> by blast
+      have z_in: "z = x \<or> z \<in> set xs2"
+        using subset z_ys2 by auto
+      have "\<not> P1 z"
+      proof (cases "z = x")
+        case True
+        then have False
+          using not_P2 \<open>P2 x\<close> by simp
+        then show ?thesis ..
+      next
+        case False
+        then have "z \<in> set xs2"
+          using z_in by simp
+        then show ?thesis
+          using \<open>\<forall>y\<in>set xs2. \<not> P1 y\<close> by simp
+      qed
+      with not_P2 have "\<not> P1 z \<and> \<not> P2 z" by blast
+    }
+    thus ?thesis by blast
+  qed
   moreover have "xs = (xs1 @ ys1) @ [y] @ ys2"
     using \<open>xs = xs1 @ [x] @ xs2\<close> \<open>x # xs2 = ys1 @ [y] @ ys2\<close>
     by auto
