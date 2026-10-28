@@ -3177,8 +3177,31 @@ proof
     unfolding dual_def by blast
   also have "... =
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> (X \<inter> (E - B) = {})))"
-    using dual_basis_complement[OF assms] indep_system.basis_subset_carrier
-    by (metis Diff_subset dual_indep_sys)
+  proof (intro iffI)
+    assume "X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> X \<inter> B' = {})"
+    then obtain B' where "X \<subseteq> E" and B'_basis: "indep_system.basis E (dual E indep) B'"
+      and B'_disj: "X \<inter> B' = {}" by blast
+    from indep_system.basis_subset_carrier[OF dual_indep_sys B'_basis]
+    have "B' \<subseteq> E" .
+    from dual_basis_complement[OF assms this]
+    have "indep_system.basis E (dual E indep) B' \<longleftrightarrow>
+      (\<exists>B. indep_system.basis E indep B \<and> B' = E - B)" .
+    with B'_basis obtain B where "indep_system.basis E indep B" and "B' = E - B" by blast
+    with B'_disj have "X \<inter> (E - B) = {}" by simp
+    with \<open>X \<subseteq> E\<close> \<open>indep_system.basis E indep B\<close>
+    show "X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<inter> (E - B) = {})" by blast
+  next
+    assume "X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<inter> (E - B) = {})"
+    then obtain B where "X \<subseteq> E" and B_basis: "indep_system.basis E indep B"
+      and B_disj: "X \<inter> (E - B) = {}" by blast
+    have "E - B \<subseteq> E" by blast
+    from dual_basis_complement[OF assms this]
+    have "indep_system.basis E (dual E indep) (E - B) \<longleftrightarrow>
+      (\<exists>B'. indep_system.basis E indep B' \<and> E - B = E - B')" .
+    with B_basis have "indep_system.basis E (dual E indep) (E - B)" by blast
+    with \<open>X \<subseteq> E\<close> B_disj
+    show "X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> X \<inter> B' = {})" by blast
+  qed
   also have "... =
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<subseteq> B))"
     by auto
