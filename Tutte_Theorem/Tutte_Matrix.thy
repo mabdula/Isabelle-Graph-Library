@@ -901,7 +901,19 @@ proof -
   have "x \<in>  set (support (inv p) i)" 
     using assms(1) assms(2) inv_support_same by fastforce
   have "((inv p)^^n) x = y" 
-    by (metis assms(1) assms(3) bij_fn bij_inv_eq_iff inv_fn permutation_bijective)
+  proof -
+    have bij_p: "bij p"
+      using assms(1) by (rule permutation_bijective)
+    have inj_pn: "inj (p ^^ n)"
+      using bij_fn[OF bij_p] by (rule bij_is_inj)
+    have inv_pow: "inv (p ^^ n) = (inv p) ^^ n"
+      using bij_p by (rule inv_fn)
+    have "((inv p) ^^ n) x = inv (p ^^ n) ((p ^^ n) y)"
+      by (simp add: assms(3) inv_pow)
+    also have "\<dots> = y"
+      using inj_pn by (rule inv_f_f)
+    finally show ?thesis .
+  qed
   then have "y \<in> set (support (inv p) i)" 
     using \<open>permutation (inv p)\<close> \<open>x \<in> set (support (inv p) i)\<close> elemnets_in_support_expo by fastforce
   then show ?thesis 
