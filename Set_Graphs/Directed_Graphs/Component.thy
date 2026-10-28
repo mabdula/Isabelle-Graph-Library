@@ -937,8 +937,29 @@ lemma vertex_not_in_sccs:
     "c \<in> dVs C"
     "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
     "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<notin> dVs (\<Union>(sccs G))"
-  by (metis Component_Defs.strongly_connected_def all_not_in_conv assms dVs_empty_iff in_sccsD(2)
-            reachable_refl)
+proof -
+  from assms(3) obtain C where C_in: "C \<in> sccs G"
+    by blast
+  from C_in have sc: "strongly_connected C"
+    by (rule in_sccsD(2))
+  from sc have "C \<noteq> {}"
+    unfolding Component_Defs.strongly_connected_def by blast
+  then have "dVs C \<noteq> {}"
+    by (simp add: dVs_empty_iff)
+  then obtain c where c_in: "c \<in> dVs C"
+    by blast
+  have refl_u: "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
+    using assms(1) by (auto intro: reachable_refl)
+  have disj2: "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u \<or> u \<notin> dVs (\<Union>(sccs G))"
+    using assms(2) by simp
+  show thesis
+  proof (rule that)
+    show "C \<in> sccs G" by (fact C_in)
+    show "c \<in> dVs C" by (fact c_in)
+    show "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u \<or> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u" by (simp add: refl_u)
+    show "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u \<or> u \<notin> dVs (\<Union>(sccs G))" by (fact disj2)
+  qed
+qed
 
 lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
