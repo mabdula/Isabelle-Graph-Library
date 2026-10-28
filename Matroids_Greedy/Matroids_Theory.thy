@@ -1781,8 +1781,20 @@ proof-
           then obtain x where ex_x: "x \<in> B1 - B2 \<and> insert x (B2 - {y}) \<in> \<B>" by blast
 
           from ex_x have card_inter_greater: "card (B1 \<inter> (insert x (B2 - {y}))) > card (B1 \<inter> B2)"
-            by (metis DiffD2 Int_Diff_Un Int_commute Int_insert_right_if0 Int_insert_right_if1 UnCI 
-                \<open>finite B1\<close> finite_Int insertCI insert_Diff psubsetI psubset_card_mono subset_insertI y_in)
+          proof -
+            from ex_x have x_in: "x \<in> B1" and x_notin: "x \<notin> B2" by auto
+            from y_in have y_notin: "y \<notin> B1" by auto
+            have "B1 \<inter> insert x (B2 - {y}) = insert x (B1 \<inter> (B2 - {y}))"
+              using x_in by auto
+            also have "B1 \<inter> (B2 - {y}) = B1 \<inter> B2"
+              using y_notin by auto
+            finally have eq: "B1 \<inter> insert x (B2 - {y}) = insert x (B1 \<inter> B2)" .
+            have finite_inter: "finite (B1 \<inter> B2)" using \<open>finite B1\<close> by auto
+            have x_notin_inter: "x \<notin> B1 \<inter> B2" using x_notin by auto
+            from card_insert_disjoint[OF finite_inter x_notin_inter]
+            have "card (insert x (B1 \<inter> B2)) = card (B1 \<inter> B2) + 1" by simp
+            with eq show ?thesis by simp
+          qed
 
           with ex_B1_B2 show ?case
             by (metis DiffD1 DiffD2 ex_x ex_y insert_Diff linorder_not_less subset_insert subset_insertI subset_trans)
