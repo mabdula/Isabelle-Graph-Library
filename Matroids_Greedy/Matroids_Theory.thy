@@ -4059,7 +4059,15 @@ proof-
   have "(\<Sum>j \<in> {1..n}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1))) =
     (\<Sum>j \<in> {1..n - 1}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1)))
     + (g n) * (if n < n then c (n - 1) - c n else c (n - 1))"
-    by (metis (no_types, lifting) add.right_neutral assms(3) less_one linorder_not_le mult_zero_left sum_split_last zero_diff)
+proof (cases "n = 0")
+  case True
+  then show ?thesis using assms(3) by simp
+next
+  case False
+  then have "1 \<le> n" by simp
+  from sum_split_last[OF this, of "\<lambda>j. g j * (if j < n then c (j - 1) - c j else c (j - 1))"]
+  show ?thesis by simp
+qed
   also have "... = 
     (\<Sum>j \<in> {1..n - 1}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1)))
     + (g n) * c (n - 1)"
