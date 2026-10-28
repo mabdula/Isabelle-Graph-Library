@@ -717,7 +717,7 @@ lemma extract_first_and_last:
              \<and> (\<nexists> z. z \<in> set cs \<and> P z)"
 proof-
   obtain as a rest where asarest:"xs = as@[a]@rest \<and> P a \<and> (\<nexists> z. z \<in> set as \<and> P z)" 
-    by (metis assms(2) assms(4) extract_first_x)
+    using extract_first_x[of y xs P] assms(2) assms(4) by blast
   hence "\<exists> z. z \<in> set rest \<and> P z"
     using assms by auto
   then obtain bs b cs where bsdcs:"rest = bs@[b]@cs \<and> P b \<and> (\<nexists>z. z \<in> set cs \<and> P z)" 
