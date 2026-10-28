@@ -1772,7 +1772,7 @@ proof-
 
           from 4 7 have "card ((B2 - B1) - Y) > 0" by linarith
           then have "\<exists>y. y \<in> (B2 - B1) - Y"
-            by (metis all_not_in_conv card_gt_0_iff)
+            by (auto simp: card_gt_0_iff ex_in_conv)
           then obtain y where ex_y: "y \<in> (B2 - B1) - Y" by blast
           with ex_B1_B2 have y_in: "y \<in> (B2 - B1)" by blast
 
