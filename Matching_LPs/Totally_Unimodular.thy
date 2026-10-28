@@ -3044,7 +3044,7 @@ proof rule
         have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}" 
           apply safe 
             apply simp+
-           apply (metis DiffI True atLeastLessThan_iff diff_self_eq_0 image_iff less_irrefl)
+           apply (rule image_eqI[where x=nr]; simp add: True)
           by simp
         have 19: "submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J =
           submatrix (mat_of_rows n [(- (unit_vec n i) :: 'a vec)]) {0} J" 
