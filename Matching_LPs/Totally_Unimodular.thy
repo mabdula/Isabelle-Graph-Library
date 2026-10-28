@@ -2311,7 +2311,24 @@ qed
               card {a\<in>(I - {pick I i}). a < pick I t} + card {pick I i}"
           by force
         then have 40: "card {a\<in>(I - {pick I i}). a < pick I t} + 1 = card {a\<in>I. a < pick I t}"
-          by (metis 36 card_eq_1_iff)
+          proof -
+            have fin1: "finite {a \<in> (I - {pick I i}). a < pick I t}"
+            proof -
+              have "{a \<in> (I - {pick I i}). a < pick I t} \<subseteq> {0..<pick I t}"
+                by auto
+              then show ?thesis using finite_subset by blast
+            qed
+            have fin2: "finite {pick I i}" by simp
+            have disj: "{a \<in> (I - {pick I i}). a < pick I t} \<inter> {pick I i} = {}"
+              by blast
+            have "card ({a \<in> (I - {pick I i}). a < pick I t} \<union> {pick I i}) =
+                  card {a \<in> (I - {pick I i}). a < pick I t} + card {pick I i}"
+              using card_Un_disjoint[OF fin1 fin2 disj] .
+            then have "card ({a \<in> (I - {pick I i}). a < pick I t} \<union> {pick I i}) =
+                       card {a \<in> (I - {pick I i}). a < pick I t} + 1"
+              by simp
+            with 36 show ?thesis by simp
+          qed
         then have 41: "card {a\<in>(I - {pick I i}). a < pick I t} = t - 1" 
           using 37 by presburger
         then have 38: "pick (I - {pick I i}) (t - 1) = pick I t"
