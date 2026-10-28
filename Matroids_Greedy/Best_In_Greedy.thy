@@ -1203,7 +1203,12 @@ proof-
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
     using rank_E_j_prod_geq_X_j_prod sum_mono rank_quotient_geq_0
-    by (smt (verit) mult_left_mono)
+  proof -
+    have le_sum: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j)) \<le>
+      (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
+      using rank_E_j_prod_geq_X_j_prod by (intro sum_mono) simp
+    from mult_left_mono[OF le_sum rank_quotient_geq_0] show ?thesis by simp
+  qed
   moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j)) \<ge> 
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
