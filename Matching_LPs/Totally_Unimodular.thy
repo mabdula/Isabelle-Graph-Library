@@ -1933,8 +1933,22 @@ qed
       using assms(2) submatrix_split2 by blast
     have 25:"B $$ (insert_index i t, insert_index j k) = 
           A $$ (pick I (insert_index i t), pick J (insert_index j k))"
-      apply(simp only: assms(2))
-      by (metis (no_types, lifting) 24 23 assms(2) dim_submatrix(1-2) submatrix_index)
+      proof -
+  have i_dim: "insert_index i t < dim_row (submatrix A I J)"
+    using 24 assms(2) by simp
+  have i_card: "insert_index i t < card {ia. ia < dim_row A \<and> ia \<in> I}"
+    using i_dim by (simp add: dim_submatrix(1))
+  have j_dim: "insert_index j k < dim_col (submatrix A I J)"
+    using 23 assms(2) by simp
+  have j_card: "insert_index j k < card {ja. ja < dim_col A \<and> ja \<in> J}"
+    using j_dim by (simp add: dim_submatrix(2))
+  have "submatrix A I J $$ (insert_index i t, insert_index j k) =
+        A $$ (pick I (insert_index i t), pick J (insert_index j k))"
+    using submatrix_index i_card j_card by blast
+  then show "B $$ (insert_index i t, insert_index j k) =
+             A $$ (pick I (insert_index i t), pick J (insert_index j k))"
+    using assms(2) by simp
+      qed
     have "B $$ (insert_index i t, insert_index j k) = A $$ (t1, k1)" 
       using 25 k1 t1 by blast
     have 47: "submatrix A (I - {pick I i}) (J - {pick J j}) $$ (t, k) = A $$ (t2, k2)"
