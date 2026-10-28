@@ -399,8 +399,24 @@ lemma induce_sccs_dVs:
   shows "dVs (G \<downharpoonright> S) = S"
 proof
   show "dVs (G \<downharpoonright> S) \<subseteq> S" by (auto dest: induce_dVs_subset)
-  then show "S \<subseteq> dVs (G \<downharpoonright> S)"
-    by (smt Diff_eq_empty_iff assms in_induce_subgraph_dVsI_reachable(2) in_sccs_dVsD(2) insert_Diff subsetI)
+  show "S \<subseteq> dVs (G \<downharpoonright> S)"
+  proof (rule subsetI)
+    fix v
+    assume v_in: "v \<in> S"
+    have reach: "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
+      using assms(1) assms(2) v_in by (auto simp: sccs_dVs_def)
+    have disj: "S \<noteq> {u} \<or> (u, v) \<in> G"
+    proof (cases "S = {u}")
+      case True
+      then have "v = u" using v_in by simp
+      then show ?thesis using assms(3) True by simp
+    next
+      case False
+      then show ?thesis by simp
+    qed
+    show "v \<in> dVs (G \<downharpoonright> S)"
+      using in_induce_subgraph_dVsI_reachable(2)[OF assms(2) v_in assms(1) disj reach] .
+  qed
 qed
 
 lemma induce_sccs_dVs_digraph_of_eq:
