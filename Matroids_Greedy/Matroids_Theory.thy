@@ -2151,7 +2151,54 @@ lemma matroid_imp_rank_axioms1:
     (\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. X \<subseteq> Y \<longrightarrow> r X \<le> r Y) \<and>
     (\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y))"
   using assms matroid.rank_of_le matroid.rank_of_mono matroid.rank_of_Un_Int_le 
-  by (smt (verit, best) Int_Un_eq(1) Un_subset_iff)
+proof-
+  from assms(2) obtain indep where
+    indep_matroid: "matroid E indep" and
+    r_eq: "\<forall>X \<subseteq> E. r X = matroid.rank_of indep X"
+    by blast
+
+  have R1: "\<forall>X \<subseteq> E. r X \<le> card X"
+  proof (rule allI, rule impI)
+    fix X
+    assume "X \<subseteq> E"
+    from r_eq \<open>X \<subseteq> E\<close> have "r X = matroid.rank_of indep X" by blast
+    also have "... \<le> card X"
+      using matroid.rank_of_le[OF indep_matroid \<open>X \<subseteq> E\<close>] .
+    finally show "r X \<le> card X" .
+  qed
+
+  have R2: "\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. X \<subseteq> Y \<longrightarrow> r X \<le> r Y"
+  proof ((rule allI, rule impI)+, rule impI)
+    fix X Y
+    assume "X \<subseteq> E" "Y \<subseteq> E" "X \<subseteq> Y"
+    from r_eq \<open>X \<subseteq> E\<close> have "r X = matroid.rank_of indep X" by blast
+    also have "... \<le> matroid.rank_of indep Y"
+      using matroid.rank_of_mono[OF indep_matroid \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close>] .
+    also from r_eq \<open>Y \<subseteq> E\<close> have "... = r Y" by (simp add: r_eq)
+    finally show "r X \<le> r Y" .
+  qed
+
+  have R3: "\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y"
+  proof ((rule allI, rule impI)+)
+    fix X Y
+    assume "X \<subseteq> E" "Y \<subseteq> E"
+    then have "X \<union> Y \<subseteq> E" by blast
+    from \<open>X \<subseteq> E\<close> have "X \<inter> Y \<subseteq> E" by blast
+
+    from r_eq \<open>X \<union> Y \<subseteq> E\<close> have r_un: "r (X \<union> Y) = matroid.rank_of indep (X \<union> Y)" by blast
+    from r_eq \<open>X \<inter> Y \<subseteq> E\<close> have r_int: "r (X \<inter> Y) = matroid.rank_of indep (X \<inter> Y)" by blast
+    from r_eq \<open>X \<subseteq> E\<close> have r_X: "r X = matroid.rank_of indep X" by blast
+    from r_eq \<open>Y \<subseteq> E\<close> have r_Y: "r Y = matroid.rank_of indep Y" by blast
+
+    from matroid.rank_of_Un_Int_le[OF indep_matroid \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close>]
+    have "matroid.rank_of indep (X \<union> Y) + matroid.rank_of indep (X \<inter> Y) \<le>
+      matroid.rank_of indep X + matroid.rank_of indep Y" .
+
+    with r_un r_int r_X r_Y show "r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y" by simp
+  qed
+
+  from R1 R2 R3 show ?thesis by blast
+qed
 
 lemma rank_axioms1_imp_rank_axioms2:
   assumes "finite E"
