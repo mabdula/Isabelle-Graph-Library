@@ -1759,9 +1759,27 @@ proof-
     qed
 
     moreover have "hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier)"
-      using \<open>invar_2 ?c ?order best_in_greedy_state\<close> \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close>
-      by (metis BestInGreedy_call_1_conds carrier_sorted_set[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] in_set_dropD
-          invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] list.set_sel(1) list.simps(3) matroid.carrier_abs_def)
+    proof -
+      from \<open>BestInGreedy_call_1_conds best_in_greedy_state\<close>
+      have carrier_list_nonempty: "carrier_list best_in_greedy_state \<noteq> []"
+        by (auto elim!: call_cond_elims)
+      hence hd_mem: "hd (carrier_list best_in_greedy_state) \<in> set (carrier_list best_in_greedy_state)"
+        by (rule list.set_sel(1))
+      from \<open>invar_2 ?c ?order best_in_greedy_state\<close>
+      have carrier_list_eq: "carrier_list best_in_greedy_state =
+          drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order)"
+        by (auto elim!: invar_2_props[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>])
+      from hd_mem carrier_list_eq
+      have "hd (carrier_list best_in_greedy_state) \<in>
+          set (drop (num_iter ?c ?order best_in_greedy_state) (sort_desc ?c ?order))"
+        by simp
+      hence "hd (carrier_list best_in_greedy_state) \<in> set (sort_desc ?c ?order)"
+        by (rule in_set_dropD)
+      hence "hd (carrier_list best_in_greedy_state) \<in> to_set carrier"
+        using carrier_sorted_set[OF \<open>nonnegative ?c\<close> \<open>valid_order ?order\<close>] by simp
+      thus "hd (carrier_list best_in_greedy_state) \<in> matroid.carrier_abs carrier"
+        by (simp add: matroid.carrier_abs_def)
+    qed
     ultimately have 
       "hd (carrier_list best_in_greedy_state) \<in> (matroid.carrier_abs carrier) - (F - B1)" by auto
 
