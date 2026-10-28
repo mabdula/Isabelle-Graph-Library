@@ -1277,7 +1277,7 @@ proof(induction xs arbitrary: G' x G z)
       proof(elim UnE, goal_cases)
         case 1
         then show ?case 
-          using two(3,8)
+          using two(3,8) (*takes long*)
           by(auto simp add: G'_def G''_def delta_plus_def 
                             delta_minus_def Gamma_plus_def Gamma_minus_def xx_is_x)
            (smt (z3) fst_conv snd_conv mem_Collect_eq)+

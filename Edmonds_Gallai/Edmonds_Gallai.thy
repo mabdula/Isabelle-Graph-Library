@@ -129,7 +129,7 @@ proof-
     unfolding Odds_def evens_def
     by(subst G_vertex_image, subst M'_def, intro edmonds_gallai_inj_carry_over)
       (simp_all add: G'_absorb_M' vertex_inj_on_G' graph_invar'
-        M'(1) compute.g.graph_abs_subset graph_abs.dblton_E max_card_matchingDs(1))
+        M'(1) graph_abs.dblton_E max_card_matchingDs(1))
   thus ?thesis
     by auto
 qed

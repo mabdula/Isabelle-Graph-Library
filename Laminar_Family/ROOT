@@ -4,6 +4,7 @@ session "Laminar_Family" = "HOL" +
     "HOL-Eisbach"
     "HOL-Data_Structures"
     "Directed_Set_Graphs"
+    "Data_Structures"
   theories
     Laminar_Family
     Laminar_Spec

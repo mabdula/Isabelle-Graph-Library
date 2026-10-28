@@ -696,9 +696,6 @@ proof(rule dblton_graphI, goal_cases)
     by auto
 qed
 
-<<<<<<< HEAD
-subsection \<open>Graph invariants\<close>
-=======
 lemma dblton_graph_diff: "dblton_graph G \<Longrightarrow> dblton_graph (G - X)"
   using Vs_subset[of "G - X" G]
   by (auto intro!: finite_subset[of "Vs (G - X)" "Vs G"])
@@ -707,7 +704,7 @@ lemma inj_image_dblton_graph:
   "\<lbrakk>inj f; dblton_graph G\<rbrakk> \<Longrightarrow> dblton_graph ((image f) ` G)"
   using inj_eq[of f]
   by (intro dblton_graphI)(auto elim!: dblton_graphE)
->>>>>>> weighted_blossom
+subsection \<open>Graph invariants\<close>
 
 abbreviation "graph_invar G \<equiv> dblton_graph G \<and> finite (Vs G)"
 

@@ -1,6 +1,6 @@
 theory Laminar_Family_Executable
   imports Laminar_Family.Laminar_Family "HOL-Data_Structures.Map_Specs"
-           "HOL-Data_Structures.Set_Specs" Directed_Set_Graphs.More_Lists
+           "HOL-Data_Structures.Set_Specs" Data_Structures.More_Lists
           Laminar_Spec
 begin
 

@@ -3,7 +3,8 @@
 *)
 
 theory Vwalk
-  imports Pair_Graph "HOL-Eisbach.Eisbach" More_Lists
+  imports Pair_Graph "HOL-Eisbach.Eisbach" 
+Data_Structures.More_Lists
 begin
 
 provenance human

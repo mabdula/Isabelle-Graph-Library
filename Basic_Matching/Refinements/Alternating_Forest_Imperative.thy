@@ -339,7 +339,7 @@ lemma forest_fixed_univ_set_iterate_imp:
 
 lemma alternating_forest_imp_spec:
   "alternating_forest_imp_spec vset_invar vset_to_set odds abstract_forest forest_invar
-     roots extend_forest_even_unclassified empty_forest K get_path evens lst
+     roots extend_forest_even_unclassified empty_forest K vset_empty get_path evens lst
      forest_assn forest_is_it forest_it_init it_has_next it_next
      forest_empty_imp forest_clear_imp forest_add_root_imp forest_extend_imp
      evens_memb_imp odds_memb_imp get_path_imp"

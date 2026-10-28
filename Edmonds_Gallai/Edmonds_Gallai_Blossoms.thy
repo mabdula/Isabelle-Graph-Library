@@ -4,8 +4,8 @@ begin
 
 subsection \<open>Properties of the Edmonds-Gallai Decomposition and Blossom Contraction\<close>
 
-hide_const neighbourhood
-hide_fact neighbourhood_def
+
+lemmas neighbourhood_def = Undirected_Set_Graphs.neighbourhood_def
 
 text \<open>We define a predicate. We will later show that sets $\mathcal{D}$ and $A$ 
  which satisfy this predicate are the Edmonds-Gallai Decomposition.
@@ -1010,7 +1010,7 @@ proof-
     proof(rule, goal_cases)
       case (1 x)
       hence ux:"{u, x} \<in> quotG M" 
-        by(auto simp add: neighbourhood_def insert_commute)
+        by(auto simp add:  insert_commute)
       hence ux:"{u, x} \<in> quotG E"
         using M_in_E quotG_mono by blast
       then show ?case 

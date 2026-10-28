@@ -1,6 +1,6 @@
 theory Naive_Weighted_Blossom
   imports Laminar_Family.Laminar_Family Matching_LPs.Edmonds_Matching_LP
-    "HOL-Library.Disjoint_Sets" Directed_Set_Graphs.More_Arith Partition_Quotient_Graph
+    "HOL-Library.Disjoint_Sets" Data_Structures.More_Arith Partition_Quotient_Graph
 begin
 
 section \<open>Outline of the Weighted Matching Algorithm (see KV)\<close>

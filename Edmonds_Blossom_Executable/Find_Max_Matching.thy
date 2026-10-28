@@ -49,7 +49,7 @@ function \<^marker>\<open>provenance ai_human\<close> (domintros) Find_Max_Match
      (case aug_path_search (current_matching state) of
         Some p \<Rightarrow>
           Find_Max_Matching
-            (state \<lparr>current_matching := Mate.augment_impl (current_matching state) p\<rparr>)
+            (state \<lparr>current_matching := mate_augment (current_matching state) p\<rparr>)
       | None \<Rightarrow> state)"
   by pat_completeness auto
 
@@ -59,7 +59,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) Find_Max
      (case aug_path_search (current_matching state) of
         Some p \<Rightarrow>
           Find_Max_Matching_impl
-            (state \<lparr>current_matching := Mate.augment_impl (current_matching state) p\<rparr>)
+            (state \<lparr>current_matching := mate_augment (current_matching state) p\<rparr>)
       | None \<Rightarrow> state)"
 
 lemma Find_Max_Matching_impl_same:
@@ -85,7 +85,7 @@ definition "Find_Max_Matching_call_1_conds state =
 
 definition "Find_Max_Matching_upd1 state =
   state \<lparr>current_matching :=
-           Mate.augment_impl (current_matching state)
+           mate_augment (current_matching state)
              (the (aug_path_search (current_matching state)))\<rparr>"
 
 definition "Find_Max_Matching_ret_1_conds state =
@@ -101,8 +101,8 @@ definition "call_1_measure state =
 definition "Find_Max_Matching_term_rel' = call_1_measure <*mlex*> {}"
 
 lemma Find_Max_Matching_call_1_conds[call_cond_elims]:
-  "Find_Max_Matching_call_1_conds state \<Longrightarrow>
-   ((\<exists>p. aug_path_search (current_matching state) = Some p) \<Longrightarrow> P) \<Longrightarrow> P"
+  "\<lbrakk>Find_Max_Matching_call_1_conds state;
+   ((\<exists>p. aug_path_search (current_matching state) = Some p) \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: Find_Max_Matching_call_1_conds_def)
 
 lemma Find_Max_Matching_call_1_condsI[call_cond_intros]:
@@ -111,8 +111,8 @@ lemma Find_Max_Matching_call_1_condsI[call_cond_intros]:
   by (auto simp: Find_Max_Matching_call_1_conds_def)
 
 lemma Find_Max_Matching_ret_1_conds[call_cond_elims]:
-  "Find_Max_Matching_ret_1_conds state \<Longrightarrow>
-   (aug_path_search (current_matching state) = None \<Longrightarrow> P) \<Longrightarrow> P"
+  "\<lbrakk>Find_Max_Matching_ret_1_conds state;
+   (aug_path_search (current_matching state) = None \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: Find_Max_Matching_ret_1_conds_def)
 
 lemma Find_Max_Matching_ret_1_condsI[call_cond_intros]:
@@ -180,7 +180,7 @@ lemmas aug_path_search_props = aug_path_search[OF graph_input_G]
 subsection \<open>The invariant\<close>
 
 lemma invar_current_matching_props[invar_props_elims]:
-  "invar_current_matching state \<Longrightarrow> (matching_invar G (current_matching state) \<Longrightarrow> P) \<Longrightarrow> P"
+  "\<lbrakk>invar_current_matching state; (matching_invar G (current_matching state) \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: invar_current_matching_def)
 
 lemma invar_current_matching_intro[invar_props_intros]:
@@ -193,19 +193,11 @@ lemma invar_current_matching_holds_1[invar_holds_intros]:
 proof(elim call_cond_elims invar_props_elims exE)
   fix p
   assume inv: "matching_invar G (current_matching state)"
-     and p: "aug_path_search (current_matching state) = Some p"
-  hence "graph_augmenting_path (ugraph_abs G) (matching_abs (current_matching state)) p"
-    by (intro aug_path_search_props(1))
-  thus ?thesis
-    using inv p
-    by (auto intro!: invar_props_intros Mate.augmentation_correct(1)
-               simp: Find_Max_Matching_upd1_def matching_invar_def)
+    and result: "aug_path_search (current_matching state) = Some p"
+  show ?thesis
+    using Mate.augment(1)[OF matching_invar_props(1)[OF inv] aug_path_search_props(1)[OF inv result]]
+    by (auto intro!: invar_props_intros simp: Find_Max_Matching_upd1_def matching_invar_def result)
 qed
-
-lemma invar_current_matching_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>Find_Max_Matching_ret_1_conds state; invar_current_matching state\<rbrakk>
-   \<Longrightarrow> invar_current_matching (Find_Max_Matching_ret1 state)"
-  by auto
 
 lemma invar_current_matching_holds[invar_holds_intros]:
   assumes "Find_Max_Matching_dom state" "invar_current_matching state"
@@ -232,18 +224,19 @@ proof-
   have inv0: "matching_invar G (current_matching state)"
     using assms(2)
     by (auto elim!: invar_props_elims)
-  have inv: "Mate.invar_matching (ugraph_abs G) (current_matching state)"
+  have inv: "matching_invar_abs (ugraph_abs G) (current_matching state)"
     using inv0
     by (simp add: matching_invar_def)
   have aug: "graph_augmenting_path (ugraph_abs G) (matching_abs (current_matching state)) p"
     by (rule aug_path_search_props(1)[OF inv0 p])
   have less: "card (matching_abs (current_matching state))
-                < card (matching_abs (Mate.augment_impl (current_matching state) p))"
-    by (rule Mate.augmentation_correct(3)[OF inv aug])
-  have "matching_abs (Mate.augment_impl (current_matching state) p) \<subseteq> ugraph_abs G"
-    using Mate.augmentation_correct(1)[OF inv aug]
-    by (auto dest: Mate.invar_matchingD(4))
-  hence "card (matching_abs (Mate.augment_impl (current_matching state) p)) \<le> card (ugraph_abs G)"
+                < card (matching_abs (mate_augment (current_matching state) p))"
+    using aug matching_invar_props(4)[OF inv0 graph_input_G]
+    by (simp add: Mate.augment(2)[OF inv aug] new_matching_bigger)
+  have "matching_abs (mate_augment (current_matching state) p) \<subseteq> ugraph_abs G"
+    using Mate.matching(1)[OF Mate.augment(1)[OF inv aug]]
+    by simp
+  hence "card (matching_abs (mate_augment (current_matching state) p)) \<le> card (ugraph_abs G)"
     by (intro card_mono) simp_all
   hence "call_1_measure (Find_Max_Matching_upd1 state) < call_1_measure state"
     using less p
@@ -285,7 +278,7 @@ proof(elim invar_props_elims call_cond_elims)
   moreover have "matching (matching_abs (current_matching state))"
                 "matching_abs (current_matching state) \<subseteq> ugraph_abs G"
                 "finite (matching_abs (current_matching state))"
-    using matching_invar_props[OF inv]
+    using matching_invar_props(2,3)[OF inv] matching_invar_props(4)[OF inv graph_input_G]
     by simp_all
   ultimately show ?thesis
     using Berge[of "matching_abs (current_matching state)" "ugraph_abs G"] ugraph_abs_G
@@ -308,7 +301,8 @@ lemma initial_state_props[invar_holds_intros, termination_intros]:
   "invar_current_matching initial_state" "Find_Max_Matching_dom initial_state"
 proof-
   show "invar_current_matching initial_state"
-    using Mate.empty_matching_props(1)[of "ugraph_abs G"]
+    using Mate.matching(2)[of "ugraph_abs G"]
+      Vs_ugraph_abs_subset_vs[OF graph_input_G] graph_inputD(7)[OF graph_input_G]
     by (auto intro!: invar_props_intros simp: initial_state_def matching_invar_def)
   thus "Find_Max_Matching_dom initial_state"
     by (rule Find_Max_Matching_terminates)

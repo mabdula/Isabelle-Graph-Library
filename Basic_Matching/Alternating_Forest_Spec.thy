@@ -31,7 +31,8 @@ locale alternating_forest_spec =
  "\<And> F M. forest_invar M F \<Longrightarrow> vset_to_set (odds F) \<subseteq> Vs (abstract_forest F)"
  "\<And> F M. forest_invar M F \<Longrightarrow> vset_to_set (roots F) \<inter> vset_to_set (odds F) = {}"
 and finite_forest_basis:
- "\<And> F M. forest_invar M F\<Longrightarrow> finite (vset_to_set (odds F))"
+ "\<And> F M. forest_invar M F \<Longrightarrow> finite (vset_to_set (evens F))"
+ "\<And> F M. forest_invar M F \<Longrightarrow> finite (vset_to_set (odds F))"
 and roots:
    "\<And> F M. forest_invar M F \<Longrightarrow> vset_invar (roots F)"
    "\<And> F M. forest_invar M F \<Longrightarrow> vset_to_set (roots F) \<subseteq> vset_to_set (evens F)"
@@ -40,15 +41,20 @@ and get_path_basis:
     "\<And> F M v p. \<lbrakk>forest_invar M F; v \<in> vset_to_set (evens F); p = get_path F v\<rbrakk> \<Longrightarrow>
            rev_alt_path M p \<and>
            last p \<in> vset_to_set (roots F) \<and>
-           (walk_betw (abstract_forest F) v p (last p) \<or> p = [v]) \<and>
-           distinct p"
+           (walk_betw (abstract_forest F) v p (last p) \<or> p = [v])"
 and higher_forest_properties_basis:
     "\<And> F M. forest_invar M F\<Longrightarrow>
-       card (vset_to_set (evens F)) > card (vset_to_set (odds F))"
+       card (vset_to_set (evens F)) = card (vset_to_set (odds F)) + card (vset_to_set (roots F))"
     "\<And> F M u v. \<lbrakk>forest_invar M F; {u, v} \<in> M\<rbrakk>\<Longrightarrow>
         {u, v} \<in> abstract_forest F \<or> {u, v} \<inter> Vs (abstract_forest F) = {}"
     "\<And> F M u v. \<lbrakk>forest_invar M F; {u, v} \<in> abstract_forest F\<rbrakk>\<Longrightarrow>
                u \<in> vset_to_set (evens F) \<longleftrightarrow> v \<in> vset_to_set (odds F)"
+and get_path_prefices:
+    "\<And>F M v v' x p1 p2 p1' p2'.
+      \<lbrakk>forest_invar M F; p1 @ x # p2 = get_path F v; p1' @ x # p2' = get_path F v'\<rbrakk>
+      \<Longrightarrow> p2 = p2'"
+and dblton:
+    "\<And>M F. forest_invar M F \<Longrightarrow> dblton_graph (abstract_forest F)"
 begin
 
 subsection \<open>Derived Properties\<close>
@@ -76,6 +82,22 @@ proof(induction p rule: path.induct)
   ultimately show ?case
     using IH by auto
 qed simp_all
+
+lemma get_path_distinct:
+  assumes "forest_invar M F"
+  shows "distinct (get_path F v)"
+proof (rule ccontr)
+  assume "\<not> distinct (get_path F v)"
+  then obtain xs ys zs x where path:
+    "get_path F v = xs @ [x] @ ys @ [x] @ zs"
+    by (metis not_distinct_decomp)
+  have "ys @ x # zs = zs"
+    by (rule get_path_prefices[OF assms, of xs x "ys @ x # zs" v
+          "xs @ [x] @ ys" zs v]) (simp_all add: path)
+  then have "length (ys @ x # zs) = length zs"
+    by simp
+  then show False by simp
+qed
 
 lemma get_path_parity:
   assumes "forest_invar M F" "v \<in> vset_to_set (evens F)"
@@ -138,6 +160,11 @@ proof-
     using get_path_parity(1)[OF invar] by blast
 qed
 
+lemma odds_eq_Vs_minus_evens:
+  assumes "forest_invar M F"
+  shows "vset_to_set (odds F) = Vs (abstract_forest F) - vset_to_set (evens F)"
+  using evens_and_odds(3,4)[OF assms] evens_and_odds_basis(4)[OF assms] by blast
+
 lemma finite_forest:
  "\<And> F M. forest_invar M F\<Longrightarrow> finite (vset_to_set (evens F))"
  "\<And> F M. forest_invar M F\<Longrightarrow> finite (vset_to_set (odds F))"
@@ -145,20 +172,13 @@ lemma finite_forest:
 proof-
   fix F M
   assume invar: "forest_invar M F"
-  show finite_evens: "finite (vset_to_set (evens F))"
-  proof(rule ccontr)
-    assume "infinite (vset_to_set (evens F))"
-    hence "card (vset_to_set (evens F)) = 0"
-      by (simp add: card_eq_0_iff)
-    thus False
-      using higher_forest_properties_basis(1)[OF invar] by simp
-  qed
-  show "finite (vset_to_set (odds F))"
-    by (rule finite_forest_basis[OF invar])
+  show "finite (vset_to_set (evens F))" "finite (vset_to_set (odds F))"
+    by (rule finite_forest_basis[OF invar])+
   show "finite (abstract_forest F)"
-    using finite_evens finite_forest_basis[OF invar]
+    using finite_forest_basis[OF invar]
     by (intro finite_Vs_then_finite finite_subset[OF evens_and_odds_basis(3)[OF invar]]) simp
 qed
+
 
 lemma get_path:
     "\<And> F M v p. \<lbrakk>forest_invar M F; v \<in> vset_to_set (evens F); p = get_path F v\<rbrakk> \<Longrightarrow>
@@ -166,30 +186,20 @@ lemma get_path:
            last p \<in> vset_to_set (roots F) \<and>
            (walk_betw (abstract_forest F) v p (last p) \<or> p = [v]) \<and>
            distinct p"
-<<<<<<< HEAD
   subgoal premises prems for F M v p
     using get_path_basis[OF prems] get_path_parity(2)[OF prems(1,2)]
+      get_path_distinct[OF prems(1), of v]
     by (simp add: prems(3))
   done
 
 lemma higher_forest_properties:
     "\<And> F M. forest_invar M F\<Longrightarrow>
-       card (vset_to_set (evens F)) > card (vset_to_set (odds F))"
-=======
-and get_path_prefices:
-    "\<And> F M v v' x p1 p2 p1' p2'. 
-      \<lbrakk>forest_invar M F; p1@x#p2 = get_path F v;  p1'@[x]@p2' = get_path F v'\<rbrakk> \<Longrightarrow>
-           p2 = p2'"
-and higher_forest_properties:
-    "\<And> F M. forest_invar M F\<Longrightarrow> 
-       card (vset_to_set (evens F)) = card (vset_to_set (odds F)) +  card (vset_to_set (roots F))"
->>>>>>> weighted_blossom
+       card (vset_to_set (evens F)) = card (vset_to_set (odds F)) + card (vset_to_set (roots F))"
     "\<And> F M u v. \<lbrakk>forest_invar M F; {u, v} \<in> M\<rbrakk>\<Longrightarrow>
         {u, v} \<in> abstract_forest F \<or>
           {u, v} \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F)) = {}"
     "\<And> F M u v. \<lbrakk>forest_invar M F; {u, v} \<in> abstract_forest F\<rbrakk>\<Longrightarrow>
                u \<in> vset_to_set (evens F) \<longleftrightarrow> v \<in> vset_to_set (odds F)"
-<<<<<<< HEAD
   subgoal
     by (rule higher_forest_properties_basis(1))
   subgoal premises prems for F M u v
@@ -199,6 +209,16 @@ and higher_forest_properties:
   subgoal
     by (rule higher_forest_properties_basis(3))
   done
+
+lemma more_evens_than_odds:
+  assumes "forest_invar M F" "vset_to_set (roots F) \<noteq> {}"
+  shows "card (vset_to_set (odds F)) < card (vset_to_set (evens F))"
+proof -
+  have "finite (vset_to_set (roots F))"
+    using roots(2)[OF assms(1)] finite_forest(1)[OF assms(1)] finite_subset by blast
+  with assms(2) higher_forest_properties(1)[OF assms(1)] show ?thesis
+    by (simp add: card_gt_0_iff)
+qed
 
 text \<open>The roots are exactly the even vertices that the matching does not cover.\<close>
 
@@ -242,10 +262,6 @@ qed
 
 subsection \<open>Precondition of the Ordinary Extension\<close>
 
-=======
-and dblton: "\<And> M F. forest_invar M F \<Longrightarrow> dblton_graph (abstract_forest F)"
-begin
->>>>>>> weighted_blossom
 definition "forest_extension_precond F M x y z =
       (forest_invar M F \<and> x \<in> vset_to_set (evens F) \<and>
         {y, z} \<inter> (vset_to_set (evens F) \<union> vset_to_set (odds F)) = {} \<and>
@@ -254,7 +270,6 @@ definition "forest_extension_precond F M x y z =
 text \<open>The remaining conjuncts of @{term forest_extension_precond} follow from these.\<close>
 
 lemma forest_extension_precondI:
-<<<<<<< HEAD
   assumes invar: "forest_invar M F"
     and x_even: "x \<in> vset_to_set (evens F)"
     and y_new: "y \<notin> vset_to_set (evens F) \<union> vset_to_set (odds F)"
@@ -295,58 +310,6 @@ proof-
     unfolding forest_extension_precond_def
     using invar x_even y_new z_new xy yz matching y_not_z by blast
 qed
-=======
-"\<lbrakk>forest_invar M F; x \<in> vset_to_set (evens F);
-  {y, z} \<inter> (vset_to_set (evens F) \<union> vset_to_set (odds F)) = {};
-  {x, y} \<notin> M; {y, z} \<in> M; matching M;
-  x \<noteq> y; y \<noteq> z; x \<noteq> z\<rbrakk>
-\<Longrightarrow>forest_extension_precond F M x y z "
-  by(auto simp add: forest_extension_precond_def)
-
-definition 
-   "contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr = 
-    (forest_invar \<M> F \<and>  matching \<M> \<and> dblton_graph \<M> \<and> 
-     get_path F v = B1@[u]@P \<and> get_path F v' = B2@[u]@P \<and> set B1 \<inter> set B2 ={} \<and>
-     v \<in> vset_to_set (evens F) \<and> v' \<in> vset_to_set (evens F) \<and> 
-     new_vert \<notin> Vs \<M> \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - (set B1 \<union> set B2 \<union> {u}) \<and>
-     contr = (\<lambda> v. if v \<in> {u} \<union> set B1 \<union> set B2 then new_vert else v))"
-
-lemma contract_fork_precondI:
- "\<lbrakk>forest_invar \<M> F; matching \<M>; dblton_graph \<M>; get_path F v = B1@[u]@P;
-   get_path F v' = B2@[u]@P; set B1 \<inter> set B2 = {}; v \<in> vset_to_set (evens F);
-   v' \<in> vset_to_set (evens F); 
-   new_vert \<notin> Vs \<M> \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - (set B1 \<union> set B2 \<union> {u});
-   contr = (\<lambda> v. if v \<in> {u} \<union> set B1 \<union> set B2 then new_vert else v)\<rbrakk>
-   \<Longrightarrow> contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr"
-and contract_fork_precondE:
- "contract_fork_precond \<M> F v v' B1 B2 u new_vert P contr \<Longrightarrow>
- (\<lbrakk>forest_invar \<M> F; matching \<M>; dblton_graph \<M>; get_path F v = B1@[u]@P;
-   get_path F v' = B2@[u]@P; set B1 \<inter> set B2 = {}; v \<in> vset_to_set (evens F);
-   v' \<in> vset_to_set (evens F); 
-   new_vert \<notin> Vs \<M> \<union> vset_to_set (evens F) \<union> vset_to_set (odds F) - (set B1 \<union> set B2 \<union> {u});
-   contr = (\<lambda> v. if v \<in> {u} \<union> set B1 \<union> set B2 then new_vert else v)\<rbrakk>
-   \<Longrightarrow> Q)
-  \<Longrightarrow> Q"
-  by(auto simp add: contract_fork_precond_def)
-
-definition 
- "odd_expansion_precond \<M> F u mu p = 
-  (forest_invar \<M> F \<and> matching \<M> \<and> u \<in> vset_to_set (odds F) \<and> {u, mu} \<in> \<M> \<and>
-  odd (length p) \<and> set p \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F) \<union> Vs \<M>) \<subseteq> {u} \<and> 
-  distinct p)"
-
-lemma odd_expansion_precondE:
-  "\<lbrakk>odd_expansion_precond \<M> F u mu p; 
-    \<lbrakk>forest_invar \<M> F; matching \<M>; u \<in> vset_to_set (odds F); {u, mu} \<in> \<M>; odd (length p);
-     set p \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F) \<union> Vs \<M>) \<subseteq> {u};  distinct p\<rbrakk> \<Longrightarrow> P \<rbrakk>
-   \<Longrightarrow> P"
-and odd_expansion_precondI:
-  "\<lbrakk>forest_invar \<M> F; matching \<M>; u \<in> vset_to_set (odds F); {u, mu} \<in> \<M>; odd (length p);
-     set p \<inter> (Vs (abstract_forest F) \<union> vset_to_set (roots F) \<union> Vs \<M>) \<subseteq> {u};  distinct p\<rbrakk> 
-   \<Longrightarrow> odd_expansion_precond \<M> F u mu p"
-  by(auto simp add: odd_expansion_precond_def)
-
->>>>>>> weighted_blossom
 end
 
 locale alternating_forest_ordinary_extension_spec =
@@ -361,6 +324,7 @@ alternating_forest_spec evens odds get_path abstract_forest forest_invar roots
         "'forest \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'forest"
    and empty_forest::"'vset \<Rightarrow> 'forest"
    and forest_univ::"'v set"
+   and vset_empty::'vset
   assumes forest_extend_basis: "\<And> F M x y z. forest_extension_precond F M x y z
       \<Longrightarrow> forest_invar M (extend_forest_even_unclassified F x y z)"
    "\<And> F M x y z. forest_extension_precond F M x y z
@@ -371,9 +335,11 @@ alternating_forest_spec evens odds get_path abstract_forest forest_invar roots
           insert z (vset_to_set (evens F))"
 and empty_forest_basis:
     "\<And> R. evens (empty_forest R) = R"
+    "\<And> R. odds (empty_forest R) = vset_empty"
+    "\<And> R. roots (empty_forest R) = R"
     "\<And> R. abstract_forest (empty_forest R) = {}"
     "\<And> R M. \<lbrakk>matching M; vset_invar R; vset_to_set R \<inter> Vs M = {};
-           finite (vset_to_set R); vset_to_set R \<noteq> {}; Vs M \<subseteq> forest_univ\<rbrakk>
+           finite (vset_to_set R); Vs M \<subseteq> forest_univ\<rbrakk>
           \<Longrightarrow> forest_invar M (empty_forest R)"
 begin
 
@@ -394,7 +360,6 @@ lemma forest_extend:
    "\<And> F M x y z. forest_extension_precond F M x y z
       \<Longrightarrow> vset_to_set (roots (extend_forest_even_unclassified F x y z)) =
           vset_to_set (roots F)"
-<<<<<<< HEAD
 proof-
   fix F M x y z
   assume precond: "forest_extension_precond F M x y z"
@@ -455,34 +420,15 @@ proof-
     using roots_are_unmatched_evens[OF invar'] roots_are_unmatched_evens[OF invar] E'
     by (auto simp: F'_def)
 qed
-=======
-and empty_forest:
-    "\<And> R. evens (empty_forest R) = R"
-    "\<And> R. odds (empty_forest R) = vset_empty"
-    "\<And> R. roots (empty_forest R) = R"
-    "\<And> R. abstract_forest (empty_forest R) = {}"
-    "\<And> R M. \<lbrakk>matching M; vset_invar R; vset_to_set R \<inter> Vs M = {}; 
-           finite (vset_to_set R)\<rbrakk>
-          \<Longrightarrow> forest_invar M (empty_forest R)"
->>>>>>> weighted_blossom
 
-lemma empty_forest:
-    "\<And> R. evens (empty_forest R) = R"
-    "\<And> R M. forest_invar M (empty_forest R) \<Longrightarrow> vset_to_set (odds (empty_forest R)) = {}"
-    "\<And> R. abstract_forest (empty_forest R) = {}"
-    "\<And> R M. \<lbrakk>matching M; vset_invar R; vset_to_set R \<inter> Vs M = {};
-           finite (vset_to_set R); vset_to_set R \<noteq> {}; Vs M \<subseteq> forest_univ\<rbrakk>
-          \<Longrightarrow> forest_invar M (empty_forest R)"
-  subgoal
-    by (rule empty_forest_basis(1))
-  subgoal premises prems for R M
-    using evens_and_odds_basis(4)[OF prems] by (simp add: empty_forest_basis(2))
-  subgoal
-    by (rule empty_forest_basis(2))
-  subgoal
-    by (rule empty_forest_basis(3))
-  done
+lemmas empty_forest = empty_forest_basis
+
+lemma empty_forest_odds:
+  "forest_invar M (empty_forest R) \<Longrightarrow> vset_to_set (odds (empty_forest R)) = {}"
+  using evens_and_odds_basis(4)[of M "empty_forest R"]
+  by (simp add: empty_forest(4))
 
 end
 
 end
+

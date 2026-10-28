@@ -54,7 +54,6 @@ definition In_edges::"'a set \<Rightarrow> 'edge set" where
 definition "multigraph_path  (es::('edge list)) \<longleftrightarrow> (es = [] \<or> (es \<noteq> [] \<and>
                       awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))))"
 
-<<<<<<< HEAD
 lemma multigraph_pathI: "es = [] \<Longrightarrow> multigraph_path  es"
                 "\<lbrakk>awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)); es \<noteq> []\<rbrakk>
                   \<Longrightarrow> multigraph_path es"
@@ -68,24 +67,6 @@ lemma multigraph_pathE: "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> 
 lemma multigraph_pathE': "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> P;
     \<And>d ds. \<lbrakk>es = d#ds; awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))\<rbrakk> \<Longrightarrow> P\<rbrakk>
   \<Longrightarrow> P"
-=======
-lemma multigraph_pathI: 
-  "es = [] \<Longrightarrow> multigraph_path  es"
-  "\<lbrakk>awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es)); es \<noteq> []\<rbrakk> 
-  \<Longrightarrow> multigraph_path  es"
-  unfolding multigraph_path_def by auto
-
-lemma multigraph_pathE:
- "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> P;
-   \<lbrakk>es \<noteq> [];awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))\<rbrakk> \<Longrightarrow> P\<rbrakk>
-  \<Longrightarrow>P"
-  unfolding multigraph_path_def by auto
-
-lemma multigraph_pathE': 
-  "\<lbrakk>multigraph_path es; es = [] \<Longrightarrow> P;
-    \<And> d ds. \<lbrakk>es = d#ds; awalk UNIV (fst (hd es)) (map make_pair es) (snd (last es))\<rbrakk> \<Longrightarrow> P\<rbrakk>
-    \<Longrightarrow>P"
->>>>>>> weighted_blossom
   unfolding multigraph_path_def by (cases es) auto
 
 lemma deltas_in_E: "delta_plus x \<subseteq> \<E>" "delta_minus x \<subseteq> \<E>"
@@ -116,11 +97,7 @@ lemma delta_minus_mono:
   by(auto simp add: multigraph_spec.delta_minus_def)
 
 lemma in_delta_plusI: 
-<<<<<<< HEAD
 "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_plus E fst x" for fst
-=======
- "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_plus E fst x" for fst
->>>>>>> weighted_blossom
   by(auto simp add: multigraph_spec.delta_plus_def)
 
 lemma in_delta_plusD: 
@@ -129,11 +106,7 @@ lemma in_delta_plusD:
   by(auto simp add: multigraph_spec.delta_plus_def)
 
 lemma in_delta_minusI: 
-<<<<<<< HEAD
 "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_minus E fst x" for fst
-=======
- "\<lbrakk>e \<in> E; fst e = x\<rbrakk> \<Longrightarrow> e \<in> multigraph_spec.delta_minus E fst x" for fst
->>>>>>> weighted_blossom
   by(auto simp add: multigraph_spec.delta_minus_def)
 
 lemma in_delta_minusD: 

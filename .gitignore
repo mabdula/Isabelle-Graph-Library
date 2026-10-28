@@ -1,10 +1,10 @@
-# Only Isabelle theories and their ML sources, ROOT/ROOTS files, LaTeX PDF
-# sources, and the Python scripts already present on origin/more_algorithms
-# are eligible for tracking. Everything else stays local.
+# Only final Isabelle theories, ROOT/ROOTS files, and LaTeX sources for PDF
+# generation are eligible for tracking. Formalisation plans, scratch theories,
+# auxiliary scripts, and other working artifacts stay local and ignored.
+# This file maintains the policy; tracked files are not untracked by these rules.
 *
 !*/
 !*.thy
-!*.ML
 !ROOT
 !ROOTS
 !*.tex
@@ -14,12 +14,6 @@
 !*.bst
 !/.gitignore
 
-# Exact upstream Python paths; do not allow local helper scripts generally.
-!/AI_Style/line_breakdown.py
-!/AI_Style/locale_struct.py
-!/AI_Style/size_split.py
-!/AI_Style/style_stats.py
-
 # editor backups and autosaves
 *~
 \#*#
@@ -27,6 +21,22 @@
 
 # scratch theories used for proof experiments during refactorings
 Scratch*.thy
+scratch*.thy
+*_Scratch.thy
+*_scratch.thy
+
+# Ignore whole working directories, including theories and LaTeX within them.
+.scratch/
+scratch/
+scratch_*/
+plans/
+plan_*/
+oneshots/
+backups/
+backup_*/
+.claude/
+.codex/
+.agents/
 
 # refactoring plans and metrics (also covered by the whitelist above;
 # listed explicitly so they stay ignored if the whitelist is relaxed)
@@ -36,7 +46,7 @@ Scratch*.thy
 # snapshot copies of theories taken before refactorings
 refactoring_checkpoints/
 
-# Generated code and build output, including any .ML or .tex files within them.
+# Generated code and build output, including any .thy or .tex files within them.
 generated/
 generated_*/
 output/

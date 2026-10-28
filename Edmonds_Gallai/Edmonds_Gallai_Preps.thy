@@ -1,5 +1,6 @@
 theory Edmonds_Gallai_Preps
-  imports Blossom.Blossom_Algo_Contraction 
+  imports Blossom_Executable.Graph_Quotient_Lifting
+
 begin
 
 section \<open>Preparations for the Edmonds-Gallai Decomposition\<close>
@@ -207,22 +208,23 @@ proof(rule, goal_cases)
       by auto
     moreover have "alt_path M (stem @ rev C2 @ [x])" 
       using calculation(1) blossomD_rev(2)
-        Graph_Quotient.match_blossomD(1)[of M stem "(rev C2 @ [x]) @ rev C1"]
+        Blossom_Facts.match_blossomD(1)[of M stem "(rev C2 @ [x]) @ rev C1"]
         alt_path_prefix[of M "stem @ rev C2 @ [x]" "rev C1"]
       by auto
     moreover have "hd (stem @ rev C2 @ [x]) \<notin> Vs M" 
-      using match_blossomD(3,4) C1C2(2) calculation(1) hd_rev[of C] 
-        odd_cycleD(3)[of C] hd_append2[of stem C] hd_append2[of stem "rev C2 @ [x]"]
-      by fastforce
+      using Blossom_Facts.match_blossomD(4)[OF blossomD_rev(2)]
+      by (cases stem; cases C2 rule: rev_cases) (simp_all add: C1C2_rev(1))
+
     moreover have "distinct (stem @ rev C2 @ [x])"
       using calculation(2) C1C2(1) List.butlast_rev[of "C1 @ x # C2"] assms_rev  
-        Graph_Quotient.match_blossomD(2)[of M stem "rev (C1 @ x # C2)"]
+        Blossom_Facts.match_blossomD(2)[of M stem "rev (C1 @ x # C2)"]
       by auto
     moreover have "path G (stem @ rev C2 @ [x]) \<or> length (stem @ rev C2 @ [x]) = 1"
       using blossomD_rev(1) calculation(1) path_pref[of G "stem @ rev C2 @ [x]" "rev C1"]
       by auto
     moreover have "x \<in> Vs G" 
-      using "1" local.blossomD(1) mem_path_Vs by fastforce
+      using 1
+      by (intro mem_path_Vs[OF blossomD(1)]) simp
     ultimately show ?thesis 
       by(auto intro!: even_vertI[where p = "stem@ rev C2 @[x]"] 
           simp add: even_verts_def)
@@ -242,67 +244,40 @@ text \<open>Also, odd cycles are factor-critical.\<close>
 lemma odd_cycle_graph_near_perfect_matching:
   assumes "dblton_graph G" "odd_cycle p" "set p = Vs G" "distinct (butlast p)" "path G p"
   shows "\<exists> M. graph_matching G M \<and> Vs M = set p - {hd p}"
-proof-
-  define M where 
-    "M = {edges_of_path (butlast p) ! i | i. 0 \<le> i \<and> i + 1 <length (butlast p) \<and> odd i}"
-  have path_butlast: "path G (butlast p)" 
+proof -
+  define M where
+    "M = {edges_of_path (butlast p) ! i | i. 0 \<le> i \<and> i + 1 < length (butlast p) \<and> odd i}"
+  have path_butlast: "path G (butlast p)"
     using assms(2,5) odd_cycle_nempty[of "[]"] append_butlast_last_id[of p]
       path_pref[of G "butlast p" "[last p]"]
     by fastforce
-  show ?thesis
-  proof(rule exI[of _ M], goal_cases)
-    case 1
-    then show ?case
-    proof(rule, goal_cases)
-      case 1
-      then show ?case
-      proof(rule graph_matchingI, goal_cases)
-        case 1
-        then show ?case
-          using assms(4)
-          by(auto intro!: odd_edges_of_distinct_path_are_matching[of "butlast _", simplified]
-              simp add: M_def)
-      next
-        case 2
-        then show ?case
-          unfolding M_def
-        proof(rule, goal_cases)
-          case (1 e)
-          then obtain i where "e = edges_of_path (butlast p) ! i"
-            "0 \<le> i" "i + 1 < length (butlast p)" "odd i"
-            by auto
-          hence "e \<in> set (edges_of_path (butlast p))"
-            by (simp add: edges_of_path_length)
-          moreover have " set (edges_of_path (butlast p)) \<subseteq>  set (edges_of_path p)"
-            using assms(2) edges_of_path_append_subset_2[of "butlast p" "[last p]"]
-              append_butlast_last_id[of p]
-            by fastforce
-          moreover have " set (edges_of_path p) \<subseteq> G"
-            by (simp add: assms(5) path_edges_subset)
-          ultimately show ?case
-            by auto
-        qed
-      qed
-    next
-      case 2
-      have len_rw:"{edges_of_path (butlast p) ! i |i. 0 \<le> i \<and> i + 1 < length (butlast p) \<and> odd i} =
-            {edges_of_path (butlast p) ! i |i. i < length (butlast p) - 1 \<and> odd i}"
-        by auto
-      have Vs_M_rw: "Vs M = set (butlast (tl p))"
-        unfolding M_def len_rw verts_of_odd_edges[of "butlast p"]
-        by (auto simp add: assms(2) odd_cycle_even_verts odd_cycle_nempty butlast_tl)
-      have p_unfold: "p = hd p # butlast (tl p) @[last p]"
-        using assms(2) odd_cycleD(2) odd_cycle_nempty
-        by(cases p rule: list_cases3) fastforce+
-      hence "hd p \<notin> set (butlast (tl p))" 
-        using assms(4) snoc_eq_iff_butlast[of "hd p # butlast (tl p)"
-            "last p" "(hd p # butlast (tl p)) @ [last p]"]
-        by simp
-      thus ?case
-        unfolding Vs_M_rw
-        by(subst (2) p_unfold)(auto simp add: assms(2) odd_cycleD(3))
-    qed
+  have "matching M"
+    using assms(4)
+    by (auto intro!: odd_edges_of_distinct_path_are_matching[of "butlast _", simplified]
+        simp: M_def)
+  moreover have "M \<subseteq> G"
+  proof -
+    have "M \<subseteq> set (edges_of_path (butlast p))"
+      by (auto simp: M_def edges_of_path_length)
+    then show ?thesis
+      using path_edges_subset[OF path_butlast]
+      by blast
   qed
+  moreover have "Vs M = set p - {hd p}"
+  proof -
+    have M_eq: "M = {edges_of_path (butlast p) ! i | i. i < length (butlast p) - 1 \<and> odd i}"
+      by (auto simp: M_def)
+    then have "Vs M = set (butlast (tl p))"
+      unfolding M_eq verts_of_odd_edges[of "butlast p"]
+      by (auto simp: odd_cycle_even_verts[OF assms(2)] odd_cycle_nempty[OF assms(2)] butlast_tl)
+    moreover have "set (butlast (tl p)) = set p - {hd p}"
+      using assms(4) odd_cycleD(3)[OF assms(2)]
+      by (cases p rule: list_cases_hd_and_last) auto
+    ultimately show ?thesis
+      by simp
+  qed
+  ultimately show ?thesis
+    by (intro exI[of _ M]) simp
 qed
 
 lemma odd_cycle_graph_factor_critical:
@@ -419,10 +394,9 @@ proof-
       using quot(3,4) good_quot_map(2) target_not_u'
       by (intro quot_axioms.intro)
         (auto simp add: good_quot_map(1) in_Vs_insert target_in_E vs_insert)
-    interpret quot': quot sel "insert {target, u'} E" "insert u' s" u
-      using quot'_axioms interpret_helpers 
-      by(intro quot.intro pre_quot.intro graph_abs.intro
-          interpret_helpers  choose_axioms| simp )+
+    interpret quot': quot "insert {target, u'} E" "insert u' s" u
+      using quot'_axioms interpret_helpers
+      by (intro quot.intro graph_abs.intro) auto
     have new_blossom: "blossom ({{target, u'}} \<union> E) M stem C"
       using match_blossom path_subset[of E "stem@C" "{{target, u'}} \<union> E"] 
       by auto
@@ -445,52 +419,15 @@ proof-
       using  in_Vs_insertE[of u] quot(2,4) target_in_E 
       by auto
     have quot'_Es_are:"(quot'.quotG ({{target, u'}} \<union> E)) = insert ({target', u'}) (quotG E)"
-    proof(rule, all \<open>rule\<close>, goal_cases)
-      case (1 e)
-      then obtain e' where e': "e' \<in> insert {target, u'} E" "quot'.P ` e' = e" "e' \<noteq> {u}"
-        by(auto simp add: quot_graph_def)
-      show ?case
-      proof(cases "e' = {target, u'}")
-        case True
-        hence "e = {target', u'}" 
-          using e'(2) target'_def target_not_u' by force
-        then show ?thesis by simp
-      next
-        case False
-        hence e'_in_E:"e' \<in> E" 
-          using e'(1) by auto
-        moreover have "u' \<notin> e'" 
-          using calculation quot(3) by auto
-        ultimately have same_P:"quot'.P ` e' = P ` e'"
-          using False e'(2) by auto
-        have "e \<in> quotG E"
-          using e'_in_E e'(2,3) 1 same_P
-          by (auto intro!: bexI[of _ e'] simp add: quot_graph_def)
-        thus ?thesis by simp
-      qed
-    next
-      case (2 e)
-      show ?case
-      proof(cases "e = {target', u'}")
-        case True
-        hence e_not_u:"e \<noteq> {u}"
-          by (simp add: quot(4))
-        moreover have "quot'.P ` {target, u'} = e" 
-          using True   P_target target_not_u' by auto
-        ultimately show ?thesis 
-          by(auto simp add: quot_graph_def)
-      next
-        case False
-        then obtain e' where "e' \<in> E" "P ` e' = e" "e \<noteq> {u}"
-          using 2 by(auto simp add: quot_graph_def)
-        moreover have "quot'.P ` e' = e" 
-          using calculation(1,2)  
-          by (auto intro: not_in_VsE[OF quot(3)])
-        ultimately have "e \<in> quot_graph quot'.P ({{target, u'}} \<union> E)"
-          unfolding quot_graph_def by blast
-        thus ?thesis
-          using \<open>e \<noteq> {u}\<close> by blast
-      qed
+    proof -
+      have "quot_graph quot'.P E = quot_graph P E"
+        by (rule quot_graph_cong) (auto intro: not_in_VsE[OF quot(3)])
+      moreover have "quot_graph quot'.P (insert {target, u'} E) =
+          insert (quot'.P ` {target, u'}) (quot_graph quot'.P E)"
+        by (auto simp: quot_graph_def)
+      ultimately show ?thesis
+        using target_not_u' P_target quot(4)
+        by force
     qed
     have M_edges_P_same:"e \<in> M \<Longrightarrow> quot'.P ` e = P ` e" for e
       using u'_not_in_M by auto
@@ -522,17 +459,19 @@ proof-
       have aupath_old:"graph_augmenting_path (quotG E) (quotG M ) p'"
         using p' quot'_M_are
         by (auto simp add:  path_old p')
-      have distinct_tl:"distinct (tl C)"
-        using match_blossom 
-        by(auto simp add: match_blossom_def odd_cycle_def intro: list_cases2_both_sides[of C])
-      have big_aug_path: "graph_augmenting_path E M (refine C M p')"
-        using match_blossom match_blossomD(3)  match_blossom_alt_cycle 
-          distinct_tl  match_blossom path_suff  aupath_old  M_props(1,2) quot(1) 
-        by (intro refine)fastforce+
-      then obtain M' where "M'\<subseteq>E" "matching M'" "card M < card M'"
-        using Berge[OF M_props(4,2,1) dblton_E finite_Vs] by auto
-      thus False
-        using M_props(3)[of M'] by simp 
+      have max_quot: "max_card_matching (quotG E) (quotG M)"
+        using max_card_matching_equiv_blossom_contraction[OF match_blossom _ quot(1,2)]
+          matching M_props(1,2)
+        by auto
+      note augmented = Berge_2[OF graph_augmenting_path_feats(1)[OF aupath_old]
+        max_card_matchingDs(1)[OF max_quot] graph_augmenting_path_feats(3)[OF aupath_old]
+        graph_augmenting_path_feats(2)[OF aupath_old] finite_quot[OF M_props(4)]
+        max_card_matchingDs(2)[OF max_quot]]
+      have "card (quotG M \<oplus> set (edges_of_path p')) \<le> card (quotG M)"
+        by (rule max_card_matchingDs(3)[OF max_quot conjI[OF augmented(3,1)]])
+      with augmented(2) show False
+        by simp
+
     qed
     have "u' = hd p' \<or> u' = last p'"
     proof(rule ccontr, goal_cases)
@@ -706,30 +645,9 @@ theorem even_vertices_blossom_contraction:
     "max_card_matching E M"
     "s = (Vs E) - set C" "u \<notin>  Vs E"  "u' \<notin> Vs E" "u' \<noteq> u" 
   shows "even_verts (quotG E) (quotG M) \<supseteq> P ` (even_verts E M \<inter> Vs E) "
-proof-
-  have "even_vert (quotG E) (quotG M) x" 
-    if "x \<in> s" "x \<in> Vs E" "even_vert E M x" for x
-  proof-
-    note again_even =
-      even_vertex_blossom_contraction[OF assms(1) _ _ assms(2,3,4,5,6), of x, 
-        simplified if_P[OF that(1)]]
-    show ?thesis 
-      using that assms(3) 
-      by (intro again_even)
-  qed
-  moreover have "even_vert (quotG E) (quotG M) u" if
-    "x \<in> Vs E" "x \<notin> s" "even_vert E M x" for x
-  proof-
-    note again_even =
-      even_vertex_blossom_contraction[OF assms(1) _ _ assms(2,3,4,5,6), of x,
-        simplified if_not_P[OF that(2)]]
-    show ?thesis 
-      using that assms
-      by (intro again_even) auto
-  qed
-  ultimately show ?thesis
-    by(auto simp add: even_verts_def)
-qed
+  using even_vertex_blossom_contraction[OF assms(1) _ _ assms(2-6)]
+  unfolding even_verts_def
+  by blast
 
 text \<open>We now prove the reverse direction by the same argument:
       If a vertex (or its representative) is even after contraction,
@@ -800,10 +718,9 @@ proof-
         using quot(3,4) good_quot_map(2) target_not_u'
         by (intro quot_axioms.intro)
           (auto simp add: good_quot_map(1) in_Vs_insert target_in_E vs_insert)
-      interpret quot': quot sel "insert {target, u'} E" "insert u' s" u
+      interpret quot': quot  "insert {target, u'} E" "insert u' s" u
         using quot'_axioms interpret_helpers 
-        by(intro quot.intro pre_quot.intro graph_abs.intro
-            interpret_helpers  choose_axioms| simp )+
+        by(intro quot.intro  graph_abs.intro interpret_helpers | simp )+
       have new_blossom: "blossom ({{target, u'}} \<union> E) M stem C"
         using match_blossom path_subset[of E "stem@C" "{{target, u'}} \<union> E"] 
         by auto
@@ -832,52 +749,15 @@ proof-
         using  in_Vs_insertE[of u] quot(2,4) target_in_E 
         by auto
       have quot'_Es_are:"(quot'.quotG ({{target, u'}} \<union> E)) = insert ({target', u'}) (quotG E)"
-      proof(rule, all \<open>rule\<close>, goal_cases)
-        case (1 e)
-        then obtain e' where e': "e' \<in> insert {target, u'} E" "quot'.P ` e' = e" "e' \<noteq> {u}"
-          by(auto simp add: quot_graph_def)
-        show ?case
-        proof(cases "e' = {target, u'}")
-          case True
-          hence "e = {target', u'}" 
-            using e'(2) target'_def target_not_u' by force
-          then show ?thesis by simp
-        next
-          case False
-          hence e'_in_E:"e' \<in> E" 
-            using e'(1) by auto
-          moreover have "u' \<notin> e'" 
-            using calculation quot(3) by auto
-          ultimately have same_P:"quot'.P ` e' = P ` e'"
-            using False e'(2) by auto
-          have "e \<in> quotG E"
-            using e'_in_E e'(2,3) 1 same_P 
-            by (auto intro!:  bexI[of _ e'] simp add: quot_graph_def)
-          thus ?thesis by simp
-        qed
-      next
-        case (2 e)
-        show ?case
-        proof(cases "e = {target', u'}")
-          case True
-          hence e_not_u:"e \<noteq> {u}"
-            by (simp add: quot(4))
-          moreover have "quot'.P ` {target, u'} = e" 
-            using True   P_target target_not_u' by auto
-          ultimately show ?thesis 
-            by(auto simp add: quot_graph_def)
-        next
-          case False
-          then obtain e' where "e' \<in> E" "P ` e' = e" "e \<noteq> {u}"
-            using 2 by(auto simp add: quot_graph_def)
-          moreover have "quot'.P ` e' = e" 
-            using calculation(1,2)  
-            by (auto intro: not_in_VsE[OF quot(3)])
-          ultimately have "e \<in> quot_graph quot'.P ({{target, u'}} \<union> E)"
-            unfolding quot_graph_def by blast
-          thus ?thesis
-            using \<open>e \<noteq> {u}\<close> by blast
-        qed
+      proof -
+        have "quot_graph quot'.P E = quot_graph P E"
+          by (rule quot_graph_cong) (auto intro: not_in_VsE[OF quot(3)])
+        moreover have "quot_graph quot'.P (insert {target, u'} E) =
+            insert (quot'.P ` {target, u'}) (quot_graph quot'.P E)"
+          by (auto simp: quot_graph_def)
+        ultimately show ?thesis
+          using target_not_u' P_target quot(4)
+          by force
       qed
       have M_edges_P_same:"e \<in> M \<Longrightarrow> quot'.P ` e = P ` e" for e
         using u'_not_in_M by auto
@@ -889,198 +769,137 @@ proof-
         by (simp add: subset_insertI vs_insert)
       have new_untouched_are': "insert u' s = Vs (insert {target, u'} E) - set C"
         using new_untouched_are by auto
-      have path_in_old:
-        "graph_augmenting_path (insert {target, u'} E) M (quot'.refine C M (p @ [u']))"
-        using new_blossom new_aug_path quot'_Es_are quot'_M_are new_untouched_are'
-        by(intro quot'.refine_works[of stem C M "p@[u']"])
-          (simp_all add: matching_props subset_insertI2)
-      hence refined_edges_in:
-        "set (edges_of_path (quot'.refine C M (p @ [u']))) \<subseteq> (insert {target, u'} E)"
-        by (simp add: path_edges_subset matching_augmenting_path_def)
-      have last_is_or_hd_is: 
-        "last (quot'.refine C M (p @ [u'])) = u' \<or> hd (quot'.refine C M (p @ [u'])) = u'"
-      proof(cases "u \<in> set (p@[u'])")
+      define mate where
+        "mate v = (if \<exists>w. {v, w} \<in> M then Some (THE w. {v, w} \<in> M) else None)" for v
+      have mate_M: "mate v = Some w \<longleftrightarrow> {v, w} \<in> M" for v w
+      proof (cases "\<exists>x. {v, x} \<in> M")
         case True
+        then obtain x where edge: "{v, x} \<in> M"
+          by blast
+        have chosen: "(THE w. {v, w} \<in> M) = x"
+          by (rule the_match'[OF M_props(2) edge])
+        show ?thesis
+          using edge the_match'[OF M_props(2), of v w]
+          by (auto simp: mate_def chosen)
+      next
+        case False
         then show ?thesis
-          using quot(4) 
-          by (intro quot'.last_not_u_refine)(auto simp add: p_props(7) u'_not_in_p)
-      qed(auto simp add: quot'.refine_def)
-      have length: "length (quot'.refine C M (p @ [u'])) \<ge> 2" 
-        using path_in_old by (auto elim!: matching_augmenting_pathE)
-      have target_u'_not_in_E:"{target, u'} \<notin> E" 
-        using quot(3) vs_member' by fastforce
-      hence x_new_then_u':"\<lbrakk>x \<in> Vs (insert {target, u'} E); x \<notin> Vs E\<rbrakk> \<Longrightarrow> x = u'" for x
-        using true by (auto simp add: vs_member)
+          by (auto simp: mate_def)
+      qed
+      interpret lift: quot_lift "insert {target, u'} E" "insert u' s" u
+        "\<lambda>v w. {v, w} \<in> insert {target, u'} E" mate M C
+        using M_props(1) new_untouched_are' u_not_in_new_Vs
+          odd_cycleD(3)[OF match_blossomD(3)[OF blossomD(2)[OF new_blossom]]]
+        by unfold_locales (auto simp: mate_M)
+      let ?lift = "refine (\<lambda>v w. {v, w} \<in> insert {target, u'} E) mate u C"
+      have path_in_old:
 
-      show ?thesis proof(cases rule: disjE[OF last_is_or_hd_is])
+
+        "graph_augmenting_path (insert {target, u'} E) M (?lift (p @ [u']))"
+        using new_blossom new_aug_path quot'_Es_are quot'_M_are new_untouched_are'
+        by(intro lift.refine_works[of stem "p@[u']"])
+          (simp_all add: matching_props subset_insertI2)
+      have endpoints: "last (?lift (p @ [u'])) = u' \<or> hd (?lift (p @ [u'])) = u'"
+        by (intro last_not_u_refine) (auto simp: quot(4) p_props(7) u'_not_in_p)
+      obtain q where path_in_old: "graph_augmenting_path (insert {target, u'} E) M q"
+        and last_q: "last q = u'"
+      proof (cases rule: disjE[OF endpoints])
         case 1
-        note One = this
-        hence lst_edge_is:"last (edges_of_path (quot'.refine C M (p @ [u']))) =
-         {last (butlast (quot'.refine C M (p @ [u']))), u'}"
-          by(auto simp add: last_edge_is[OF  length])
-        hence last_edge_in:"{last (butlast (quot'.refine C M (p @ [u']))), u'} 
-                       \<in>  (insert {target, u'} E)"
-          using last_edge_in_edges[OF length] "1" refined_edges_in by auto
-        hence penultimate_is:"last (butlast (quot'.refine C M (p @ [u']))) = target" 
-          using quot(3) by(auto simp add: vs_member' doubleton_eq_iff)
-        then show ?thesis 
-        proof(intro exI[of _ "butlast (quot'.refine C M (p @ [u']))"],
-            intro exI[of _ "hd (quot'.refine C M (p @ [u']))"], goal_cases)
-          case 1
-          note one = this
-          then show ?case 
-          proof(intro even_alt_pathI, goal_cases)
-            case 1
-            then show ?case 
-            proof(cases "length (quot'.refine C M (p @ [u'])) = 2")
-              case True
-              then show ?thesis 
-                by simp
-            next
-              case False
-              have "path (insert {target, u'} E) (butlast (quot'.refine C M (p @ [u'])))"
-                using path_in_old append_butlast_last_id[of "quot'.refine C M (p @ [u'])"]
-                  path_pref[of _ "butlast (quot'.refine C M (p @ [u']))"
-                    "[last (quot'.refine C M (p @ [u']))]"]
-                by fastforce
-              moreover have "2 \<le> length (butlast (quot'.refine C M (p @ [u'])))"
-                using length False by auto
-              moreover have "set (edges_of_path (butlast (quot'.refine C M (p @ [u'])))) \<subseteq> E"
-              proof(rule ccontr, goal_cases)
-                case 1
-                hence "{target, u'} \<in> set (edges_of_path (butlast (quot'.refine C M (p @ [u']))))"
-                  using calculation(1) path_edges_subset by fastforce
-                hence "u' \<in> set (butlast (quot'.refine C M (p @ [u'])))"
-                  using edge_not_in_edges_in_path by force
-                hence "\<not> distinct (quot'.refine C M (p @ [u']))"
-                  using One  target_not_u' penultimate_is 
-                    append_butlast_last_id[of "quot'.refine C M (p @ [u'])"]
-                    not_distinct_conv_prefix[of
-                      "butlast (quot'.refine C M (p @ [u'])) @ [last
-                                     (quot'.refine C M (p @ [u']))]"]
-                  by force
-                then show ?case 
-                  using path_in_old by auto
-              qed
-              ultimately have "path E (butlast (quot'.refine C M (p @ [u'])))"
-                by(intro path_mono[of "insert {target, u'} E" "butlast (quot'.refine C M (p @ [u']))" E])
-                  auto
-              then show ?thesis 
-                by simp
-            qed
-          next
-            case 2
-            thus ?case
-              using path_in_old 
-              by (auto intro!: alt_path_split_off_last simp add: matching_augmenting_path_def)
-          next
-            case 3
-            thus ?case
-              using length
-              by(cases "(quot'.refine C M (p @ [u']))" rule: list_cases3) auto
-          next
-            case 4
-            thus ?case
-              by simp
-          next
-            case 5
-            thus ?case
-              using length path_in_old  aug_paths_are_even
-              by auto
-          next
-            case 6
-            thus ?case
-              using path_in_old
-              by (auto simp add: matching_augmenting_path_def)
-          next
-            case 7
-            thus ?case
-              using path_in_old distinct_butlast by blast
-          qed
-        qed
+        show thesis
+          by (rule that[OF path_in_old 1])
       next
         case 2
-        note Two = this
-        hence "hd (edges_of_path (quot'.refine C M (p @ [u']))) =
-         {u', hd (tl (quot'.refine C M (p @ [u'])))}"
-          "{u', hd (tl (quot'.refine C M (p @ [u'])))} \<in>  (insert {target, u'} E)"
-          using length refined_edges_in
-          by(all \<open>cases "quot'.refine C M (p @ [u'])" rule: list_cases3\<close>) auto
-        hence "hd (tl (quot'.refine C M (p @ [u']))) = target" 
-          using quot(3) by(auto simp add: vs_member doubleton_eq_iff)
-        hence second_is:"hd (tl (quot'.refine C M (p @ [u']))) = target" 
-          using quot(3) by(auto simp add: vs_member' doubleton_eq_iff)
-        then show ?thesis 
-        proof(intro exI[of _ "rev (tl (quot'.refine C M (p @ [u'])))"],
-            intro exI[of _ "last (quot'.refine C M (p @ [u']))"], goal_cases)
+        have "graph_augmenting_path (insert {target, u'} E) M (rev (?lift (p @ [u'])))"
+          using path_in_old
+          by (simp only: graph_augmenting_path_rev_iff)
+        moreover have "last (rev (?lift (p @ [u']))) = u'"
+          using 2
+          by (simp only: last_rev)
+        ultimately show thesis
+          by (rule that)
+      qed
+      have refined_edges_in: "set (edges_of_path q) \<subseteq> insert {target, u'} E"
+        by (rule path_edges_subset[OF graph_augmenting_path_feats(3)[OF path_in_old]])
+      have length: "length q \<ge> 2"
+        using path_in_old
+        by (auto elim!: matching_augmenting_pathE)
+      have lst_edge_is:"last (edges_of_path (q)) =
+       {last (butlast (q)), u'}"
+        by (simp only: last_edge_is[OF length] last_q)
+      hence last_edge_in:"{last (butlast (q)), u'} 
+                     \<in>  (insert {target, u'} E)"
+        using last_edge_in_edges[OF length] last_q refined_edges_in by auto
+      hence penultimate_is:"last (butlast (q)) = target" 
+        using quot(3) by(auto simp add: vs_member' doubleton_eq_iff)
+      then show ?thesis
+      proof(intro exI[of _ "butlast (q)"],
+          intro exI[of _ "hd (q)"], goal_cases)
+        case 1
+        note one = this
+        then show ?case 
+        proof(intro even_alt_pathI, goal_cases)
           case 1
-          note one = this
           then show ?case 
-          proof(intro even_alt_pathI, goal_cases)
-            case 1
-            then show ?case 
-            proof(cases "length (quot'.refine C M (p @ [u'])) = 2")
-              case True
-              then show ?thesis 
-                by simp
-            next
-              case False
-              have "path (insert {target, u'} E) (tl (quot'.refine C M (p @ [u'])))"
-                by (simp add: path_in_old tl_path_is_path)
-              moreover have "2 \<le> length (tl (quot'.refine C M (p @ [u'])))"
-                using length False by auto
-              moreover have "set (edges_of_path (tl (quot'.refine C M (p @ [u'])))) \<subseteq> E"
-              proof(rule ccontr, goal_cases)
-                case 1
-                hence "{target, u'} \<in> set (edges_of_path (tl (quot'.refine C M (p @ [u']))))"
-                  using calculation(1) path_edges_subset by fastforce
-                hence "u' \<in> set (tl (quot'.refine C M (p @ [u'])))"
-                  using edge_not_in_edges_in_path by force
-                hence "\<not> distinct (quot'.refine C M (p @ [u']))"
-                  using Two  by(cases "quot'.refine C M (p @ [u'])") auto
-                then show ?case 
-                  using path_in_old by auto
-              qed
-              ultimately have "path E (rev (tl (quot'.refine C M (p @ [u']))))"
-                unfolding rev_path_is_path_iff
-                by(intro path_mono[of "insert {target, u'} E" "tl (quot'.refine C M (p @ [u']))" E])
-                  auto
-              then show ?thesis 
-                by simp
+          proof(cases "length (q) = 2")
+            case True
+            then show ?thesis 
+              by simp
+          next
+            case False
+            have "path (insert {target, u'} E) (butlast (q))"
+              using path_in_old append_butlast_last_id[of "q"]
+                path_pref[of _ "butlast (q)"
+                  "[last (q)]"]
+              by fastforce
+            moreover have "2 \<le> length (butlast (q))"
+              using length False by auto
+            moreover have "set (edges_of_path (butlast (q))) \<subseteq> E"
+            proof(rule ccontr, goal_cases)
+              case 1
+              hence "{target, u'} \<in> set (edges_of_path (butlast (q)))"
+                using calculation(1) path_edges_subset by fastforce
+              hence "u' \<in> set (butlast (q))"
+                using edge_not_in_edges_in_path by force
+              hence "\<not> distinct (q)"
+                using last_q
+                by (cases q rule: rev_cases) auto
+              then show ?case 
+                using path_in_old by auto
             qed
-          next
-            case 2
-            have "graph_augmenting_path (insert {target, u'} E) M (rev (quot'.refine C M (p @ [u'])))"
-              using path_in_old graph_augmenting_path_rev_iff  by auto
-            thus ?case
-              unfolding butlast_rev[symmetric]
-              by(intro alt_path_split_off_last)
-                (auto simp add: matching_augmenting_path_def)
-          next
-            case 3
-            thus ?case
-              using length
-              by(cases "(quot'.refine C M (p @ [u']))" rule: list_cases_both_sides) auto
-          next
-            case 4
-            thus ?case 
-              by (auto simp add: last_rev)
-          next
-            case 5
-            thus ?case
-              using length path_in_old  aug_paths_are_even
-              by auto
-          next
-            case 6
-            thus ?case
-              using path_in_old
-              by (auto simp add: matching_augmenting_path_def)
-          next
-            case 7
-            thus ?case
-              using path_in_old
-              by (auto intro!: distinct_tl)
+            ultimately have "path E (butlast (q))"
+              by(intro path_mono[of "insert {target, u'} E" "butlast (q)" E])
+                auto 
+            then show ?thesis 
+              by simp
           qed
+        next
+          case 2
+          thus ?case
+            using path_in_old 
+            by (auto intro!: alt_path_split_off_last simp add: matching_augmenting_path_def)
+        next
+          case 3
+          thus ?case
+            using length
+            by(cases "(q)" rule: list_cases3) auto
+        next
+          case 4
+          thus ?case
+            by simp
+        next
+          case 5
+          thus ?case
+            using length path_in_old  aug_paths_are_even
+            by auto
+        next
+          case 6
+          thus ?case
+            using path_in_old
+            by (auto simp add: matching_augmenting_path_def)
+        next
+          case 7
+          thus ?case
+            using path_in_old distinct_butlast by blast
         qed
       qed
     qed

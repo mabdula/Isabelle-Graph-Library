@@ -44,8 +44,6 @@ fun augment_impl
    (let M' = buddy_upd (buddy_upd M u v) v u
     in augment_impl M' vs)"
 
-definition "empty_matching = buddy_empty"
-
 lemmas [code] = augment_impl.simps
 
 text \<open>Rematching: the free vertex @{term l} takes over the matched vertex @{term r}; the old
@@ -115,10 +113,6 @@ and invar_matchingD:
   "invar_matching G M \<Longrightarrow> finite (\<M> M)"
   "invar_matching G M \<Longrightarrow> Vs G \<subseteq> K"
   by(auto simp add: invar_matching_def)
-
-lemma extend_graph: 
- "\<lbrakk>invar_matching G M; G \<subseteq> G'\<rbrakk> \<Longrightarrow> invar_matching G' M"
-  by(auto elim!: invar_matchingE intro!: invar_matchingI)
 
 end
 
@@ -448,7 +442,6 @@ lemma empty_matching_props:
    by(auto intro!: invar_matchingI symmetric_buddiesI no_self_loop_buddyI 
          simp add: buddies \<M>_def')
 
-<<<<<<< HEAD
 lemma buddy_lookup_upd_nil:
   "\<lbrakk>buddy_invar M; k \<in> K\<rbrakk> \<Longrightarrow> buddy_lookup (buddy_upd M k nil) = (buddy_lookup M)(k := None)"
   by (auto simp add: buddy_lookup_def buddy_map.fixed_univ_map_upd)
@@ -550,12 +543,6 @@ proof-
     using invar' sym' loop' symmetric_buddy_matching[OF sym' loop'] inv(4,5,6) assms(4)
     by (auto intro!: invar_matchingI simp add: M')
 qed
-=======
-lemma empty_matching_props':
-  "invar_matching G empty_matching"
-  "\<M> empty_matching = {}"
-  using empty_matching_props by(auto simp add: empty_matching_def)
->>>>>>> weighted_blossom
 
 end
 end

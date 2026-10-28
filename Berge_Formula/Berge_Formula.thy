@@ -7,31 +7,8 @@ theory Berge_Formula
   imports Tutte_Theorem.Tutte_Theorem
 begin
 
-<<<<<<< HEAD
 provenance human
 
-lemma sum_card_edges2:
-  assumes "graph_invar G"
-  shows "sum card G = (\<Sum>e\<in>G. 2)"
-  by (smt (verit, del_insts) assms card_edge mem_Collect_eq subset_eq sum.cong)
-
-lemma matching_vertices_double_size:
-  assumes "graph_invar M"
-  assumes "matching M"
-  shows "2 * (card M) = card (Vs M)"
-  by (simp add: assms(1,2) graph_abs.intro graph_abs.matching_card_vs)
-
-lemma edge_same_comp:
-  assumes "graph_invar G"
-  assumes "e \<in> G"
-  assumes "x \<in> e"
-  assumes "y \<in> e"
-  shows "x \<in> connected_component G y" 
-  using assms(1,2,3,4) edge_subset_component in_mono 
-  by force
-
-=======
->>>>>>> weighted_blossom
 lemma left_uncoverred_matching:
   assumes "graph_invar G"
   assumes "graph_matching G M"

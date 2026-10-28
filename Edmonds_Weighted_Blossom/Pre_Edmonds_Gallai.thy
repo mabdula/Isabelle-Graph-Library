@@ -1,5 +1,6 @@
 theory Pre_Edmonds_Gallai
-  imports Blossom.Blossom_Algo_Search Edmonds_Gallai_Decomposition.Edmonds_Gallai_Blossoms
+  imports Blossom_Executable.Compute_Alt_Path Blossom_Executable.Find_Aug_Path
+    Edmonds_Gallai_Decomposition.Edmonds_Gallai_Blossoms
 begin
 
 section \<open>A Reduced Version of the Edmonds-Gallai Decomposition\<close>
@@ -527,145 +528,10 @@ subsection \<open>Computation with the Blossom Algorihtm\<close>
 subsubsection \<open>Alternating Search\<close>
 end
 
-datatype 'v alt_search_res =  Two_Paths "'v list" "'v list" | PEDG "'v set set"
+datatype ('v, 'vset) alt_search_res = Two_Paths "'v list" "'v list" | PEDG 'vset
 
 context compute_alt_path
 begin
-
-
-function (domintros) compute_alt_path_or_pedg:: "'F \<Rightarrow> 'a alt_search_res" where
-  "compute_alt_path_or_pedg F = 
-    (if if1_cond F then
-       let
-         (v1,v2,v3) = sel_if1 F;
-          F' = extend_forest_even_unclassified F v1 v2 v3;
-         return = compute_alt_path_or_pedg F'
-       in
-         return
-     else if if2_cond F then
-        let
-          (v1,v2) = sel_if2 F; 
-          return = Two_Paths (get_path F v1) (get_path F v2)
-        in
-          return
-     else
-       let
-          return = PEDG {{v} | v. v \<in> vset_to_set (evens F)}
-       in
-         return)"
-  by pat_completeness auto
-
-lemma compute_alt_path_or_pedg_same_dom:
-  shows "compute_alt_path_or_pedg_dom F \<longleftrightarrow> compute_alt_path_dom F"
-proof(rule, goal_cases)
-  case 1
-  then show ?case 
-    by(induction rule: compute_alt_path_or_pedg.pinduct)
-      (auto intro: compute_alt_path.domintros)
-next
-  case 2
-  then show ?case
-    by(induction rule: compute_alt_path.pinduct)
-      (auto intro: compute_alt_path_or_pedg.domintros)
-qed
-
-lemmas compute_alt_path_or_pedg_psimps' =
-   compute_alt_path_or_pedg.psimps[simplified compute_alt_path_or_pedg_same_dom]
-
-lemma compute_alt_path_or_pedg_same:
-  assumes "compute_alt_path_dom F"
-  shows "compute_alt_path_or_pedg F = Two_Paths p1 p2 \<longleftrightarrow> compute_alt_path F = Some (p1, p2)"
-  using assms
-proof(induction rule: compute_alt_path.pinduct, goal_cases)
-  case (1 F)
-  thus ?case
-    by(auto simp add: compute_alt_path_or_pedg.psimps[of F] compute_alt_path.psimps[of F] 
-                      compute_alt_path_or_pedg_same_dom 
-               split: if_split prod.split)
-qed
-
-lemma compute_alt_path_or_pedg_same':
-  assumes "compute_alt_path_dom F"
-  shows "(\<exists> D. compute_alt_path_or_pedg F = PEDG D) \<longleftrightarrow> compute_alt_path F = None"
-proof(cases "compute_alt_path F", goal_cases)
-  case 1
-  then show ?case 
-    using compute_alt_path_or_pedg_same[OF assms]
-    by (cases "compute_alt_path_or_pedg F") auto
-next
-  case (2 a)
-  then show ?case
-  proof(cases a, goal_cases)
-    case (1 p1 p2)
-    then show ?case 
-      using compute_alt_path_or_pedg_same[OF assms, of p1 p2]
-      by auto
-  qed
-qed
-
-lemma compute_alt_path_or_pedg_if1:
-  assumes "compute_alt_path_dom F" 
-    "if1_cond F"
-    "(v1, v2, v3) = sel_if1 F"
-    "F' = extend_forest_even_unclassified F v1 v2 v3"
-  shows "compute_alt_path_or_pedg F = compute_alt_path_or_pedg F'"
-  using assms
-  by (auto simp add: compute_alt_path_or_pedg.psimps compute_alt_path_or_pedg_same_dom
-      Let_def split: if_splits prod.splits)
-
-lemma what_if_search_fails_pedg:
-  assumes "compute_alt_path_or_pedg F = PEDG \<D>"
-   and     init: "finite \<lbrace>F\<rbrace>" "\<lbrace>F\<rbrace> \<subseteq> G" 
-   and invars: "forest_invar M F" "aevens F \<subseteq> Vs G"
- shows "\<exists> F'. \<not> if1_cond F' \<and> \<not> if2_cond F' \<and> forest_invar M F' \<and> aroots F' = aroots F
-               \<and> \<D> = {{v} | v. v \<in> vset_to_set (evens F')} \<and> aevens F' \<subseteq> Vs G \<and> \<lbrace> F' \<rbrace> \<subseteq> G"
-  using assms(1) invars init(2)
-proof(induction F arbitrary: \<D> rule: compute_alt_path_pinduct_2)
-  case 1
-  then show ?case
-    by(intro compute_alt_path_dom init invars)
-next
-  case (2 F)
-  note IH = this
-  show ?case
-  proof(cases "if1_cond F")
-    case True
-    obtain v1 v2 v3 where sel: "(v1,v2,v3) = sel_if1 F" "if1 F v1 v2 v3"
-      using if1_cond_props''''[OF True] by auto
-    hence  v1v2: "{v1, v2} \<in> G - \<lbrace>F\<rbrace>" "{v2, v3} \<in> M"  "v1 \<in> aevens F" "v2 \<notin> FVs F"
-        using if1_props by auto
-      then have v1_v2_P:"{v1, v2} \<in> G" "{v1, v2} \<notin> \<lbrace>F\<rbrace>"
-        by simp+
-      define F' where "F' = extend_forest_even_unclassified F v1 v2 v3"
-
-      have precd:"forest_extension_precond F M v1 v2 v3"
-        by (simp add: 2(4) \<open>if1 F v1 v2 v3\<close> if_1_forest_extension_precond)
-      note F'_props = forest_extend[OF precd, folded F'_def]
-      show ?thesis
-        using IH(3,5,6) matching(2) v1v2(2) v1_v2_P(1)
-        by(auto intro!: IH(2)[OF True sel(1) F'_def] 
-              simp add: F'_props(5)[symmetric]
-                        compute_alt_path_or_pedg_if1[OF IH(1) True sel(1) F'_def] F'_props(1-3))+
-  next
-    case False
-    note false = this
-    show ?thesis
-    proof(cases "if2_cond F")
-      case True
-      hence False
-        using IH(3) false
-        by(subst (asm) compute_alt_path_or_pedg_psimps'[OF IH(1)], cases "sel_if2 F")
-          (auto dest!:  if2_cond_props'''') 
-      thus ?thesis
-        by simp
-  next
-    case False
-    thus ?thesis
-      using false IH(1,3,4,5,6)
-      by(auto intro!: exI[of _ F] exI[of _ F] simp add: compute_alt_path_or_pedg_psimps')
-  qed
-qed
-qed
 
 lemma termination_conditions_pedg:
   assumes "\<not> if1_cond F" "\<not> if2_cond F" "forest_invar M F" "Vs G - Vs M \<subseteq> aevens F" 
@@ -727,346 +593,456 @@ qed
     by(assumption | rule pre_edmonds_gallaiI  goal1 goal2 goal3 goal5 goal6 goal7 goal8)+
 qed
 
-lemma compute_alt_path_or_pedg_from_tree_2:
-  assumes invars: "forest_invar M F" 
-  and ret: "compute_alt_path_or_pedg F = PEDG \<D>"
-  and init: "finite \<lbrace>F\<rbrace>" "\<lbrace>F\<rbrace> \<subseteq> G" "aevens F \<subseteq> Vs G"
-  and unmatcheds_even: "Vs G - Vs M \<subseteq> aroots F" "Vs G - Vs M \<noteq> {}"
-shows "\<nexists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p" (is ?thesis1)
-      "pre_edmonds_gallai G M \<D>" (is ?thesis2)
-proof-
-  have fun_dom: "compute_alt_path_dom F" 
-    using compute_alt_path_dom init(1,2) invars by blast
-  hence None:"compute_alt_path F = None"
-    using ret by(auto simp add: compute_alt_path_or_pedg_same'[of F, symmetric])
-  show ?thesis1
-    by(intro compute_alt_path_from_tree_2 [OF assms(1) _ assms(3,4,6)] None)
-  obtain F' where F': "\<not> if1_cond F'" "\<not> if2_cond F'" "forest_invar M F'" 
-            "aroots F' = aroots F" "\<D> = {{v} |v. v \<in> aevens F'}" "aevens F' \<subseteq> Vs G" "\<lbrace> F' \<rbrace> \<subseteq> G"
-    using what_if_search_fails_pedg[OF assms(2,3,4,1,5)] by auto
-  have Vs_with_M_in_aevens:"Vs G - Vs M \<subseteq> aevens F'"
-    using  F'(3,4) unmatcheds_even(1) roots(2)[of M F'] by auto
-  have aroots_F': "aroots F' \<noteq> {}"
-    using F'(4) unmatcheds_even(1,2) by force
-  show ?thesis2           
-    using termination_conditions_pedg[OF  F'(1,2,3) Vs_with_M_in_aevens F'(6,7) aroots_F'] F'(5)
-    by simp
+end
+
+context Compute_Alt_Path
+begin
+
+function (domintros) compute_alt_path_or_pedg ::
+  "('v, 'forest) Compute_Alt_Path_state \<Rightarrow> ('v, 'fset) alt_search_res" where
+  "compute_alt_path_or_pedg state =
+    (case unscanned state of
+       (v, w) # rest \<Rightarrow>
+         (if fset_isin (evens (search_forest state)) w then
+            Two_Paths (get_path (search_forest state) v) (get_path (search_forest state) w)
+          else if fset_isin (odds (search_forest state)) w then
+            compute_alt_path_or_pedg (state \<lparr>unscanned := rest\<rparr>)
+          else case mate_lookup M w of
+             Some x \<Rightarrow> compute_alt_path_or_pedg
+               (state \<lparr>queue := x # queue state, unscanned := rest,
+                 search_forest := extend_forest_even_unclassified (search_forest state) v w x\<rparr>)
+           | None \<Rightarrow> compute_alt_path_or_pedg (state \<lparr>unscanned := rest\<rparr>))
+     | [] \<Rightarrow>
+         (case queue state of
+            v # q \<Rightarrow> compute_alt_path_or_pedg
+              (state \<lparr>queue := q, unscanned := map (Pair v) (neighbour_list G v)\<rparr>)
+          | [] \<Rightarrow> PEDG (evens (search_forest state))))"
+  by pat_completeness auto
+
+lemma compute_alt_path_or_pedg_same_dom:
+  "compute_alt_path_or_pedg_dom state \<longleftrightarrow> Compute_Alt_Path_dom state"
+proof
+  assume "compute_alt_path_or_pedg_dom state"
+  thus "Compute_Alt_Path_dom state"
+    by (induction rule: compute_alt_path_or_pedg.pinduct)
+       (auto intro: Compute_Alt_Path.domintros)
+next
+  assume "Compute_Alt_Path_dom state"
+  thus "compute_alt_path_or_pedg_dom state"
+    by (induction rule: Compute_Alt_Path.pinduct)
+       (auto intro: compute_alt_path_or_pedg.domintros)
 qed
 
+lemmas compute_alt_path_or_pedg_psimps' =
+  compute_alt_path_or_pedg.psimps[simplified compute_alt_path_or_pedg_same_dom]
+
+lemma compute_alt_path_or_pedg_result:
+  "Compute_Alt_Path_dom state \<Longrightarrow>
+    compute_alt_path_or_pedg state =
+      (case alternating_paths (Compute_Alt_Path state) of
+         Some (p1, p2) \<Rightarrow> Two_Paths p1 p2
+       | None \<Rightarrow> PEDG (evens (search_forest (Compute_Alt_Path state))))"
+proof(induction rule: Compute_Alt_Path.pinduct)
+  case (1 state)
+  show ?case
+  proof(cases "unscanned state")
+    case Nil
+    thus ?thesis
+      using 1(2-)
+      by (cases "queue state")
+         (simp_all add: compute_alt_path_or_pedg_psimps'[OF 1(1)]
+           Compute_Alt_Path.psimps[OF 1(1)] alternating_paths_def cong: option.case_cong)
+  next
+    case (Cons e rest)
+    obtain v w where "e = (v, w)"
+      by (cases e)
+    with Cons show ?thesis
+      using 1(2-)
+      by (cases "fset_isin (evens (search_forest state)) w";
+          cases "fset_isin (odds (search_forest state)) w"; cases "mate_lookup M w")
+         (simp_all add: compute_alt_path_or_pedg_psimps'[OF 1(1)]
+           Compute_Alt_Path.psimps[OF 1(1)] alternating_paths_def cong: option.case_cong)
+  qed
+qed
+
+lemma compute_alt_path_or_pedg_same:
+  "Compute_Alt_Path_dom state \<Longrightarrow>
+    compute_alt_path_or_pedg state = Two_Paths p1 p2 \<longleftrightarrow>
+    alternating_paths (Compute_Alt_Path state) = Some (p1, p2)"
+  by (auto simp: compute_alt_path_or_pedg_result split: option.splits prod.splits)
+
+lemma compute_alt_path_or_pedg_same':
+  "Compute_Alt_Path_dom state \<Longrightarrow>
+    (\<exists>D. compute_alt_path_or_pedg state = PEDG D) \<longleftrightarrow>
+    alternating_paths (Compute_Alt_Path state) = None"
+  by (auto simp: compute_alt_path_or_pedg_result split: option.splits prod.splits)
+
 definition "compute_pedg =
-  (case compute_alt_path_or_pedg (empty_forest unmatcheds) of 
-    PEDG \<D> \<Rightarrow> \<D>)"
+  (case compute_alt_path_or_pedg initial_state of PEDG D \<Rightarrow> D)"
 
-lemma init_evens_in_G:"aevens (empty_forest unmatcheds) \<subseteq> Vs G"
-  by (simp add: empty_forest(1) unmatcheds(2))
+context
+  assumes Compute_Alt_Path_axiom: Compute_Alt_Path_axiom
+begin
 
-lemma initial_dom: "compute_alt_path_dom (empty_forest unmatcheds)"
-  by (simp add: compute_alt_path_dom empty_forest(4) init_props(1))
+interpretation abs_search: compute_alt_path
+  where G = "ugraph_abs G" and M = "matching_abs M"
+    and vset_invar = fset_invar and vset_to_set = fset_to_set
+    and evens = evens and odds = odds and roots = roots
+    and get_path = get_path and abstract_forest = abstract_forest
+    and forest_invar = forest_invar
+    and extend_forest_even_unclassified = extend_forest_even_unclassified
+    and empty_forest = empty_forest and forest_univ = K and vset_empty = fset_empty
+proof(rule compute_alt_path.intro)
+  show "match (ugraph_abs G) (matching_abs M)"
+    by unfold_locales
+       (use ugraph_abs_graph_invar[OF graph_input_G[OF Compute_Alt_Path_axiom]]
+         matching_invar_props[OF matching_invar_M[OF Compute_Alt_Path_axiom]] in auto)
+  show "alternating_forest_ordinary_extension_spec fset_invar fset_to_set evens odds get_path
+    abstract_forest forest_invar roots extend_forest_even_unclassified empty_forest K"
+    by (rule Forest.alternating_forest_ordinary_extension_spec_axioms)
+qed
+
+lemma termination_conditions_pedg:
+  assumes "Compute_Alt_Path_ret_2_conds state" "invar_forest state" "invar_scanned state"
+    "Vs (ugraph_abs G) - Vs (matching_abs M) \<noteq> {}"
+  shows "pre_edmonds_gallai (ugraph_abs G) (matching_abs M)
+    {{v} |v. v \<in> aevens state}"
+proof-
+  have closed: "\<And>v w. \<lbrakk>v \<in> aevens state; {v, w} \<in> ugraph_abs G\<rbrakk>
+    \<Longrightarrow> w \<in> aodds state"
+    using assms(1,3)
+    by (auto simp: Compute_Alt_Path_ret_2_conds_def invar_scanned_def)
+  have "\<not> abs_search.if1_cond (search_forest state)"
+    using closed Forest.evens_and_odds_basis(4)[OF invar_forestD(1)[OF assms(2)]]
+    by (auto simp: abs_search.if1_cond_def)
+  moreover have "\<not> abs_search.if2_cond (search_forest state)"
+    using closed Forest.evens_and_odds(4)[OF invar_forestD(1)[OF assms(2)]]
+    by (auto simp: abs_search.if2_cond_def)
+  moreover have "Vs (ugraph_abs G) - Vs (matching_abs M) \<subseteq> aevens state"
+    using invar_forestD(3)[OF assms(2)] Forest.roots(2)[OF invar_forestD(1)[OF assms(2)]]
+    by blast
+  ultimately show ?thesis
+    using abs_search.termination_conditions_pedg[of "search_forest state"]
+      invar_forestD[OF assms(2)] aevens_subset_Vs[OF assms(2)] assms(4)
+    by (auto simp: Union_of_singletons_in_set)
+qed
+
+lemma compute_alt_path_or_pedg_from_tree_2:
+  assumes "invar_forest state" "invar_unscanned state" "invar_queue state" "invar_scanned state"
+    "compute_alt_path_or_pedg state = PEDG D"
+    "Vs (ugraph_abs G) - Vs (matching_abs M) \<noteq> {}"
+  shows "\<not> graph_augmenting_path (ugraph_abs G) (matching_abs M) p"
+    "pre_edmonds_gallai (ugraph_abs G) (matching_abs M)
+      {{v} |v. v \<in> fset_to_set D}"
+    "fset_invar D" "fset_to_set D \<subseteq> Vs (ugraph_abs G)"
+proof-
+  have dom: "Compute_Alt_Path_dom state"
+    by (rule Compute_Alt_Path_terminates[OF Compute_Alt_Path_axiom assms(1-4)])
+  have final: "invar_forest (Compute_Alt_Path state)" "invar_scanned (Compute_Alt_Path state)"
+    using invars_holds[OF Compute_Alt_Path_axiom dom assms(1-4)] by auto
+  have result: "alternating_paths (Compute_Alt_Path state) = None"
+    "D = evens (search_forest (Compute_Alt_Path state))"
+    using assms(5) compute_alt_path_or_pedg_result[OF dom]
+    by (auto split: option.splits prod.splits)
+  have ret: "Compute_Alt_Path_ret_2_conds (Compute_Alt_Path state)"
+    using ret_holds[OF dom] result(1)
+    by (auto simp: Compute_Alt_Path_ret_1_conds_def alternating_paths_def)
+  show "\<not> graph_augmenting_path (ugraph_abs G) (matching_abs M) p"
+    by (rule Compute_Alt_Path_correct_ret_2[OF Compute_Alt_Path_axiom ret final])
+  show "pre_edmonds_gallai (ugraph_abs G) (matching_abs M)
+      {{v} |v. v \<in> fset_to_set D}"
+    using termination_conditions_pedg[OF ret final assms(6)] by (simp add: result(2))
+  show "fset_invar D" "fset_to_set D \<subseteq> Vs (ugraph_abs G)"
+    using forest_sets_invar(1)[OF final(1)] aevens_subset_Vs[OF final(1)]
+    by (simp_all add: result(2))
+qed
 
 lemma compute_pedg_correct:
-  "\<lbrakk>compute_alt_path (empty_forest unmatcheds) = None; Vs G - Vs M \<noteq> {}\<rbrakk> \<Longrightarrow>
-     pre_edmonds_gallai G M compute_pedg"
-  by(rule compute_alt_path_or_pedg_from_tree_2(2)[OF 
-            init_props(1) _ init_props(2,3)  init_evens_in_G init_props(4)])
-    (auto simp add: compute_pedg_def compute_alt_path_or_pedg_same initial_dom 
-             split: alt_search_res.split)
+  assumes "alternating_paths (Compute_Alt_Path initial_state) = None"
+    "Vs (ugraph_abs G) - Vs (matching_abs M) \<noteq> {}"
+  shows "fset_invar compute_pedg" "fset_to_set compute_pedg \<subseteq> Vs (ugraph_abs G)"
+    "pre_edmonds_gallai (ugraph_abs G) (matching_abs M)
+      {{v} |v. v \<in> fset_to_set compute_pedg}"
+proof-
+  have "free_vertices \<noteq> []"
+    using set_free_vertices[OF Compute_Alt_Path_axiom] assms(2) by auto
+  moreover obtain D where "compute_alt_path_or_pedg initial_state = PEDG D"
+    using compute_alt_path_or_pedg_same'[OF initial_state_dom[OF Compute_Alt_Path_axiom]] assms(1)
+    by auto
+  ultimately show "fset_invar compute_pedg" "fset_to_set compute_pedg \<subseteq> Vs (ugraph_abs G)"
+    "pre_edmonds_gallai (ugraph_abs G) (matching_abs M)
+      {{v} |v. v \<in> fset_to_set compute_pedg}"
+    using compute_alt_path_or_pedg_from_tree_2(2-4)[
+      OF initial_state_props[OF Compute_Alt_Path_axiom] _ assms(2)]
+    by (auto simp: compute_pedg_def)
+qed
 
+end
 end
 
 subsubsection \<open>Blossom Contraction and Reexpansion\<close>
 
 locale find_aug_path_pedg =
-find_aug_path where sel = sel
-for sel::"'a set \<Rightarrow> 'a"+
-fixes pedg_search::"'a set set \<Rightarrow> 'a set set \<Rightarrow> 'a set set"
-and sel_from_sets::"('a set \<Rightarrow> bool) \<Rightarrow> 'a set set \<Rightarrow> 'a set"
-assumes pedg_search_sound: 
- "\<lbrakk>graph_invar G; matching M; M \<subseteq> G; blos_search G M = None; Vs G - Vs M \<noteq> {}\<rbrakk>
-     \<Longrightarrow> pre_edmonds_gallai G M (pedg_search G M)" 
-assumes sel_from_sets:
-  "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> sel_from_sets P \<D> \<in> \<D>"
-  "\<And> \<D> P. \<lbrakk>finite \<D>; \<exists> D \<in> \<D>. P D\<rbrakk> \<Longrightarrow> P (sel_from_sets P \<D>)"
+  Find_Aug_Path where lookup = lookup and mate_empty = mate_empty +
+  Fset: fixed_univ_set K fset_invar fset_to_set fset_empty fset_insert fset_delete fset_isin
+  for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" and mate_empty :: 'mate
+    and fset_invar :: "'fset \<Rightarrow> bool" and fset_to_set :: "'fset \<Rightarrow> 'v set"
+    and fset_empty :: 'fset and fset_insert :: "'v \<Rightarrow> 'fset \<Rightarrow> 'fset"
+    and fset_delete :: "'v \<Rightarrow> 'fset \<Rightarrow> 'fset"
+    and fset_isin :: "'fset \<Rightarrow> 'v \<Rightarrow> bool" +
+  fixes pedg_search :: "'adjmap \<Rightarrow> 'v list \<Rightarrow> 'mate \<Rightarrow> 'fset"
+  assumes pedg_search_sound:
+    "\<And>E vs' N. \<lbrakk>graph_input E vs'; matching_invar E N; blos_search E vs' N = None;
+      Vs (ugraph_abs E) - Vs (matching_abs N) \<noteq> {}\<rbrakk>
+      \<Longrightarrow> pre_edmonds_gallai (ugraph_abs E) (matching_abs N)
+        {{v} |v. v \<in> fset_to_set (pedg_search E vs' N)}"
+  and pedg_search_invar:
+    "\<And>E vs' N. \<lbrakk>graph_input E vs'; matching_invar E N; blos_search E vs' N = None;
+      Vs (ugraph_abs E) - Vs (matching_abs N) \<noteq> {}\<rbrakk>
+      \<Longrightarrow> fset_invar (pedg_search E vs' N)"
 begin
+
+definition "pedg_singletons vs' D =
+  List.map_filter (\<lambda>v. if fset_isin D v then Some (fset_insert v fset_empty) else None) vs'"
+
+definition "pedg_insert_list C D = foldl (\<lambda>D v. fset_insert v D) D C"
+
+definition "pedg_expand C u Ds =
+  map (\<lambda>D. if fset_isin D u then pedg_insert_list C (fset_delete u D) else D) Ds"
+
+definition "pedg_isolated E C S =
+  list_all (\<lambda>v. list_all (fset_isin S) (neighbour_list E v)) C"
+
+lemma pedg_singletons_props:
+  assumes "fset_invar D" "fset_to_set D \<subseteq> set vs'" "set vs' \<subseteq> K"
+  shows "list_all fset_invar (pedg_singletons vs' D)"
+    "fset_to_set ` set (pedg_singletons vs' D) = {{v} |v. v \<in> fset_to_set D}"
+  using assms
+  by (auto intro!: image_eqI simp: pedg_singletons_def List.map_filter_map_filter[symmetric]
+      list_all_iff image_image Fset.fixed_univ_set_isin
+      Fset.fixed_univ_set_insert Fset.fixed_univ_set_empty)
+
+lemma pedg_insert_list_props:
+  assumes "fset_invar D" "set C \<subseteq> K"
+  shows "fset_invar (pedg_insert_list C D) \<and>
+    fset_to_set (pedg_insert_list C D) = fset_to_set D \<union> set C"
+  using assms unfolding pedg_insert_list_def
+  by (induction C arbitrary: D) (auto simp: Fset.fixed_univ_set_insert)
+
+lemma pedg_isolated_iff:
+  "\<lbrakk>graph_input E vs'; fset_invar S; fset_to_set S = set C\<rbrakk> \<Longrightarrow>
+    pedg_isolated E C S \<longleftrightarrow> Delta (ugraph_abs E) (set C) = {}"
+  by (auto simp: pedg_isolated_def list_all_iff Fset.fixed_univ_set_isin
+      neighbour_list_ugraph_abs Delta_def)
+
+lemma pedg_expand_invar:
+  "\<lbrakk>list_all fset_invar Ds; set C \<subseteq> K\<rbrakk>
+    \<Longrightarrow> list_all fset_invar (pedg_expand C u Ds)"
+  by (auto simp: pedg_expand_def list_all_iff
+      pedg_insert_list_props Fset.fixed_univ_set_delete split: if_splits)
+
+lemma pedg_expand_abs:
+  assumes "list_all fset_invar Ds" "set C \<subseteq> K"
+    "disjoint (fset_to_set ` set Ds)" "D \<in> fset_to_set ` set Ds" "u \<in> D"
+  shows "fset_to_set ` set (pedg_expand C u Ds) =
+    (fset_to_set ` set Ds) - {D} \<union> {D - {u} \<union> set C}"
+proof-
+  have only: "u \<in> fset_to_set S \<longleftrightarrow> fset_to_set S = D"
+    if "S \<in> set Ds" for S
+    using assms(3-5) that by (auto simp: disjoint_def)
+  have update: "fset_to_set (if fset_isin S u then pedg_insert_list C (fset_delete u S) else S) =
+    (if fset_to_set S = D then D - {u} \<union> set C else fset_to_set S)"
+    if "S \<in> set Ds" for S
+    using assms(1,2) that only[OF that]
+    by (auto simp: list_all_iff Fset.fixed_univ_set_isin
+        pedg_insert_list_props Fset.fixed_univ_set_delete)
+  have "fset_to_set ` set (pedg_expand C u Ds) =
+    (\<lambda>S. if S = D then D - {u} \<union> set C else S) ` (fset_to_set ` set Ds)"
+    unfolding pedg_expand_def set_map image_image
+    by (rule image_cong[OF refl]) (rule update)
+  also have "... = (fset_to_set ` set Ds) - {D} \<union> {D - {u} \<union> set C}"
+    using assms(4) by (auto simp: image_iff split: if_splits)
+  finally show ?thesis .
+qed
+
+text \<open>The vertex list can contain isolated vertices, including an isolated contracted
+  blossom. Only vertices incident to an edge must have a matching partner.\<close>
+
+definition "pedg_perfect E vs' N =
+  list_all (\<lambda>v. neighbour_list E v = [] \<or> mate_lookup N v \<noteq> None) vs'"
+
+lemma pedg_perfect_iff:
+  assumes "graph_input E vs'" "matching_invar E N"
+  shows "pedg_perfect E vs' N \<longleftrightarrow> Vs (ugraph_abs E) = Vs (matching_abs N)"
+proof-
+  have "neighbour_list E v = [] \<longleftrightarrow> v \<notin> Vs (ugraph_abs E)" for v
+    using neighbour_list_nonempty_iff[OF assms(1), of v] by auto
+  moreover have "mate_lookup N v = None \<longleftrightarrow> v \<notin> Vs (matching_abs N)" for v
+    using Vs_matching_abs_iff[OF assms, of v] by auto
+  ultimately show ?thesis
+    using Vs_ugraph_abs_subset_vs[OF assms(1)] Vs_subset[OF matching_invar_props(3)[OF assms(2)]]
+    by (auto simp: pedg_perfect_def list_all_iff)
+qed
 
 function (domintros) find_pedg where
-  "find_pedg G M = 
-     (case blos_search G M of Some match_blossom_res \<Rightarrow>
-        (case match_blossom_res of Blossom stem cyc \<Rightarrow>
-            (let u = create_vert (Vs G);
-                 s = Vs G - (set cyc);
-                 quotG = quot.quotG s u
-              in (if Vs (quotG G) = Vs (quotG M)
-                 then {set cyc}
-                 else 
-                 (let \<D> = find_pedg (quotG G) (quotG M)
-                 in if Delta G (set cyc) = {}
-                    then insert  (set cyc) \<D>
-                    else let D = sel_from_sets (\<lambda> D. u \<in> D) \<D>;
-                             \<D>' = \<D> - {D} \<union> {D - {u} \<union>  (set cyc)}
-                         in \<D>'))))
-      | _ \<Rightarrow> pedg_search G M)"
+  "find_pedg E vs' N =
+    (case blos_search E vs' N of
+       Some (Blossom stem C) \<Rightarrow>
+         (let u = create_vert vs';
+              E' = contract_graph E vs' C u;
+              vs'' = contract_vertices vs' C u;
+              N' = contract_matching N C u;
+              S = pedg_insert_list C fset_empty
+          in if pedg_perfect E' vs'' N' then [S]
+             else let Ds = find_pedg E' vs'' N'
+                  in if pedg_isolated E C S then S # Ds else pedg_expand C u Ds)
+     | _ \<Rightarrow> pedg_singletons vs' (pedg_search E vs' N))"
   by pat_completeness auto
 
-thm find_aug_path_dom
 lemma find_pedg_dom:
-  assumes  "matching M" "M \<subseteq> E" "graph_invar E" 
-  shows "find_pedg_dom (E,M)"
+  assumes "graph_input E vs'" "matching_invar E N"
+  shows "find_pedg_dom (E, vs', N)"
   using assms
-proof(induction "find_aug_path_meas E" arbitrary: E M rule: less_induct)
+proof(induction "card (Vs (ugraph_abs E))" arbitrary: E vs' N rule: less_induct)
   case less
-  have "find_pedg_dom
-        (quot_graph (\<lambda>v. if v \<in> Vs E \<and> v \<notin> set cyc then v else create_vert (Vs E)) E -
-         {{create_vert (Vs E)}},
-         quot_graph (\<lambda>v. if v \<in> Vs E \<and> v \<notin> set cyc then v else create_vert (Vs E)) M -
-         {{create_vert (Vs E)}})" 
-    if "blos_search E M = Some (Blossom stem cyc)" for stem cyc
-  proof- 
-    note 1 = that
-      let ?s = "(Vs E - (set cyc))"
-      let ?u = "(create_vert (Vs E))"
-      have "match_blossom M stem cyc"
-        "path E (stem @ cyc)"
-        using bloss_algo_sound(2) 1 less.prems(1,2,3) by auto
-      then have "set cyc \<subseteq> Vs E"
-        using path_suff subset_path_Vs by force
-      then have "Vs E - ?s = set cyc"
-        by auto
-      moreover have "?s \<subseteq> Vs E"
-        by auto
-      moreover have "card (set cyc) \<ge> 2"
-        using blossom_cycle_longer_2[OF \<open>match_blossom M stem cyc\<close>] .
-      moreover have "finite (Vs E)"
-        by (simp add: less.prems(3))
-      ultimately have measure_less:"find_aug_path_meas (quot.quotG ?s ?u E) < find_aug_path_meas E"
-        using 1 less.prems(3)           
-        by(intro card_Vs_lt[of ?s E]) auto
-      moreover have finite_quot:"finite (quot.quotG ?s ?u E)"
-        by (simp add: \<open>finite (Vs E)\<close> quot_graph_finite')
-      moreover have "((Vs E) - set cyc) \<subset> (Vs E)"
-        using blossom_diff[OF \<open>graph_invar E\<close> \<open>match_blossom M stem cyc\<close> \<open>path E (stem@cyc)\<close>].  
-      hence dblton_new: "dblton_graph (quot.quotG ?s ?u E)"
-        using \<open>graph_invar E\<close> create_vert_works 
-        by(intro doublton_quot[where E = E]) auto
-      moreover have "matching (quot.quotG ?s ?u M)"
-        using \<open>((Vs E) - set cyc) \<subset> (Vs E)\<close> \<open>graph_invar E\<close> \<open>match_blossom M stem cyc\<close> 
-              less(2) less.prems(2)
-        by (intro matching_quotM[where s = ?s and stem = stem and C=cyc and E=E]) auto
-      moreover have "(quot.quotG ?s ?u M) \<subseteq> quot.quotG ?s ?u E"
-        by (simp add: less.prems(2) Diff_mono graph_subset_quot_subset)
-      moreover have "graph_invar (quot.quotG ?s ?u E)"
-        using dblton_new finite_quot finite_dbl_finite_verts by auto
-      ultimately show ?thesis
-        using measure_less
-        by(intro less(1)) auto
-    qed
-    thus ?case
-      by(intro find_pedg.domintros) auto
+  have step: "find_pedg_dom (contract_graph E vs' C (create_vert vs'),
+    contract_vertices vs' C (create_vert vs'), contract_matching N C (create_vert vs'))"
+    if "blos_search E vs' N = Some (Blossom stem C)" for stem C
+  proof-
+    have contract: "graph_input E vs'" "matching_invar E N"
+      "blossom (ugraph_abs E) (matching_abs N) stem C"
+      "create_vert vs' \<notin> set vs'" "create_vert vs' \<in> K"
+      using less.prems blos_search(2)[OF less.prems that] create_vert create_vert_in_univ
+      by (auto dest: graph_inputD(7))
+    show ?thesis
+      by (rule less.hyps[OF contract_card_Vs[OF contract]
+            contract_graph_input[OF contract] contract_matching_invar[OF contract]])
   qed
-
-context 
-  fixes s::"'a set" and E::"'a set set"
-  assumes quot_assms: "s \<subset> Vs E" "graph_invar E"
-begin
-interpretation quot: quot sel E s "(create_vert (Vs E))"
-  using quot_assms create_vert_works 
-  by unfold_locales auto
-
-lemma card_Vs_lt:
-  assumes "1 < card (Vs E - s)"
-  shows "find_aug_path_meas (quot.quotG E) < find_aug_path_meas E"
-  unfolding find_aug_path_meas_def
-  using quot_assms assms
-  by (intro quot.card_Vs_quotG) auto
-
-lemmas matching_quotM=quot.matching_quotM
-
-lemmas doublton_quot = quot.doubleton_quot
-
-lemmas aug_path_works_in_contraction = quot.aug_path_works_in_contraction
-
-lemmas finite_quot = quot.finite_quot
-
-lemmas doubleton_quot = quot.doubleton_quot
-
-lemmas refine = quot.refine
-
-lemmas pre_emonds_gallai_lonely_blossom =quot.pre_emonds_gallai_lonely_blossom
-
-lemmas graph_invar_quotG = quot.graph_invar_quotG
-
-lemmas max_card_matching_equiv_blossom_contraction = 
-     quot.max_card_matching_equiv_blossom_contraction
-
-lemmas pre_emonds_gallai_perfect_after_contraction=
-  quot.pre_emonds_gallai_perfect_after_contraction
-
-lemmas pre_emonds_gallai_connected_blossom_obtain_D = 
-  quot.pre_emonds_gallai_connected_blossom_obtain_D
-
-lemmas pre_emonds_gallai_connected_blossom =
-  quot.pre_emonds_gallai_connected_blossom
-end
+  show ?case
+    by (rule find_pedg.domintros) (auto intro: step)
+qed
 
 lemma find_pedg_correct:
-  assumes  "graph_invar E" "max_card_matching E M" "Vs E - Vs M \<noteq> {}"
-  shows "pre_edmonds_gallai E M (find_pedg E M)"
-  using assms
-proof(induction rule:  find_pedg.pinduct[OF find_pedg_dom, of M E], goal_cases)
-  case 1
-  then show ?case 
-    using assms(2) max_card_matching_def by blast
-next
-  case 2
-  then show ?case 
-    by (simp add: assms(2) max_card_matchingDs(1))
-next
-  case 3
-  then show ?case 
-    by (simp add: assms(1))
-next
-  case (4 G M)
-  note IH = this
-  show ?case
-    unfolding find_pedg.psimps[OF IH(1)]
-  proof(cases "blos_search G M", goal_cases)
-    case 1
-    then show ?case
-      using IH(4,5) max_card_matchingDs(2)
-      by(auto intro!: pedg_search_sound simp add: IH(3) max_card_matching_subgraphD)
-  next
-    case (2 res)
-    note two = this
-    have matching_M: "matching M" and graph_matching_M: "graph_matching G M"
-      using IH(4) max_card_matchingDs by auto
-    have M_in_G: "M \<subseteq> G"
-      by (simp add: IH(4) max_card_matchingDs(1))
-    have no_p:"\<nexists> p. graph_augmenting_path G M p" 
-      using IH(3) max_card_matchingD[OF IH(4)]  Berge[of M G] finite_Vs_then_finite[of G] 
-            finite_subset[of M G]
-      by auto
-    obtain stem cyc where res_def: "res = Blossom stem cyc"
-      using no_p bloss_algo_sound[OF IH(3) matching_M M_in_G] 2
-      by(cases res) auto
-    have a_blossom: "blossom G M stem cyc"
-      by(intro bloss_algo_sound(2)[OF IH(3) matching_M M_in_G, of stem cyc])
-        (simp add: "2" res_def)
-    define u where "u = create_vert (Vs G)"
-    define s where "s = Vs G - set cyc"
-    define quotG where "quotG = (\<lambda>G. quot_graph (\<lambda>v. if v \<in> s then v else u) G - {{u}})"
-have "set cyc \<subseteq> Vs G"
-        using a_blossom path_suff[of G stem cyc] subset_path_Vs[of G cyc]
-        by simp
-    then have Vs_G_cyc:"Vs G - s = set cyc"
-        by (auto simp add: s_def)
-     moreover have "s \<subseteq> Vs G"
-        by (auto simp add: s_def)
-     moreover have "card (set cyc) \<ge> 2"
-       using a_blossom blossom_cycle_longer_2 by blast
-     ultimately have s_string_in_G:"s \<subset> Vs G" 
-       by auto
-     have quot_fold:
-        "quot_graph (\<lambda>v. if v \<in> s then v else create_vert (Vs G)) GG - {{create_vert (Vs G)}} =
-          quotG GG" for GG
-       unfolding quotG_def u_def by simp
+  assumes "graph_input E vs'" "matching_invar E N"
+    "max_card_matching (ugraph_abs E) (matching_abs N)"
+    "Vs (ugraph_abs E) - Vs (matching_abs N) \<noteq> {}"
+  shows "list_all fset_invar (find_pedg E vs' N)"
+    "pre_edmonds_gallai (ugraph_abs E) (matching_abs N)
+      (fset_to_set ` set (find_pedg E vs' N))"
+proof-
+  have "list_all fset_invar (find_pedg E vs' N) \<and>
+    pre_edmonds_gallai (ugraph_abs E) (matching_abs N)
+      (fset_to_set ` set (find_pedg E vs' N))"
+    using assms
+  proof(induction "card (Vs (ugraph_abs E))" arbitrary: E vs' N rule: less_induct)
+    case less
+    note dom = find_pedg_dom[OF less.prems(1,2)]
     show ?case
-      unfolding 2 res_def option.case  match_blossom_res.case
-    proof(cases "Vs (quotG G) = Vs (quotG M)", goal_cases)
-      case 1
-      then show ?case
-        unfolding Let_def
-      proof(subst (3) if_P, goal_cases)
-        case 1
-        then show ?case 
-          unfolding quotG_def s_def u_def
-          by simp
+    proof(cases "blos_search E vs' N")
+      case None
+      have "fset_to_set (pedg_search E vs' N) \<subseteq> set vs'"
+        using pre_edmonds_gallaiD(2)[OF pedg_search_sound[OF less.prems(1,2) None less.prems(4)]]
+          Vs_ugraph_abs_subset_vs[OF less.prems(1)]
+        by (auto simp: Union_of_singletons_in_set)
+      from pedg_singletons_props[OF pedg_search_invar[OF less.prems(1,2) None less.prems(4)]
+          this graph_inputD(7)[OF less.prems(1)]]
+      show ?thesis
+        using pedg_search_sound[OF less.prems(1,2) None less.prems(4)]
+        by (simp add: find_pedg.psimps[OF dom] None)
+    next
+      case (Some r)
+      have "\<not> graph_augmenting_path (ugraph_abs E) (matching_abs N) p" for p
+        using Berge[OF matching_invar_props(4)[OF less.prems(2,1)]
+          matching_invar_props(2,3)[OF less.prems(2)]
+          conjunct1[OF ugraph_abs_graph_invar[OF less.prems(1)]]
+          conjunct2[OF ugraph_abs_graph_invar[OF less.prems(1)]]]
+          max_card_matchingD[OF less.prems(3)]
+        by auto
+      then obtain stem C where result: "blos_search E vs' N = Some (Blossom stem C)"
+        using Some blos_search(1)[OF less.prems(1,2)]
+        by (cases r) blast+
+      let ?u = "create_vert vs'"
+      have contract: "graph_input E vs'" "matching_invar E N"
+        "blossom (ugraph_abs E) (matching_abs N) stem C" "?u \<notin> set vs'" "?u \<in> K"
+        using less.prems(1,2) blos_search(2)[OF less.prems(1,2) result]
+          create_vert create_vert_in_univ[OF graph_inputD(7)[OF less.prems(1)]]
+        by auto
+      interpret Q: quot "ugraph_abs E" "Vs (ugraph_abs E) - set C" ?u
+        by (rule quot_here[OF contract])
+      note abs = contract_graph_abs[OF contract] contract_matching_abs[OF contract]
+      let ?E = "contract_graph E vs' C ?u"
+      let ?vs = "contract_vertices vs' C ?u"
+      let ?N = "contract_matching N C ?u"
+      let ?Ds = "find_pedg ?E ?vs ?N"
+      note input = contract_graph_input[OF contract] contract_matching_invar[OF contract]
+      have matching: "graph_matching (ugraph_abs E) (matching_abs N)"
+        using matching_invar_props(2,3)[OF less.prems(2)] by auto
+      have C: "set C \<subseteq> K"
+        using contraction_facts(2)[OF contract] Vs_ugraph_abs_subset_vs[OF less.prems(1)]
+          graph_inputD(7)[OF less.prems(1)] by auto
+      have cycle: "fset_invar (pedg_insert_list C fset_empty)"
+        "fset_to_set (pedg_insert_list C fset_empty) = set C"
+        using pedg_insert_list_props[OF Fset.fixed_univ_set_empty(1) C]
+        by (auto simp: Fset.fixed_univ_set_empty(2))
+      show ?thesis
+      proof(cases "pedg_perfect ?E ?vs ?N")
+        case True
+        have "Vs (Q.quotG (matching_abs N)) = Vs (Q.quotG (ugraph_abs E))"
+          using True pedg_perfect_iff[OF input] by (simp add: abs)
+        from Q.pre_emonds_gallai_perfect_after_contraction[OF refl contract(3) matching this]
+        show ?thesis
+          using cycle by (simp add: find_pedg.psimps[OF dom] result Let_def True)
       next
-        case 2
-        thus ?case
-          by(intro pre_emonds_gallai_perfect_after_contraction[OF 
-                    s_string_in_G IH(3) s_def a_blossom graph_matching_M])
-            (simp add: quot_fold)
+        case False
+        have nonperfect: "Vs (ugraph_abs ?E) - Vs (matching_abs ?N) \<noteq> {}"
+          using False pedg_perfect_iff[OF input]
+            Vs_subset[OF matching_invar_props(3)[OF input(2)]] by blast
+        have max: "max_card_matching (ugraph_abs ?E) (matching_abs ?N)"
+          using Q.max_card_matching_equiv_blossom_contraction[
+            OF contract(3) matching refl contraction_facts(6)[OF contract]] less.prems(3)
+          by (simp add: abs)
+        have IH: "list_all fset_invar ?Ds"
+          "pre_edmonds_gallai (Q.quotG (ugraph_abs E)) (Q.quotG (matching_abs N))
+            (fset_to_set ` set ?Ds)"
+          using less.hyps[OF contract_card_Vs[OF contract] input max nonperfect]
+          by (auto simp: abs)
+        have fresh: "?u \<notin> Vs (ugraph_abs E)"
+          "create_vert (?u # vs') \<notin> Vs (ugraph_abs E)" "create_vert (?u # vs') \<noteq> ?u"
+          using create_vert[of "?u # vs'"] Vs_ugraph_abs_subset_vs[OF less.prems(1)]
+            contraction_facts(6)[OF contract] by auto
+        show ?thesis
+        proof(cases "pedg_isolated E C (pedg_insert_list C fset_empty)")
+          case True
+          have "Delta (ugraph_abs E) (set C) = {}"
+            using True pedg_isolated_iff[OF less.prems(1) cycle] by simp
+          from Q.pre_emonds_gallai_lonely_blossom[
+              OF IH(2) this refl contract(3) less.prems(3) fresh]
+          show ?thesis
+            using IH(1) cycle
+            by (simp add: find_pedg.psimps[OF dom] result Let_def False True)
+        next
+          case connected: False
+          have "Delta (ugraph_abs E) (set C) \<noteq> {}"
+            using connected pedg_isolated_iff[OF less.prems(1) cycle] by simp
+          then obtain D where D: "D \<in> fset_to_set ` set ?Ds" "?u \<in> D"
+            by (rule Q.pre_emonds_gallai_connected_blossom_obtain_D[
+                  OF IH(2) _ refl contract(3) less.prems(3) fresh])
+          have "pre_edmonds_gallai (ugraph_abs E) (matching_abs N)
+            ((fset_to_set ` set ?Ds) - {D} \<union> {D - {?u} \<union> set C})"
+            by (rule Q.pre_emonds_gallai_connected_blossom[
+                  OF IH(2) \<open>Delta (ugraph_abs E) (set C) \<noteq> {}\<close> refl contract(3) less.prems(3) fresh D])
+          with pedg_expand_invar[OF IH(1) C]
+            pedg_expand_abs[OF IH(1) C pre_edmonds_gallaiD(1)[OF IH(2)] D]
+          show ?thesis
+            by (simp add: find_pedg.psimps[OF dom] result Let_def False connected)
+        qed
       qed
-    next
-      case 2
-      note not_perfect = this
-      
-    define \<D> where  "\<D> = find_pedg (quotG G) (quotG M)"
-
-    define u' where "u' = create_vert (insert u (Vs G))"
-    have u'_props: "create_vert (Vs G) \<notin> Vs G" "u' \<notin> Vs G" "u' \<noteq> create_vert (Vs G)"
-      using IH(3) create_vert_works 
-      by(auto simp add: u'_def u_def)
-    have max_card_matching_quot: "max_card_matching (quotG G) (quotG M)"
-      using max_card_matching_equiv_blossom_contraction[OF s_string_in_G IH(3) a_blossom
-                graph_matching_M s_def u'_props(1), simplified quot_fold] IH(4)
-      by simp
-    hence Vs_quot_M_in_quot_Vs: "Vs (quotG G) \<supseteq> Vs (quotG M)"
-      by (simp add: Vs_subset max_card_matchingDs(1))
-     have IH_applied: "pre_edmonds_gallai (quotG G) (quotG M) \<D>"
-       unfolding \<D>_def
-     proof(rule IH(2)[OF two res_def u_def s_def], goal_cases)
-       case 1
-       then show ?case 
-         using graph_invar_quotG IH(3) quotG_def s_string_in_G u_def 
-         by presburger
-     next
-       case 4
-       then show ?case 
-         using IH(4)
-         using max_card_matching_equiv_blossom_contraction[OF s_string_in_G IH(3) a_blossom
-                 graph_matching_M s_def, simplified quot_fold]
-         by (simp add: u'_props(1))
-     next
-       case 2
-       then show ?case
-         using  not_perfect by simp
-     next
-       case 3
-       thus ?case
-         using IH(3) graph_invar_quotG quotG_def s_string_in_G u_def by presburger
-     next
-       case 5
-       thus ?case 
-         using Vs_quot_M_in_quot_Vs not_perfect by blast
-     qed 
-     have grapn_invar_quot: "graph_invar (quotG G)"
-       using IH(3) graph_invar_quotG quotG_def s_string_in_G u_def by presburger
-    show ?case 
-    proof(cases "Delta G (set cyc) = {}", goal_cases)
-      case 1
-      have "pre_edmonds_gallai G M (insert (set cyc) \<D>)"
-        using IH_applied IH(4) u'_props 
-        by (intro pre_emonds_gallai_lonely_blossom[OF s_string_in_G IH(3) _ 1 _ a_blossom],
-            unfold  quot_fold)
-            (auto simp add: s_def)
-      thus ?case
-        unfolding Let_def quot_fold[simplified s_def]
-        by (simp add: "1" \<D>_def not_perfect)
-    next
-      case 2
-      define D where "D = sel_from_sets ((\<in>) u) \<D>" 
-
-      note obtainD1 =
-           pre_emonds_gallai_connected_blossom_obtain_D[OF s_string_in_G IH(3) _ 2 _ a_blossom,
-              simplified quot_fold[simplified s_def]]
-      note obtainD2 =obtainD1[OF IH_applied s_def IH(4) u'_props]
-      moreover have finite_\<D>: "finite \<D>" 
-        using IH_applied
-        by(auto dest!: pre_edmonds_gallaiD(2)
-             simp add: finite_UnionD finite_subset grapn_invar_quot)
-      ultimately have D_props: "D \<in> \<D>" "create_vert (Vs G) \<in> D"
-        using sel_from_sets[of \<D> "(\<in>) u"]
-        by(auto simp add: D_def u_def)
-      note new_pedg1 =
-           pre_emonds_gallai_connected_blossom[OF s_string_in_G IH(3) _ 2 _ a_blossom,
-              simplified quot_fold[simplified s_def]]
-      note new_pedg2 = new_pedg1[OF IH_applied s_def IH(4) u'_props D_props, folded u_def]
-      thus ?case
-        unfolding Let_def quot_fold[simplified s_def]
-        by (simp add: "2" D_def \<D>_def not_perfect u_def)
     qed
   qed
-qed
+  thus "list_all fset_invar (find_pedg E vs' N)"
+    "pre_edmonds_gallai (ugraph_abs E) (matching_abs N)
+      (fset_to_set ` set (find_pedg E vs' N))"
+    by auto
 qed
 
 end

@@ -3,13 +3,9 @@
 *)
 
 theory More_Lists
-<<<<<<< HEAD:Data_Structures/More_Lists.thy
   imports Main "HOL-Library.Extended_Real" AI_Provenance.Provenance
     Data_Structures.Fixed_Univ_Map_Specs
     More_Arith
-=======
-  imports Main "HOL-Library.Extended_Real" "HOL-Eisbach.Eisbach"
->>>>>>> weighted_blossom:Set_Graphs/Directed_Graphs/More_Lists.thy
 begin
 
 lemma drop_take_Cons_Cons:
@@ -1326,8 +1322,6 @@ lemma itrev_rev_gen:"itrev_aux xs ys = rev xs @ ys"
 lemma itrev_is_rev[simp]: "itrev = rev"
   by(auto simp add: itrev_rev_gen[of _ Nil, simplified] itrev_def)
 
-<<<<<<< HEAD:Data_Structures/More_Lists.thy
-=======
 lemma distinct_indexE:
    "\<lbrakk>distinct xs; (\<And> i j. \<lbrakk>i < length xs; j < length xs; xs! i = xs ! j\<rbrakk> \<Longrightarrow> i = j) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   and distinct_indexD:
@@ -1382,6 +1376,5 @@ qed
 lemma list_induct_longer_2:
   "\<lbrakk>length xs \<ge> 2; \<And> x y. P [x, y]; \<And> x y z xs. P (y#z#xs) \<Longrightarrow> P (x#y#z#xs)\<rbrakk> \<Longrightarrow> P xs"
   by (metis list_induct3_len_geq_2 list_cases3)
->>>>>>> weighted_blossom:Set_Graphs/Directed_Graphs/More_Lists.thy
 
 end

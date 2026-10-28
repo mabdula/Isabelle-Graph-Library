@@ -1,7 +1,7 @@
 session "Edmonds_Gallai_Decomposition" = "HOL" +
   options [document = pdf]
   sessions
-    Blossom
+    Blossom_Executable
     Berge_Formula
   theories
     Edmonds_Gallai_Preps

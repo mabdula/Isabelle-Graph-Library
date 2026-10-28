@@ -23,11 +23,8 @@ Push_Relabel
 Imperative
 Data_Structures
 Hungarian_Method
-<<<<<<< HEAD
 Micali_Vazirani
 Hopcroft_Karp
-=======
 Laminar_Family
 Edmonds_Weighted_Blossom
 Edmonds_Gallai
->>>>>>> weighted_blossom

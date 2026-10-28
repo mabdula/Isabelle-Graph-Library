@@ -307,16 +307,17 @@ qed
 
 lemma matching_image_rev:
   assumes "matching ((image f) ` M)" "inj_on f (Vs M)"
-  shows   "matching M"
+  shows "matching M"
 proof(rule matchingI, rule ccontr, goal_cases)
   case (1 e1 e2)
-  hence "f ` e1 \<inter> f ` e2 \<noteq> {}" "f ` e1 \<in> (image f) ` M" "f ` e2 \<in> (image f) ` M"
+  hence f: "f ` e1 \<inter> f ` e2 \<noteq> {}" "f ` e1 \<in> (image f) ` M" "f ` e2 \<in> (image f) ` M"
         "f ` e1 \<noteq> f ` e2"
     using "1"(1,2,3) assms(2) Vs_def[of M] Union_upper[of e2 M]
       Union_upper[of e1 M] inj_on_image_eq_iff[of f "Vs M" e1 e2]
     by auto
-  thus ?case
-    using assms(1) matchingD by blast
+  have "f ` e1 \<inter> f ` e2 = {}"
+    by (rule matching_def[THEN iffD1, OF assms(1), rule_format, OF f(2,3,4)])
+  thus ?case using f(1) by simp
 qed
 
 lemma matching_image:
@@ -372,7 +373,7 @@ lemma graph_matching_image_iff:
   assumes  "inj_on f (Vs (G \<union> M))"
   shows  "graph_matching ((image f) ` G) ((image f) ` M) \<longleftrightarrow> graph_matching G M"
   using assms  Vs_subset[of M M] Vs_subset[of M "G \<union> M"]
-    subset_inj_on matching_image_iff[of f M] inj_on_lifted_graph_subset[of f G M] 
+    inj_on_subset matching_image_iff[of f M] inj_on_lifted_graph_subset[of f G M] 
   by force
 
 lemma graph_matching_union:
@@ -2153,20 +2154,6 @@ subsection \<open>Graph homomorphisms\<close>
 
 text \<open>From the branch \<open>weighted_blossom\<close>, theory \<open>Matching.thy\<close>.\<close>
 
-lemma matching_image_rev:
-  assumes "matching ((image f) ` M)" "inj_on f (Vs M)"
-  shows "matching M"
-proof(rule matchingI, rule ccontr, goal_cases)
-  case (1 e1 e2)
-  hence f: "f ` e1 \<inter> f ` e2 \<noteq> {}" "f ` e1 \<in> (image f) ` M" "f ` e2 \<in> (image f) ` M"
-        "f ` e1 \<noteq> f ` e2"
-    using "1"(1,2,3) assms(2) Vs_def[of M] Union_upper[of e2 M]
-      Union_upper[of e1 M] inj_on_image_eq_iff[of f "Vs M" e1 e2]
-    by auto
-  have "f ` e1 \<inter> f ` e2 = {}"
-    by (rule matching_def[THEN iffD1, OF assms(1), rule_format, OF f(2,3,4)])
-  thus ?case using f(1) by simp
-qed
 
 lemma perfect_matching_image:
   assumes "perfect_matching E M" "inj_on f (Vs E)"
@@ -2611,7 +2598,7 @@ proof-
   have  inj_M: "inj_on f (Vs M)" and inj_G: "inj_on f (Vs G)"
     using assms by(auto simp add: inj_on_Un vs_union)
   have inj_on_G: "G' \<subseteq> G \<Longrightarrow> inj_on ((`) f) G'" for G'
-    using inj_G subset_inj_on[of "(`) f" G G'] inj_on_image[of f G]
+    using inj_G inj_on_subset[of "(`) f" G G'] inj_on_image[of f G]
     by(auto simp add: Vs_def)
   have in_G_matching:"C \<subseteq> G \<Longrightarrow> matching ((`) f ` C) \<longleftrightarrow> matching C" for C 
     using  inj_G Vs_subset[of C G] inj_on_subset[of f "Vs G" "Vs C"]
