@@ -1710,8 +1710,12 @@ proof-
         show ?thesis
         proof (rule ccontr, goal_cases False)
           case False
-          have "finite B1" using ex_B1_B2 assms finite_subset
-            by (metis all_subset_E)
+          have "B1 \<in> \<B>"
+            using ex_B1_B2 by blast
+          then have "B1 \<subseteq> E"
+            using all_subset_E by blast
+          then have "finite B1"
+            using assms(1) finite_subset by blast
           have "finite B2" using ex_B1_B2 assms finite_subset
             by (metis all_subset_E)
 
