@@ -909,7 +909,28 @@ lemma neq_Nil_conv_snoc: "xs \<noteq> [] \<longleftrightarrow> (\<exists>x ys. x
 
 lemma list_cases_both_sides: 
 "\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs =[x] \<Longrightarrow> P; \<And> x y ys. xs =[x]@ys@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P "
-  by (metis neq_Nil_conv neq_Nil_conv_snoc single_in_append)
+proof -
+  assume 0: "xs = [] \<Longrightarrow> P"
+  assume 1: "\<And>x. xs = [x] \<Longrightarrow> P"
+  assume 2: "\<And>x y ys. xs = [x] @ ys @ [y] \<Longrightarrow> P"
+  show P
+  proof (cases xs)
+    case Nil
+    then show ?thesis using 0 by simp
+  next
+    case (Cons x xs')
+    show ?thesis
+    proof (cases xs' rule: rev_cases)
+      case Nil
+      with Cons have "xs = [x]" by simp
+      then show ?thesis using 1 by blast
+    next
+      case (snoc ys y)
+      with Cons have "xs = [x] @ ys @ [y]" by simp
+      then show ?thesis using 2 by blast
+    qed
+  qed
+qed
 
 lemma append_butlast_last_cancel: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
   by simp
