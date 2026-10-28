@@ -1789,7 +1789,20 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
           by (auto simp add: doubleton_eq_iff)
         then show ?thesis 
           using matching last_pfx1_matched last_pfx2_matched \<open>last pfx1 = last pfx2\<close>
-          by (metis edges_are_Vs insertI1 matching_def2)
+          proof -
+            have inM1: "last pfx1 \<in> Vs M"
+              using last_pfx1_matched by (blast intro: edges_are_Vs)
+            have mem1: "last pfx1 \<in> {last pfx1, last (butlast pfx1)}"
+              by (rule insertI1)
+            have mem2: "last pfx1 \<in> {last pfx2, last (butlast pfx2)}"
+              using \<open>last pfx1 = last pfx2\<close> by simp
+            have uniq: "\<exists>!e. e \<in> M \<and> last pfx1 \<in> e"
+              using matching inM1 by (auto simp: matching_def2)
+            show False
+              using uniq last_pfx1_matched last_pfx2_matched mem1 mem2
+                    \<open>{last pfx2, last (butlast pfx2)} \<noteq> {last pfx1, last (butlast pfx1)}\<close>
+              by blast
+          qed
       next
         have "last p2 \<notin> Vs M"
           using from_tree alt_paths(3) 
