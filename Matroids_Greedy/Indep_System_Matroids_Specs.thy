@@ -18,8 +18,23 @@ definition subseteq :: "'s \<Rightarrow> 's \<Rightarrow> bool" where
 lemma set_subseteq:
   "invar X \<Longrightarrow> invar Y \<Longrightarrow> (subseteq X Y) = (set X \<subseteq> set Y)"
   unfolding subseteq_def
-  using set_diff set_empty nonempty_repr
-  by (metis Diff_eq_empty_iff invar_diff)
+proof (intro iffI)
+  assume "invar X" "invar Y" "diff X Y = empty"
+  hence "set (diff X Y) = {}" using set_empty by simp
+  moreover have "set (diff X Y) = set X - set Y"
+    using set_diff \<open>invar X\<close> \<open>invar Y\<close> by blast
+  ultimately show "set X \<subseteq> set Y" by blast
+next
+  assume "invar X" "invar Y" "set X \<subseteq> set Y"
+  have "set (diff X Y) = set X - set Y"
+    using set_diff \<open>invar X\<close> \<open>invar Y\<close> by blast
+  also have "\<dots> = {}" using \<open>set X \<subseteq> set Y\<close> by blast
+  finally have "set (diff X Y) = set empty" using set_empty by simp
+  moreover have "invar (diff X Y)"
+    using invar_diff \<open>invar X\<close> \<open>invar Y\<close> by blast
+  ultimately show "diff X Y = empty"
+    using nonempty_repr by blast
+qed
 
 lemmas [code] = subseteq_def
 
