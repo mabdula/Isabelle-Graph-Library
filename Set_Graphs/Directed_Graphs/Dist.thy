@@ -1020,8 +1020,17 @@ proof(safe, goal_cases)
   qed
 next
   case 1
-  thus ?case
-    by (metis dist_set_not_inf distance_0 infinity_ne_i0)
+  note prems = this
+  from prems have not_inf: "distance_set G Vs v \<noteq> \<infinity>"
+    using infinity_ne_i0 by auto
+  obtain u where u_mem: "u \<in> Vs" and u_dist: "distance G u v = distance_set G Vs v"
+    using dist_set_not_inf[OF not_inf] by blast
+  from prems u_dist have "distance G u v = 0"
+    by auto
+  then have "u = v"
+    using distance_0 by fastforce
+  with u_mem show ?case
+    by simp
 qed
 
 lemma dist_set_leq: 
