@@ -1452,7 +1452,17 @@ proof
     then have 29:"B $$ (i, insert_index j k) = A $$ (i', k1)" 
       using i' k1 by blast
     have 30:"submatrix A I (J - {pick J j}) $$ (i, k) = A $$ (i', k2)"
-      by (metis (no_types, lifting) asmi asmk dim_submatrix(1-2) i' k2 submatrix_index)
+    proof -
+      have ic: "i < card {i. i < dim_row A \<and> i \<in> I}"
+        using asmi by (simp add: dim_submatrix(1))
+      have kc: "k < card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
+        using asmk by (simp add: dim_submatrix(2))
+      have "submatrix A I (J - {pick J j}) $$ (i, k) = A $$ (pick I i, pick (J - {pick J j}) k)"
+        using submatrix_index[OF ic kc] .
+      also have "\<dots> = A $$ (i', k2)"
+        using i' k2 by simp
+      finally show ?thesis .
+    qed
     have "pick J (insert_index j k) = pick (J - {pick J j}) k"
     proof(cases "k < j")
       case True
