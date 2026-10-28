@@ -2601,11 +2601,28 @@ proof rule
           using submatrix_inter_rows' 3 
           using submatrix_inter_rows'[of "mat_of_rows n [unit_vec n i]" "?f ` (I - {0..<nr})" J] 3
           by simp
-        have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}" 
-          apply safe 
-            apply simp+
-           apply (metis DiffI True atLeastLessThan_iff diff_self_eq_0 image_iff less_irrefl)
-          by simp
+        have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}"
+        proof -
+          have subset1: "?f ` (I - {0..<nr}) \<inter> {0..<1} \<subseteq> {0}"
+          proof
+            fix x
+            assume "x \<in> ?f ` (I - {0..<nr}) \<inter> {0..<1}"
+            then have "x \<in> {0..<1}" by simp
+            then show "x \<in> {0}" by simp
+          qed
+          have "nr \<in> I - {0..<nr}"
+            using True by simp
+          then have "?f nr \<in> ?f ` (I - {0..<nr})"
+            by (rule imageI)
+          then have mem1: "0 \<in> ?f ` (I - {0..<nr})"
+            by simp
+          have mem2: "(0::nat) \<in> {0..<1}"
+            by simp
+          from mem1 mem2 have subset2: "{0} \<subseteq> ?f ` (I - {0..<nr}) \<inter> {0..<1}"
+            by auto
+          from subset1 subset2 show ?thesis
+            by (rule equalityI)
+        qed
         have 19: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J =
               submatrix (mat_of_rows n [unit_vec n i]) {0} J" 
           by (metis 17 18)
