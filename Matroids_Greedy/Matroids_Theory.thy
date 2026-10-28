@@ -2028,8 +2028,11 @@ proof (induction n arbitrary: A rule: less_induct)
         from \<open>n - 1 < n\<close> \<open>n - 1 = card (A - {x})\<close> \<open>(A - {x}) \<subseteq> X - Y\<close> less.IH
         have "r (Y \<union> (A - {x})) = r Y" by blast
         then have r_A_sub_y: "r ((Y \<union> (A - {x, y})) \<union> {y}) = r Y"
-          by (metis (no_types, opaque_lifting) DiffI Diff_insert2 Un_insert_left \<open>x \<noteq> y\<close> \<open>y \<in> A\<close>
-              emptyE insertE insert_Diff_single insert_absorb sup.commute sup_bot.left_neutral)
+        proof -
+          have "(Y \<union> (A - {x, y})) \<union> {y} = Y \<union> (A - {x})"
+            using \<open>x \<noteq> y\<close> \<open>y \<in> A\<close> by blast
+          then show ?thesis using \<open>r (Y \<union> (A - {x})) = r Y\<close> by simp
+        qed
 
         from \<open>x \<in> A\<close> \<open>y \<in> A\<close> \<open>x \<noteq> y\<close> \<open>n = card A\<close> have "n - 1 = card (A - {y})" by simp
         from \<open>A \<subseteq> X - Y\<close> have "(A - {y}) \<subseteq> X - Y" by blast
