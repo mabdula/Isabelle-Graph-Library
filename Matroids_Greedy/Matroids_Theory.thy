@@ -1282,7 +1282,10 @@ proof-
   from ex have "?int_set_P \<noteq> {}" by blast
   from 1 2 have "finite ?int_set" by auto
   then have "finite ?int_set_P" 
-    by (smt (verit, best) finite_subset mem_Collect_eq subsetI)
+    proof -
+      have "?int_set_P \<subseteq> ?int_set" by blast
+      with \<open>finite ?int_set\<close> show ?thesis using finite_subset by blast
+    qed
 
   from ex_max_card[OF `?int_set_P \<noteq> {}` `finite ?int_set_P`] show ?thesis by blast
 qed
