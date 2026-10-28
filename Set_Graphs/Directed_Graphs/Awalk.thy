@@ -1033,7 +1033,15 @@ qed
   with awalk_verts_cons \<open>awalk E u p u\<close>
     have awalk_verts_p: "awalk_verts u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) =
       [w, v] @ tl (awalk_verts u (xs @ [(fst (last p), snd (last p))]))"
-    by metis
+  proof -
+    have "awalk E u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) u"
+    proof (subst \<open>p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]\<close> [symmetric])
+      show "awalk E u p u" by (fact \<open>awalk E u p u\<close>)
+    qed
+    then show "awalk_verts u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) =
+        [w, v] @ tl (awalk_verts u (xs @ [(fst (last p), snd (last p))]))"
+      by (rule awalk_verts_cons)
+  qed
   from awalk_verts_snoc
     obtain ys where "awalk_verts u (xs @ [(fst (last p), snd (last p))]) = ys @ [fst (last p), snd (last p)]" by metis
   with awalk_verts_p \<open>p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]\<close>
