@@ -2191,7 +2191,7 @@ qed
       then have 35: "pick (I - {pick I i}) (card {a\<in>(I - {pick I i}). a < pick I t}) = pick I t" 
         using pick_card_in_set by presburger
       have 9:"card {a\<in>I. a < pick I t} = t" 
-        by (metis True 16 24 18 card_mono card_pick insert_index(1) order_trans_rules(22))
+        using card_pick t_less_card by blast
       have "pick I t < pick I i" 
         by (metis True 16 18 assms(3) card_mono order_trans_rules(22) pick_mono_inf pick_mono_le)
       then  have 8: "{a\<in>I. a < pick I t} = {a\<in>(I - {pick I i}). a < pick I t}"
