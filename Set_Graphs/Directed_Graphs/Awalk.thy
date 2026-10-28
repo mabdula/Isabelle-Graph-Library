@@ -1111,7 +1111,7 @@ next
     have "xs \<noteq> []" by auto
   with \<open>p = xs @ [(w, v)] @ ys\<close>
     obtain x y where "p = butlast xs @ [(x, y), (w, v)] @ ys"
-    by (metis append_Cons append_butlast_last_cancel prod.exhaust_sel)
+    by (cases xs rule: rev_cases; auto)
   with \<open>awalk E u p u\<close> awalk_def
     have "cas u (butlast xs @ [(x, y), (w, v)] @ ys) u" by blast
   then have "w = y" by simp
