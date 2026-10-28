@@ -2066,8 +2066,20 @@ proof-
 
 (* Cost of B2 solution *)
   have "\<exists>X_B2. set_inv X_B2 \<and> to_set X_B2 = B2"
-    by (metis \<open>B2 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close> indep_system_axioms_abs indep_system_def
-        matroid.from_set_correct matroid.invar_from_set rev_finite_subset)
+  proof -
+    have carrier_fin: "finite (matroid.carrier_abs carrier)"
+      using indep_system.carrier_finite[OF indep_system_axioms_abs] .
+    have "B2 \<subseteq> matroid.carrier_abs carrier"
+      using \<open>B2 \<subseteq> F\<close> \<open>F \<subseteq> matroid.carrier_abs carrier\<close> by blast
+    with carrier_fin have fin_B2: "finite B2"
+      using rev_finite_subset by blast
+    have "set_inv (matroid.from_set B2)"
+      using fin_B2 matroid.invar_from_set by blast
+    moreover have "to_set (matroid.from_set B2) = B2"
+      using fin_B2 matroid.from_set_correct by blast
+    ultimately show "\<exists>X_B2. set_inv X_B2 \<and> to_set X_B2 = B2"
+      by blast
+  qed
   then obtain X_B2 where "set_inv X_B2" "to_set X_B2 = B2" by blast
   then have "sum ?c (to_set X_B2) = rat_of_nat (card B2)"
     using in_mono \<open>B2 \<subseteq> F\<close> by fastforce
