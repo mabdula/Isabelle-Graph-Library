@@ -82,8 +82,30 @@ proof(induct "card A" arbitrary: A rule: less_induct)
             by simp
         qed
       have " \<forall>x\<in>(A - {a, a'}). f x \<in> (A - {a, a'})" 
-        by (metis Diff_iff \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' = f a\<close> empty_iff insert_iff 
-            less.prems(2) less.prems(3))
+      proof
+        fix x
+        assume xin: "x \<in> A - {a, a'}"
+        then have "x \<in> A" by blast
+        then have fx: "f x \<in> A" using less.prems(2) by blast
+        have ffx: "f (f x) = x" using \<open>x \<in> A\<close> less.prems(3) by blast
+        have "f x \<noteq> a"
+        proof
+          assume "f x = a"
+          then have "f (f x) = f a" by simp
+          then have "x = a'" using ffx \<open>a' = f a\<close> by simp
+          then show False using xin by blast
+        qed
+        moreover have "f x \<noteq> a'"
+        proof
+          assume "f x = a'"
+          then have "f x = f a" using \<open>a' = f a\<close> by simp
+          then have "f (f x) = f (f a)" by simp
+          moreover have "f (f a) = a" using \<open>a \<in> A \<and> f a \<noteq> a\<close> less.prems(3) by blast
+          ultimately have "x = a" using ffx by simp
+          then show False using xin by blast
+        qed
+        ultimately show "f x \<in> A - {a, a'}" using fx by blast
+      qed
       moreover have  " \<forall>x\<in>(A - {a, a'}). f (f x) = x" 
         by (meson DiffD1 less.prems(3))
       moreover  have " \<forall>x\<in>(A - {a, a'}). val x + val (f x) = 0" 
