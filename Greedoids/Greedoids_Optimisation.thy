@@ -887,7 +887,19 @@ definition "A_list = (SOME l. set l = A \<and> (\<forall>i\<le>length l. set (ta
 lemma A_list_props:   assumes no_strong_exchange: "\<not> strong_exchange_property E F" 
   shows "set A_list = A" "(\<forall>i\<le>length A_list. set (take i A_list) \<in> F)" "distinct A_list"
   "(\<And> i. i\<le>length A_list \<Longrightarrow> set (take i A_list) \<in> F)"
-  by (smt (verit, del_insts) A_list_def someI_ex there_is_A_list no_strong_exchange)+
+proof -
+  have A_list_prop: "set A_list = A \<and> (\<forall>i\<le>length A_list. set (take i A_list) \<in> F) \<and> distinct A_list"
+    unfolding A_list_def
+    by (rule someI_ex[OF there_is_A_list[OF no_strong_exchange]])
+  show "set A_list = A"
+    using A_list_prop by simp
+  show "\<forall>i\<le>length A_list. set (take i A_list) \<in> F"
+    using A_list_prop by simp
+  show "distinct A_list"
+    using A_list_prop by simp
+  show "\<And>i. i \<le> length A_list \<Longrightarrow> set (take i A_list) \<in> F"
+    using A_list_prop by auto
+qed
 
 lemma finites: assumes no_strong_exchange: "\<not> strong_exchange_property E F"
   shows "finite A" "finite B" "finite Y"
