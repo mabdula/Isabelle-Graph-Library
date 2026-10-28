@@ -1308,8 +1308,32 @@ lemma awalk_cases:
     a4 = w \<Longrightarrow>
     e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> s = fst d \<Longrightarrow> awalk E v (d # ds) w \<Longrightarrow> P) \<Longrightarrow>
 P"
- using awalk_induct[of a3 a1 a2 a4 ]
-  by (metis awalk_inductive_simps)
+proof -
+  assume ne: "a3 \<noteq> []"
+  assume aw: "awalk a1 a2 a3 a4"
+  assume R1: "\<And>e E u v. a1 = E \<Longrightarrow> a2 = u \<Longrightarrow> a3 = [e] \<Longrightarrow> a4 = v \<Longrightarrow>
+                e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> P"
+  assume R2: "\<And>e E u v s d ds w. a1 = E \<Longrightarrow> a2 = u \<Longrightarrow> a3 = e # d # ds \<Longrightarrow> a4 = w \<Longrightarrow>
+                e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> s = fst d \<Longrightarrow> awalk E v (d # ds) w \<Longrightarrow> P"
+  from awalk_inductive_simps[OF ne] aw
+  have "(\<exists>e E u v. a1 = E \<and> a2 = u \<and> a3 = [e] \<and> a4 = v \<and> e \<in> E \<and> u = fst e \<and> v = snd e) \<or>
+        (\<exists>e E u v s d ds w. a1 = E \<and> a2 = u \<and> a3 = e # d # ds \<and> a4 = w \<and>
+           e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w)"
+    by simp
+  then show P
+  proof (rule disjE)
+    assume "\<exists>e E u v. a1 = E \<and> a2 = u \<and> a3 = [e] \<and> a4 = v \<and> e \<in> E \<and> u = fst e \<and> v = snd e"
+    then obtain e E u v where "a1 = E" "a2 = u" "a3 = [e]" "a4 = v"
+      "e \<in> E" "u = fst e" "v = snd e" by blast
+    then show P using R1 by blast
+  next
+    assume "\<exists>e E u v s d ds w. a1 = E \<and> a2 = u \<and> a3 = e # d # ds \<and> a4 = w \<and>
+              e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w"
+    then obtain e E u v s d ds w where "a1 = E" "a2 = u" "a3 = e # d # ds" "a4 = w"
+      "e \<in> E" "u = fst e" "v = snd e" "s = fst d" "awalk E v (d # ds) w" by blast
+    then show P using R2 by blast
+  qed
+qed
 
 lemma subset_mono_awalk:
   assumes "awalk A u es v"
