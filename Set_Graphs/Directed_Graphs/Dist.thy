@@ -504,7 +504,22 @@ qed
 
 lemma Suc_le_length_iff_2:
   "(Suc n \<le> length xs) = (\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys)"
-  by (metis Suc_le_D Suc_le_mono length_Suc_conv_rev)
+proof
+  assume assm: "Suc n \<le> length xs"
+  then have "xs \<noteq> []" by auto
+  then show "\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys"
+  proof (cases xs rule: rev_cases)
+    case Nil
+    then show ?thesis using \<open>xs \<noteq> []\<close> by simp
+  next
+    case (snoc ys x)
+    then show ?thesis using assm by auto
+  qed
+next
+  assume "\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys"
+  then obtain x ys where "xs = ys @ [x]" "n \<le> length ys" by blast
+  then show "Suc n \<le> length xs" by simp
+qed
 
 lemma distance_parent: 
   "\<lbrakk>distance G u v < \<infinity>; u \<noteq> v\<rbrakk> \<Longrightarrow> 
