@@ -2177,8 +2177,22 @@ next
   case False
   then have "p1 = [hd p1]"
     using odd_lens(1)
-    by (metis Suc_eq_plus1 edges_of_path_length' edges_of_path_nempty length_0_conv length_Suc_conv
-              list.sel(1) nempty(1))
+    proof -
+      have "length p1 \<noteq> 0"
+        using nempty(1) by (simp add: length_0_conv)
+      then have len1: "length p1 = 1"
+        using False by linarith
+      show "p1 = [hd p1]"
+      proof (cases p1)
+        case Nil
+        then show ?thesis using len1 by simp
+      next
+        case (Cons x xs)
+        then have "length xs = 0"
+          using len1 by simp
+        then show ?thesis using Cons by simp
+      qed
+    qed
   have "alt_path M ((rev p1) @ p2)"
     using alt_paths(2)
     apply(subst \<open>p1 = [hd p1]\<close>)
