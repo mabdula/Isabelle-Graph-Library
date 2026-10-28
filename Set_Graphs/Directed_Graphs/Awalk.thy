@@ -451,7 +451,39 @@ qed
 
 lemma awalk_other_edge_set:
   "u \<noteq> v \<Longrightarrow> awalk E u p v \<Longrightarrow> \<not>awalk E' u p v \<Longrightarrow> \<exists>e. e \<in> (E - E') \<and> e \<in> set p"
-  by (metis (no_types, lifting) DiffI awalk_def awalk_ends cas_simp dVsI'(1) list.set_sel(1) subset_code(1))
+proof -
+  assume "u \<noteq> v"
+  assume awalk_E: "awalk E u p v"
+  assume not_awalk_E': "\<not> awalk E' u p v"
+  show "\<exists>e. e \<in> E - E' \<and> e \<in> set p"
+  proof (rule ccontr)
+    assume "\<not> (\<exists>e. e \<in> E - E' \<and> e \<in> set p)"
+    then have no_edge: "\<forall>e \<in> set p. e \<notin> E - E'" by blast
+    from awalk_E have subset_E: "set p \<subseteq> E" by blast
+    from awalk_E have cas_u: "cas u p v" by blast
+    have subset_E': "set p \<subseteq> E'"
+    proof
+      fix e assume "e \<in> set p"
+      then have "e \<in> E" using subset_E by blast
+      moreover have "e \<notin> E - E'" using no_edge \<open>e \<in> set p\<close> by blast
+      ultimately show "e \<in> E'" by blast
+    qed
+    have "p \<noteq> []"
+    proof
+      assume "p = []"
+      with awalk_E have "u = v" by (simp add: awalk_Nil_iff)
+      with \<open>u \<noteq> v\<close> show False by blast
+    qed
+    then have hd_mem: "hd p \<in> set p" by simp
+    have "fst (hd p) = u" using cas_simp[OF \<open>p \<noteq> []\<close>] cas_u by auto
+    then have hd_eq: "hd p = (u, snd (hd p))" by (cases "hd p") auto
+    have "hd p \<in> E'" using subset_E' hd_mem by blast
+    then have "(u, snd (hd p)) \<in> E'" using hd_eq by simp
+    then have "u \<in> dVs E'" using dVsI'(1) by blast
+    with subset_E' cas_u have "awalk E' u p v" unfolding awalk_def by blast
+    with not_awalk_E' show False by blast
+  qed
+qed
 
 lemma awalk_hd_in_set:
   "awalk G u p v \<Longrightarrow> p \<noteq> [] \<Longrightarrow> set p \<subseteq> X \<Longrightarrow> u \<in> dVs X"
