@@ -2368,8 +2368,22 @@ proof-
       have "\<forall>x \<in> X - Y. r (insert x Y) < card (insert x Y)"
         by (metis DiffD1 in_mono insert_subsetI order_less_le)
       then have "\<forall>x \<in> X - Y. r (insert x Y) < card Y + 1"
-        by (metis DiffD2 Suc_eq_plus1 \<open>?indep Y\<close> assms(1) card_insert_disjoint finite_subset)
-      then have "\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y"
+        proof (intro ballI)
+          fix x
+          assume "x \<in> X - Y"
+
+          have lt: "r (insert x Y) < card (insert x Y)"
+            using \<open>\<forall>x \<in> X - Y. r (insert x Y) < card (insert x Y)\<close> \<open>x \<in> X - Y\<close> by blast
+
+          from \<open>?indep Y\<close> have "Y \<subseteq> E" by blast
+          with assms(1) have fin: "finite Y" using finite_subset by blast
+          from \<open>x \<in> X - Y\<close> have notin: "x \<notin> Y" by blast
+
+          have "card (insert x Y) = card Y + 1"
+            using card_insert_disjoint[OF fin notin] by simp
+
+          with lt show "r (insert x Y) < card Y + 1" by simp
+        qed      then have "\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y"
         by force
 
       from R2' \<open>?indep Y\<close> have "\<forall>x \<in> X - Y. r (insert x Y) \<ge> card Y"
