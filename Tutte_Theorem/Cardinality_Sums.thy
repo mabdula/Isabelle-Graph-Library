@@ -157,7 +157,7 @@ next
     show ?thesis using ex_neq by blast
   qed
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-{b}. b1 \<in> a" 
-    by (metis \<open>b \<in> B \<and> b \<in> x\<close> insertE insert_Diff)
+    by blast
   have "finite (B - {b})" 
     using insert.prems(1) by blast
   then  have "card F \<le> card (B - {b})" using insert.prems(2)
