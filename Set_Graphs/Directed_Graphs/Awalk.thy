@@ -1380,7 +1380,7 @@ lemma awalk_UNIV_rev: "awalk UNIV s es t \<Longrightarrow> awalk UNIV t (map pro
   apply(subst rev.simps(2), subst map_append)
     apply(rule awalk_appendI[of _ _ _ "snd x"])
      apply (meson awalk_Cons_iff)
-    by (metis UNIV_I arc_implies_awalk awalk_Cons_iff list.simps(8) list.simps(9) prod.swap_def)
+    by (auto simp: awalk_Cons_iff awalk_Nil_iff)
   done
 
 lemma non_empty_awalk_fixed_vertex_exhange:"xs \<noteq> [] \<Longrightarrow> awalk_verts s xs = awalk_verts t xs"
