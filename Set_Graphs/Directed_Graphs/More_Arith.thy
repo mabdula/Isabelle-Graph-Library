@@ -670,7 +670,7 @@ and P_of_minI_strict1: "\<lbrakk>(a::real) < b \<Longrightarrow> P a; b \<le> a 
 and P_of_minE_strict2: 
   "\<lbrakk>P (min a b);\<lbrakk>(a::real) \<le> b; P a\<rbrakk> \<Longrightarrow> Q; \<lbrakk>b < a; P b\<rbrakk> \<Longrightarrow> Q\<rbrakk> \<Longrightarrow> Q"
   by(linarith+)
-    (smt (verit, best))+
+    (cases a b rule: linorder_cases; force simp: min_def)+
 
 lemma add_non_min_element_Min:
   "\<lbrakk>finite A; A \<noteq> {}; y \<le> x; y \<in> A; B = insert x A\<rbrakk> \<Longrightarrow> Min B = Min A"
