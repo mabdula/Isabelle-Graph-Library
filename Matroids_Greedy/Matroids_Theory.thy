@@ -2262,7 +2262,11 @@ proof-
       from False have int_sets: "(X \<union> {x}) \<inter> (X \<union> {y}) = X" by auto
 
       have "r X \<le> r (X \<union> {x, y})" using R2 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close>
-        by (metis Un_insert_right Un_upper1 insert_subset sup_bot.right_neutral)
+      proof -
+        have "X \<union> {x, y} \<subseteq> E" using \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> by blast
+        moreover have "X \<subseteq> X \<union> {x, y}" by blast
+        ultimately show ?thesis using R2 \<open>X \<subseteq> E\<close> by blast
+      qed
 
       have "r X + r (X \<union> {x, y}) \<le> r (X \<union> {x}) + r (X \<union> {y})"
         using R3 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> un_sets int_sets
