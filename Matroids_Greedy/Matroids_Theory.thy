@@ -471,7 +471,46 @@ proof-
     using M3_equiv_M3'' by auto
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n))"
-    by (smt (verit, del_insts) mem_Collect_eq)
+    proof (rule iffI)
+      assume LHS: "\<forall>X \<subseteq> carrier. \<forall>B1 B2. basis_in X B1 \<longrightarrow> basis_in X B2 \<longrightarrow> card B1 = card B2"
+      show "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+      proof (intro allI impI)
+        fix X
+        assume "X \<subseteq> carrier"
+        show "\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n"
+        proof (cases "\<exists>B. basis_in X B")
+          case True
+          then obtain B0 where B0_basis: "basis_in X B0" by blast
+          have n_eq: "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = card B0"
+          proof (intro allI impI)
+            fix n'
+            assume "n' \<in> {card B | B. basis_in X B}"
+            then obtain B' where "n' = card B'" "basis_in X B'" by blast
+            with LHS \<open>X \<subseteq> carrier\<close> B0_basis have "card B' = card B0" by blast
+            with \<open>n' = card B'\<close> show "n' = card B0" by simp
+          qed
+          then show ?thesis by blast
+        next
+          case False
+          then have "{card B | B. basis_in X B} = {}" by blast
+          then show ?thesis by blast
+        qed
+      qed
+    next
+      assume RHS: "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+      show "\<forall>X \<subseteq> carrier. \<forall>B1 B2. basis_in X B1 \<longrightarrow> basis_in X B2 \<longrightarrow> card B1 = card B2"
+      proof (intro allI impI)
+        fix X B1 B2
+        assume "X \<subseteq> carrier" "basis_in X B1" "basis_in X B2"
+        from RHS \<open>X \<subseteq> carrier\<close> obtain n where n_prop: "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n"
+          by blast
+        from \<open>basis_in X B1\<close> have "card B1 \<in> {card B | B. basis_in X B}" by blast
+        with n_prop have card_B1_eq: "card B1 = n" by blast
+        from \<open>basis_in X B2\<close> have "card B2 \<in> {card B | B. basis_in X B}" by blast
+        with n_prop have "card B2 = n" by blast
+        then show "card B1 = card B2" using card_B1_eq by simp
+      qed
+    qed
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B})"
     by (smt (verit, del_insts) Max.bounded_iff Max_eq_iff Min_eq_iff bases_X_finite bases_X_nonempty)
