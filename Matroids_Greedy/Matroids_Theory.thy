@@ -1123,7 +1123,16 @@ qed
   from \<open>Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs\<close>
     \<open>card J = Min ?basis_cards\<close> \<open>card K = Max ?basis_cards\<close> lower_rank_of_def upper_rank_of_def
   have "Min ?fracs = Frac (int (card J)) (int (card K))"
-    by metis
+  proof -
+    have lower_eq: "lower_rank_of F = card J"
+      using \<open>card J = Min ?basis_cards\<close> unfolding lower_rank_of_def by simp
+    have upper_eq: "upper_rank_of F = card K"
+      using \<open>card K = Max ?basis_cards\<close> unfolding upper_rank_of_def by simp
+    from \<open>Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs\<close>
+    have "Frac (int (card J)) (int (card K)) = Min ?fracs"
+      by (simp add: lower_eq upper_eq)
+    then show ?thesis by simp
+  qed
   moreover have "rank_quotient = Min ?fracs"
     unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
   ultimately have "rank_quotient = Frac (int (card J)) (int (card K))" by simp
