@@ -254,8 +254,48 @@ qed
 
 lemma tutte_skew_symmetric:
   shows "tutte_matrix $i$j = - tutte_matrix $j$i"
-  by (metis (no_types, lifting) add.inverse_neutral in_oriented insert_commute
-      not_in_edges_tutte_zero one_direction_in_oriented rev_in_oriented verit_minus_simplify(4))
+proof (cases "(i, j) \<in> oriented_edges")
+  case True
+  have 1: "tutte_matrix $i$j = Var\<^sub>0 {i, j}"
+    using True by (rule in_oriented)
+  have 2: "tutte_matrix $j$i = - Var\<^sub>0 {j, i}"
+    using True by (rule rev_in_oriented)
+  have 3: "{j, i} = {i, j}" by auto
+  show ?thesis by (simp add: 1 2 3)
+next
+  case False
+  note ij_not = this
+  show ?thesis
+  proof (cases "(j, i) \<in> oriented_edges")
+    case True
+    have 1: "tutte_matrix $i$j = - Var\<^sub>0 {i, j}"
+      using True by (rule rev_in_oriented)
+    have 2: "tutte_matrix $j$i = Var\<^sub>0 {j, i}"
+      using True by (rule in_oriented)
+    have 3: "{j, i} = {i, j}" by auto
+    show ?thesis by (simp add: 1 2 3)
+  next
+    case False
+    note ji_not = this
+    have notG: "{i, j} \<notin> G"
+    proof
+      assume "{i, j} \<in> G"
+      then have "(i, j) \<in> oriented_edges \<or> (j, i) \<in> oriented_edges"
+        by (rule one_direction_in_oriented)
+      then show False using ij_not ji_not by blast
+    qed
+    have jiG: "{j, i} \<notin> G"
+    proof -
+      have "{j, i} = {i, j}" by auto
+      then show ?thesis using notG by simp
+    qed
+    have "tutte_matrix $i$j = 0"
+      using notG by (rule not_in_edges_tutte_zero)
+    moreover have "tutte_matrix $j$i = 0"
+      using jiG by (rule not_in_edges_tutte_zero)
+    ultimately show ?thesis by simp
+  qed
+qed
 
 lemma zero_then_not_in_edges:
   assumes "tutte_matrix $i$j = 0"
