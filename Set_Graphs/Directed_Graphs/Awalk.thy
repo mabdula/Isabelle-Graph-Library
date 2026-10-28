@@ -1005,8 +1005,30 @@ qed
 
   from \<open>(w, v) = hd p\<close> \<open>(last p) \<noteq> (w, v)\<close>
     have "\<exists>xs. p = [(w, v)] @ xs @ [last p]" 
-    by (metis (no_types, opaque_lifting) \<open>(w, v) \<in> set p\<close> append.left_neutral append_Cons
-    append_butlast_last_id last_snoc list.distinct(1) list.exhaust_sel split_list)
+  proof -
+    from \<open>(w, v) \<in> set p\<close> have p_ne: "p \<noteq> []" by auto
+    obtain a as where p_cons: "p = a # as" using p_ne by (cases p) auto
+    have a_eq: "a = (w, v)" using p_cons \<open>(w, v) = hd p\<close> by simp
+    show "\<exists>xs. p = [(w, v)] @ xs @ [last p]"
+    proof (cases as)
+      case Nil
+      with p_cons a_eq have "p = [(w, v)]" by simp
+      then have "last p = (w, v)" by simp
+      with \<open>(last p) \<noteq> (w, v)\<close> show ?thesis by blast
+    next
+      case (Cons y ys)
+      with p_cons a_eq have p_eq: "p = (w, v) # y # ys" by simp
+      have y_ys_ne: "y # ys \<noteq> []" by simp
+      have decomp: "butlast (y # ys) @ [last (y # ys)] = y # ys"
+        using y_ys_ne by (rule append_butlast_last_id)
+      have last_eq: "last (y # ys) = last p" using p_eq by simp
+      from p_eq decomp[symmetric]
+        have "p = (w, v) # (butlast (y # ys) @ [last (y # ys)])" by simp
+      then have p_final: "p = [(w, v)] @ butlast (y # ys) @ [last (y # ys)]" by simp
+      with last_eq have "p = [(w, v)] @ butlast (y # ys) @ [last p]" by simp
+      then show ?thesis ..
+    qed
+  qed
   then obtain xs where "p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]" by auto
   with awalk_verts_cons \<open>awalk E u p u\<close>
     have awalk_verts_p: "awalk_verts u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) =
