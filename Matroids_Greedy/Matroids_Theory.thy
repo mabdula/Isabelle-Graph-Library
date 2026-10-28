@@ -406,7 +406,35 @@ proof-
   have "finite ?fracs" using `finite carrier` by auto
 
   have 1: "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
-    unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
+    unfolding rank_quotient_def
+  proof -
+    have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+      {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (rule set_eqI)
+      fix y
+      show "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} \<longleftrightarrow>
+            y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      proof
+        assume "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        then obtain X where X_carrier: "X \<subseteq> carrier"
+          and y_eq: "y = Frac (int (lower_rank_of X)) (int (rank X))" by blast
+        have "int (upper_rank_of X) = int (rank X)"
+          using upper_rank_equiv_rank[OF X_carrier] by simp
+        with y_eq have "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by simp
+        with X_carrier
+        show "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}" by auto
+      next
+        assume "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        then obtain X where X_carrier: "X \<subseteq> carrier"
+          and y_eq: "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by blast
+        from upper_rank_equiv_rank[OF X_carrier] y_eq X_carrier
+        show "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}" by auto
+      qed
+    qed
+    show "Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+          Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      using set_eq by simp
+  qed
 
   have 2: "\<forall>X \<subseteq> carrier. Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<le> 1"
     using rq_fracs_leq_1 by auto
