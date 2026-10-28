@@ -2222,8 +2222,23 @@ lemma odd_cycle_length_edges_ge_3:
   assumes "odd_cycle p"
   shows "length (edges_of_path p) \<ge> 3"
   using odd_cycleD[OF assms]
-  by (metis One_nat_def Suc_le_eq Suc_pred assms edges_of_path_length gt_zero linorder_neqE_nat
-            linorder_not_le odd_cycle_even_verts odd_numeral)
+proof -
+  have len_p: "length p \<ge> 3"
+    using odd_cycleD(1)[OF assms] .
+  have even_p: "even (length p)"
+    using odd_cycle_even_verts[OF assms] .
+  have len_p_ne3: "length p \<noteq> 3"
+  proof
+    assume "length p = 3"
+    with even_p show False by simp
+  qed
+  with len_p have len_p4: "length p \<ge> 4"
+    by simp
+  have edges_eq: "length (edges_of_path p) = length p - 1"
+    using edges_of_path_length by simp
+  with len_p4 show ?thesis
+    by simp
+qed
 
 lemma odd_cycle_length_verts_ge_4:
   assumes "odd_cycle p"
