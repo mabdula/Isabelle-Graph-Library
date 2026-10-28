@@ -843,11 +843,38 @@ proof(safe)
     by (simp add: assms least_power_of_permutation(1) p_is_permutation)
   then have "x = ((inv p)^^j) (((p)^^?len) i)" 
     using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by presburger
-  then have "x = (p^^(?len - j)) i"   using p_diff_inv_p_pow[of "inv p" j ?len] 
-    by (smt (z3) \<open>i = (p ^^ least_power p i) i\<close> \<open>x = (inv p ^^ j) i \<and> j < least_power (inv p) i\<close> 
-        assms bij_is_surj dual_order.strict_trans funpow_diff inj_iff inv_inv_eq least_power_le 
-        least_power_of_permutation(2) not_le p_diff_inv_p_pow permutation_bijective
-        permutation_inverse surj_iff) 
+  have "x = (p^^(?len - j)) i" 
+  proof -
+  have step: "\<And>k n. k \<le> n \<Longrightarrow> (inv p ^^ k) ((p ^^ n) i) = (p ^^ (n - k)) i"
+    using p_diff_inv_p_pow[OF assms] by blast
+  have x_eq: "x = (inv p ^^ j) i"
+    using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by blast
+  have j_less: "j < least_power (inv p) i"
+    using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by blast
+  have fix_i: "(p ^^ least_power p i) i = i"
+    using assms by (simp add: least_power_of_permutation(1))
+  have inv_fix: "(inv p ^^ least_power p i) i = i"
+  proof -
+    have "(inv p ^^ least_power p i) ((p ^^ least_power p i) i)
+            = (p ^^ (least_power p i - least_power p i)) i"
+      by (rule step[OF order.refl])
+    then show ?thesis
+      using fix_i by simp
+  qed
+  have dvd_le: "least_power (inv p) i dvd least_power p i"
+    by (rule least_power_minimal[OF inv_fix])
+  have pos: "0 < least_power p i"
+    by (rule least_power_of_permutation(2)[OF assms])
+  have "least_power (inv p) i \<le> least_power p i"
+    by (rule dvd_imp_le[OF dvd_le pos])
+  then have j_le: "j \<le> least_power p i"
+    using j_less by linarith
+  have "x = (inv p ^^ j) ((p ^^ least_power p i) i)"
+    using x_eq fix_i by simp
+  also have "\<dots> = (p ^^ (least_power p i - j)) i"
+    by (rule step[OF j_le])
+  finally show ?thesis .
+  qed
   then show "x \<in>  set (support p i)" 
     using elemnets_in_support_expo[of "p" i i x "?len - j"]
           assms least_power_of_permutation(2) by force
