@@ -1831,7 +1831,8 @@ proof
     have 44: "mat_delete B i j $$ (t, k) = B $$ (insert_index i t, insert_index j k)" 
       using mat_delete_index'[OF 4 2 1 5 3] by presburger
     have 23: "insert_index j k < dim_col B" 
-      by (metis "3" "4" basic_trans_rules(20) carrier_matD(2) insert_index_def not_less_eq)
+      using "3" carrier_matD(2)[OF "4"]
+      by (simp add: insert_index_def, arith)
     obtain k1 where k1: "col A k1 = col (submatrix A UNIV J) (insert_index j k) \<and> 
                          k1 < dim_col A \<and>
                          k1 = pick J (insert_index j k)" 
