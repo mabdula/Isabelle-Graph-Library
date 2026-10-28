@@ -1854,7 +1854,24 @@ qed
                          k2 < dim_col A \<and> 
                          k2 = pick (J - {pick J j}) k"
       using asmk dim_submatrix(2) pick_le col_submatrix_UNIV 
-      by (metis (no_types, lifting) Collect_cong)
+    proof -
+      have kd: "dim_col (submatrix A (I - {pick I i}) (J - {pick J j}))
+              = card {a. a < dim_col A \<and> a \<in> (J - {pick J j})}"
+        using dim_submatrix(2) by blast
+      then have kbound: "k < card {a. a < dim_col A \<and> a \<in> (J - {pick J j})}"
+        using asmk by simp
+      have "col (submatrix A UNIV (J - {pick J j})) k = col A (pick (J - {pick J j}) k)"
+        using col_submatrix_UNIV kbound by blast
+      moreover have "pick (J - {pick J j}) k < dim_col A"
+        using kbound pick_le by blast
+      ultimately have "col A (pick (J - {pick J j}) k)
+          = col (submatrix A UNIV (J - {pick J j})) k
+          \<and> pick (J - {pick J j}) k < dim_col A
+          \<and> pick (J - {pick J j}) k = pick (J - {pick J j}) k"
+        by simp
+      then show thesis
+        using that by blast
+    qed
     have 24:"insert_index i t < dim_row B" 
       by (metis "4" 19 asmi' basic_trans_rules(20) carrier_matD(1) insert_index_def not_less_eq)
     obtain t1 where t1: "row A t1 = row (submatrix A I UNIV) (insert_index i t) \<and> 
