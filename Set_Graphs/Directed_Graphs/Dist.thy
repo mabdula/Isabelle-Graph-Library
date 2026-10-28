@@ -570,7 +570,43 @@ lemma dist_not_inf'':
 proof(goal_cases)
   case main: 1
   then obtain p where "vwalk_bet G u (u#p) v" "length p = distance G u v"
-    by (metis dist_reachable enat_ord_simps(4) hd_of_vwalk_bet length_tl list.sel(3) reachable_dist_2)
+  proof -
+  have dist_fin: "distance G u v \<noteq> \<infinity>"
+    using main(1) main(3) by simp
+  have "distance G u v < \<infinity>"
+    using dist_fin by auto
+  hence "reachable G u v"
+    by (rule dist_reachable)
+  then obtain p' where p'_walk: "vwalk_bet G u p' v" and p'_dist: "distance G u v = length p' - 1"
+    by (auto elim!: reachable_dist_2)
+  have hd_p': "hd p' = u"
+    using p'_walk by (rule vwalk_bet_nonempty_vwalk(3))
+  have p'_nonempty: "p' \<noteq> []"
+    using p'_walk by (rule vwalk_bet_nonempty)
+  have p'_eq: "p' = u # tl p'"
+  proof -
+    have "p' = hd p' # tl p'"
+      using p'_nonempty by (rule list.collapse[symmetric])
+    then show ?thesis
+      using hd_p' by simp
+  qed
+  define p where "p = tl p'"
+  have p'_is: "p' = u # p"
+    unfolding p_def using p'_eq by simp
+  have walk: "vwalk_bet G u (u # p) v"
+    using p'_walk p'_is by simp
+  have len_p': "length p' = Suc (length p)"
+    using p'_is by simp
+  have "distance G u v = enat (length p' - 1)"
+    using p'_dist by simp
+  also have "... = enat (length p)"
+    using len_p' by simp
+  finally have dist_eq_final: "distance G u v = enat (length p)" .
+  then have len_eq: "length p = distance G u v"
+    by simp
+  show thesis
+    by (rule that[OF walk len_eq])
+  qed
   moreover have "set p \<inter> U = {}"
   proof(rule ccontr, goal_cases)
     case 1
