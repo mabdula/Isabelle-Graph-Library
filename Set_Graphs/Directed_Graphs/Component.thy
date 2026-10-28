@@ -717,8 +717,33 @@ proof
 next
   { fix S assume "S \<in> ?R"
     then have "S \<in> ?L"
-      by (auto)
-         (metis dVsI(1) in_induce_subgraphD(3) in_sccs_dVsD_sccs induce_subgraph_singleton_conv)
+    proof -
+      from \<open>S \<in> ?R\<close> obtain T where T_scc: "T \<in> sccs_dVs G"
+        and S_eq: "S = G \<downharpoonright> T" and S_ne: "S \<noteq> {}"
+        by auto
+      have T_ne: "G \<downharpoonright> T \<noteq> {}"
+        using S_ne S_eq by simp
+      then obtain a b where ab: "(a, b) \<in> G \<downharpoonright> T"
+        by fastforce
+      have b_in_T: "b \<in> T"
+        using in_induce_subgraphD(3)[OF ab] .
+      have disj: "T \<noteq> {b} \<or> (b, b) \<in> G"
+      proof (cases "T = {b}")
+        case True
+        with ab have ab': "(a, b) \<in> G \<downharpoonright> {b}" by simp
+        have "a \<in> dVs (G \<downharpoonright> {b})"
+          using dVsI(1)[OF ab'] .
+        with induce_subgraph_singleton_conv have "(b, b) \<in> G"
+          by (simp add: induce_subgraph_singleton_conv)
+        thus ?thesis by simp
+      next
+        case False
+        thus ?thesis by simp
+      qed
+      have "G \<downharpoonright> T \<in> sccs G"
+        using in_sccs_dVsD_sccs[OF T_scc b_in_T disj] .
+      with S_eq show "S \<in> ?L" by simp
+    qed
   }
   then show "?R \<subseteq> ?L" by blast
 qed
