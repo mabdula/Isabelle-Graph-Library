@@ -2068,7 +2068,30 @@ proof-
     using alt_paths(2,5)
     by(cases p2; auto simp add: alt_list_step alt_list_empty)
   moreover have "edges_of_path ((rev p1) @ p2) = (edges_of_path (rev p1)) @ (edges_of_path (hd p1 # p2))"
-    by (metis (no_types, lifting) edges_of_path_append_2 edges_of_path_rev nempty(1) rev.simps(2) rev_append rev_rev_ident)
+  proof -
+    have p1_eq: "p1 = hd p1 # tl p1"
+    proof (cases p1)
+      case Nil
+      then show ?thesis using nempty(1) by simp
+    next
+      case (Cons a as)
+      then show ?thesis by simp
+    qed
+    have rev_p1_eq: "rev p1 = rev (tl p1) @ [hd p1]"
+    proof (cases p1)
+      case Nil
+      then show ?thesis using nempty(1) by simp
+    next
+      case (Cons a as)
+      then show ?thesis by simp
+    qed
+    have split: "edges_of_path (rev (tl p1) @ (hd p1 # p2))
+      = edges_of_path (rev (tl p1) @ [hd p1]) @ edges_of_path (hd p1 # p2)"
+      using edges_of_path_append_2[where p="rev (tl p1)" and p'="hd p1 # p2"] by simp
+    show ?thesis
+      unfolding rev_p1_eq
+      using split by simp
+  qed
   ultimately have "alt_path M ((rev p1) @ p2)"
     apply simp
     apply(intro alt_list_append_2)
