@@ -2916,8 +2916,32 @@ proof -
             apply (simp add: "10" "30" "11" append_rows_def index_mat_four_block(1) index_zero_mat(1))
            apply (metis (no_types, lifting) "10" "11" 30 add.right_neutral append_rows_def
               index_mat_four_block(2) index_zero_mat(2))
-          by (metis (no_types, lifting) A Collect_cong I_J 24 carrier_matD(2) dim_submatrix(2) 
-              index_row(2) index_unit_vec(3))
+          proof -
+  have dimA: "dim_col A = n"
+    using carrier_matD(2)[OF A] .
+  have dimA': "dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) = n"
+  proof -
+    have "dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) =
+          dim_vec (row (A @\<^sub>r mat_of_rows n [unit_vec n i]) nr)"
+      by (simp add: index_row(2))
+    hence "dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) =
+          dim_vec (unit_vec n i)"
+      by (simp add: 24)
+    thus ?thesis
+      by (simp add: index_unit_vec(3))
+  qed
+  have dimB: "dim_col B = card {j. j < n \<and> j \<in> J}"
+  proof -
+    have "dim_col (submatrix (A @\<^sub>r mat_of_rows n [unit_vec n i]) I J) =
+          card {j. j < dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> j \<in> J}"
+      by (rule dim_submatrix(2))
+    then show ?thesis using I_J dimA' by simp
+  qed
+  have dimSub: "dim_col (submatrix A I J) = card {j. j < n \<and> j \<in> J}"
+    using dim_submatrix(2)[of A I J] dimA by simp
+  show "dim_col B = dim_col (submatrix A I J)"
+    using dimB dimSub by simp
+qed
         then show ?thesis
           using assms(2) unfolding tot_unimodular_def by auto
       qed
