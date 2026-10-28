@@ -779,8 +779,20 @@ proof(safe)
   let ?len = "least_power p i"  
   have "i \<in> set (support (inv p) i)" 
     using el_in_own_support assms 
-    by (smt (z3) least_power_of_permutation(1) map_eq_conv permutation_inverse
-        range_eqI support_set)
+  proof -
+    have perm_inv: "permutation (inv p)"
+      using assms by (rule permutation_inverse)
+    then have pos: "0 < least_power (inv p) i"
+      by (rule least_power_of_permutation(2))
+    have "i = (inv p ^^ (0::nat)) i"
+      by simp
+    moreover have "(0::nat) \<in> set [0..<least_power (inv p) i]"
+      using pos by simp
+    ultimately have "i \<in> (\<lambda>n. (inv p ^^ n) i) ` set [0..<least_power (inv p) i]"
+      by blast
+    then show "i \<in> set (support (inv p) i)"
+      by (simp add: set_map)
+  qed
   { 
     fix x
     assume "x \<in> set (support p i)"
