@@ -1515,7 +1515,8 @@ proof-
       from indep_p matroid.basis_card basis_B1 basis_B2
       have "card B1 = card B2" by blast
       with `x \<in> B1 - B2` have card_less: "card (B1 - {x}) < card B2"
-        by (metis DiffD1 basis_B1 card_Diff1_less indep_sys indep_system.basis_finite)
+        using card_Diff1_less[OF indep_system.basis_finite[OF indep_sys basis_B1] DiffD1[OF \<open>x \<in> B1 - B2\<close>]]
+        by simp
 
       from indep_p indep_B1_x indep_B2 matroid.augment card_less
       have "\<exists>y\<in>B2 - (B1 - {x}). indep (insert y (B1 - {x}))" by blast
