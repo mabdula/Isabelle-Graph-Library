@@ -1650,8 +1650,29 @@ qed
           using DL_Missing_Sublist.pick.simps(2) by blast
         have "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
               (LEAST a. a \<in> J \<and> pick J k < a)" 
-          by (metis Diff_iff 23 \<open>pick J j < pick J k\<close> basic_trans_rules(19) less_not_refl2 
-              singletonD)
+          proof -
+            have pred_eq: "(\<lambda>a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) =
+                           (\<lambda>a. a \<in> J \<and> pick J k < a)"
+            proof (rule ext, rule iffI)
+              fix a
+              assume "a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a"
+              then show "a \<in> J \<and> pick J k < a"
+                using 23 by auto
+            next
+              fix a
+              assume "a \<in> J \<and> pick J k < a"
+              then have aJ: "a \<in> J" and aless: "pick J k < a" by auto
+              have "pick J j < a"
+                using \<open>pick J j < pick J k\<close> aless by (rule less_trans)
+              then have "a \<noteq> pick J j" by simp
+              with aJ have "a \<in> J - {pick J j}" by simp
+              with 23 aless show "a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a"
+                by simp
+            qed
+            show "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) =
+                  (LEAST a. a \<in> J \<and> pick J k < a)"
+              using arg_cong[where f = Least, OF pred_eq] by simp
+          qed
         then have "pick (J - {pick J j}) k = pick J (Suc k)" 
           by (metis Suc_eq_plus1 24 25 26 27 28)
         then show ?thesis 
