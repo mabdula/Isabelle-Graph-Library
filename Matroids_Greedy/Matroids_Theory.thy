@@ -2470,9 +2470,24 @@ proof-
 
     from Y_basis_in have "\<forall>x \<in> X - Y. \<not>(?indep (insert x Y))"
       using indep_system.basis_in_def[OF indep_sys_props] indep_system.basis_def[OF indep_sys_props]
-      by (smt (verit, del_insts) DiffD1 Diff_eq_empty_iff \<open>X \<subseteq> E\<close> indep_sys_props
-          indep_system.basis_in_max_indep_in indep_system.basis_in_subset_carrier indep_system.indep_in_def
-          insert_Diff_if)
+    proof (rule_tac ballI)
+      fix x
+      assume "x \<in> X - Y"
+      then have "x \<in> X" by blast
+      with \<open>Y \<subseteq> X\<close> have subset: "insert x Y \<subseteq> X" by blast
+
+      from indep_system.basis_in_max_indep_in[OF indep_sys_props \<open>X \<subseteq> E\<close> Y_basis_in]
+      have "\<not> indep_system.indep_in ?indep X (insert x Y)"
+        using \<open>x \<in> X - Y\<close> by blast
+
+      show "\<not> ?indep (insert x Y)"
+      proof
+        assume "?indep (insert x Y)"
+        with subset have "indep_system.indep_in ?indep X (insert x Y)"
+          using indep_system.indep_in_def[OF indep_sys_props] by blast
+        with \<open>\<not> indep_system.indep_in ?indep X (insert x Y)\<close> show False by blast
+      qed
+    qed
 
     with \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close>
     have "\<forall>x \<in> X - Y. (r (insert x Y) \<noteq> card (insert x Y))"
