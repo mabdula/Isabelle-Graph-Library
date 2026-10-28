@@ -2813,7 +2813,7 @@ proof rule
                        B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               by (simp only: atLeast0LessThan)
             then have 27: "det B =  B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j"
-              by (metis "4" \<open>dim_row B = dim_col B\<close>)
+              using "4" \<open>dim_row B = dim_col B\<close> by simp
             then have 28: "det B = cofactor B (dim_row B - 1) j" 
               using \<open>B $$ (dim_row B - 1, j) = 1\<close> l_one by presburger
             have 8: "cofactor B (dim_row B - 1) j = 
