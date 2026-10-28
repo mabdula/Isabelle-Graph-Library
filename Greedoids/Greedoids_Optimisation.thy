@@ -689,7 +689,35 @@ proof-
           one rev_rev_ident[of "greedoid_greedy es c []"] 
           rev_take[of "k+1" "rev (greedoid_greedy es c [])"] 
           set_take_union_nth[of k "(rev (local.greedoid_greedy es c []))"]
-        by (auto ,metis set_rev)         
+      proof -
+        define xs where "xs = local.greedoid_greedy es c []"
+        have k_less: "k < length xs"
+          unfolding xs_def using one by simp
+        have drop_in_F: "set (drop (length xs - Suc k) xs) \<in> F"
+          unfolding xs_def
+          using HOL.spec[OF result_props(6)[simplified invar_tails_indep_def],
+                          of "length (local.greedoid_greedy es c []) - Suc k"]
+          by simp
+        have rev_take_eq: "rev (take (Suc k) (rev xs)) = drop (length xs - Suc k) xs"
+          using rev_take[of "Suc k" "rev xs"] by simp
+        have take_Suc_in_F: "set (take (Suc k) (rev xs)) \<in> F"
+        proof -
+          have "set (take (Suc k) (rev xs)) = set (rev (take (Suc k) (rev xs)))"
+            by simp
+          also have "... = set (drop (length xs - Suc k) xs)"
+            by (simp add: rev_take_eq)
+          finally show ?thesis
+            using drop_in_F by simp
+        qed
+        have take_split: "take (Suc k) (rev xs) = take k (rev xs) @ [rev xs ! k]"
+          using k_less by (simp add: take_Suc_conv_app_nth)
+        have "set (take k (rev xs) @ [rev xs ! k]) \<in> F"
+          using take_Suc_in_F by (simp add: take_split)
+        hence "insert (rev xs ! k) (set (take k (rev xs))) \<in> F"
+          by simp
+        thus ?thesis
+          by (simp add: xs_def)
+      qed
       show ?case 
         using a1 a2 a3 a4 a5 a6 a7 
         by(auto intro!: 1[of "set (take k (rev (local.greedoid_greedy es c  [])))" B
