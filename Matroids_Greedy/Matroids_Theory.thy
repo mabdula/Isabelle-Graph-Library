@@ -802,7 +802,41 @@ next
 
         from K_seq_i have "K_seq K J l i \<inter> (J - K) = set (take i l)" by auto
         moreover have "l ! i \<notin> set (take i l)" using assms(4) assms(5) assms(6)
-          by (metis \<open>i < card (J - K)\<close> card_distinct distinct_take id_take_nth_drop not_distinct_conv_prefix)
+        proof -
+          have length_l: "length l = card (J - K)"
+            using assms(4) assms(6) by simp
+          have set_l: "set l = J - K"
+            using assms(5) by simp
+          from length_l set_l have "card (set l) = length l"
+            by simp
+          then have distinct_l: "distinct l"
+            by (rule card_distinct)
+          from \<open>i < card (J - K)\<close> length_l have i_lt: "i < length l"
+            by simp
+          have split: "take i l @ drop i l = l"
+            by (rule append_take_drop_id)
+          from split distinct_l have distinct_split: "distinct (take i l @ drop i l)"
+            by simp
+          have disjoint: "set (take i l) \<inter> set (drop i l) = {}"
+            using distinct_split by (blast dest: distinct_append[THEN iffD1])
+          have drop_nonempty: "drop i l \<noteq> []"
+          proof
+            assume "drop i l = []"
+            then have "length (drop i l) = 0" by simp
+            then have "length l - i = 0" by (simp add: length_drop)
+            with i_lt show False by simp
+          qed
+          have hd_eq: "hd (drop i l) = l ! i"
+            using i_lt by (rule hd_drop_conv_nth)
+          have mem: "l ! i \<in> set (drop i l)"
+          proof -
+            have "hd (drop i l) \<in> set (drop i l)"
+              using drop_nonempty by (rule hd_in_set)
+            then show ?thesis using hd_eq by simp
+          qed
+          show "l ! i \<notin> set (take i l)"
+            using disjoint mem by blast
+        qed
         ultimately have "l ! i \<notin> K_seq K J l i"
           using \<open>l ! i \<in> J - K\<close> by blast
         from \<open>x \<in> ((K_seq K J l i) - J) \<inter> C\<close> \<open>l ! i \<notin> K_seq K J l i\<close>
