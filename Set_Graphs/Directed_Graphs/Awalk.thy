@@ -487,7 +487,17 @@ qed
 
 lemma awalk_hd_in_set:
   "awalk G u p v \<Longrightarrow> p \<noteq> [] \<Longrightarrow> set p \<subseteq> X \<Longrightarrow> u \<in> dVs X"
-  by (metis (mono_tags, lifting) awalkE' cas_simp dVsI'(1) in_mono list.set_sel(1))
+proof -
+  assume "awalk G u p v" "p \<noteq> []" "set p \<subseteq> X"
+  have cas: "cas u p v" using \<open>awalk G u p v\<close> by blast
+  have hd_fst: "fst (hd p) = u" using cas \<open>p \<noteq> []\<close> by (auto simp: cas_simp)
+  have hd_in_p: "hd p \<in> set p" using \<open>p \<noteq> []\<close> by (rule hd_in_set)
+  have hd_in_X: "hd p \<in> X" using hd_in_p \<open>set p \<subseteq> X\<close> by blast
+  have "hd p = (u, snd (hd p))" using hd_fst by (cases "hd p") auto
+  then have "(u, snd (hd p)) \<in> X" using hd_in_X by simp
+  then have "fst (u, snd (hd p)) \<in> dVs X" by (rule dVsI'(1))
+  then show "u \<in> dVs X" by simp
+qed
 
 
 lemma edges_of_vwalk_length_geq_2:
