@@ -231,7 +231,27 @@ lemma indep_ex_abs_equiv:
 lemma indep_subset_carrier_impl_to_abs:
   "(\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier) \<Longrightarrow>
    (\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier)"
-  by (metis carrier_abs_def finite_indep_abs_expr from_set_correct indep_abs_finite invar invarE invar_from_set set.set_subseteq)
+proof -
+  assume prem: "\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier"
+  show "\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier"
+  proof (rule allI, rule impI)
+    fix S
+    assume indepS: "indep_abs indep_fn S"
+    have finS: "finite S" using indep_abs_finite[OF indepS] .
+    have indepfsS: "indep_fn (from_set S)"
+      using indepS finite_indep_abs_expr[OF finS] by blast
+    have inv_fs: "set_inv (from_set S)" using invar_from_set .
+    have inv_carrier: "set_inv carrier" using invar by (auto simp: invar_def)
+    have subseteqfs: "subseteq (from_set S) carrier"
+      using prem inv_fs indepfsS by blast
+    have "to_set (from_set S) \<subseteq> to_set carrier"
+      using set.set_subseteq[OF inv_fs inv_carrier] subseteqfs by blast
+    then have "S \<subseteq> to_set carrier"
+      using from_set_correct[OF finS] by simp
+    then show "S \<subseteq> carrier_abs carrier"
+      unfolding carrier_abs_def by blast
+  qed
+qed
 
 lemma indep_subset_carrier_abs_to_impl:
   "(\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier) \<Longrightarrow>
