@@ -138,7 +138,12 @@ lemma ex3E: "\<lbrakk>\<exists> x y z.  P x y z; \<And>x y z. P x y z \<Longrigh
   by auto
 
 lemma prod_elim: "\<lbrakk>P p; \<And> a b. \<lbrakk>p = (a,b); P p\<rbrakk> \<Longrightarrow> Q\<rbrakk> \<Longrightarrow> Q"
-  by (metis prod.exhaust_sel)
+proof -
+  assume "P p"
+  assume rule: "\<And>a b. \<lbrakk>p = (a, b); P p\<rbrakk> \<Longrightarrow> Q"
+  have "p = (fst p, snd p)" by simp
+  from rule[OF this \<open>P p\<close>] show "Q" .
+qed
 
 lemma in_insertE: "\<lbrakk>y \<in> insert x X; x = y \<Longrightarrow> P x; \<And> x. y \<in> X \<Longrightarrow> P y\<rbrakk> \<Longrightarrow> P y"
   by auto
