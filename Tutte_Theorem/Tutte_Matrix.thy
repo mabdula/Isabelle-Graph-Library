@@ -799,8 +799,20 @@ proof(safe)
     then obtain j where "x = (p^^j) i \<and> j < least_power p i" 
       by fastforce
     have "i = ((inv p)^^?len) i" 
-      by (metis assms bij_fn bij_inv_eq_iff inv_fn least_power_of_permutation(1) 
-          permutation_bijective)
+    proof -
+      have bij_p: "bij p"
+        using assms by (rule permutation_bijective)
+      have bij_pow: "bij (p ^^ least_power p i)"
+        using bij_p by (rule bij_fn)
+      have pow_id: "(p ^^ least_power p i) i = i"
+        using assms by (rule least_power_of_permutation(1))
+      have inv_eq: "inv (p ^^ least_power p i) = (inv p) ^^ least_power p i"
+        using bij_p by (rule inv_fn)
+      have "((inv p) ^^ least_power p i) i = inv (p ^^ least_power p i) i"
+        by (simp add: inv_eq)
+      also have "\<dots> = i" using bij_is_inj[OF bij_pow] pow_id by (rule inv_f_eq)
+      finally show ?thesis by (rule sym)
+    qed
     then have "x = (p^^j) (((inv p)^^?len) i)" 
       using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by presburger
     then have "x = ((inv p)^^(?len - j)) i"  
