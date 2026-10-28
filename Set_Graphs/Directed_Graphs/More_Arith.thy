@@ -154,7 +154,23 @@ qed
 
 lemma sum_except_two: 
   "\<lbrakk>finite X; a \<noteq> b; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> sum f X = sum f (X- {a,b}) +  f a + f b"
-  by (metis DiffI Diff_insert add.commute finite_Diff insert_absorb singletonD sum.insert_remove)
+proof -
+  assume fin: "finite X" and neq: "a \<noteq> b" and ain: "a \<in> X" and bin: "b \<in> X"
+  have Xeq: "X = insert a (insert b (X - {a,b}))"
+    using ain bin neq by auto
+  have fin1: "finite (X - {a,b})" using fin by blast
+  have notin1: "b \<notin> X - {a,b}" by blast
+  have fin2: "finite (insert b (X - {a,b}))" using fin1 by blast
+  have notin2: "a \<notin> insert b (X - {a,b})" using neq by blast
+  have "sum f X = sum f (insert a (insert b (X - {a,b})))" using Xeq by simp
+  also have "... = f a + sum f (insert b (X - {a,b}))"
+    using sum.insert[OF fin2 notin2, of f] by simp
+  also have "... = f a + (f b + sum f (X - {a,b}))"
+    using sum.insert[OF fin1 notin1, of f] by simp
+  also have "... = sum f (X - {a,b}) + f a + f b"
+    by (simp add: ac_simps)
+  finally show ?thesis .
+qed
 
 lemma sum_split_off: "\<lbrakk>A \<subseteq> B; finite B; \<And> x. x \<in> B - A \<Longrightarrow> f x = 0\<rbrakk> \<Longrightarrow> sum f A = sum f B" 
   by (simp add: sum.mono_neutral_cong_right)
