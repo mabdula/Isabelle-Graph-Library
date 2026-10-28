@@ -2625,7 +2625,7 @@ proof rule
         qed
         have 19: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J =
               submatrix (mat_of_rows n [unit_vec n i]) {0} J" 
-          by (metis 17 18)
+          by (simp only: 17 18)
         have 20: "B = submatrix A I J @\<^sub>r submatrix (mat_of_rows n [unit_vec n i]) {0} J" 
           by (simp add: 10 19)
         have 21: "B = submatrix A I J @\<^sub>r mat_of_rows (card ({0..<n} \<inter> J)) 
