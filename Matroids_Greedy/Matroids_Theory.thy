@@ -2506,7 +2506,13 @@ proof-
 
     from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> this R3']
     have "r (Y \<union> X) = r Y"
-      by (metis Un_Diff_cancel dual_order.refl)
+    proof -
+      assume fact2: "\<And>n A. n = card A \<longrightarrow> A \<subseteq> X - Y \<longrightarrow> r (Y \<union> A) = r Y"
+      have "r (Y \<union> (X - Y)) = r Y"
+        using fact2[of "card (X - Y)" "X - Y"] by simp
+      hence "r (Y \<union> X) = r Y" by (simp add: Un_Diff_cancel)
+      thus ?thesis .
+    qed
     with \<open>Y \<subseteq> X\<close>
     have "r X = r Y"
       by (simp add: sup.absorb_iff2)
