@@ -1238,7 +1238,15 @@ proof (rule ccontr, goal_cases)
   with \<open>set p \<subseteq> E'\<close> have "u \<in> dVs E'" unfolding dVs_def by auto
   with \<open>set p \<subseteq> E'\<close> \<open>cas u p u\<close> awalk_def \<open>distinct (tl (awalk_verts u p))\<close> \<open>p \<noteq> []\<close>
     \<open>length p > 2\<close> cycle_def cycle'_def
-    have "cycle' E' p" by metis
+    have "cycle' E' p"
+    proof -
+      have "awalk E' u p u"
+        unfolding awalk_def
+        using \<open>u \<in> dVs E'\<close> \<open>set p \<subseteq> E'\<close> \<open>cas u p u\<close> by simp
+      thus ?thesis
+        unfolding cycle'_def Awalk_Defs.cycle_def
+        using \<open>distinct (tl (awalk_verts u p))\<close> \<open>p \<noteq> []\<close> \<open>length p > 2\<close> by blast
+    qed
   with \<open>\<not>cycle' E' p\<close> show ?case by blast
 qed
 
