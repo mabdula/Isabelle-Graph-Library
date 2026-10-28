@@ -709,7 +709,11 @@ proof (cases "(v, w) = last p")
   from \<open>awalk E u p u\<close>
     have "awhd u p = u" by blast
   then have "fst (hd p) = u" 
-    by (metis \<open>awalk E u p u\<close> \<open>cycle' E p\<close> awalkE' cas_simp cycle'_def cycle_def)
+  proof -
+    have cas_pu: "cas u p u" using \<open>awalk E u p u\<close> by (auto elim: awalkE')
+    have p_ne: "p \<noteq> []" using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] by (cases p) auto
+    show "fst (hd p) = u" using cas_simp[OF p_ne] cas_pu by auto
+  qed
 
   from \<open>v \<noteq> w\<close> \<open>fst (hd p) = u\<close> \<open>u = w\<close>
     have "(hd p) \<noteq> (v, w)"
