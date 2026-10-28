@@ -1576,10 +1576,50 @@ qed
           using pick_card_in_set 
           by presburger
         have 22:"{a\<in>(J - {pick J j}). a < pick J k} \<union> {pick J j} = {a\<in>J. a < pick J k}"
-          apply safe
-           apply (metis Diff_empty Diff_insert0 21 11 12 assms(3-4) diff_less less_nat_zero_code
-              order.irrefl semiring_norm(135) zero_less_iff_neq_zero)
-          by (simp add: \<open>pick J j < pick J k\<close>)
+          proof (rule subset_antisym)
+            show "{a \<in> J - {pick J j}. a < pick J k} \<union> {pick J j} \<subseteq> {a \<in> J. a < pick J k}"
+            proof (rule subsetI)
+              fix x
+              assume "x \<in> {a \<in> J - {pick J j}. a < pick J k} \<union> {pick J j}"
+              then consider (in_diff) "x \<in> {a \<in> J - {pick J j}. a < pick J k}" | (eq) "x = pick J j"
+                by auto
+              then show "x \<in> {a \<in> J. a < pick J k}"
+              proof cases
+                case in_diff
+                then show ?thesis by auto
+              next
+                case eq
+                have j_bound: "j < card J \<or> infinite J"
+                proof (cases "finite J")
+                  case True
+                  have "card {i. i < dim_col A \<and> i \<in> J} \<le> card J"
+                    using 9 True card_mono by blast
+                  then show ?thesis using 12 assms(4) by linarith
+                next
+                  case False
+                  then show ?thesis by simp
+                qed
+                have "pick J j \<in> J" using pick_in_set[OF j_bound] .
+                then show ?thesis using eq \<open>pick J j < pick J k\<close> by auto
+              qed
+            qed
+          next
+            show "{a \<in> J. a < pick J k} \<subseteq> {a \<in> J - {pick J j}. a < pick J k} \<union> {pick J j}"
+            proof (rule subsetI)
+              fix x
+              assume "x \<in> {a \<in> J. a < pick J k}"
+              then have x_in: "x \<in> J" and x_lt: "x < pick J k" by auto
+              show "x \<in> {a \<in> J - {pick J j}. a < pick J k} \<union> {pick J j}"
+              proof (cases "x = pick J j")
+                case True
+                then show ?thesis by simp
+              next
+                case False
+                then have "x \<in> J - {pick J j}" using x_in by simp
+                then show ?thesis using x_lt by auto
+              qed
+            qed
+          qed
         have "pick J j \<notin> {a\<in>(J - {pick J j}). a < pick J k}"
           by blast
         have 26:"card {a\<in>J. a < pick J k} = k" 
