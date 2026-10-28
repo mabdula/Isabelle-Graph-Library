@@ -1509,7 +1509,11 @@ proof-
   have "valid_order ?order" unfolding valid_order_def
     by (simp add: matroid.carrier_abs_def set_inv_carrier)
   then have "distinct ?order" unfolding valid_order_def using set_inv_carrier card_distinct
-    by (metis matroid.set.set_cardinality)
+  proof -
+    have "card (set ?order) = length ?order"
+      using \<open>set ?order = ?carrier_abs\<close> \<open>length ?order = card ?carrier_abs\<close> by simp
+    then show "distinct ?order" using card_distinct by blast
+  qed
 
   let ?c = "\<lambda>(x::'a). if x \<in> F then (1::rat) else 0"
   have "nonnegative ?c" using nonnegative_def by simp
