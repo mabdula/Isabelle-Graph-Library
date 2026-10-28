@@ -1186,7 +1186,7 @@ next
           case 1
           then obtain xs1 xs2 z where  es_split2:
             "es = xs1 @ [A_list ! length l] @ xs2" "z \<in> set xs2""z \<notin> set l"
-            by metis
+            by blast
           have "xs2 = rev (take index (A_list))"
             using  injective_predicate_unique_split[OF es_prop(2) _ es_split es_split2(1),
                 of "\<lambda> x.  x = A_list ! index"]
