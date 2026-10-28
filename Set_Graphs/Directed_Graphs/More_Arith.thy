@@ -713,7 +713,12 @@ lemma integral_Min: "\<lbrakk>finite M; M \<noteq> {}; \<And> x. x \<in> M \<Lon
 
 lemma is_integral_neg: "is_integral x \<Longrightarrow> is_integral (- x)"
   unfolding is_integral_def 
-  by (metis of_int_minus)
+proof -
+  assume "\<exists>n::int. x = real_of_int n"
+  then obtain n where "x = real_of_int n" by blast
+  have "- x = real_of_int (- n)" using \<open>x = real_of_int n\<close> by simp
+  then show "\<exists>n::int. - x = real_of_int n" by blast
+qed
 
 lemma integral_add: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a+b)"
   unfolding is_integral_def 
