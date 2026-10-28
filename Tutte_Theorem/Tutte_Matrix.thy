@@ -691,10 +691,25 @@ proof -
       then show "least_power p i < least_power (inv p) i"
         using ne by simp
     qed
-    then show False 
-      by (metis \<open>(p ^^ least_power p i) i = i\<close> assms bij_betw_inv_into_left bij_fn bij_is_surj 
-          inv_fn leD least_power_le least_power_of_permutation(2) p_is_permutation permutes_imp_bij 
-          range_eqI)
+    moreover have "least_power (inv p) i \<le> least_power p i"
+    proof -
+        have perm: "permutation p"
+          using assms by (rule p_is_permutation)
+        have bij_p: "bij p"
+          using assms by (rule permutes_bij)
+        have inj_pow: "inj (p ^^ least_power p i)"
+          using bij_fn[OF bij_p] by (rule bij_is_inj)
+        have "inv (p ^^ least_power p i) ((p ^^ least_power p i) i) = i"
+          using inj_pow by (rule inv_f_f)
+        then have inv_pow: "inv (p ^^ least_power p i) i = i"
+          using \<open>(p ^^ least_power p i) i = i\<close> by simp
+        have "((inv p) ^^ least_power p i) i = i"
+          using inv_pow by (simp add: inv_fn[OF bij_p])
+        then show "least_power (inv p) i \<le> least_power p i"
+          using least_power_of_permutation(2)[OF perm] by (rule least_power_le)
+      qed
+      ultimately show False
+        by linarith
   qed
 qed
 
