@@ -487,7 +487,15 @@ next
       by blast
 
     with cons_suc show ?thesis
-      by (metis \<open>ps = a # tl_ps\<close> append_Cons move_to_Cons_Suc neq)
+    proof -
+      have "(a # xs)[x \<mapsto> Suc n] = (a # pps) @ x # pss @ ss"
+        using \<open>xs[x \<mapsto> n] = pps @ x # pss @ ss\<close>
+        by (simp add: move_to_Cons_Suc[OF neq refl])
+      moreover have "(a # pps) @ pss = ps"
+        using \<open>pps @ pss = tl_ps\<close> \<open>ps = a # tl_ps\<close> by simp
+      ultimately show ?thesis
+        using cons_suc by blast
+    qed
   qed
 qed auto
 
