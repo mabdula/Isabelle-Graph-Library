@@ -2386,8 +2386,15 @@ proof-
         qed      then have "\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y"
         by force
 
-      from R2' \<open>?indep Y\<close> have "\<forall>x \<in> X - Y. r (insert x Y) \<ge> card Y"
-        by (metis DiffD1 Un_commute \<open>?indep X\<close> insert_is_Un subsetD)
+      have "\<forall>x \<in> X - Y. r (insert x Y) \<ge> card Y"
+      proof (rule ballI)
+        fix x
+        assume "x \<in> X - Y"
+        from \<open>x \<in> X - Y\<close> \<open>?indep X\<close> have "x \<in> E" by blast
+        from \<open>?indep Y\<close> have "Y \<subseteq> E" and rY_eq: "r Y = card Y" by blast+
+        from R2' \<open>Y \<subseteq> E\<close> \<open>x \<in> E\<close> have "r Y \<le> r (Y \<union> {x})" by blast
+        then show "r (insert x Y) \<ge> card Y" using rY_eq by simp
+      qed
       with \<open>\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y\<close>
       have "\<forall>x \<in> X - Y. r (insert x Y) = card Y" by force
       with \<open>?indep Y\<close>
