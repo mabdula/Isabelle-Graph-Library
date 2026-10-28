@@ -1582,8 +1582,18 @@ proof-
         (\<forall>B1' B2'. B1' \<in> \<B> \<longrightarrow> B2' \<in> \<B> \<longrightarrow> card B1' > card B2' \<longrightarrow> card(B1 \<inter> B2) \<ge> card(B1' \<inter> B2'))" by blast
       then have card_greater: "card B1 > card B2" by blast
       then have "\<exists>x. x \<in> B1 - B2"
-        by (metis B2 Diff_Diff_Int Diff_empty Diff_eq_empty_iff all_not_in_conv ex_B1_B2
-            inf.absorb_iff2 less_not_refl)
+      proof -
+        from ex_B1_B2 assms(2) have "B1 \<subseteq> E" by blast
+        from ex_B1_B2 assms(2) have "B2 \<subseteq> E" by blast
+        from assms(1) \<open>B2 \<subseteq> E\<close> have "finite B2" using finite_subset by blast
+        show "\<exists>x. x \<in> B1 - B2"
+        proof (rule ccontr)
+          assume "\<not> (\<exists>x. x \<in> B1 - B2)"
+          then have "B1 \<subseteq> B2" by blast
+          from card_mono[OF \<open>finite B2\<close> this] have "card B1 \<le> card B2" .
+          with card_greater show False by simp
+        qed
+      qed
       then obtain x where ex_x: "x \<in> B1 - B2" by blast
       from B2 ex_B1_B2 ex_x have "(\<exists>y. y \<in> B2 - B1 \<and> insert y (B1 - {x}) \<in> \<B>)" by blast
       then obtain y where ex_y: "y \<in> B2 - B1 \<and> insert y (B1 - {x}) \<in> \<B>" by blast
