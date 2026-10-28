@@ -1960,10 +1960,28 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
         qed
       next
         case len_pf2_le_1: False
+        have len_pfx1_eq1: "length pfx1 = 1"
+          using pfx1_nempty len_pf1_le_1 by (cases pfx1) auto
+        obtain a where pfx1_eq: "pfx1 = [a]"
+          using len_pfx1_eq1 by (cases pfx1) auto
+        have len_pf2_le_1': "length pfx2 \<le> 1"
+          using len_pf2_le_1 by linarith
+        have len_pfx2_eq1: "length pfx2 = 1"
+          using pfx2_nempty len_pf2_le_1' by (cases pfx2) auto
+        obtain b where pfx2_eq: "pfx2 = [b]"
+          using len_pfx2_eq1 by (cases pfx2) auto
+        have "a = b"
+          using last_pfx1_eq pfx1_eq pfx2_eq by simp
+        moreover have "hd p1 = a"
+          using from_tree(1) pfx1_eq by simp
+        moreover have "hd p2 = b"
+          using from_tree(2) pfx2_eq by simp
+        ultimately have "hd p1 = hd p2"
+          by simp
+        with hds_neq have False
+          by simp
         then show ?thesis
-          by (metis One_nat_def Suc_1 append_Nil drop0 drop_all from_tree(1) from_tree(2) hds_neq
-                    impossible_Cons last_pfx1_eq len_pf1_le_1 list.exhaust_sel not_less_eq_eq
-                    order_antisym pfx1_nempty pfx2_nempty snoc_eq_iff_butlast)
+          by simp
       qed
     qed
   qed
