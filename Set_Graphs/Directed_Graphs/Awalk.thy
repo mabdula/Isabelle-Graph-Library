@@ -1357,7 +1357,17 @@ lemma awalk_fst_last:
 definition "unconstrained_awalk P = (\<exists> s t. cas s P t)"
 
 lemma unconstrained_awalk_drop_hd:"unconstrained_awalk (x#p) \<Longrightarrow> unconstrained_awalk p"
-  by (metis unconstrained_awalk_def cas.simps(2) surj_pair)
+proof -
+  assume "unconstrained_awalk (x # p)"
+  then obtain s t where st: "cas s (x # p) t"
+    unfolding unconstrained_awalk_def by blast
+  from surj_pair[of x] obtain a b where x_def: "x = (a, b)"
+    by blast
+  from st have "cas s ((a, b) # p) t" by (simp add: x_def)
+  hence "cas b p t" by (simp add: cas.simps(2))
+  thus "unconstrained_awalk p"
+    unfolding unconstrained_awalk_def by blast
+qed
 
 lemma unconstrained_awalk_snd_verts_eq:"unconstrained_awalk ((a, b)#(c, d)# p) \<Longrightarrow>  b = c"
   by (simp add: unconstrained_awalk_def)
