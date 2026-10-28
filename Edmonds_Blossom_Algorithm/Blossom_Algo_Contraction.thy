@@ -1825,7 +1825,15 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
             from odd_length len1 len2 show ?thesis by presburger
           qed
         moreover have "last (edges_of_path (rev p @ [last pfx2, last (butlast pfx2)])) = {last pfx2, last (butlast pfx2)}"
-          by (metis edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append last_snoc)
+          proof -
+            have ne: "[last pfx2, last (butlast pfx2)] \<noteq> []"
+              by simp
+            have step: "edges_of_path (rev p @ [last pfx2, last (butlast pfx2)]) =
+                        edges_of_path (rev p @ [last pfx2]) @ [{last pfx2, last (butlast pfx2)}]"
+              by (simp add: edges_of_path_append_2[OF ne])
+            then show ?thesis
+              by simp
+          qed
         ultimately have "{last pfx2, last (butlast pfx2)} \<in> M"
           using alternating_list_even_last edges_of_path_nempty by fastforce
         moreover case last_pfx2_unmatched: False
