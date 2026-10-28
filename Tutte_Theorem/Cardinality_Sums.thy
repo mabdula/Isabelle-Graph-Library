@@ -99,7 +99,7 @@ next
   then have "card ((\<Union> (f ` F)) \<union> f x) =  card (\<Union> (f ` F)) + card (f x)" 
     by (meson card_Un_disjoint finite_UN_I insert.hyps(1) insert.prems(1) insertCI)
   then have "card (\<Union> (f ` (insert x F))) = card (\<Union> (f ` F)) + card (f x)"    
-    by (metis Un_commute Union_image_insert)
+    by (simp add: Un_commute)
   then show ?case 
     by (simp add: card_hyps insert.hyps(1) insert.hyps(2))
 qed
