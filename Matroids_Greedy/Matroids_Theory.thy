@@ -1454,8 +1454,9 @@ proof-
   have "card (B1 - B2) \<ge> card (X - B2)" using assms by (simp add: Diff_mono card_mono)
   also have "... \<ge> card ((X - Y) - B2)" using assms 
     by (meson Diff_mono Diff_subset card_mono dual_order.trans equalityD1 finite_Diff2)
-  then have "... \<ge> card (X - Y)" using assms 
-    by (metis Diff_triv \<open>card (X - Y - B2) \<le> card (B1 - B2)\<close> inf.commute)
+  have "(X - Y) \<inter> B2 = {}" using assms(5) by blast
+  then have "X - Y - B2 = X - Y" by (rule Diff_triv)
+  with \<open>card (X - Y - B2) \<le> card (B1 - B2)\<close> have "card (B1 - B2) \<ge> card (X - Y)" by simp
   have "card (B1 - B2) \<ge> card (X - Y)"
     using \<open>card (X - Y) \<le> card (B1 - B2)\<close> by blast
 
