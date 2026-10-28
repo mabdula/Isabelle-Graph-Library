@@ -1345,7 +1345,14 @@ proof-
       then obtain B' where B': "B' \<in> S \<and> B \<subseteq> B'" by blast
 
       from `\<not>B \<in> S` B' have "\<exists>x. ((insert x B) \<subseteq> B')"
-        by (metis all_not_in_conv insert_absorb insert_subset)
+      proof -
+        from B' have B'_in_S: "B' \<in> S" by blast
+        from B' have B_sub_B': "B \<subseteq> B'" by blast
+        from `\<not>B \<in> S` B'_in_S have "B \<noteq> B'" by blast
+        with B_sub_B' have "B \<subset> B'" by blast
+        then obtain x where "x \<in> B' - B" by blast
+        with B_sub_B' show "\<exists>x. insert x B \<subseteq> B'" by blast
+      qed
       with B' `\<not>B \<in> S` have "\<exists>x B'. x \<in> E - B \<and> B' \<in> S \<and> ((insert x B) \<subseteq> B')"
         using assms(3) equalityI by fastforce
       then show ?thesis by blast
