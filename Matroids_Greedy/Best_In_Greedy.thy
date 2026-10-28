@@ -785,10 +785,49 @@ proof(rule invar_props_intros, goal_cases)
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_upd2 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-      apply (simp add: BestInGreedy_upd2_def carrier_pref_def Let_def num_iter_def)
-      using \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-      apply (clarsimp elim!: invar_props_elims call_cond_elims)
-      by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+    proof -
+      have drop_eq: "carrier_list best_in_greedy_state =
+          drop (num_iter c order best_in_greedy_state) (sort_desc c order)"
+        using \<open>invar_2 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
+      have len_ge_1: "length (carrier_list best_in_greedy_state) \<ge> 1"
+        using \<open>BestInGreedy_call_2_conds best_in_greedy_state\<close> by (auto elim!: call_cond_elims)
+      have n_less: "num_iter c order best_in_greedy_state < length (sort_desc c order)"
+      proof (rule ccontr)
+        assume "\<not> num_iter c order best_in_greedy_state < length (sort_desc c order)"
+        then have le: "length (sort_desc c order) \<le> num_iter c order best_in_greedy_state" by simp
+        have "length (drop (num_iter c order best_in_greedy_state) (sort_desc c order)) = 0"
+          using le by (simp add: length_drop)
+        with drop_eq len_ge_1 show False by simp
+      qed
+      have hd_eq: "hd (carrier_list best_in_greedy_state) =
+          (sort_desc c order) ! (num_iter c order best_in_greedy_state)"
+        using drop_eq n_less by (simp add: hd_drop_conv_nth)
+      have tl_eq: "carrier_list (BestInGreedy_upd2 best_in_greedy_state) =
+          drop (Suc (num_iter c order best_in_greedy_state)) (sort_desc c order)"
+        using drop_eq by (simp add: BestInGreedy_upd2_def Let_def drop_Suc tl_drop)
+      have num_iter_upd: "num_iter c order (BestInGreedy_upd2 best_in_greedy_state) =
+          Suc (num_iter c order best_in_greedy_state)"
+      proof -
+        have "num_iter c order (BestInGreedy_upd2 best_in_greedy_state) =
+            length (sort_desc c order) - length (carrier_list (BestInGreedy_upd2 best_in_greedy_state))"
+          by (simp add: num_iter_def)
+        also have "... = length (sort_desc c order) -
+            length (drop (Suc (num_iter c order best_in_greedy_state)) (sort_desc c order))"
+          by (simp add: tl_eq)
+        also have "... = length (sort_desc c order) -
+            (length (sort_desc c order) - Suc (num_iter c order best_in_greedy_state))"
+          by (simp add: length_drop)
+        also have "... = Suc (num_iter c order best_in_greedy_state)"
+          using n_less by simp
+        finally show ?thesis .
+      qed
+      have take_eq: "take (Suc (num_iter c order best_in_greedy_state)) (sort_desc c order) =
+          take (num_iter c order best_in_greedy_state) (sort_desc c order) @
+          [(sort_desc c order) ! (num_iter c order best_in_greedy_state)]"
+        using n_less by (simp add: take_Suc_conv_app_nth)
+      show ?thesis
+        unfolding carrier_pref_def num_iter_upd hd_eq take_eq by simp
+    qed
 
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
