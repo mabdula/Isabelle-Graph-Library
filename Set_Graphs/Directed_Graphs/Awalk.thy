@@ -666,8 +666,17 @@ proof-
     have "\<exists>xs. awalk_verts u p = [u] @ xs @ [u]" by auto
   then obtain xs where "awalk_verts u p = [u] @ xs @ [u]" by blast
   moreover have "distinct (tl (awalk_verts u p))"
-    using \<open>cycle' E p\<close> cycle'_def cycle_def \<open>awalk E u p u\<close>
-    by (metis awalk_verts_conv)
+  proof -
+    have "\<exists>u'. awalk E u' p u' \<and> distinct (tl (awalk_verts u' p)) \<and> p \<noteq> []"
+      using \<open>cycle' E p\<close> cycle'_def cycle_def by fastforce
+    then obtain u' where u'_awalk: "awalk E u' p u'"
+      and u'_distinct: "distinct (tl (awalk_verts u' p))"
+      and p_nonempty: "p \<noteq> []"
+      by blast
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_awalk] p_nonempty by blast
+    with u'_distinct show "distinct (tl (awalk_verts u p))" by simp
+  qed
   ultimately show
     "distinct (butlast (awalk_verts u p))" by simp
 qed
