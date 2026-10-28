@@ -2199,8 +2199,16 @@ next
     by simp
   moreover have " 2 \<le> length (rev p1 @ p2)"
     using odd_lens(2)
-    by (metis False Nil_is_append_conv edges_of_path_length' edges_of_path_nempty even_add
-              length_append length_rev nempty(1))
+  proof -
+    have len_eq: "length (rev p1 @ p2) = length p1 + length p2"
+      by simp
+    have "length p1 = 1"
+      by (subst \<open>p1 = [hd p1]\<close>) simp
+    moreover have "length p2 \<ge> 1"
+      using nempty(2) by (cases p2) simp_all
+    ultimately show ?thesis
+      using len_eq by linarith
+  qed
   moreover have "hd (rev p1 @ p2) \<notin> Vs M"
     by (simp add: assms(6) hd_rev nempty(1))
   moreover have "last (rev p1 @ p2) \<notin> Vs M"
