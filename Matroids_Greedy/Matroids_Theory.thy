@@ -4666,7 +4666,17 @@ proof (induction n arbitrary: A)
   case 0
   from 0 basis_in_iff_rank_of[OF assms]
   have "basis_in X A"
-    by (metis assms diff_zero indep_in_iff_rank_of indep_in_subset_carrier)
+  proof -
+    from 0 have indepXA: "indep_in X A" by blast
+    from indep_in_subset_carrier[OF indepXA] have A_subset: "A \<subseteq> X" .
+    from indep_in_iff_rank_of[OF assms A_subset] indepXA
+    have rank_A_eq_card: "rank_of A = card A" by blast
+    from 0 have "card A = rank_of X - 0" by blast
+    then have card_A_eq: "card A = rank_of X" by simp
+    from rank_A_eq_card card_A_eq have rank_eq: "rank_of A = rank_of X" by simp
+    from basis_in_iff_rank_of[OF assms A_subset] indepXA rank_A_eq_card rank_eq
+    show "basis_in X A" by blast
+  qed
   then show ?case by fastforce
 next
   case (Suc n)
