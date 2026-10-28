@@ -2270,7 +2270,18 @@ proof-
 
       have "r X + r (X \<union> {x, y}) \<le> r (X \<union> {x}) + r (X \<union> {y})"
         using R3 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> un_sets int_sets
-        by (metis Un_empty_right Un_insert_right add.commute insert_subsetI)
+      proof -
+        from \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> have x_subset: "X \<union> {x} \<subseteq> E" by simp
+        from \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> have y_subset: "X \<union> {y} \<subseteq> E" by simp
+        from R3 x_subset y_subset
+        have "r ((X \<union> {x}) \<union> (X \<union> {y})) + r ((X \<union> {x}) \<inter> (X \<union> {y})) \<le> r (X \<union> {x}) + r (X \<union> {y})"
+          by blast
+        with un_sets int_sets
+        have "r (X \<union> {x, y}) + r X \<le> r (X \<union> {x}) + r (X \<union> {y})"
+          by simp
+        then show "r X + r (X \<union> {x, y}) \<le> r (X \<union> {x}) + r (X \<union> {y})"
+          by (simp add: add.commute)
+      qed
       also have "... \<le> r X + r X" using \<open>(r (X \<union> {x}) = r X \<and> r (X \<union> {y}) = r X)\<close> by auto
       finally have "r (X \<union> {x, y}) \<le> r X" by simp
 
