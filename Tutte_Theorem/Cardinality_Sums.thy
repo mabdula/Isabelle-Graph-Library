@@ -199,7 +199,7 @@ next
     using UnionI insert.hyps(2) insert.prems(2) by auto
   then have " \<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" 
     using insert.prems(3)
-    by (metis insert_iff)
+    by blast
   then have " \<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<notin> x" 
     using insert.hyps(2) insert.prems(2) by fastforce 
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-x. b1 \<in> a" 
