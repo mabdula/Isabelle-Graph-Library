@@ -2114,8 +2114,14 @@ next
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
-      by (metis Suc_diff_le \<open>Suc n \<le> card Y\<close> \<open>X \<subseteq> Y\<close> assms(1) assms(2) card_insert_disjoint
-          diff_Suc_Suc finite_subset)
+    proof -
+      have "X \<subseteq> E" using \<open>X \<subseteq> Y\<close> assms(2) by blast
+      have "finite X" using assms(1) \<open>X \<subseteq> E\<close> finite_subset by blast
+      have card_X'_eq: "card X' = card X + 1"
+        using \<open>X' = (insert x X)\<close> \<open>x \<notin> X\<close> \<open>finite X\<close> by simp
+      show "card X' = card Y - n"
+        using card_X'_eq \<open>card X = card Y - Suc n\<close> \<open>Suc n \<le> card Y\<close> by arith
+    qed
 
     from \<open>Suc n \<le> card Y\<close> have "n \<le> card Y" by auto
 
