@@ -841,7 +841,14 @@ next
 
   have "distinct (tl (awalk_verts u p))"
     using \<open>cycle' E p\<close> cycle'_def cycle_def
-    by (metis \<open>awalk E u p u\<close> awalk_ends)
+  proof -
+    from \<open>cycle' E p\<close> obtain u' where
+      u'_props: "awalk E u' p u'" "distinct (tl (awalk_verts u' p))" "p \<noteq> []"
+      unfolding cycle'_def cycle_def by blast
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_props(1)] u'_props(3) by blast
+    with u'_props(2) show ?thesis by simp
+  qed
 
   have "y \<noteq> v"
   proof (cases "tl ys")
