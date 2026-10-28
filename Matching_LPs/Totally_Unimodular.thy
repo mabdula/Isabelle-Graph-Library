@@ -1425,7 +1425,25 @@ proof
                                     k2 < dim_col A \<and> 
                                     k2 = pick (J - {pick J j}) k"
       using asmk dim_submatrix(2) pick_le col_submatrix_UNIV 
-      by (metis (no_types, lifting) Collect_cong)
+    proof -
+      have dimIJ: "dim_col (submatrix A I (J - {pick J j})) =
+                   card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
+        using dim_submatrix(2) by blast
+      have dimUJ: "dim_col (submatrix A UNIV (J - {pick J j})) =
+                   card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
+        using dim_submatrix(2) by blast
+      have k_less: "k < dim_col (submatrix A UNIV (J - {pick J j}))"
+        using asmk dimIJ dimUJ by simp
+      have k_less_card: "k < card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
+        using k_less dimUJ by simp
+      have col_eq: "col (submatrix A UNIV (J - {pick J j})) k =
+                    col A (pick (J - {pick J j}) k)"
+        using k_less_card col_submatrix_UNIV by blast
+      have pick_bound: "pick (J - {pick J j}) k < dim_col A"
+        using k_less_card pick_le by blast
+      show thesis
+        using that[of "pick (J - {pick J j}) k"] col_eq[symmetric] pick_bound by blast
+    qed
     have 7: "B = submatrix (submatrix A I UNIV) UNIV J" 
       using assms(3) submatrix_split2 by blast
     have "B $$ (i, insert_index j k) = A $$ (pick I i, pick J (insert_index j k))"
