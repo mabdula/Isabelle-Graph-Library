@@ -296,7 +296,14 @@ proof(induction arbitrary: xs rule: less_induct)
       then obtain as bs cs s where "ys = as @ [s] @ bs @ [s] @ cs \<and> distinct bs \<and> s \<notin> set bs"
         using less(1)[of "length ys" ys] by auto
       then show ?thesis using Cons 
-        by (metis append_Cons)
+        proof -
+          have "xs = (x # as) @ [s] @ bs @ [s] @ cs"
+            using local.Cons \<open>ys = as @ [s] @ bs @ [s] @ cs \<and> distinct bs \<and> s \<notin> set bs\<close>
+            by simp
+          thus ?thesis
+            using \<open>ys = as @ [s] @ bs @ [s] @ cs \<and> distinct bs \<and> s \<notin> set bs\<close>
+            by blast
+        qed
     qed
   qed
 qed
