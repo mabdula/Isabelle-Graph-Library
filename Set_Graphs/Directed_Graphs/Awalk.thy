@@ -976,7 +976,18 @@ proof (cases "(w, v) = hd p")
   from \<open>awalk E u p u\<close>
     have "awlast u p = u" by blast
   then have "snd (last p) = u" 
-    by (metis \<open>(w, v) \<in> set p\<close> awalk_verts_conv last_snoc length_greater_0_conv length_pos_if_in_set)
+proof -
+  have "p \<noteq> []"
+    using \<open>(w, v) \<in> set p\<close> length_pos_if_in_set length_greater_0_conv by fastforce
+  have verts_eq: "awalk_verts u p = map fst p @ [snd (last p)]"
+    using \<open>p \<noteq> []\<close> by (simp add: awalk_verts_conv)
+  have "awlast u p = last (awalk_verts u p)"
+    by simp
+  also have "\<dots> = snd (last p)"
+    using verts_eq by (simp add: last_snoc)
+  then show "snd (last p) = u"
+    using \<open>awlast u p = u\<close> by simp
+qed
 
   from \<open>v \<noteq> w\<close> \<open>snd (last p) = u\<close> \<open>u = w\<close>
     have "(last p) \<noteq> (w, v)"
