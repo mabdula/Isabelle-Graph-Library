@@ -2437,8 +2437,15 @@ proof
     by (simp add: 6)
   have 8: "mat_of_rows (card ({0..<n} \<inter> J)) [vec_of_list (nths (list_of_vec b) J)] $$ (i, j) =
        vec_of_list (nths (list_of_vec b) J) $ j"
-    by (metis One_nat_def Suc_eq_plus1 \<open>i = 0\<close> \<open>j < card ({0..<n} \<inter> J)\<close> list.size(3-4) 
-        mat_of_rows_index nth_Cons_0 zero_less_one_class.zero_less_one)
+proof -
+    have "i < length [vec_of_list (nths (list_of_vec b) J)]"
+      using \<open>i = 0\<close> by simp
+    from mat_of_rows_index[OF this \<open>j < card ({0..<n} \<inter> J)\<close>]
+    have "mat_of_rows (card ({0..<n} \<inter> J)) [vec_of_list (nths (list_of_vec b) J)] $$ (i, j) =
+          [vec_of_list (nths (list_of_vec b) J)] ! i $ j" .
+    then show ?thesis
+      using \<open>i = 0\<close> by simp
+  qed
   have 10: "vec_of_list (nths (list_of_vec b) J) $ j = b $ (pick J j)" 
   proof -
     have f1: "card ({0..<n} \<inter> J) = card {na. na < n \<and> na \<in> J}"
