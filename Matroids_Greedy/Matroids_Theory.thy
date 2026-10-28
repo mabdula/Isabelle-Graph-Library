@@ -2232,8 +2232,13 @@ proof-
         by (meson R3 add_le_imp_le_diff empty_subsetI insert_subset)
       also have "... \<le> r X + r {y}" by auto
       also have "... \<le> r X + 1"
-        by (metis One_nat_def R1 Un_subset_iff \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> add_left_mono card.empty
-            card_insert_disjoint empty_iff finite.emptyI insert_subset sup_bot.right_neutral)
+        proof -
+          have "{y} \<subseteq> E" using \<open>y \<in> E\<close> by simp
+          then have "r {y} \<le> card {y}" using R1 by blast
+          also have "card {y} = 1" by simp
+          finally have "r {y} \<le> 1" .
+          then show ?thesis by linarith
+        qed
       finally show "r (X \<union> {y}) \<le> r X + 1" .
     qed
   qed
