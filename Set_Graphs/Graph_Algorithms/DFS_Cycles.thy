@@ -547,8 +547,16 @@ proof (intro invar_props_intros, goal_cases)
       by blast
 
     have "\<forall>e \<in> (Graph.digraph_abs G). prod.swap e \<in> (Graph.digraph_abs G)" by auto
-    with awalk_rev no_path_to_w
-      have "\<nexists>p. awalk (Graph.digraph_abs G) w p v" by metis
+      have "\<nexists>p. awalk (Graph.digraph_abs G) w p v"
+      proof (rule notI)
+        assume "\<exists>p. awalk (Graph.digraph_abs G) w p v"
+        then obtain p where p_awalk: "awalk (Graph.digraph_abs G) w p v" by blast
+        have sym_edges: "\<forall>e \<in> Graph.digraph_abs G. prod.swap e \<in> Graph.digraph_abs G"
+          by auto
+        from awalk_rev[OF sym_edges p_awalk]
+          have "awalk (Graph.digraph_abs G) v (rev (map prod.swap p)) w" .
+        with no_path_to_w show False by blast
+      qed
 
     with no_path_to_w show ?thesis by blast
   qed
