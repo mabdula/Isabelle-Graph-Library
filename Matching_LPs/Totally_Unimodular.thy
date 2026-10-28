@@ -2719,7 +2719,18 @@ proof rule
               using "6" asm(1) by auto
           qed
           have 23: "\<forall> j < dim_col B. pick J j = i \<longrightarrow>  B $$ (dim_row B - 1,j) = 1"
-            by (metis "6" True index_unit_vec(2))
+            proof (intro allI impI)
+              fix j
+              assume j_lt: "j < dim_col B"
+              assume pj: "pick J j = i"
+              have "B $$ (dim_row B - 1, j) = unit_vec n i $ (pick J j)"
+                using "6" j_lt by blast
+              also have "\<dots> = unit_vec n i $ i"
+                using pj by simp
+              also have "\<dots> = 1"
+                using True by (simp add: index_unit_vec(2))
+              finally show "B $$ (dim_row B - 1, j) = 1" .
+            qed
           show ?thesis 
           proof(cases "\<exists>j. j < dim_col B \<and> pick J j = i")
             case True
