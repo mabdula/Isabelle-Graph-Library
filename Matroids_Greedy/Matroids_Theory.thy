@@ -3651,8 +3651,18 @@ qed
 lemma matroid_iff_dual_matroid:
   assumes "indep_system E indep"
   shows "matroid E indep \<longleftrightarrow> matroid E (dual E indep)"
-  using matroid_dual_rank_expr dual_involution
-  by (metis assms indep_system_def)
+proof (rule iffI)
+  assume "matroid E indep"
+  have fin: "finite E" using indep_system.carrier_finite[OF assms] .
+  from matroid_dual_rank_expr[OF fin \<open>matroid E indep\<close>]
+  show "matroid E (dual E indep)" by (rule conjunct1)
+next
+  assume "matroid E (dual E indep)"
+  have fin: "finite E" using indep_system.carrier_finite[OF assms] .
+  from matroid_dual_rank_expr[OF fin \<open>matroid E (dual E indep)\<close>]
+  have "matroid E (dual E (dual E indep))" by (rule conjunct1)
+  then show "matroid E indep" using dual_involution[OF assms] by simp
+qed
 
 
 (* --------------------------------------------------------------------------------------------- *)
