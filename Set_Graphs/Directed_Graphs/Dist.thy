@@ -173,9 +173,38 @@ qed
 lemma dist_eq: 
   "\<lbrakk>\<And>p. Vwalk.vwalk_bet G' u p v \<Longrightarrow> Vwalk.vwalk_bet G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
-  apply(auto simp: distance_def image_def intro!: Inf_lower)
-  apply (smt (verit, ccfv_threshold) Un_iff length_map mem_Collect_eq wellorder_InfI)
-  by (meson vwalk_bet_nonempty')
+proof -
+  assume asm: "\<And>p. Vwalk.vwalk_bet G' u p v \<Longrightarrow> Vwalk.vwalk_bet G u (map f p) v"
+  show "distance G u v \<le> distance G' u v"
+    unfolding distance_def
+  proof (rule INF_mono, goal_cases)
+    case (1 p)
+    show ?case
+    proof (cases "Vwalk.vwalk_bet G' u p v")
+      case True
+      hence walk_mapped: "Vwalk.vwalk_bet G u (map f p) v"
+        by (rule asm)
+      show ?thesis
+      proof (intro bexI[of _ "map f p"])
+        show "(if Vwalk.vwalk_bet G u (map f p) v then length (map f p) - 1 else \<infinity>)
+              \<le> (if Vwalk.vwalk_bet G' u p v then length p - 1 else \<infinity>)"
+          using walk_mapped True by simp
+      next
+        show "map f p \<in> UNIV" by simp
+      qed
+    next
+      case False
+      show ?thesis
+      proof (intro bexI[of _ p])
+        show "(if Vwalk.vwalk_bet G u p v then length p - 1 else \<infinity>)
+              \<le> (if Vwalk.vwalk_bet G' u p v then length p - 1 else \<infinity>)"
+          using False by simp
+      next
+        show "p \<in> UNIV" by simp
+      qed
+    qed
+  qed
+qed
 
 lemma distance_subset: 
   "G \<subseteq> G' \<Longrightarrow> distance G' u v \<le> distance G u v"
