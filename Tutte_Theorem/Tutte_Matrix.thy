@@ -469,9 +469,12 @@ next
   have "\<forall>i<length xs-1. {xs ! i, xs ! (i + 1)} \<in> A" 
     using Cons.prems  less_diff_conv by auto
   have " {(a # xs) ! 0, (a # xs) ! (0 + 1)} \<in> A" 
-    using Cons.prems 
-    by (metis Nat.le_diff_conv2 \<open>length (a # xs) - 1 = length xs\<close> add_leD2 length_greater_0_conv
-        list.size(3) nat_1_add_1 not_one_le_zero)
+  proof -
+    have "0 < length (a # xs) - 1"
+      using Cons.prems(2) by (simp add: Suc_le_eq)
+    then show ?thesis
+      using Cons.prems(1) by blast
+  qed
   then have "{a, xs!0} \<in> A" 
     by simp
   show ?case
