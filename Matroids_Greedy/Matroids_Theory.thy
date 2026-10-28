@@ -172,8 +172,15 @@ proof-
           using assms basis_inI by blast
         then obtain x where "x \<in> (X - Y)" "indep_in X (insert x Y)" by blast
         then have "card (insert x Y) > card Y"
-          by (metis DiffD2 \<open>indep_in X Y\<close> assms card_insert_disjoint finite_subset 
-              indep_in_subset_carrier indep_system.carrier_finite indep_system_axioms lessI)
+        proof -
+          from \<open>x \<in> (X - Y)\<close> have "x \<notin> Y" by blast
+          from indep_in_subset_carrier[OF \<open>indep_in X Y\<close>] have "Y \<subseteq> X" .
+          with assms have "Y \<subseteq> carrier" by blast
+          with carrier_finite have "finite Y" using finite_subset by blast
+          with \<open>x \<notin> Y\<close> have "card (insert x Y) = Suc (card Y)"
+            by (simp add: card_insert_disjoint)
+          then show "card (insert x Y) > card Y" by simp
+        qed
 
         with `indep_in X (insert x Y)` `(\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y')`
         show ?case by fastforce
