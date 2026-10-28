@@ -1534,9 +1534,30 @@ proof
           using True by fastforce
         have "j < dim_col B - 1"
           using "3" True by blast
-        then show ?thesis using pick_suc_diff_set
-          by (metis (no_types, lifting) "12" "19" "9" True card_mono insert_index(2)
-              le_eq_less_or_eq order_trans_rules(22))
+        then have suc_j: "Suc j < dim_col B"
+          by linarith
+        have pre: "Suc j < card J \<or> infinite J"
+        proof (cases "finite J")
+          case True
+          have subset: "{i. i < dim_col A \<and> i \<in> J} \<subseteq> J"
+            using "9" by blast
+          have "card {i. i < dim_col A \<and> i \<in> J} \<le> card J"
+            using card_mono[OF True subset] .
+          with "12" suc_j have "Suc j < card J"
+            by linarith
+          then show ?thesis
+            by (rule disjI1)
+        next
+          case False
+          then show ?thesis
+            by (rule disjI2)
+        qed
+        have "pick J (Suc j) = pick (J - {pick J j}) j"
+          using pick_suc_diff_set[OF pre] .
+        then show ?thesis
+          using \<open>pick J (insert_index j k) = pick J (Suc k)\<close>
+                \<open>pick J (Suc k) = pick J (Suc j)\<close> True
+          by simp
       next
         case False
         have "k > j" using `\<not> k < j` False 
