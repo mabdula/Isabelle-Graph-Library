@@ -815,10 +815,22 @@ proof(safe)
     qed
     then have "x = (p^^j) (((inv p)^^?len) i)" 
       using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by presburger
-    then have "x = ((inv p)^^(?len - j)) i"  
-      using p_diff_inv_p_pow[of p j ?len] 
-      by (metis \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> assms diff_diff_cancel diff_le_self 
-          least_power_of_permutation(1) less_imp_le_nat p_diff_inv_p_pow)
+    have len_fix: "(p ^^ ?len) i = i"
+      by (rule least_power_of_permutation(1)[OF assms])
+    have j_le: "j \<le> ?len"
+      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> less_imp_le_nat by blast
+    have inv_pow_eq: "((inv p) ^^ (?len - j)) i = (p ^^ j) i"
+    proof -
+      have "((inv p) ^^ (?len - j)) i = ((inv p) ^^ (?len - j)) ((p ^^ ?len) i)"
+        by (simp add: len_fix)
+      also have "\<dots> = (p ^^ (?len - (?len - j))) i"
+        by (rule p_diff_inv_p_pow[OF assms diff_le_self])
+      also have "\<dots> = (p ^^ j) i"
+        by (simp add: diff_diff_cancel[OF j_le])
+      finally show ?thesis .
+    qed
+    then have "x = ((inv p)^^(?len - j)) i"
+      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by simp
     then show "x \<in>  set (support (inv p) i)"
       using elemnets_in_support_expo[of "inv p" i i x "?len - j"] 
             \<open>i \<in> set (support (inv p) i)\<close> assms p_is_permutation permutation_inverse by blast
