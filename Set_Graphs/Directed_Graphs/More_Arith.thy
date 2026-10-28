@@ -312,7 +312,14 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
       using 2(5)[of j_min j x] by simp
    have "(\<Sum>j = 0..<Suc i. card (S j)) = (\<Sum>j = 0..< j_min. card (S j)) +
                    (\<Sum>j = j_min..<Suc i. card (S j))" 
-    by (metis j_min_prop(1) le_eq_less_or_eq sum.atLeastLessThan_concat zero_le)
+    proof -
+      have j_min_le: "j_min \<le> Suc i"
+        using j_min_prop(1) by simp
+      have "sum (\<lambda>j. card (S j)) {0..<j_min} + sum (\<lambda>j. card (S j)) {j_min..<Suc i}
+          = sum (\<lambda>j. card (S j)) {0..<Suc i}"
+        using sum.atLeastLessThan_concat[OF zero_le j_min_le] .
+      thus ?thesis by simp
+    qed
   also have "... = (\<Sum>j = 0..<j_min. card (S j)) +
                    ((\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j))+
                    (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j)))"
