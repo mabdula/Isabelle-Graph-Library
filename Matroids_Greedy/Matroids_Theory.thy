@@ -2093,10 +2093,24 @@ next
   show ?case
   proof ((rule impI)+)
     assume "Suc n \<le> card Y" "card X = card Y - Suc n" "X \<subseteq> Y"
-    then have
-      "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
-      by (metis Diff_eq_empty_iff assms(1) assms(2) card_Diff_subset card_gt_0_iff diff_diff_cancel
-          finite_subset insert_subsetI subsetI zero_less_Suc)
+    have "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
+    proof -
+      have "finite Y" using assms(1) assms(2) finite_subset by blast
+      have "Suc n + (card Y - Suc n) = card Y"
+        using \<open>Suc n \<le> card Y\<close> by (rule le_add_diff_inverse)
+      with \<open>card X = card Y - Suc n\<close> have "Suc n + card X = card Y" by simp
+      then have "card X < card Y" by simp
+      have "\<exists>x. x \<in> Y \<and> x \<notin> X"
+      proof (rule ccontr)
+        assume "\<not> (\<exists>x. x \<in> Y \<and> x \<notin> X)"
+        then have "Y \<subseteq> X" by blast
+        from subset_antisym[OF \<open>X \<subseteq> Y\<close> this] have "X = Y" .
+        with \<open>card X < card Y\<close> show False by simp
+      qed
+      then obtain x where "x \<in> Y" "x \<notin> X" by blast
+      then have "insert x X \<subseteq> Y" using \<open>X \<subseteq> Y\<close> by auto
+      with \<open>x \<notin> X\<close> show ?thesis by blast
+    qed
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
