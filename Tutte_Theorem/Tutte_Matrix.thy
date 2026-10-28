@@ -740,7 +740,15 @@ lemma p_diff_inv_p_pow:
   shows "((inv p)^^ k) ((p^^n) i) = (p^^(n-k)) i" 
 proof -
   have "(p^^n) i = ((p^^k) \<circ> (p^^(n-k))) i" 
-    by (metis add_diff_inverse_nat assms(2) funpow_add not_le)
+  proof -
+    have kn: "k + (n - k) = n"
+      using assms(2) by (rule le_add_diff_inverse)
+    have "(p ^^ k) \<circ> (p ^^ (n - k)) = p ^^ (k + (n - k))"
+      by (simp add: funpow_add)
+    also have "\<dots> = p ^^ n"
+      by (simp add: kn)
+    finally show ?thesis by simp
+  qed
   then show ?thesis 
     by (metis assms(1) bij_fn bij_inv_eq_iff comp_apply inv_fn permutation_bijective)
 qed
