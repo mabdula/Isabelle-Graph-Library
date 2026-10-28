@@ -2260,10 +2260,49 @@ qed
           using pick_card_in_set 
           by presburger
         have 36:"{a\<in>(I - {pick I i}). a < pick I t} \<union> {pick I i} = {a\<in>I. a < pick I t}"
-          apply safe
-           apply (metis "4" "5" 16 \<open>i < t\<close> 18 card_mono carrier_matD(1) less_SucI less_or_eq_imp_le 
-              order_trans_rules(22) pick_in_set_inf pick_in_set_le)
-          by (simp add: 39)
+        proof -
+          have i_less_card: "i < card I \<or> infinite I"
+          proof (cases "finite I")
+            case True
+            have "card {k. k < dim_row A \<and> k \<in> I} \<le> card I"
+              using card_mono[OF True 18] .
+            moreover have "i < card {k. k < dim_row A \<and> k \<in> I}" using 17 by simp
+            ultimately have "i < card I" by linarith
+            then show ?thesis by auto
+          next
+            case False
+            then show ?thesis by auto
+          qed
+          have subset1: "{a \<in> (I - {pick I i}). a < pick I t} \<union> {pick I i} \<subseteq> {a \<in> I. a < pick I t}"
+          proof
+            fix x
+            assume "x \<in> {a \<in> (I - {pick I i}). a < pick I t} \<union> {pick I i}"
+            then show "x \<in> {a \<in> I. a < pick I t}"
+            proof
+              assume "x \<in> {a \<in> (I - {pick I i}). a < pick I t}"
+              then show ?thesis by auto
+            next
+              assume "x \<in> {pick I i}"
+              then have x_eq: "x = pick I i" by simp
+              have "pick I i \<in> I" using pick_in_set[OF i_less_card] .
+              moreover have "pick I i < pick I t" using 39 by simp
+              ultimately show ?thesis using x_eq by simp
+            qed
+          qed
+          have subset2: "{a \<in> I. a < pick I t} \<subseteq> {a \<in> (I - {pick I i}). a < pick I t} \<union> {pick I i}"
+          proof
+            fix x
+            assume asm: "x \<in> {a \<in> I. a < pick I t}"
+            show "x \<in> {a \<in> (I - {pick I i}). a < pick I t} \<union> {pick I i}"            proof (cases "x = pick I i")
+              case True
+              then show ?thesis by simp
+            next
+              case False
+              then show ?thesis using asm by auto
+            qed
+          qed
+          show ?thesis using subset1 subset2 by (rule equalityI)
+        qed
         have "pick I i \<notin> {a\<in>(I - {pick I i}). a < pick I t}"
           by blast
         have 37: "card {a\<in>I. a < pick I t} = t" 
