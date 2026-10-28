@@ -1758,7 +1758,21 @@ qed    moreover assume odd_length: "odd (length (edges_of_path ((last pfx1) # p)
           by blast
       qed
     then have last_pfx1_matched: "{last pfx1, last (butlast pfx1)} \<in> M"
-      by (metis edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append last_snoc)
+      proof -
+        assume prev: "last (edges_of_path (rev p @ [last pfx1, last (butlast pfx1)])) \<in> M"
+        have "edges_of_path ((rev p @ [last pfx1]) @ [last (butlast pfx1)]) =
+              edges_of_path (rev p @ [last pfx1]) @ edges_of_path (last (rev p @ [last pfx1]) # [last (butlast pfx1)])"
+          using edges_of_path_append_3[of "rev p @ [last pfx1]" "[last (butlast pfx1)]"]
+          by simp
+        moreover have "edges_of_path (last (rev p @ [last pfx1]) # [last (butlast pfx1)]) =
+                       [{last pfx1, last (butlast pfx1)}]"
+          by (simp add: edges_of_path.simps(2) edges_of_path.simps(3) last_snoc)
+        ultimately have "last (edges_of_path (rev p @ [last pfx1, last (butlast pfx1)])) =
+                         {last pfx1, last (butlast pfx1)}"
+          by (simp add: last_snoc)
+        with prev show ?thesis
+          by simp
+      qed
     have False
     proof(cases "length pfx2 > 1")
       case gt_1: True
