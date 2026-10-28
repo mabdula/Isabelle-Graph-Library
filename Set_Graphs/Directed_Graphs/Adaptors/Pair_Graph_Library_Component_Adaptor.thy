@@ -561,7 +561,15 @@ qed
 
 lemma in_sccs_iff:
   shows "c \<in> sccs G \<longleftrightarrow> ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
-  using in_sccs_digraph_of_imp_in_sccs in_sccs_imp_in_sccs_digraph_of by metis
+proof
+  assume "c \<in> sccs G"
+  then show "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+    by (rule in_sccs_imp_in_sccs_digraph_of)
+next
+  assume "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+  then show "c \<in> sccs G"
+    by (rule in_sccs_digraph_of_imp_in_sccs)
+qed
 
 lemma sccs_dVs_eq: "sccs_dVs G = pre_digraph.sccs_verts (ddfs.digraph_of G)"
   by (auto simp: sccs_dVs_def pre_digraph.sccs_verts_def ddfs.reachable_iff)
