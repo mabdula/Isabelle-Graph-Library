@@ -2951,8 +2951,21 @@ proof (rule allI, rule impI, rule ballI, rule ccontr)
   assume "indep X" "e \<in> E"
   assume "\<not> card ?circuits \<le> 1"
   have "\<exists>C1 C2. C1 \<in> ?circuits \<and> C2 \<in> ?circuits \<and> C1 \<noteq> C2"
-    by (smt (verit) \<open>\<not> card ?circuits \<le> 1\<close> card_insert_le is_singletonI is_singletonI'
-        is_singleton_altdef verit_comp_simplify1(2))
+  proof -
+    from indep_system.indep_subset_carrier[OF assms(1) \<open>indep X\<close>] have "X \<subseteq> E" .
+    with \<open>e \<in> E\<close> have subset_E: "X \<union> {e} \<subseteq> E" by blast
+    from indep_system.carrier_finite[OF assms(1)] subset_E have "finite (X \<union> {e})"
+      using finite_subset by blast
+    moreover have "?circuits \<subseteq> Pow (X \<union> {e})" by blast
+    ultimately have finite_circuits: "finite ?circuits" using finite_subset by blast
+    have "\<not> (\<forall>a1 \<in> ?circuits. \<forall>a2 \<in> ?circuits. a1 = a2)"
+    proof
+      assume "\<forall>a1 \<in> ?circuits. \<forall>a2 \<in> ?circuits. a1 = a2"
+      with card_le_Suc0_iff_eq[OF finite_circuits] have "card ?circuits \<le> Suc 0" by blast
+      with \<open>\<not> card ?circuits \<le> 1\<close> show False by simp
+    qed
+    then show "\<exists>C1 C2. C1 \<in> ?circuits \<and> C2 \<in> ?circuits \<and> C1 \<noteq> C2" by blast
+  qed
   then obtain C1 C2 where "C1 \<in> ?circuits" "C2 \<in> ?circuits" "C1 \<noteq> C2" by blast
 
   from \<open>C1 \<in> ?circuits\<close> assms(2) have "C1 \<in> \<C>" by simp
