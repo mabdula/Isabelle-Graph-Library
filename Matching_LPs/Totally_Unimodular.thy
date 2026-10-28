@@ -2476,9 +2476,25 @@ proof -
       using submatrix_index[OF i_lt j_lt] .
   qed
   have "(mat_of_rows n [b]) $$ (pick {0} i, pick J j) = b $ (pick J j)" 
-    by (metis "1" One_nat_def Suc_eq_plus1 7 6 \<open>i = 0\<close> \<open>j < card ({0..<n} \<inter> J)\<close>
-        \<open>{j. j < n \<and> j \<in> J} = {0..<n} \<inter> J\<close> less_one list.size(3-4) mat_of_rows_index
-        nth_Cons_0 pick_le)
+  proof -
+    have pick0: "pick {0} i = 0"
+    proof -
+      have "0 < card {0::nat} \<or> infinite {0::nat}"
+        by simp
+      then have "pick {0} 0 \<in> {0::nat}"
+        using pick_in_set by blast
+      then show ?thesis
+        unfolding \<open>i = 0\<close> by simp
+    qed
+    have jJ: "j < card {k. k < n \<and> k \<in> J}"
+      using \<open>j < card ({0..<n} \<inter> J)\<close> \<open>{j. j < n \<and> j \<in> J} = {0..<n} \<inter> J\<close> by simp
+    have pickJ_less: "pick J j < n"
+      using jJ pick_le by blast
+    have step: "mat_of_rows n [b] $$ (0, pick J j) = [b] ! 0 $ (pick J j)"
+      using pickJ_less by (simp add: mat_of_rows_index)
+    show "(mat_of_rows n [b]) $$ (pick {0} i, pick J j) = b $ (pick J j)"
+      unfolding pick0 using step by simp
+  qed
   then show "submatrix (mat_of_rows n [b]) {0} J $$ (i, j) =
            mat_of_rows (card ({0..<n} \<inter> J)) [vec_of_list (nths (list_of_vec b) J)] $$ (i, j)"
     using 8 9 10 by presburger
