@@ -2564,7 +2564,11 @@ proof rule
       have 24: "row ?A' nr = unit_vec n i" 
         using append_rows_nth(2)[OF A 1] mat_of_rows_row by simp 
       have 2: "B \<in> carrier_mat (dim_row B) (dim_row B)" 
-        by (metis False carrier_matI)
+      proof -
+        have eq: "dim_col B = dim_row B" using False by auto
+        show "B \<in> carrier_mat (dim_row B) (dim_row B)"
+          by (intro carrier_matI) (simp_all add: eq)
+      qed
       let ?f = "(\<lambda> i. i - nr)"
       have 10:"B = submatrix A I J @\<^sub>r 
                submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J"
