@@ -695,7 +695,13 @@ proof-
     then obtain x where "x \<in> C'" "x \<notin> J" by blast
 
     from \<open>set l = (J - K)\<close> assms(8) have "l ! i \<in> J"
-      by (metis Diff_iff assms(4) assms(6) nth_mem)
+    proof -
+  from assms(4) assms(8) have "i < t" by simp
+  with assms(6) have "i < length l" by simp
+  then have "l ! i \<in> set l" by (rule nth_mem)
+  then have "l ! i \<in> J - K" using \<open>set l = (J - K)\<close> by simp
+  then show "l ! i \<in> J" by (rule DiffD1)
+qed
     from \<open>l ! i \<in> J\<close> \<open>x \<notin> J\<close> \<open>x \<in> C'\<close> \<open>C' \<subseteq> K_i \<union> {l ! i}\<close>
     have "x \<in> K_i" by blast
 
