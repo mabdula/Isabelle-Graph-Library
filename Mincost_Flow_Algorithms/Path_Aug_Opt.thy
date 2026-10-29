@@ -612,7 +612,19 @@ proof
     then obtain C' D' where C'D'_prop: "C' \<in> cycles - {C} \<union> {D}" "D' \<in> cycles - {C} \<union> {D}"
       "x \<in> C'" "y \<in> D'"using assm 
       unfolding FBPs_def
-      by (smt (verit, best) Union_iff insertCI mem_Collect_eq subsetD)
+    proof -
+      have subset: "xy \<subseteq> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
+        using FBP_in_E[OF assm] .
+      hence x_in: "x \<in> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
+        and y_in: "y \<in> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
+        using \<open>xy = {x,y} \<and> isFBP x y\<close> by auto
+      obtain C'' where C''_prop: "C'' \<in> cycles - {C} \<union> {D}" "x \<in> C''"
+        using x_in by blast
+      obtain D'' where D''_prop: "D'' \<in> cycles - {C} \<union> {D}" "y \<in> D''"
+        using y_in by blast
+      show thesis
+        using that C''_prop D''_prop by blast
+    qed
     have "{x,y} \<noteq> {a,b}" 
     proof
       assume "{x, y} = {a, b} "
