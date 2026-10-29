@@ -248,7 +248,7 @@ proof(rule send_flow_call2_condE[OF assms(1)],  goal_cases)
     apply(rule ordered_comm_monoid_add_class.sum_pos2[OF \<V>_finite t_exists(2)])
     using assms(2) t_exists(1)
     by(auto simp add: pos_less_divide_eq 1  elim!: invar_gammaE, argo) 
-      (metis \<epsilon>_axiom(1) abs_div_pos abs_ge_zero add_nonneg_pos)
+      (blast intro: add_nonneg_pos divide_nonneg_pos abs_ge_zero \<epsilon>_axiom(1))
 qed
 
 lemma time_boundB: 
