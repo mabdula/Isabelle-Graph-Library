@@ -73,7 +73,32 @@ proof -
   with xe show ?thesis
     using \<open>\<And>xa. \<lbrakk>A *\<^sub>v xa = b; xa \<in> carrier_vec n\<rbrakk> \<Longrightarrow> 
           xa = Matrix.vec n (\<lambda>k. Determinant.det (replace_col A b k) / Determinant.det A)\<close> assms(3) 
-    by (metis B(1) \<open>A *\<^sub>v (B *\<^sub>v b) = b\<close> assms(2) mult_mat_vec_carrier)
+  proof (intro iffI)
+    assume "A *\<^sub>v x = b"
+    then show "x = vec n (\<lambda>k. det (replace_col A b k) / det A)"
+      using assms(3)
+        \<open>\<And>xa. \<lbrakk>A *\<^sub>v xa = b; xa \<in> carrier_vec n\<rbrakk> \<Longrightarrow>
+            xa = Matrix.vec n (\<lambda>k. Determinant.det (replace_col A b k) / Determinant.det A)\<close>
+      by blast
+  next
+    assume h: "x = vec n (\<lambda>k. det (replace_col A b k) / det A)"
+    have Bb: "B *\<^sub>v b \<in> carrier_vec n"
+      using B(1) assms(2) mult_mat_vec_carrier by blast
+    have eq1: "B *\<^sub>v b = vec n (\<lambda>k. det (replace_col A b k) / det A)"
+      using Bb \<open>A *\<^sub>v (B *\<^sub>v b) = b\<close>
+        \<open>\<And>xa. \<lbrakk>A *\<^sub>v xa = b; xa \<in> carrier_vec n\<rbrakk> \<Longrightarrow>
+            xa = Matrix.vec n (\<lambda>k. Determinant.det (replace_col A b k) / Determinant.det A)\<close>
+      by blast
+    have "x = B *\<^sub>v b"
+    proof -
+      from h have "x = vec n (\<lambda>k. det (replace_col A b k) / det A)" .
+      also have "... = B *\<^sub>v b" by (rule eq1[symmetric])
+      finally show ?thesis .
+    qed
+    then have "A *\<^sub>v x = A *\<^sub>v (B *\<^sub>v b)" by simp
+    also have "... = b" by (rule \<open>A *\<^sub>v (B *\<^sub>v b) = b\<close>)
+    finally show "A *\<^sub>v x = b" .
+  qed
 qed
 
 end
