@@ -1663,7 +1663,20 @@ proof-
             using stateX_def stateY_def 2 by simp
           hence "X = Y"
             using X_Y_props y_prop(2) x_prop(2)
-            by (metis connected_components_member_eq disjoint_iff)
+          proof-
+            obtain w where w_XY: "w \<in> X" "w \<in> Y"
+              using X_Y_props(3) by auto
+            have X_eq: "X = connected_component (to_graph (\<FF> stateY)) x"
+              using x_prop(2) forest_same by simp
+            have w_in_X_comp: "w \<in> connected_component (to_graph (\<FF> stateY)) x"
+              using w_XY(1) X_eq by simp
+            have w_in_Y_comp: "w \<in> connected_component (to_graph (\<FF> stateY)) y"
+              using w_XY(2) y_prop(2) by simp
+            show "X = Y"
+              using X_eq y_prop(2) connected_components_member_eq[OF w_in_X_comp]
+                    connected_components_member_eq[OF w_in_Y_comp]
+              by auto
+          qed
           moreover have "X \<noteq> Y"
             using X_Y_props forest_same by simp
           ultimately show ?thesis by simp
