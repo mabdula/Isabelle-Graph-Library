@@ -1215,9 +1215,20 @@ proof -
       then have " card {i. i < dim_vec (b @\<^sub>v 0\<^sub>v n) \<and> i \<in> {0..<nr}} = card {0..<nr}" 
         by presburger
       then have 5: "dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr})) = nr" 
-        by (metis (no_types, lifting) 4 card_atLeastLessThan diff_zero dim_subsyst_vec
-            dim_vec nths_list_pick_vec_same) 
-      then show 4:"dim_vec b = dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}))"
+      proof -
+        assume card_eq: "card {i. i < dim_vec (b @\<^sub>v 0\<^sub>v n) \<and> i \<in> {0..<nr}} =
+          card {0..<nr}"
+        have "dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr})) =
+              dim_vec (snd (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) {0..<nr}))"
+          by (rule arg_cong, rule sym [OF sub_system_snd])
+        also have "\<dots> = card {i. i < dim_vec (b @\<^sub>v 0\<^sub>v n) \<and> i \<in> {0..<nr}}"
+          using 4 by simp
+        also have "\<dots> = card {0..<nr}"
+          by (rule card_eq)
+        also have "\<dots> = nr"
+          by (simp add: card_atLeastLessThan)
+        finally show ?thesis .
+      qed      then show 4:"dim_vec b = dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}))"
         by (metis assms(2) carrier_vecD)
       fix i
       assume asmi: "i < dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}))"
