@@ -760,9 +760,18 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                     using \<open>i < dim_row B\<close> \<open>\<forall>i<dim_row B. B $$ (i, k) = 0\<close> by blast
                   finally show "col B k $ i = 0" .
                 qed
-                then have "col B k = 0\<^sub>v (dim_row B)"
+then have zero_at: "\<And>i. i < dim_row B \<Longrightarrow> col B k $ i = 0"
+                  by blast
+                have "col B k = 0\<^sub>v (dim_row B)"
                   unfolding zero_vec_def 
-                  by (metis Matrix.zero_vec_def dim_col dim_vec eq_vecI index_zero_vec(1))
+                proof
+                  show "dim_vec (col B k) = dim_vec (vec (dim_row B) (\<lambda>i. 0))"
+                    by simp
+                  fix i
+                  assume "i < dim_vec (vec (dim_row B) (\<lambda>i. 0))"
+                  then show "col B k $ i = vec (dim_row B) (\<lambda>i. 0) $ i"
+                    using zero_at by simp
+                qed
                 then show False
                   using `col B k \<noteq> 0\<^sub>v (dim_row B)` by auto
               qed
