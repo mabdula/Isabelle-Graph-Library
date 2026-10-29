@@ -1064,7 +1064,17 @@ qed
               unfolding mult_mat_vec_def zero_vec_def
               by auto            have 3: "\<exists>v. v \<in> carrier_vec (dim_row B\<^sup>T) \<and> 
                         v \<noteq> 0\<^sub>v (dim_row B\<^sup>T) \<and> B\<^sup>T *\<^sub>v v = 0\<^sub>v (dim_row B\<^sup>T)" 
-              by (metis "1" 31 32 index_transpose_mat(2) vec_carrier)
+            proof -
+              have dim_eq: "dim_row B\<^sup>T = dim_row B"
+                using "1" by (simp add: index_transpose_mat(2))
+              have mem: "?u \<in> carrier_vec (dim_row B\<^sup>T)"
+                unfolding dim_eq carrier_vec_def by simp
+              have neq: "?u \<noteq> 0\<^sub>v (dim_row B\<^sup>T)"
+                using "32" dim_eq by simp
+              have eq0: "B\<^sup>T *\<^sub>v ?u = 0\<^sub>v (dim_row B\<^sup>T)"
+                using "31" by simp
+              from mem neq eq0 show ?thesis by blast
+            qed
             have 2: "B\<^sup>T \<in> carrier_mat (dim_row B) (dim_row B)" using 1 
               by auto
             then have "det B\<^sup>T = 0" 
