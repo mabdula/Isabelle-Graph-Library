@@ -654,10 +654,38 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
   qed
     
   have s_red: "abs (b' s) < abs (b s)"
-    unfolding b'_def 
-    using gamma_pos b_s_pos 
-    unfolding \<gamma>_def
-    by (smt (verit, ccfv_threshold) ereal_less_real_iff min.strict_order_iff min_def) 
+  proof -
+    have step1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
+      by (rule min.cobounded1)
+    have step2: "min (b s) (- b t) \<le> b s"
+      by (rule min.cobounded1)
+    have step2': "ereal (min (b s) (- b t)) \<le> ereal (b s)"
+      using step2 by simp
+    have le_ereal: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (b s)"
+      by (rule order_trans[OF step1 step2'])
+    have gamma_le_bs: "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) \<le> b s"
+    proof (cases "min (min (b s) (- b t)) (Rcap f (set P))")
+      case (real r)
+      then show ?thesis using le_ereal by simp
+    next
+      case PInf
+      then show ?thesis using le_ereal by simp
+    next
+      case MInf
+      then show ?thesis using b_s_pos by simp
+    qed
+    have gamma_le: "\<gamma> \<le> b s"
+      unfolding \<gamma>_def using gamma_le_bs by simp
+    have b'_s_eq: "b' s = b s - \<gamma>"
+      unfolding b'_def by simp
+    have h1: "abs (b s) = b s"
+      using b_s_pos by (simp add: abs_of_pos)
+    have h2: "abs (b s - \<gamma>) = b s - \<gamma>"
+      using gamma_le by (simp add: abs_of_nonneg)
+    show "abs (b' s) < abs (b s)"
+      unfolding b'_s_eq h1 h2
+      using gamma_pos by linarith
+  qed
 
   have t_red: "abs (b' t) < abs (b t)"
     unfolding b'_def 
