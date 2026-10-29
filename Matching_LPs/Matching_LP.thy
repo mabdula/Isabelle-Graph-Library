@@ -524,7 +524,16 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
   with gt_1 have "0 < card (?indices - {ei1})"
     by auto
   then obtain ei2 where ei2: "ei2 \<in> ?indices" "ei1 \<noteq> ei2"
-    by (metis Diff_eq_empty_iff card_0_eq card_ge_0_finite insertCI not_gr_zero subsetI)
+  proof -
+    from \<open>0 < card (?indices - {ei1})\<close> have "?indices - {ei1} \<noteq> {}"
+      by (simp add: card_gt_0_iff)
+    then obtain e where "e \<in> ?indices - {ei1}"
+      by blast
+    then have "e \<in> ?indices" "ei1 \<noteq> e"
+      by auto
+    then show thesis
+      using that by blast
+  qed
   with ei1 have "G_enum_inv ei1 \<in> M" "G_enum_inv ei2 \<in> M" 
     "Vs_enum_inv i \<in> G_enum_inv ei1" "Vs_enum_inv i \<in> G_enum_inv ei2"
     by auto
