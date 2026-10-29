@@ -1046,7 +1046,20 @@ qed
                 using 29 30 by presburger
             qed
             then have "\<forall> t < dim_row B\<^sup>T. row B\<^sup>T t \<bullet> ?u = 0" 
-              by (metis Matrix.col_transpose Matrix.transpose_transpose index_transpose_mat(2))
+              proof (intro allI impI)
+                fix t
+                assume t: "t < dim_row B\<^sup>T"
+                have tdim: "t < dim_col B"
+                  using t index_transpose_mat(2) by simp
+                have "col ((B\<^sup>T)\<^sup>T) t = row B\<^sup>T t"
+                  using col_transpose[OF t] .
+                then have rowcol: "row B\<^sup>T t = col B t"
+                  by (simp add: transpose_transpose)
+                have "col B t \<bullet> ?u = 0"
+                  using \<open>\<forall> t < dim_col B. col B t \<bullet> ?u = 0\<close> tdim by blast
+                then show "row B\<^sup>T t \<bullet> ?u = 0"
+                  by (simp add: rowcol)
+              qed
             then have 31: "B\<^sup>T *\<^sub>v ?u = 0\<^sub>v (dim_row B\<^sup>T)" 
               unfolding mult_mat_vec_def zero_vec_def
               by (metis (no_types, lifting) dim_vec eq_vecI index_transpose_mat(2) index_vec) 
