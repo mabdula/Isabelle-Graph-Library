@@ -418,8 +418,37 @@ qed
     by (meson \<open>i1 < card (Vs E)\<close> \<open>i1 \<noteq> j1\<close> \<open>incidence_mat  $$ (i1, k1) = 1\<close> \<open>j1 < card (Vs E)\<close>
         \<open>k1 < card E\<close> assms(1) gram_schmidt_floor.at_most_two_ones2)
   have "pick I t \<noteq> pick I i"
-    by (metis asm(1,2) assms(3,6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl
-        not_less not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
+  proof (cases "finite I")
+    case True
+    have dim_le: "dim_row B \<le> card I"
+      unfolding assms(6) using dim_row_mat_less_card_I[OF True] by blast
+    have t_less: "t < card I" using asm(1) dim_le by simp
+    have i_less: "i < card I" using assms(3) dim_le by simp
+    consider (lt) "t < i" | (gt) "i < t" using asm(2) by linarith
+    then show ?thesis
+    proof cases
+      case lt
+      then have "pick I t < pick I i" using True t_less i_less pick_mono_le by blast
+      then show ?thesis by simp
+    next
+      case gt
+      then have "pick I i < pick I t" using True t_less i_less pick_mono_le by blast
+      then show ?thesis by simp
+    qed
+  next
+    case False
+    consider (lt) "t < i" | (gt) "i < t" using asm(2) by linarith
+    then show ?thesis
+    proof cases
+      case lt
+      then have "pick I t < pick I i" using False pick_mono_inf by blast
+      then show ?thesis by simp
+    next
+      case gt
+      then have "pick I i < pick I t" using False pick_mono_inf by blast
+      then show ?thesis by simp
+    qed
+  qed
   have "pick I t \<noteq> pick I j"
     by (metis asm(1,3) assms(4,6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl 
         not_less not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
