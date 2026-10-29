@@ -425,10 +425,38 @@ proof(rule invar_integralI)
   proof-
       have b'_integral: "is_integral_balance b'"
         unfolding b'_def
-        apply(rule is_integral_balanceI)
-            using  assms(2) b_def integral_gamma invar_integral_def[of state]
-                   is_integral_balanceE[of b] 
-             by (metis integral_add is_integral_def is_integral_def of_int_diff)
+        proof (intro is_integral_balanceI)
+          fix v assume v_in_V: "v \<in> \<V>"
+          have b_integral: "is_integral (b v)"
+            using assms(2) v_in_V
+            by (auto intro: is_integral_balanceE[of "balance state"]
+                     simp add: invar_integral_def is_integral_def b_def)
+          obtain k where gamma_int: "\<gamma> = real_of_int k"
+            using integral_gamma unfolding is_integral_def by auto
+          show "\<exists>n::int. (if v = s then b s - \<gamma> else if v = t then b t + \<gamma> else b v) = real_of_int n"
+          proof (cases "v = s")
+            case True
+            have "is_integral (b s)" using b_integral True by simp
+            then obtain m where "b s = real_of_int m" unfolding is_integral_def by auto
+            with gamma_int have "b s - \<gamma> = real_of_int (m - k)" by (simp add: of_int_diff)
+            with True show ?thesis by (intro exI[of _ "m - k"]) auto
+          next
+            case False
+            note v_neq_s = False
+            show ?thesis
+            proof (cases "v = t")
+              case True
+              have "is_integral (b t)" using b_integral True by simp
+              then obtain m where "b t = real_of_int m" unfolding is_integral_def by auto
+              with gamma_int have "b t + \<gamma> = real_of_int (m + k)" by simp
+              with v_neq_s True show ?thesis by (intro exI[of _ "m + k"]) auto
+            next
+              case False
+              obtain m where "b v = real_of_int m" using b_integral unfolding is_integral_def by auto
+              with v_neq_s False show ?thesis by (intro exI[of _ "m"]) auto
+            qed
+          qed
+        qed
       show ?thesis 
       using b'_integral
       unfolding b'_def P_def \<gamma>_def s_def t_def f_def b_def SSP_upd4_def Let_def 
