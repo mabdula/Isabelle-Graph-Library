@@ -633,8 +633,25 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
   have gamma_pos: "\<gamma> > 0"
     unfolding \<gamma>_def
     using Rcap_pos t_is_neg b_s_pos
-    by (smt (verit, ccfv_SIG) PInfty_neq_ereal(2) ereal_infty_less(1) ereal_less(2) 
-        min.absorb3 min_less_iff_conj zero_less_real_of_ereal)
+  proof -
+    have min1_pos: "0 < min (ereal (b s)) (ereal (- b t))"
+      using b_s_pos t_is_neg by (simp add: min_less_iff_conj)
+    have overall_pos: "0 < min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))"
+      using min1_pos Rcap_pos by (simp add: min_less_iff_conj)
+    have b_s_lt_inf: "ereal (b s) < \<infinity>"
+      by simp
+    have min1_lt_inf: "min (ereal (b s)) (ereal (- b t)) < \<infinity>"
+      using min.cobounded1[of "ereal (b s)" "ereal (- b t)"] b_s_lt_inf
+      by (rule le_less_trans)
+    have overall_lt_inf: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) < \<infinity>"
+      using min.cobounded1[of "min (ereal (b s)) (ereal (- b t))"] min1_lt_inf
+      by (rule le_less_trans)
+    have overall_neq_inf: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) \<noteq> \<infinity>"
+      using overall_lt_inf by simp
+    show "0 < Rcap f (set P) \<Longrightarrow> b t < 0 \<Longrightarrow> 0 < b s \<Longrightarrow>
+           0 < real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))"
+      using overall_pos overall_neq_inf by (simp add: zero_less_real_of_ereal)
+  qed
     
   have s_red: "abs (b' s) < abs (b s)"
     unfolding b'_def 
