@@ -523,7 +523,17 @@ lemma submatrix_incidence_zero_or_one:
   shows "B $$ (i, k) = 1 \<or> B $$ (i, k) = 0"
 proof -
   have 1: "B $$ (i, k) = (incidence_mat) $$ (pick I i, pick J k)" 
-    by (metis (no_types, lifting) assms(2-4) dim_submatrix(1-2) submatrix_index)
+  proof -
+    have i': "i < card {i. i < dim_row incidence_mat \<and> i \<in> I}"
+      using assms(3)[unfolded assms(4)] dim_submatrix(1)[of incidence_mat I J] by linarith
+    have k': "k < card {k. k < dim_col incidence_mat \<and> k \<in> J}"
+      using assms(2)[unfolded assms(4)] dim_submatrix(2)[of incidence_mat I J] by linarith
+    have "B $$ (i, k) = submatrix incidence_mat I J $$ (i, k)"
+      using assms(4) by simp
+    also have "... = incidence_mat $$ (pick I i, pick J k)"
+      using submatrix_index[OF i' k'] .
+    finally show ?thesis .
+  qed
   have "pick I i < card (Vs E)" 
     by (metis assms(3,4) dim_row_incidence_mat dim_submatrix(1) pick_le)
   have "pick J k < card E" 
