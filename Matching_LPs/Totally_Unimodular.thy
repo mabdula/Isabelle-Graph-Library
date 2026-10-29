@@ -3963,7 +3963,15 @@ next
   have "tot_unimodular (A @\<^sub>r (submatrix B {0..<nr2} UNIV))" 
     using Suc.hyps 3 2 by presburger
   have 4: "A @\<^sub>r B = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)])" 
-    by (metis (no_types, lifting) 1 2 assms(1) mat_of_rows_carrier(1) append_mat_assoc)
+proof -
+  have C: "mat_of_rows n [row B nr2] \<in> carrier_mat 1 n"
+    using mat_of_rows_carrier(1)[of n "[row B nr2]"] by auto
+  have "A @\<^sub>r B = A @\<^sub>r ((submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [row B nr2]))"
+    using 1 by simp
+  also have "... = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B nr2])"
+    using append_mat_assoc[OF assms(1) 2 C] by simp
+  finally show "A @\<^sub>r B = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)])" .
+qed
   obtain j where j: "row B nr2 = unit_vec n j" 
     using Suc(3) by blast
   then have "(A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)]) = 
