@@ -302,8 +302,21 @@ proof -
     using nth_upt[of 1 _ "length ax + 1"] by auto
   have "(map (\<lambda> i. (f (i+1) \<cdot>\<^sub>v (a # ax) ! (i+1))) [0..<length ax]) = 
     (map (\<lambda> i. (f i \<cdot>\<^sub>v (a # ax) ! i)) [1..<length ax + 1])"
-    apply (auto simp: map_eq_conv' append_shift) 
-    by (metis Suc_leI length_greater_0_conv)
+  proof (rule nth_equalityI)
+    show "length (map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax]) =
+          length (map (\<lambda>i. f i \<cdot>\<^sub>v (a # ax) ! i) [1..<length ax + 1])"
+      by (simp add: length_upt del: upt_Suc)
+  next
+    fix i
+    assume "i < length (map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax])"
+    then have i_less: "i < length ax"
+      by simp
+    have idx: "[1..<length ax + 1] ! i = i + 1"
+      using append_shift i_less by auto
+    show "map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax] ! i =
+          map (\<lambda>i. f i \<cdot>\<^sub>v (a # ax) ! i) [1..<length ax + 1] ! i"
+      using i_less idx by (simp add: nth_map del: upt_Suc)
+  qed
   then show ?thesis
     by auto
 qed
