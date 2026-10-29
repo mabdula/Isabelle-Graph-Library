@@ -310,7 +310,17 @@ proof safe
         t1 < dim_row (incidence_mat ) \<and> 
         t1 = pick I t"
     using exist_index_in_submat 
-    by (metis (no_types, lifting) asm(1) assms(6) dim_submatrix(1) exist_index_in_submat) 
+  proof -
+    have "dim_row (submatrix (incidence_mat ) I UNIV) = dim_row (submatrix (incidence_mat ) I J)"
+      by (simp add: dim_submatrix(1))
+    hence t_lt: "t < dim_row (submatrix (incidence_mat ) I UNIV)"
+      using asm(1) assms(6) by simp
+    obtain t1' where "t1' < dim_row (incidence_mat )" "t1' \<in> I"
+      "row (submatrix (incidence_mat ) I UNIV) t = row (incidence_mat ) t1'" "t1' = pick I t"
+      using exist_index_in_submat[OF refl t_lt] by blast
+    then show thesis
+      using that[of t1'] by auto
+  qed
   have "dim_col B = card {i. i < dim_col (incidence_mat ) \<and> i \<in> J}" 
     using assms(6) dim_submatrix(2) by blast
   then obtain k1 where k1: "col (incidence_mat ) k1 = 
