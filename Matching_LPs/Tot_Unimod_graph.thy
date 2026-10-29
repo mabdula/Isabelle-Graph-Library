@@ -644,7 +644,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
             fix k 
             assume asm: "k < dim_row B" "k\<noteq>i"
             have "B $$ (k,j) = col B j $ k" 
-              by (metis asm(1) i_j index_col)
+              by (rule index_col[symmetric, OF asm(1) i_j[THEN conjunct1]])
             have "unit_vec (dim_row B) i $ k = 0"
               unfolding unit_vec_def 
               by (simp add: i_j asm)
