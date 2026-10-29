@@ -4136,7 +4136,14 @@ proof -
     have 5: "(submatrix A {i} {j}) $$ (0,0) =  A $$ (pick {i} 0, pick {j} 0)" 
       by (simp add: 3)
     have "pick {i} 0 = i" 
-      by (metis card_eq_1_iff less_one pick_in_set singletonD)
+    proof -
+      have "0 < card {i} \<or> infinite {i}"
+        by simp
+      then have "pick {i} 0 \<in> {i}"
+        using pick_in_set by blast
+      then show "pick {i} 0 = i"
+        by simp
+    qed
     have "pick {j} 0 = j" 
       by (metis card_eq_1_iff less_one pick_in_set singletonD)
     then have "det (submatrix A {i} {j}) = A $$ (i, j)" 
