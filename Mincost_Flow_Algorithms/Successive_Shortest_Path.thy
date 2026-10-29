@@ -691,7 +691,55 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
     unfolding b'_def 
     using gamma_pos t_is_neg
     unfolding \<gamma>_def 
-    by (smt (verit, best) ereal_less_real_iff min.absorb3 min_def real_of_ereal.simps(1))
+  proof -
+    have step1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
+      by (rule min.cobounded1)
+    have step2: "min (b s) (- b t) \<le> - b t"
+      by (rule min.cobounded2)
+    have step2': "ereal (min (b s) (- b t)) \<le> ereal (- b t)"
+      using step2 by simp
+    have le_ereal: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (- b t)"
+      by (rule order_trans[OF step1 step2'])
+    have gamma_le_bt: "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) \<le> - b t"
+    proof (cases "min (min (b s) (- b t)) (Rcap f (set P))")
+      case (real r)
+      then show ?thesis using le_ereal by simp
+    next
+      case PInf
+      then show ?thesis using le_ereal by simp
+    next
+      case MInf
+      then show ?thesis using t_is_neg by simp
+    qed
+    have gamma_le: "\<gamma> \<le> - b t"
+      unfolding \<gamma>_def using gamma_le_bt by simp
+    have b't_eq: "b' t = b t + \<gamma>"
+      unfolding b'_def using s_neq_t by simp
+    have le0: "b t + \<gamma> \<le> 0"
+      using gamma_le by linarith
+    have main: "\<bar>b t + \<gamma>\<bar> < \<bar>b t\<bar>"
+    proof -
+      have "\<bar>b t + \<gamma>\<bar> = - (b t + \<gamma>)"
+        using le0 by (simp add: abs_of_nonpos)
+      also have "- (b t + \<gamma>) < - b t"
+        using gamma_pos by linarith
+      also have "- b t = \<bar>b t\<bar>"
+        using t_is_neg by simp
+      finally show ?thesis .
+    qed
+    have \<gamma>e_def: "real_of_ereal (min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))) = \<gamma>"
+      using \<gamma>_def by simp
+    show "0 < real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P))) \<Longrightarrow>
+           b t < 0 \<Longrightarrow>
+           \<bar>if t = s
+             then b s -
+                  real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))
+             else if t = t
+                  then b t +
+                       real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))
+                  else b t\<bar> < \<bar>b t\<bar>"
+      using s_neq_t main by (simp add: \<gamma>e_def)
+  qed
    
     show ?thesis 
     proof(cases rule: SSP_call_4_cond_SSP_dom[OF 4])
