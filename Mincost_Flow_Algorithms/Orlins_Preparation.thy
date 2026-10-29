@@ -2547,7 +2547,17 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
            done
          done
        have QQrev_leng: "length QQrev > 0" 
-         by (metis QQrevpre length_greater_0_conv list.simps(3) prepath_simps)
+        proof (cases QQrev)
+          case Nil
+          with QQrevpre have "prepath []"
+            by simp
+          then have False
+            using prepath_simps[of "[]"] by blast
+          then show ?thesis ..
+        next
+          case (Cons a as)
+          then show ?thesis by simp
+        qed
        hence augpathQQrev: "augpath f QQrev"
            using QQrevpre QQrev_number_not_allowedp Rcap_strictI[of "set QQrev" 0 f] 
            unfolding augpath_def by simp
