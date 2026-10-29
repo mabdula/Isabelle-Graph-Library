@@ -740,8 +740,16 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
               proof(rule ccontr)
                 assume "\<not> (\<exists>i<dim_row B. B $$ (i, k) = 1)"
                 then have "\<forall>i<dim_row B. B $$ (i, k) = 0" 
-                  by (metis \<open>k < dim_col B\<close>  \<open>graph_invar E\<close>
-                      gram_schmidt_floor.submatrix_incidence_zero_or_one less.prems)
+                  proof safe
+                    fix i
+                    assume i: "i < dim_row B"
+                    have "B $$ (i, k) = 1 \<or> B $$ (i, k) = 0"
+                      using gram_schmidt_floor.submatrix_incidence_zero_or_one
+                              [OF finite_Vs \<open>graph_invar E\<close> \<open>k < dim_col B\<close> i less.prems]
+                      by blast
+                    then show "B $$ (i, k) = 0"
+                      using \<open>\<not> (\<exists>i<dim_row B. B $$ (i, k) = 1)\<close> i by blast
+                  qed
                 then have "\<forall>i<dim_row B. col B k $ i = 0"
                   by (metis \<open>k < dim_col B\<close> index_col)
                 then have "col B k = 0\<^sub>v (dim_row B)"
