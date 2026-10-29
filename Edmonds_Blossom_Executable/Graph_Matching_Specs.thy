@@ -1,5 +1,5 @@
 theory Graph_Matching_Specs
-  imports Directed_Set_Graphs.Pair_Graph_Specs Basic_Matching.Matching_Augmentation_Executable
+  imports Directed_Set_Graphs.Pair_Graph_Specs Matching_Contraction_Expansion
 begin
 
 provenance ai_human
@@ -7,21 +7,28 @@ provenance ai_human
 section \<open>Graphs and matchings for the executable blossom algorithm\<close>
 
 text \<open>An undirected graph is represented by an adjacency map that stores both orientations of
-  every edge. A matching is represented by its mate function, which maps every matched vertex to
-  its partner. The locale below combines the two data structures with an operation that lists the
-  elements of a vertex set, which is needed to scan the neighbours of a vertex and to enumerate
-  the edges of a graph.\<close>
+  every edge. Matchings are supplied by their abstract data type, including partner lookup,
+  augmentation, contraction and expansion. The locale also requires an operation that lists the
+  elements of a vertex set to scan neighbours and enumerate graph edges.\<close>
 
 locale Graph_Matching_Specs =
   Graph: Pair_Graph_Specs where lookup = lookup +
-  Mate_Map: Map mate_empty mate_update mate_delete mate_lookup mate_invar +
-  Mate: matching_augmentation mate_empty mate_update mate_delete mate_lookup mate_invar
-  for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option"
+  Mate: blossom_matching
+    where K = K and empty_matching = mate_empty and matching_invar = matching_invar_abs
+      and lookup_partner = mate_lookup and get_partner = mate_partner and augment = mate_augment
+      and matching_abstract = matching_abs and contract_path = mate_contract
+      and expand_path_at_matched = mate_expand and add_alternatingly = mate_add_alternatingly
+  for K :: "'v set"
+  and lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option"
   and mate_empty :: 'mate
-  and mate_update :: "'v \<Rightarrow> 'v \<Rightarrow> 'mate \<Rightarrow> 'mate"
-  and mate_delete :: "'v \<Rightarrow> 'mate \<Rightarrow> 'mate"
+  and matching_invar_abs :: "'v set set \<Rightarrow> 'mate \<Rightarrow> bool"
   and mate_lookup :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v option"
-  and mate_invar :: "'mate \<Rightarrow> bool" +
+  and mate_partner :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v"
+  and mate_augment :: "'mate \<Rightarrow> 'v list \<Rightarrow> 'mate"
+  and matching_abs :: "'mate \<Rightarrow> 'v set set"
+  and mate_contract :: "'mate \<Rightarrow> 'v list \<Rightarrow> 'v \<Rightarrow> 'mate"
+  and mate_expand :: "'mate \<Rightarrow> 'v list \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'mate"
+  and mate_add_alternatingly :: "'mate \<Rightarrow> 'v list \<Rightarrow> 'mate" +
   fixes vset_to_list :: "'vset \<Rightarrow> 'v list"
   assumes vset_to_list: "\<And>N. vset_inv N \<Longrightarrow> set (vset_to_list N) = t_set N"
 begin
@@ -37,11 +44,9 @@ definition "graph_input G vs \<longleftrightarrow>
    Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_vsets G \<and>
    (\<forall>u v. (u, v) \<in> Graph.digraph_abs G \<longrightarrow> (v, u) \<in> Graph.digraph_abs G) \<and>
    (\<forall>u. (u, u) \<notin> Graph.digraph_abs G) \<and>
-   dVs (Graph.digraph_abs G) \<subseteq> set vs"
+   dVs (Graph.digraph_abs G) \<subseteq> set vs \<and> set vs \<subseteq> K"
 
-abbreviation "matching_abs \<equiv> Mate.\<M>"
-
-definition "matching_invar G M = Mate.invar_matching (ugraph_abs G) M"
+definition "matching_invar G M = matching_invar_abs (ugraph_abs G) M"
 
 subsection \<open>Operations\<close>
 
@@ -49,12 +54,7 @@ definition "neighbour_list G v = vset_to_list (Graph.neighbourhood G v)"
 
 definition "adjacency_edges G vs = concat (map (\<lambda>v. map (Pair v) (neighbour_list G v)) vs)"
 
-definition "matching_edges M vs =
-   concat (map (\<lambda>v. case mate_lookup M v of Some w \<Rightarrow> [(v, w)] | None \<Rightarrow> []) vs)"
-
-definition "mate_from_list ps = foldl (\<lambda>m (a, b). mate_update a b m) mate_empty ps"
-
-lemmas [code] = neighbour_list_def adjacency_edges_def matching_edges_def mate_from_list_def
+lemmas [code] = neighbour_list_def adjacency_edges_def
 
 subsection \<open>Properties of the input conditions\<close>
 
@@ -65,12 +65,13 @@ lemma graph_inputD:
   "\<lbrakk>graph_input G vs; (u, v) \<in> Graph.digraph_abs G\<rbrakk> \<Longrightarrow> (v, u) \<in> Graph.digraph_abs G"
   "graph_input G vs \<Longrightarrow> (u, u) \<notin> Graph.digraph_abs G"
   "graph_input G vs \<Longrightarrow> dVs (Graph.digraph_abs G) \<subseteq> set vs"
+  "graph_input G vs \<Longrightarrow> set vs \<subseteq> K"
   by (auto simp: graph_input_def)
 
 lemma graph_inputI:
   "\<lbrakk>Graph.graph_inv G; Graph.finite_graph G; Graph.finite_vsets G;
     \<And>u v. (u, v) \<in> Graph.digraph_abs G \<Longrightarrow> (v, u) \<in> Graph.digraph_abs G;
-    \<And>u. (u, u) \<notin> Graph.digraph_abs G; dVs (Graph.digraph_abs G) \<subseteq> set vs\<rbrakk>
+    \<And>u. (u, u) \<notin> Graph.digraph_abs G; dVs (Graph.digraph_abs G) \<subseteq> set vs; set vs \<subseteq> K\<rbrakk>
    \<Longrightarrow> graph_input G vs"
   by (auto simp: graph_input_def)
 
@@ -82,9 +83,9 @@ lemma isin_neighbourhood_iff:
   "isin (Graph.neighbourhood G v) w \<longleftrightarrow> (v, w) \<in> Graph.digraph_abs G"
   by (simp add: Graph.digraph_abs_def)
 
-lemma Vs_ugraph_abs_subset:
-  "Vs (ugraph_abs G) \<subseteq> dVs (Graph.digraph_abs G)"
-  by (auto simp: ugraph_abs_def Vs_def intro: dVsI)
+lemma Vs_ugraph_abs:
+  "Vs (ugraph_abs G) = dVs (Graph.digraph_abs G)"
+  by (simp only: ugraph_abs_def Vs_dVs_UD[unfolded UD_def])
 
 lemma ugraph_abs_graph_invar:
   assumes "graph_input G vs"
@@ -93,42 +94,14 @@ proof
   show "dblton_graph (ugraph_abs G)"
     using graph_inputD(5)[OF assms]
     by (fastforce simp: dblton_graph_def ugraph_abs_def)
-  have "finite (dVs (Graph.digraph_abs G))"
-    using graph_inputD(1-3)[OF assms]
-    by (rule Graph.finite_vertices)
-  thus "finite (Vs (ugraph_abs G))"
-    using Vs_ugraph_abs_subset
-    by (rule finite_subset[rotated])
-qed
-
-lemma Vs_ugraph_abs:
-  assumes "graph_input G vs"
-  shows "Vs (ugraph_abs G) = dVs (Graph.digraph_abs G)"
-proof
-  show "Vs (ugraph_abs G) \<subseteq> dVs (Graph.digraph_abs G)"
-    by (rule Vs_ugraph_abs_subset)
-  show "dVs (Graph.digraph_abs G) \<subseteq> Vs (ugraph_abs G)"
-  proof
-    fix x
-    assume "x \<in> dVs (Graph.digraph_abs G)"
-    then obtain u v where uv: "(u, v) \<in> Graph.digraph_abs G" "x = u \<or> x = v"
-      by (auto simp: dVs_eq image_iff)
-    hence "\<exists>w. (x, w) \<in> Graph.digraph_abs G"
-      using graph_inputD(4)[OF assms, of u v]
-      by auto
-    then obtain w where "(x, w) \<in> Graph.digraph_abs G"
-      by blast
-    hence "{x, w} \<in> ugraph_abs G"
-      by (auto simp: ugraph_abs_def)
-    thus "x \<in> Vs (ugraph_abs G)"
-      by (auto simp: Vs_def)
-  qed
+  show "finite (Vs (ugraph_abs G))"
+    using Graph.finite_vertices[OF graph_inputD(1-3)[OF assms]]
+    by (simp add: Vs_ugraph_abs)
 qed
 
 lemma Vs_ugraph_abs_subset_vs:
   "graph_input G vs \<Longrightarrow> Vs (ugraph_abs G) \<subseteq> set vs"
-  using Vs_ugraph_abs_subset graph_inputD(6)
-  by blast
+  using graph_inputD(6) by (simp add: Vs_ugraph_abs)
 
 subsection \<open>Properties of the operations\<close>
 
@@ -152,26 +125,14 @@ lemma neighbour_list_nonempty_iff:
   assumes "graph_input G vs"
   shows "neighbour_list G v \<noteq> [] \<longleftrightarrow> v \<in> Vs (ugraph_abs G)"
 proof-
+  interpret H: graph_abs "ugraph_abs G"
+    by unfold_locales (rule ugraph_abs_graph_invar[OF assms])
   have "neighbour_list G v \<noteq> [] \<longleftrightarrow> (\<exists>w. w \<in> set (neighbour_list G v))"
     by (cases "neighbour_list G v") auto
   also have "\<dots> \<longleftrightarrow> (\<exists>w. {v, w} \<in> ugraph_abs G)"
     by (simp add: neighbour_list_ugraph_abs[OF assms])
   also have "\<dots> \<longleftrightarrow> v \<in> Vs (ugraph_abs G)"
-  proof
-    assume "\<exists>w. {v, w} \<in> ugraph_abs G"
-    thus "v \<in> Vs (ugraph_abs G)"
-      by (auto simp: Vs_def)
-  next
-    assume "v \<in> Vs (ugraph_abs G)"
-    then obtain e where e: "v \<in> e" "e \<in> ugraph_abs G"
-      by (auto simp: Vs_def)
-    then obtain a b where "e = {a, b}"
-      using ugraph_abs_graph_invar[OF assms]
-      by (auto simp: dblton_graph_def)
-    thus "\<exists>w. {v, w} \<in> ugraph_abs G"
-      using e
-      by (auto simp: insert_commute)
-  qed
+    by (simp add: H.vs_member' insert_commute)
   finally show ?thesis .
 qed
 
@@ -190,144 +151,44 @@ qed
 
 subsection \<open>The mate function\<close>
 
-lemma matching_abs_iff:
-  "Mate.invar_matching E M \<Longrightarrow> {u, v} \<in> matching_abs M \<longleftrightarrow> mate_lookup M u = Some v"
-  by (auto simp: Mate.\<M>_def' doubleton_eq_iff dest: Mate.invar_matchingD(2) Mate.symmetric_buddiesD)
+lemmas matching_abs_iff = Mate.lookup_partner[symmetric]
 
 lemma Vs_matching_abs_iff:
-  "Mate.invar_matching E M \<Longrightarrow> v \<in> Vs (matching_abs M) \<longleftrightarrow> mate_lookup M v \<noteq> None"
-  by (auto simp: Vs_def Mate.\<M>_def' dest: Mate.invar_matchingD(2) Mate.symmetric_buddiesD)
+  assumes "graph_input G vs" "matching_invar G M"
+  shows "v \<in> Vs (matching_abs M) \<longleftrightarrow> mate_lookup M v \<noteq> None"
+proof-
+  have inv: "matching_invar_abs (ugraph_abs G) M"
+    using assms(2) by (simp add: matching_invar_def)
+  interpret H: graph_abs "matching_abs M"
+    by unfold_locales
+       (rule graph_invar_subset[OF ugraph_abs_graph_invar[OF assms(1)]
+         conjunct2[OF Mate.matching(1)[OF inv]]])
+  show ?thesis
+    by (simp add: H.vs_member' not_None_eq Mate.lookup_partner[OF inv] insert_commute)
+qed
 
 lemma matching_invar_props:
   assumes "matching_invar G M"
-  shows "mate_invar M" "matching (matching_abs M)" "matching_abs M \<subseteq> ugraph_abs G"
-        "finite (matching_abs M)"
-  using assms
-  by (auto simp: matching_invar_def dest: Mate.invar_matchingD)
-
-lemma matching_invar_mate_edge:
-  assumes "graph_input G vs" "matching_invar G M" "mate_lookup M u = Some v"
-  shows "{u, v} \<in> matching_abs M" "{u, v} \<in> ugraph_abs G" "(u, v) \<in> Graph.digraph_abs G"
+  shows "matching_invar_abs (ugraph_abs G) M"
+    "matching (matching_abs M)" "matching_abs M \<subseteq> ugraph_abs G"
+    "graph_input G vs \<Longrightarrow> finite (matching_abs M)"
+    "graph_input G vs \<Longrightarrow> Vs (ugraph_abs G) \<subseteq> K"
 proof-
-  show "{u, v} \<in> matching_abs M"
-    using assms(2,3)
-    by (simp add: matching_invar_def matching_abs_iff)
-  thus "{u, v} \<in> ugraph_abs G"
-    using matching_invar_props(3)[OF assms(2)]
-    by blast
-  thus "(u, v) \<in> Graph.digraph_abs G"
-    by (simp add: in_ugraph_abs_iff[OF assms(1)])
-qed
-
-lemma matching_edges:
-  assumes "graph_input G vs" "matching_invar G M"
-  shows "set (matching_edges M vs) = {(u, v). mate_lookup M u = Some v}"
-proof-
-  have "u \<in> set vs" if "mate_lookup M u = Some v" for u v
-    using matching_invar_mate_edge(3)[OF assms that] graph_inputD(6)[OF assms(1)]
-    by (auto intro: dVsI)
-  thus ?thesis
-    by (force simp: matching_edges_def split: option.splits)
-qed
-
-lemma mate_foldl_update:
-  assumes "mate_invar m" "\<And>a b b'. \<lbrakk>(a, b) \<in> set ps; (a, b') \<in> set ps\<rbrakk> \<Longrightarrow> b = b'"
-  shows "mate_invar (foldl (\<lambda>m (a, b). mate_update a b m) m ps) \<and>
-         (\<forall>a b. mate_lookup (foldl (\<lambda>m (a, b). mate_update a b m) m ps) a = Some b \<longleftrightarrow>
-                (a, b) \<in> set ps \<or> ((\<forall>b'. (a, b') \<notin> set ps) \<and> mate_lookup m a = Some b))"
-  using assms
-proof(induction ps arbitrary: m)
-  case Nil
-  then show ?case
-    by simp
-next
-  case (Cons p ps)
-  obtain a0 b0 where p: "p = (a0, b0)"
-    by (cases p)
-  have inv: "mate_invar (mate_update a0 b0 m)"
-    using Cons.prems(1)
-    by (rule Mate_Map.invar_update)
-  have func: "\<And>a b b'. \<lbrakk>(a, b) \<in> set ps; (a, b') \<in> set ps\<rbrakk> \<Longrightarrow> b = b'"
-    using Cons.prems(2)
-    by auto
-  have IH: "mate_invar (foldl (\<lambda>m (a, b). mate_update a b m) (mate_update a0 b0 m) ps) \<and>
-            (\<forall>a b. mate_lookup (foldl (\<lambda>m (a, b). mate_update a b m) (mate_update a0 b0 m) ps) a = Some b
-                   \<longleftrightarrow> (a, b) \<in> set ps \<or>
-                       ((\<forall>b'. (a, b') \<notin> set ps) \<and> mate_lookup (mate_update a0 b0 m) a = Some b))"
-    using Cons.IH[OF inv func] .
-  have upd: "mate_lookup (mate_update a0 b0 m) a = (if a = a0 then Some b0 else mate_lookup m a)" for a
-    using Cons.prems(1)
-    by (simp add: Mate_Map.map_update)
-  have "(a0, b) \<in> set ps \<Longrightarrow> b = b0" for b
-    using Cons.prems(2)[of a0 b b0]
-    by (simp add: p)
-  thus ?case
-    using IH
-    by (auto simp: p upd)
-qed
-
-lemma matching_set_functional:
-  assumes "matching {{a, b} | a b. (a, b) \<in> set ps}" "\<And>a. (a, a) \<notin> set ps"
-          "(a, b) \<in> set ps" "(a, b') \<in> set ps"
-  shows "b = b'"
-proof(rule ccontr)
-  assume "b \<noteq> b'"
-  hence "{a, b} \<noteq> {a, b'}"
-    by (auto simp: doubleton_eq_iff)
-  moreover have "{a, b} \<in> {{a, b} | a b. (a, b) \<in> set ps}" "{a, b'} \<in> {{a, b} | a b. (a, b) \<in> set ps}"
-    using assms(3,4)
-    by blast+
-  ultimately have "{a, b} \<inter> {a, b'} = {}"
-    using assms(1)
-    by (auto simp: matching_def)
-  thus False
-    by blast
-qed
-
-lemma mate_from_list:
-  assumes "graph_input G vs"
-    and "\<And>a b. (a, b) \<in> set ps \<Longrightarrow> (b, a) \<in> set ps"
-    and "\<And>a. (a, a) \<notin> set ps"
-    and "matching {{a, b} | a b. (a, b) \<in> set ps}"
-    and "\<And>a b. (a, b) \<in> set ps \<Longrightarrow> (a, b) \<in> Graph.digraph_abs G"
-  shows "matching_invar G (mate_from_list ps)"
-        "matching_abs (mate_from_list ps) = {{a, b} | a b. (a, b) \<in> set ps}"
-proof-
-  have func: "\<And>a b b'. \<lbrakk>(a, b) \<in> set ps; (a, b') \<in> set ps\<rbrakk> \<Longrightarrow> b = b'"
-    using matching_set_functional[OF assms(4,3)]
-    by blast
-  have fold: "mate_invar (mate_from_list ps)"
-    "\<And>a b. mate_lookup (mate_from_list ps) a = Some b \<longleftrightarrow> (a, b) \<in> set ps"
-    using mate_foldl_update[OF Mate_Map.invar_empty func]
-    by (auto simp: mate_from_list_def Mate_Map.map_empty)
-  show abs: "matching_abs (mate_from_list ps) = {{a, b} | a b. (a, b) \<in> set ps}"
-    by (simp add: Mate.\<M>_def' fold(2))
-  have "Mate.symmetric_buddies (mate_from_list ps)"
-    using assms(2)
-    by (auto intro!: Mate.symmetric_buddiesI simp: fold(2))
-  moreover have "Mate.no_self_loop_buddy (mate_from_list ps)"
-    using assms(3)
-    by (auto intro!: Mate.no_self_loop_buddyI simp: fold(2))
-  moreover have "matching_abs (mate_from_list ps) \<subseteq> ugraph_abs G"
-    using assms(5)
-    by (auto simp: abs ugraph_abs_def)
-  moreover have "finite (matching_abs (mate_from_list ps))"
-  proof-
-    have "{{a, b} | a b. (a, b) \<in> set ps} = (\<lambda>(a, b). {a, b}) ` set ps"
-      by auto
-    thus ?thesis
-      by (simp add: abs)
-  qed
-  ultimately show "matching_invar G (mate_from_list ps)"
-    using fold(1) assms(4)
-    by (auto intro!: Mate.invar_matchingI simp: matching_invar_def abs)
+  show "matching_invar_abs (ugraph_abs G) M"
+    using assms by (simp add: matching_invar_def)
+  then show "matching (matching_abs M)" "matching_abs M \<subseteq> ugraph_abs G"
+    using Mate.matching(1) by auto
+  then show "graph_input G vs \<Longrightarrow> finite (matching_abs M)"
+    using ugraph_abs_graph_invar finite_subset by (meson finite_Vs_then_finite)
+  show "graph_input G vs \<Longrightarrow> Vs (ugraph_abs G) \<subseteq> K"
+    using Vs_ugraph_abs_subset_vs graph_inputD(7) by blast
 qed
 
 subsection \<open>Graphs built from edge lists\<close>
 
 lemma from_list_graph_input:
   assumes "\<And>a b. (a, b) \<in> set xs \<Longrightarrow> (b, a) \<in> set xs" "\<And>a. (a, a) \<notin> set xs"
-          "dVs (set xs) \<subseteq> set vs"
+          "dVs (set xs) \<subseteq> set vs" "set vs \<subseteq> K"
   shows "graph_input (Graph.from_list xs) vs"
   using assms
   by (auto intro!: graph_inputI simp: Graph.from_list_correct)

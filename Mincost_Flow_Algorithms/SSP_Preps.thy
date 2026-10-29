@@ -123,7 +123,7 @@ We will always prove preservation by using the hard-earned Theorem 9.11 from the
 \<close>
 
 definition "invar_opt state = (is_Opt (\<lambda> v. \<b> v - balance state v) (current_flow state))"
-
+(*preservation of flow integrality seems to be duplicate*)
 text \<open>By augmenting an integral flow along a single edge by an integer, integrality is preserved.\<close>
 
 lemma integral_flow_pres_single: 

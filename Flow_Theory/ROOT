@@ -4,15 +4,19 @@ session "Flow_Theory" = "HOL-Library" +
 sessions
   AI_Provenance
   Directed_Set_Graphs
+  Spanning_Trees
 
 theories
   Augmentation
   Decomposition
   Hitchcock_Reduction
   Cost_Optimality
+  Optimality_Certification
   Preliminaries
   Residual
   STFlow
+  Spanning_Tree_Flow
+  Unit_Flows
   
 
 document_files

@@ -1,5 +1,6 @@
 theory Hopcroft_Karp_Subprocedures
   imports Hopcroft_Karp_Phase Micali_Vazirani.Alt_BFS_Example Micali_Vazirani.IDFS_Example
+          Basic_Matching.Matching_Augmentation_Executable
 begin
 
 section \<open>Sub-procedures of the Hopcroft-Karp Algorithm at Red-Black Trees\<close>
@@ -12,19 +13,27 @@ text \<open>The phase of @{theory Hopcroft_Karp.Hopcroft_Karp_Phase} at red-blac
 
 subsection \<open>The matching, represented by its mate function\<close>
 
-lemma mate_Map_axioms: "Map Leaf update RBT_Map.delete lookup M.invar"
-  using M.Map_axioms
-  by (auto simp add: RBT_Set.empty_def)
+definition "mate_get nil M u = (case lookup M u of None \<Rightarrow> nil | Some v \<Rightarrow> v)"
 
-global_interpretation mate: Matching_Augmentation_Specs Leaf update RBT_Map.delete lookup M.invar
+lemma mate_fixed_univ_map:
+  "fixed_univ_map K M.invar (\<lambda>M u v. update u v M) (mate_get nil)"
+  by unfold_locales (auto simp: mate_get_def M.map_update M.invar_update)
+
+global_interpretation mate: Matching_Augmentation_Specs "- {nil}" M.invar
+  "\<lambda>M u v. update u v M" "mate_get nil" Leaf nil
+  for nil
   defines mate_augment = mate.augment_impl
     and mate_matching = mate.\<M>
     and mate_invar = mate.invar_matching
-  by (auto intro!: Matching_Augmentation_Specs.intro simp add: mate_Map_axioms)
+    and mate_lookup = mate.buddy_lookup
+  by (auto intro!: Matching_Augmentation_Specs.intro mate_fixed_univ_map)
 
-interpretation mate_thms: matching_augmentation Leaf update RBT_Map.delete lookup M.invar
-  using mate.Matching_Augmentation_Specs_axioms
-  by (auto intro!: matching_augmentation.intro)
+interpretation mate_thms: matching_augmentation "- {nil}" M.invar
+  "\<lambda>M u v. update u v M" "mate_get nil" Leaf nil
+  for nil
+  by (auto intro!: matching_augmentation.intro matching_augmentation_axioms.intro
+                   mate.Matching_Augmentation_Specs_axioms
+           simp: mate_get_def M.invar_def rbt_def fun_eq_iff)
 
 lemmas mate_augmentation_correct =
   mate_thms.augmentation_correct[folded mate_invar_def mate_matching_def mate_augment_def]
@@ -32,15 +41,30 @@ lemmas mate_empty_props =
   mate_thms.empty_matching_props[folded mate_invar_def mate_matching_def]
 lemmas mate_invarD =
   mate.invar_matchingD[folded mate_invar_def mate_matching_def]
-lemmas mate_matching_eq = mate.\<M>_def'
+lemmas mate_matching_eq = mate.\<M>_def'[folded mate_matching_def mate_lookup_def]
+
+lemma mate_lookup_symmetric:
+  "mate_invar nil G m \<Longrightarrow> mate_lookup nil m u = Some v \<longleftrightarrow> mate_lookup nil m v = Some u"
+  unfolding mate_lookup_def
+  by (rule mate.symmetric_buddiesD[OF mate_invarD(2)])
 
 lemma mate_matching_iff:
-  "mate_invar G m \<Longrightarrow> {u, v} \<in> mate_matching m \<longleftrightarrow> lookup m u = Some v"
-  by (auto simp: mate_matching_eq doubleton_eq_iff dest: mate_invarD(2) mate.symmetric_buddiesD)
+  assumes "mate_invar nil G m"
+  shows "{u, v} \<in> mate_matching nil m \<longleftrightarrow> mate_get nil m u = v \<and> v \<noteq> nil"
+proof-
+  have "{u, v} \<in> mate_matching nil m \<longleftrightarrow> mate_lookup nil m u = Some v"
+    using assms by (auto simp: mate_matching_eq doubleton_eq_iff dest: mate_lookup_symmetric)
+  thus ?thesis by (auto simp: mate_lookup_def mate.buddy_lookup_def)
+qed
 
 lemma mate_Vs_iff:
-  "mate_invar G m \<Longrightarrow> v \<in> Vs (mate_matching m) \<longleftrightarrow> lookup m v \<noteq> None"
-  by (auto simp: Vs_def mate_matching_eq dest: mate_invarD(2) mate.symmetric_buddiesD)
+  assumes "mate_invar nil G m"
+  shows "v \<in> Vs (mate_matching nil m) \<longleftrightarrow> mate_get nil m v \<noteq> nil"
+proof-
+  have "v \<in> Vs (mate_matching nil m) \<longleftrightarrow> mate_lookup nil m v \<noteq> None"
+    using assms by (auto simp: Vs_def mate_matching_eq dest: mate_lookup_symmetric)
+  thus ?thesis by (auto simp: mate_lookup_def mate.buddy_lookup_def)
+qed
 
 subsection \<open>The input\<close>
 
@@ -77,12 +101,13 @@ global_interpretation phase: Hopcroft_Karp_Phase
     and c_update = update and c_adjmap_inv = adj_inv and c_vset_empty = vset_empty
     and c_vset_delete = vset_delete and c_vset_inv = vset_inv
     and c_union = vset_union and c_inter = vset_inter and c_diff = vset_diff
-    and mate_empty = Leaf and mate_update = update and mate_delete = RBT_Map.delete
-    and mate_lookup = lookup and mate_map_invar = M.invar
+    and K = "- {nil}" and nil = nil and mate_get = "mate_get nil"
+    and mate_invar = "mate_invar nil" and mate_matching = "mate_matching nil"
     and lookup_dist = lookup and empty_dist = Leaf and update_dist = update
     and delete_dist = RBT_Map.delete and invar_dist = M.invar
     and expand_tree = expand_tree and next_frontier_impl = next_frontier
     and upd_dists = upd_dists_exec and init_dists_of = init_dists_exec
+  for nil
   defines hopcroft_karp_phase = phase.hopcroft_karp_phase
     and matched_edges = phase.matched_edges
     and unmatched_edges = phase.unmatched_edges
@@ -116,7 +141,7 @@ next
 next
   case 5
   show ?case
-    by (rule mate.Matching_Augmentation_Specs_axioms)
+    by (rule mate_thms.matching.Matching_Specs_axioms[folded mate_invar_def mate_matching_def])
 next
   case (6 srcs)
   show ?case
@@ -162,17 +187,16 @@ lemma disjoint_paths_search_code_unfold[code_unfold]:
 subsection \<open>The sub-procedures meet the contracts of the top loop\<close>
 
 lemma matching:
-  "mate_invar (ugraph_abs_rbt G) M \<Longrightarrow> graph_matching (ugraph_abs_rbt G) (mate_matching M)"
-  "mate_invar (ugraph_abs_rbt G) Leaf"
-  "mate_matching Leaf = {}"
-  using mate_invarD mate_empty_props
-  by simp_all
+  "mate_invar nil (ugraph_abs_rbt G) M \<Longrightarrow> graph_matching (ugraph_abs_rbt G) (mate_matching nil M)"
+  "nil \<notin> Vs (ugraph_abs_rbt G) \<Longrightarrow> mate_invar nil (ugraph_abs_rbt G) Leaf"
+  "mate_matching nil Leaf = {}"
+  by (auto dest: mate_invarD(4) intro: mate_empty_props(1) simp: mate_empty_props(2))
 
 lemma augment:
-  "\<lbrakk>mate_invar (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p\<rbrakk>
-   \<Longrightarrow> mate_invar (ugraph_abs_rbt G) (mate_augment M p)"
-  "\<lbrakk>mate_invar (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p\<rbrakk>
-   \<Longrightarrow> mate_matching (mate_augment M p) = mate_matching M \<oplus> set (edges_of_path p)"
+  "\<lbrakk>mate_invar nil (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p\<rbrakk>
+   \<Longrightarrow> mate_invar nil (ugraph_abs_rbt G) (mate_augment M p)"
+  "\<lbrakk>mate_invar nil (ugraph_abs_rbt G) M; graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p\<rbrakk>
+   \<Longrightarrow> mate_matching nil (mate_augment M p) = mate_matching nil M \<oplus> set (edges_of_path p)"
   by (simp_all add: mate_augmentation_correct)
 
 lemma bipartite_of_axiom:
@@ -181,9 +205,9 @@ lemma bipartite_of_axiom:
   by blast
 
 lemma phase_sound:
-  assumes "hopcroft_karp_axiom_rbt G vs" "mate_invar (ugraph_abs_rbt G) M"
-    "p \<in> set (hopcroft_karp_phase (adjacency_edges G vs) vs M)"
-  shows "graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p"
+  assumes "hopcroft_karp_axiom_rbt G vs" "mate_invar nil (ugraph_abs_rbt G) M"
+    "p \<in> set (hopcroft_karp_phase nil (adjacency_edges G vs) vs M)"
+  shows "graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p"
 proof -
   obtain X Y where "bipartite (ugraph_abs_rbt G) X Y"
     using bipartite_of_axiom[OF assms(1)] by blast
@@ -193,8 +217,8 @@ proof -
 qed
 
 lemma phase_disjoint:
-  assumes "hopcroft_karp_axiom_rbt G vs" "mate_invar (ugraph_abs_rbt G) M"
-  shows "sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) (hopcroft_karp_phase (adjacency_edges G vs) vs M)"
+  assumes "hopcroft_karp_axiom_rbt G vs" "mate_invar nil (ugraph_abs_rbt G) M"
+  shows "sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) (hopcroft_karp_phase nil (adjacency_edges G vs) vs M)"
 proof -
   obtain X Y where "bipartite (ugraph_abs_rbt G) X Y"
     using bipartite_of_axiom[OF assms(1)] by blast
@@ -204,9 +228,9 @@ proof -
 qed
 
 lemma phase_complete:
-  assumes "hopcroft_karp_axiom_rbt G vs" "mate_invar (ugraph_abs_rbt G) M"
-    "\<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (mate_matching M) p"
-  shows "hopcroft_karp_phase (adjacency_edges G vs) vs M \<noteq> []"
+  assumes "hopcroft_karp_axiom_rbt G vs" "mate_invar nil (ugraph_abs_rbt G) M"
+    "\<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (mate_matching nil M) p"
+  shows "hopcroft_karp_phase nil (adjacency_edges G vs) vs M \<noteq> []"
 proof -
   obtain X Y where "bipartite (ugraph_abs_rbt G) X Y"
     using bipartite_of_axiom[OF assms(1)] by blast

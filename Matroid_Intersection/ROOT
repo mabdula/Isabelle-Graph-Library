@@ -1,4 +1,4 @@
-session "Matroid_Intersection" = "HOL-Data_Structures" + 
+session "Matroid_Intersection" = "HOL-Data_Structures" +
   options [document = pdf, document_output = "output"]
   sessions
     AI_Provenance
@@ -7,9 +7,52 @@ session "Matroid_Intersection" = "HOL-Data_Structures" +
     Graph_Algorithms_Dev
     Undirected_Set_Graphs
     Basic_Matching
+    Data_Structures
+    Imperative
+
+  directories
+    Applications
+    Refinements
 
   theories
     Matroid_Intersection
+    Matroid_Intersection_Path_Loop
     Matroid_Intersection_Algorithm
     Compute_Path
-    Max_Bipartite_Matching_Matroid
+    "Applications/Max_Bipartite_Matching_Matroid"
+
+    Matroid_Weighted_Intersection
+    Matroid_Weighted_Intersection_Algorithm
+    Matroid_Weighted_Intersection_Path_Loop
+    "Applications/Weighted_Bipartite_Matching_Matroid"
+
+    Matroid_Partitioning
+
+    Exchange_Oracles
+    Partition_Oracle
+    Matroid_Intersection_Exchange_Graph
+    Matroid_Weighted_Intersection_Exchange_Graph
+
+    "Refinements/Exchange_Oracles_Imp"
+    "Refinements/Partition_Oracle_Imp"
+    "Refinements/Exchange_Candidates_Imp"
+    "Refinements/Matroid_Intersection_Imp_Loop"
+    "Refinements/Matroid_Intersection_Exchange_Graph_CSR"
+    "Refinements/Matroid_Intersection_Exchange_Graph_Imp"
+    "Refinements/Matroid_Intersection_Imp"
+
+    "Refinements/Matroid_Weighted_Intersection_Imp_Loop"
+    "Refinements/Matroid_Weighted_Intersection_Exchange_Graph_CSR"
+    "Refinements/Matroid_Weighted_Intersection_Exchange_Graph_Imp"
+    "Refinements/Matroid_Weighted_Intersection_Imp"
+
+    "Applications/Capacity_Partition_Oracle_Imp"
+    "Applications/Bipartite_Arrays"
+    "Applications/Bipartite_Matching_Imp"
+    "Applications/Bipartite_B_Matching_Imp"
+    "Applications/Weighted_Bipartite_Matching_Imp"
+    "Applications/Weighted_Bipartite_B_Matching_Imp"
+    "Applications/Bipartite_Matching_Code_Export"
+
+document_files
+  "root.tex"

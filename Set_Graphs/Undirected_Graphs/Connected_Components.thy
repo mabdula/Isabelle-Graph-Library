@@ -427,6 +427,120 @@ lemma same_connected_component_SOME:
   using in_own_connected_component some_eq_ex[of "\<lambda> xa. xa \<in> connected_component A x \<and> xa \<in> X"]
   by (force intro!: connected_components_member_eq)
 
+lemma connected_component_subset:
+  assumes "v \<in> Vs G"
+  shows "connected_component G v \<subseteq> Vs G"
+  using assms by (metis in_connected_component_in_edges subsetI)
+
+lemma component_is_finite:
+  assumes "graph_invar G"
+  shows "finite (connected_component G v)"
+  by (metis assms connected_component_subset 
+      connected_components_notE_singletons finite.simps finite_subset)
+
+subsection \<open>Connected Components and Basic Definitions on Graphs\<close>
+
+lemma empty_delta_component_confined:
+  assumes "dblton_graph G" "Delta G X = {}" "x \<in> X"
+  shows "connected_component G x \<subseteq> X"
+proof(rule ccontr, goal_cases)
+  case 1
+  obtain y where xy: "y \<in> connected_component G x" "y \<notin> X"
+    using "1" by blast
+  then obtain p where p: "walk_betw G x p y"
+    using assms(3) in_con_comp_has_walk[of y G x]
+    by auto
+  have p_in_G: "set p \<subseteq> Vs G" 
+    using p walk_in_Vs by force
+  have xy_in_p: "x \<in> set p" "y \<in> set p" 
+    using hd_in_set p by(auto simp add: walk_betw_def)
+  obtain p1 p2 x' y' where p_split: "p = p1@[x', y']@p2"
+    "x' \<in> X \<and> y' \<notin> X \<or> x' \<notin> X  \<and> y' \<in> X" 
+    using list_P_switch[of x p "\<lambda> x. x \<in> X" y]  xy_in_p xy(2) assms(3)
+    by auto
+  hence "{x', y'} \<in> G" 
+    using edge_mid_path p by(auto simp add: walk_betw_def)
+  hence "{x', y'} \<in> Delta G X"
+    using  p_split(2) by(auto intro: in_DeltaI)
+  thus False
+    using assms(2) by auto
+qed
+
+lemma vertices_edges_in_same_component:
+  assumes "{x, y} \<in> G"
+  shows "y \<in> connected_component G x"
+  by (meson assms(1) edges_are_walks has_path_in_connected_component)
+
+lemma component_Delta_empty:  
+  "Delta G (connected_component G y) = {}"
+  using ex_in_conv[of "Delta G (connected_component G y)"] connected_components_member_eq[of _ G y]
+    vertices_edges_in_same_component[of _ _ G]
+  by(auto elim!: in_DeltaE)
+
+lemma diff_connected_component_subset:
+  assumes "v \<in> Vs G"
+  shows "connected_component (G  \<setminus> X) v \<subseteq> Vs G" 
+  by (meson assms con_comp_subset connected_component_subset dual_order.trans graph_diff_subset)
+
+lemma new_component_subset_old:
+  assumes "graph_invar G"
+  assumes "Y \<subseteq> X"
+  shows "connected_component (G \<setminus> X) u \<subseteq> connected_component (G \<setminus> Y) u"
+  by (metis assms(1) assms(2) con_comp_subset graph_diff_subset graph_diff_trans subset_Un_eq)
+
+lemma new_component_is_old:
+  assumes "graph_invar G"
+  assumes "Y \<subseteq> X"
+  assumes "\<forall>y\<in>connected_component (G \<setminus> Y) u. y \<notin> X"
+  shows "connected_component (G \<setminus> X) u = connected_component (G \<setminus> Y) u"
+proof
+  show "connected_component (G \<setminus> Y) u \<subseteq> connected_component (G \<setminus> X) u"
+  proof 
+    fix y
+    assume asmy:"y \<in> connected_component (G \<setminus> Y) u" 
+    then have "y \<notin> X" 
+      using assms(3) by blast
+    have "y = u \<or> (\<exists>p. walk_betw (G \<setminus> Y) u p y)" 
+      by (meson \<open>y \<in> connected_component (G \<setminus> Y) u\<close> in_con_comp_has_walk)
+    show "y \<in> connected_component (G \<setminus> X) u"
+    proof(cases "y = u")
+      case True
+      then show ?thesis 
+        using \<open>y \<in> connected_component (G \<setminus> Y) u\<close> assms(3) 
+        by (simp add: in_own_connected_component)
+    next
+      case False
+      then obtain p where p: "walk_betw (G \<setminus> Y) y p u" 
+        by (meson \<open>y = u \<or> (\<exists>p. walk_betw (G \<setminus> Y) u p y)\<close> walk_symmetric)
+      have 1:"set (edges_of_path p) \<subseteq> (G \<setminus> Y)" 
+        by (meson p path_edges_subset walk_between_nonempty_pathD(1))
+      have "\<forall>x\<in>set p. x \<in>  connected_component (G \<setminus> Y) u" 
+        by (metis p asmy connected_components_member_eq path_subset_conn_comp subsetD 
+            walk_between_nonempty_pathD)
+      then have "\<forall>x\<in>set p. x \<notin> X" 
+        using assms(3) by blast
+      have "set (edges_of_path p) \<subseteq> (G \<setminus> X)" 
+      proof
+        fix e
+        assume asme:"e \<in> set (edges_of_path p)" 
+        then have "e \<inter> X = {}" 
+          by (meson Int_emptyI \<open>\<forall>x\<in>set p. x \<notin> X\<close> v_in_edge_in_path_gen)
+        then show "e \<in>  (G \<setminus> X)" 
+          by (metis (mono_tags, lifting) asme 1 graph_diff_def mem_Collect_eq subsetD)
+      qed
+      then have "walk_betw (G \<setminus> X) y p u" 
+        by (smt (z3) False One_nat_def Suc_1 Suc_leI Suc_lessI p diff_is_0_eq'
+            edges_of_path.simps(1) edges_of_path_Vs edges_of_path_length empty_iff
+            empty_set in_edges_of_path last_in_set length_pos_if_in_set neq0_conv 
+            path_edges_of_path_refl path_subset subset_empty walk_betw_def)
+      then show ?thesis 
+        by (meson connected_components_member_sym has_path_in_connected_component)
+    qed
+  qed
+  show "connected_component (G \<setminus> X) u \<subseteq> connected_component (G \<setminus> Y) u" 
+    by (simp add: assms(1) assms(2) new_component_subset_old)
+qed
+
 subsection \<open>Edges and Connected Components\<close>
 
 lemma edge_in_component:
@@ -450,7 +564,7 @@ qed
 
 lemma edge_in_unique_component:
   "{x,y} \<in> G \<Longrightarrow> \<exists>!C. C \<in> connected_components G \<and> {x,y} \<subseteq> C"
-  by(force dest: connected_components_closed' edge_in_component )
+  by(force dest: connected_components_closed' edge_in_component)
 
 text\<open>
   Now we should be able to partition the set of edges into equivalence classes
@@ -675,6 +789,131 @@ proof(rule, goal_cases)
           exI[of "\<lambda> ya. {x, z} = {x, ya} \<and> _ ya" z])
   qed
 qed (auto simp add: Vs_def component_edges_def)
+
+lemma whole_edge_in_comp:
+  "\<lbrakk>dblton_graph G; x \<in> e; x \<in> connected_component G y; e \<in> G\<rbrakk> 
+   \<Longrightarrow> e \<subseteq> connected_component G y" 
+proof(goal_cases)
+  case 1
+  hence reach1: "reachable G y x" 
+    using vs_member_intro[of x e G] Paths.reachable_refl[of x G] in_connected_componentE[of x G y]
+    by auto
+  moreover obtain z where z: "e = {x, z}"
+    using "1"(1,2,4) by blast
+  ultimately have "reachable G y z"
+    using "1"(4) edges_reachable[of x z G] Paths.reachable_trans[of G y x z] 
+    by auto
+  thus ?case
+    by (simp add: "1"(3) in_connected_componentI z)
+qed
+
+lemma Vs_of_graph_inter_component_is_component:
+  "\<lbrakk>y \<in> Vs G; dblton_graph G\<rbrakk> \<Longrightarrow> Vs (G\<lbrakk>connected_component G y\<rbrakk>) = connected_component G y"
+proof(rule, all \<open>rule\<close>, goal_cases)
+  case (1 x)
+  then show ?case 
+    using graph_inter_Vs_subset(2) by force
+next
+  case (2 x)
+  then obtain e where e: "e \<in> G" "x \<in> e" 
+    using vs_member[of x G] in_connected_component_in_edges[of x G y]
+    by auto
+  hence "e \<subseteq> connected_component G y"
+    by (simp add: "2"(2,3) whole_edge_in_comp)
+  hence "e \<in> G \<lbrakk>connected_component G y\<rbrakk>"
+    by (simp add: e(1) in_graph_inter_VsI)
+  then show ?case
+    using e(2) by blast
+qed
+
+lemma vertices_path_in_component:
+  assumes "walk_betw G u p v"
+  shows "\<forall>x\<in> set p. x \<in> connected_component G u"
+  by (metis assms path_subset_conn_comp subsetD walk_between_nonempty_pathD(1,3))
+
+lemma connected_component_same_if_indep_of_removeds:
+  "connected_component G x \<inter> X = {} \<Longrightarrow> 
+   connected_component (G \<setminus> X) x = connected_component G x"
+proof(rule, all \<open>rule\<close>, goal_cases)
+  case (1 y)
+  then show ?case 
+    using remove_vertices_subgraph[of G X] con_comp_subset[of "G \<setminus> X" G x]
+    by auto
+next
+  case (2 y)
+  then show ?case 
+  proof(elim in_connected_componentE, goal_cases)
+    case 1
+    then show ?case 
+    proof(elim reachableE, goal_cases)
+      case (1 p)
+      thus ?case
+      proof(cases "x = y", goal_cases)
+        case 1
+        then show ?case
+          by (simp add: in_connected_componentI2)
+      next
+        case 2
+        hence "set p \<inter> X = {}"
+          by (simp add: disjoint_iff vertices_path_in_component)
+        hence "walk_betw (G \<setminus> X) x p y"
+          using 2
+          by(auto intro!: walk_betw_remove_verts simp add: walk_betw_length)
+        hence "reachable (G \<setminus> X) x y"
+          by (simp add: reachableI)
+        then show ?case 
+          by (simp add: in_connected_componentI)
+      qed
+    qed
+  next
+    case 2
+    then show ?case 
+      by (simp add: in_own_connected_component)
+  qed
+qed
+
+lemma path_in_comp:
+  assumes "path G p"
+  assumes "C \<in> connected_components G"
+  assumes "last p \<in> C"
+  shows "\<forall>x \<in> set p. x \<in> C" using assms(1) assms(3)
+  by (metis assms(2) connected_components_closed' connected_components_member_eq empty_iff empty_set
+      has_path_in_connected_component nonempty_path_walk_between path_subset_conn_comp subset_eq)
+
+lemma components_edges_all:
+  assumes "graph_invar A"
+  shows "A = \<Union> (components_edges A)"
+proof(safe)
+  {
+    fix e
+    assume "e \<in> A"
+    obtain C where "C \<in> connected_components A \<and> e \<subseteq> C"
+      using edge_in_component
+      by (metis \<open>e \<in> A\<close> assms dblton_graphE)
+    then have "e \<in> component_edges A C" unfolding component_edges_def 
+      using \<open>e \<in> A\<close> assms
+      by blast
+    then show "e \<in> \<Union> (components_edges A)" 
+      by (simp add: \<open>e \<in> A\<close> assms graph_component_edges_partition)
+  }
+
+  fix e C'
+  assume "C' \<in> (components_edges A)" "e \<in> C'"
+  then show "e \<in> A"  
+    using  assms graph_component_edges_partition by fastforce
+qed
+
+lemma component_edges_singleton_is_empty:
+  assumes "graph_invar G" 
+  shows "component_edges G {x} = {}"
+  unfolding component_edges_def
+  using assms by fastforce
+
+lemma component_edges_vert_mono:
+  assumes "Y \<subseteq> C"
+  shows "component_edges G Y \<subseteq> component_edges G C"
+  unfolding component_edges_def
+  by (smt (verit, ccfv_SIG) Collect_mono_iff assms(1) subset_trans)
 
 subsection \<open>Adding Edges to Components\<close>
 
@@ -952,6 +1191,40 @@ lemma connected_components_insert_1:
 lemma in_con_comp_insert: "v \<in> connected_component (insert {u, v} G) u"
   using edges_are_walks[OF insertI1]
   by (force simp add: connected_component_def reachable_def)
+
+lemma edge_subset_component:
+  assumes "graph_invar G"
+  assumes "e \<in> G"
+  assumes "v \<in> e"
+  shows "e \<subseteq> connected_component G v"
+  using assms connected_components_member_sym
+  by (smt (verit, best) dblton_graphE in_con_comp_insert in_own_connected_component insert_Diff
+          insert_iff singletonD subsetI) 
+
+lemma exist_edge_in_component:
+  assumes "graph_invar G"
+  assumes "C \<in> connected_components G"
+  assumes "x \<in> C" 
+  obtains e where "e \<in> G" "x\<in> e" "e \<subseteq> C" 
+proof - 
+  have "C \<subseteq> Vs G" 
+    by (simp add: assms(2) connected_component_subs_Vs)
+  then obtain e where e: "e \<in> G" "x \<in> e" 
+    by (meson assms(3) subsetD vs_member_elim)
+  have "e \<subseteq> C" 
+    by (metis assms connected_components_closed' e edge_subset_component)
+  then show ?thesis 
+    by (meson e that) 
+qed  
+
+lemma edge_same_comp:
+  assumes "graph_invar G"
+  assumes "e \<in> G"
+  assumes "x \<in> e"
+  assumes "y \<in> e"
+  shows "x \<in> connected_component G y" 
+  using assms(1,2,3,4) edge_subset_component in_mono 
+  by force
 
 lemma connected_components_insert:
   assumes "C \<in> connected_components G" "u \<in> C" "v \<notin> Vs G"
@@ -1291,6 +1564,39 @@ lemma same_component_after_insert:
   using connected_components_member_eq[of v E_new u] in_con_comp_insert[of v u E] 
   by (simp add: E_new_def)
 
+lemma vs_connected_component:
+  assumes "graph_invar A"
+  assumes "C \<in> connected_components A"
+  shows "Vs (component_edges A C) = C"
+proof(safe)
+  {
+    fix x
+    assume "x \<in> Vs (component_edges A C)"
+    then obtain e where "x \<in> e \<and> e \<in> (component_edges A C)" 
+      by (meson vs_member_elim)
+    then have "e \<subseteq> C" 
+      by (smt (verit, best) component_edges_def mem_Collect_eq)
+    then show "x \<in> C"
+      by (meson \<open>x \<in> e \<and> e \<in> component_edges A C\<close> subsetD)
+  }
+  fix x
+  assume "x \<in> C"
+  then have "x \<in> Vs A" 
+    by (meson assms connected_comp_verts_in_verts)
+  then obtain e where "x \<in> e \<and> e \<in> A" 
+    by (meson vs_member_elim)
+  then obtain y where "e = {x, y}" 
+    using assms(1) by fastforce
+  then have "y \<in> C"
+    by (metis \<open>x \<in> C\<close> \<open>x \<in> e \<and> e \<in> A\<close> assms(2) connected_components_closed' in_con_comp_insert insert_Diff)
+  then have "e \<subseteq> C" 
+    by (simp add: \<open>e = {x, y}\<close> \<open>x \<in> C\<close>)
+  then have "e \<in> (component_edges A C)" 
+    by (simp add: \<open>x \<in> e \<and> e \<in> A\<close> assms(1) edge_in_component_edges)
+  then show "x \<in> Vs (component_edges A C)" 
+    using \<open>x \<in> e \<and> e \<in> A\<close> by blast
+qed
+
 subsection \<open>Components and Cardinality\<close>
 
 lemma finite_con_comps:
@@ -1309,6 +1615,20 @@ lemma number_comps_below_vertex_card:
 
 lemma finite_verts_finite_no_comps: "finite E \<Longrightarrow> finite X \<Longrightarrow> finite (comps X E)" 
   by (simp add: comps_def)
+
+lemma connected_component_not_singleton:
+  assumes "graph_invar G"
+  assumes "v\<in> Vs G"
+  shows "card (connected_component G v) > 1"
+proof -
+  obtain e where "e \<in> G" "v \<in> e" using assms(2) vs_member_elim by metis
+  then have "e \<subseteq> (connected_component G v)"
+    by (simp add: edge_subset_component assms(1) \<open>v\<in> Vs G\<close>)
+  then have "card (connected_component G v) \<ge> 2"
+    using edge_in_E_card[of G e] component_is_finite[of G v]  assms(1)
+    by (metis \<open>e \<in> G\<close> card_mono)
+  then show ?thesis  by linarith
+qed
 
 text \<open>By adding an edge between two different components, the number of components decreases.\<close>
 
@@ -1495,6 +1815,41 @@ proof-
     using remove_cycle_pfx_works_card_ge_2
     by (metis assms(3) path_suff remove_cycle_pfx_works)
 qed
+
+lemma path_in_comp_edges:
+  assumes "graph_invar G"
+  assumes "path G p"
+  assumes "C \<in> connected_components G"
+  assumes "hd p \<in> C"
+  assumes "(component_edges G C) \<noteq> {}" 
+  shows "path (component_edges G C) p" using assms(2) assms(4) 
+proof(induct p)
+  case path0
+  then show ?case 
+    by simp
+next
+  case (path1 v)
+  have "v \<in> C" 
+    using path1.prems by auto
+  then obtain e where  "e \<in> G \<and> v \<in> e \<and> e \<subseteq> C" 
+    using exist_edge_in_component[of G C v]  assms(1) assms(3)
+    by force
+  then show ?case 
+    using assms(1) edge_in_component_edges by auto
+next
+  case (path2 v v' vs)
+  have "v \<in> C" 
+    using path2.prems by auto
+  have "v' \<in> C"
+    by (metis \<open>v \<in> C\<close> assms(3) connected_components_eq' edge_in_component insert_subset path2.hyps(1))
+  then have "{v, v'} \<subseteq> C" 
+    by (simp add: \<open>v \<in> C\<close>)
+  then have "{v, v'} \<in> (component_edges G C)"
+    by (simp add: assms(1) edge_in_component_edges path2.hyps(1))
+  then show "path (component_edges G C) (v # v' # vs)" 
+    by (simp add: \<open>v' \<in> C\<close> path2.hyps(3))
+qed
+
 
 subsection \<open>Path-Shaped Components\<close>
 
@@ -1874,6 +2229,7 @@ proof-
     by(auto simp add: C_def)
 qed
 
+
 subsection \<open>Connected Graphs\<close>
 
 text \<open>Remove connectedness from topological spaces.\<close>
@@ -1955,4 +2311,82 @@ next
     qed
   qed
 qed
+
+subsection \<open>Connected Sets of Vertices\<close>
+
+definition "connected_set_of_vertices X G Y = (\<exists> u v. {u, v} \<in> G \<and> u \<in> X \<and> v \<in> Y)"
+
+notation connected_set_of_vertices ( "_ \<longleftrightarrow>\<^bsub>_\<^esub> _")
+
+lemma connected_sym: "connected_set_of_vertices X G Y \<longleftrightarrow> connected_set_of_vertices Y G X"
+  by(force  simp add: connected_set_of_vertices_def insert_commute)
+
+abbreviation "disconnected_verts X G Y \<equiv> \<not> connected_set_of_vertices X G Y"
+
+notation disconnected_verts ( "_ \<leftarrow>|\<rightarrow>\<^bsub>_\<^esub> _")
+
+lemma empty_Delta_disconnected:
+  "\<lbrakk>X \<inter> Y = {};Delta G X = {}\<rbrakk> \<Longrightarrow> \<not> connected_set_of_vertices X G Y"
+  by(auto simp add: connected_set_of_vertices_def Delta_def)
+
+lemma connected_sets_of_vertices_image:
+  assumes "inj_on f (Vs G \<union> X \<union> Y)" "dblton_graph G"
+  shows "f ` X \<longleftrightarrow>\<^bsub>(`) f ` G\<^esub> f ` Y \<longleftrightarrow> X \<longleftrightarrow>\<^bsub>G\<^esub> Y"
+proof(rule, goal_cases)
+  case 1
+  then obtain e x y where "{f x, f y} = f ` e" "e \<in> G" "x \<in> X" "y \<in> Y"
+    by(auto simp add: connected_set_of_vertices_def)
+  moreover hence "e = {x, y}" 
+    using assms inj_on_eq_iff[of f "Vs G \<union> X \<union> Y" ] edges_are_Vs[of _ _ G]
+    by(auto elim!: dblton_graphE simp add: doubleton_eq_iff insert_commute)
+  ultimately show ?case 
+    by(auto simp add: connected_set_of_vertices_def)
+next
+  case 2
+  then obtain u v where "{u, v} \<in> G" "u \<in> X" "v \<in> Y"
+    by(auto simp add: connected_set_of_vertices_def)
+  then show ?case 
+    using not_in_imageD
+    by(fastforce intro!: exI[of _ "f u", OF exI[of _ "f v"]] 
+        simp add: connected_set_of_vertices_def)
+qed
+
+lemma two_unconnected_sets_connected_component_not_inter_both:
+  assumes "(connected_component G z) \<inter> X \<noteq> {}"
+    "(connected_component G z) \<inter> Y \<noteq> {}"
+    "Vs G \<subseteq> X \<union> Y" "X \<inter> Y  = {}" "X \<leftarrow>|\<rightarrow>\<^bsub>G\<^esub> Y"
+  shows False
+proof-
+  obtain x y where xy: "x \<in> X" "x \<in> connected_component G z"
+    "y \<in> Y" "y \<in> connected_component G z"
+    using assms by auto
+  then obtain p where p: "walk_betw G x p y" 
+    using assms(4) connected_components_member_eq[of x G z] in_con_comp_has_walk[of y G x] 
+    by auto
+  have p_in_G: "set p \<subseteq> Vs G" 
+    using p walk_in_Vs by force
+  have xy_in_p: "x \<in> set p" "y \<in> set p" 
+    using hd_in_set p by(auto simp add: walk_betw_def)
+  have in_p_not_in_rw:"z \<in> set p \<Longrightarrow> z \<notin> X \<longleftrightarrow> z \<in> Y"  "z \<in> set p \<Longrightarrow> z \<notin> Y \<longleftrightarrow> z \<in> X" for z
+    using assms(3,4) p_in_G by auto
+  obtain p1 p2 x' y' where p_split: "p = p1@[x', y']@p2"
+    "x' \<in> X \<and> y' \<in> Y \<or> x' \<in> Y \<and> y' \<in> X" 
+    using list_P_switch[of x p "\<lambda> x. x \<in> X" y]  xy_in_p xy(1,3)
+    by(auto simp add: in_p_not_in_rw)
+  hence "{x', y'} \<in> G" 
+    using edge_mid_path p by(auto simp add: walk_betw_def)
+  hence "X \<longleftrightarrow>\<^bsub>G\<^esub> Y" 
+    using p_split(2) 
+    by(auto intro: exI[of _ y', OF exI[of _ x']] 
+        simp add: connected_set_of_vertices_def doubleton_eq_iff insert_commute)
+  thus False
+    by (simp add: assms(5))
+qed
+
+lemma connected_sets_of_certices_mono:
+  "\<lbrakk>connected_set_of_vertices X G Y;G\<subseteq> G'; X \<subseteq> X'; Y \<subseteq> Y'\<rbrakk> \<Longrightarrow> connected_set_of_vertices X' G' Y'"
+  and un_connected_sets_of_certices_anti_mono:
+  "\<lbrakk>\<not>connected_set_of_vertices X' G' Y';G\<subseteq> G'; X \<subseteq> X'; Y \<subseteq> Y'\<rbrakk> \<Longrightarrow> \<not>connected_set_of_vertices X G Y"
+  by(force simp add: connected_set_of_vertices_def)+
+
 end

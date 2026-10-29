@@ -4,7 +4,7 @@
 *)
 
 theory Dist
-  imports enat_misc Vwalk
+  imports Directed_Set_Graphs.enat_misc Vwalk
 begin
 
 provenance human

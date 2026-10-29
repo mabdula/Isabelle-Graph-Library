@@ -4,6 +4,7 @@ session "Hungarian_Method" = "HOL-Library" +
 sessions
   AI_Provenance
   Graph_Algorithms_Dev
+  Data_Structures
   Alternating_Lists
   Basic_Matching
   Priority_Search_Trees
@@ -11,10 +12,18 @@ sessions
   Primal_Dual_Bipartite_Matching
   Verified_SAT_Based_AI_Planning
   Tutte_Theorem
+  Matching_LPs
+  Separation_Logic_Imperative_HOL_Partial
+  Directed_Set_Graphs
+  Imperative
+  Go
+
+directories
+  Refinements
 
 
 theories
-	Key_Value_Queue_Spec
+	Path_Search_Result
 	Ordered_Map_Heap
 	Egervary
 	Naive_Primal_Dual
@@ -22,7 +31,26 @@ theories
 	Hungarian_Method_Top_Loop
 	Hungarian_Method_Instantiation
 	WBP_Matching_Exec
-	Hungarian_Example	
+	Hungarian_Example
+	Path_Search_Shortcut
+	Neighbourhood_Best_Scan
+		
+	Matching_Certificate_Spec
+	"Refinements/Init_Potential_Collection"
+	"Refinements/Init_Potential_Imperative"
+	"Refinements/Primal_Dual_Path_Search_Imperative"
+	"Refinements/Hungarian_Method_Top_Loop_Imperative"
+	"Refinements/Hungarian_Method_CSR_Instantiation"
+	"Refinements/Hungarian_CSR_Variants"
+	"Refinements/Hungarian_CSR_Example"
+	"Refinements/Matching_Certificate_Imperative"
+	"Refinements/Matching_Certificate_Arrays"
+	"Refinements/Matching_Certificate_Example"
+	"Refinements/Path_Search_Shortcut_Imperative"
+	"Refinements/Neighbourhood_Best_Scan_Imperative"
+	"Refinements/Assignment_Solver"
+	"Refinements/Assignment_Solver_Code_Export"
+	"Refinements/Hungarian_Code_Export"
 
 document_files
   "root.tex"

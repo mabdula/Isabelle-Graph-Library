@@ -14,11 +14,9 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
 
   directories
     Adaptors
+    Refinements
     
   theories [document = false]
-   More_Logic
-   More_Lists
-   More_Arith
    enat_misc
 
   theories
@@ -29,7 +27,7 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     Pair_Graph_AVL
     Dist
     Pair_Graph_Specs
-    Pair_Graph_Imperative
+    "Refinements/Pair_Graph_Imperative"
     Tree_Defs
     Vwalk
     Component
@@ -39,6 +37,21 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     "Adaptors/Pair_Graph_Library_Adaptor"
     "Adaptors/Pair_Graph_Library_Awalk_Adaptor"
     "Adaptors/Pair_Graph_Library_Component_Adaptor"
+    
+    Multigraph_Weighted_Paths
+    Multigraph
+    Multigraph_Potentials
+    Edge_Iterators
+
+    CSR_Buildup
+    CSR_Graph_Spec
+    "Refinements/CSR_Buildup_Imperative"
+    "Refinements/Weighted_Neighbourhoods_Imperative_Spec"
+    "Refinements/CSR_Graph"
+    "Refinements/CSR_Edge_Input"
+    "Refinements/CSR_Graph_Reset_To"
+    
+    CSR_Neighbour_Lists
 
 
   document_files

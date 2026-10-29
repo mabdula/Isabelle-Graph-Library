@@ -1,0 +1,30 @@
+session "Push_Relabel" = "HOL-Library" +
+  sessions
+    Flow_Theory
+    Data_Structures
+    Directed_Set_Graphs
+    Imperative
+    Separation_Logic_Imperative_HOL_Partial
+    Prpu_Maxflow
+
+  directories
+    Refinements
+
+  theories
+    Push_Relabel_Basic
+    Push_Relabel_Generic
+    Push_Relabel_Discharge
+    Push_Relabel_FIFO
+    Push_Relabel_RTF
+    Push_Relabel_HL
+    Push_Relabel_Label_Buckets
+
+    "Refinements/Push_Relabel_Generic_Imperative"
+    "Refinements/Push_Relabel_Discharge_Imperative"
+    "Refinements/Push_Relabel_FIFO_Imperative"
+    "Refinements/Push_Relabel_RTF_Imperative"
+    "Refinements/Push_Relabel_HL_Imperative"
+    "Refinements/Push_Relabel_Label_Buckets_Imperative"
+    "Refinements/Push_Relabel_Instantiation"
+    "Refinements/Push_Relabel_Code_Export"
+    "Refinements/AFP_FIFO_Push_Relabel_Code_Export"

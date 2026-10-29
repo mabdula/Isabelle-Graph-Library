@@ -531,5 +531,66 @@ proof(goal_cases)
   show "card (Vs X) = card X + card (connected_components X)" by auto
 qed
 
+subsection \<open>Leafs\<close>
+
+text \<open>Any finite non-empty acyclic (undirected) graph, i.e. a non-empty forest, contains a
+      vertex of degree one, a so-called leaf. The proof is a counting argument: by the
+      handshaking lemma the degrees sum up to twice the number of edges, while a forest has
+      strictly more vertices than edges. Hence not every vertex can have degree $\geq 2$.\<close>
+
+lemma tree_has_leaf:
+  assumes "has_no_cycle T" "T \<noteq> {}"
+  shows "\<exists> v. v \<in> Vs T \<and> degree T v = 1"
+proof(rule ccontr)
+  assume contr: "\<nexists> v. v \<in> Vs T \<and> degree T v = 1"
+  have TsubG: "T \<subseteq> G" using assms(1) has_no_cycle_indep_subset_carrier by simp
+  have giT: "graph_invar T" using graph_invar_subset[OF graph TsubG] by simp
+  have dblT: "\<And> e. e \<in> T \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v"
+    using giT by (auto simp add: dblton_graph_def dest: graph_invar_dblton)
+  have finVsT: "finite (Vs T)" using giT graph_invar_finite_Vs by simp
+  have hs: "sum (degree T) (Vs T) = enat (2 * card T)"
+    using bigraph_handshaking_lemma[OF giT] by simp
+  have cc: "card (Vs T) = card T + card (connected_components T)"
+    using connected_components_card[OF assms(1) dblT] by simp
+  have VsT_ne: "Vs T \<noteq> {}" using card_of_non_empty_graph_geq_2[OF giT assms(2)] by auto
+  have enat_ge2: "\<And> x::enat. 1 \<le> x \<Longrightarrow> x \<noteq> 1 \<Longrightarrow> 2 \<le> x"
+  proof -
+    fix x :: enat assume a1: "1 \<le> x" and a2: "x \<noteq> 1"
+    show "2 \<le> x"
+    proof(cases x)
+      case (enat n)
+      from a1 enat have n1: "1 \<le> n" by (metis one_enat_def enat_ord_simps(1))
+      from a2 enat have "n \<noteq> 1" by (metis one_enat_def)
+      with n1 have "2 \<le> n" by simp
+      thus "2 \<le> x" using enat by (metis numeral_eq_enat enat_ord_simps(1))
+    next
+      case infinity
+      thus "2 \<le> x" by simp
+    qed
+  qed
+  have deg2: "\<And> v. v \<in> Vs T \<Longrightarrow> (2::enat) \<le> degree T v"
+  proof -
+    fix v assume v: "v \<in> Vs T"
+    show "(2::enat) \<le> degree T v"
+      using degree_Vs[OF v] contr v enat_ge2 by blast
+  qed
+  have consum: "sum (\<lambda> v. (2::enat)) (Vs T) = enat (2 * card (Vs T))"
+    using finVsT by (simp add: numeral_eq_enat of_nat_eq_enat mult.commute)
+  have "enat (2 * card (Vs T)) = sum (\<lambda> v. (2::enat)) (Vs T)" using consum by simp
+  also have "\<dots> \<le> sum (degree T) (Vs T)" by (intro sum_mono deg2)
+  also have "\<dots> = enat (2 * card T)" using hs by simp
+  finally have le: "card (Vs T) \<le> card T" by (simp add: enat_ord_simps)
+  have "connected_components T \<noteq> {}"
+  proof -
+    obtain v0 where "v0 \<in> Vs T" using VsT_ne by auto
+    hence "connected_component T v0 \<in> connected_components T"
+      by (auto simp add: connected_components_def)
+    thus ?thesis by auto
+  qed
+  hence "card (connected_components T) \<ge> 1"
+    using finite_con_comps[OF finVsT] by (simp add: card_gt_0_iff Suc_leI)
+  thus False using cc le by simp
+qed
+
 end
 end

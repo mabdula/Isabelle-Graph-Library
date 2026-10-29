@@ -1,5 +1,5 @@
 theory Find_Aug_Path_Subprocedures
-  imports Find_Aug_Path
+  imports Graph_Matching_Specs Blossom_Prefixes
 begin
 
 provenance ai
@@ -156,49 +156,7 @@ lemma \<^marker>\<open>provenance human\<close> compute_alt_path_specD:
         "alt_path M (hd p1 # p2)" "alt_path M (hd p2 # p1)" "last p1 \<notin> Vs M" "last p2 \<notin> Vs M"
         "hd p1 \<noteq> hd p2" "odd (length p1)" "odd (length p2)" "distinct p1" "distinct p2"
         "path G p1" "path G p2" "{hd p1, hd p2} \<in> G"
-proof \<^marker>\<open>provenance ai\<close>-
-  note S = assms[unfolded compute_alt_path_spec_def, simplified]
-  show "\<And>pref1 x post1 pref2 post2. \<lbrakk>p1 = pref1 @ x # post1; p2 = pref2 @ x # post2\<rbrakk>
-           \<Longrightarrow> post1 = post2"
-    using S
-    by blast
-  show "alt_path M (hd p1 # p2)"
-    using S
-    by blast
-  show "alt_path M (hd p2 # p1)"
-    using S
-    by blast
-  show "last p1 \<notin> Vs M"
-    using S
-    by blast
-  show "last p2 \<notin> Vs M"
-    using S
-    by blast
-  show "hd p1 \<noteq> hd p2"
-    using S
-    by blast
-  show "odd (length p1)"
-    using S
-    by blast
-  show "odd (length p2)"
-    using S
-    by blast
-  show "distinct p1"
-    using S
-    by blast
-  show "distinct p2"
-    using S
-    by blast
-  show "path G p1"
-    using S
-    by blast
-  show "path G p2"
-    using S
-    by blast
-  show "{hd p1, hd p2} \<in> G"
-    using S
-    by blast
-qed
+  by (insert assms[unfolded compute_alt_path_spec_def, simplified], blast)+
 
 lemma \<^marker>\<open>provenance human\<close> common_suffix:
   assumes "compute_alt_path_spec G M (Some (p1, p2))"

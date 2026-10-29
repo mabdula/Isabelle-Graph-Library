@@ -17,45 +17,6 @@ text \<open>The search calls a procedure that returns an augmenting path, a blos
   A path is lifted through one contraction by the function @{const refine} of the theory of
   graph quotients, whose correctness is @{thm [source] quot_lift.refine_works}.\<close>
 
-subsection \<open>Facts about blossoms\<close>
-
-lemma blossom_cycle_props:
-  assumes "match_blossom M stem C"
-  shows "C \<noteq> []" "hd C = last C" "2 \<le> card (set C)" "distinct (tl C)"
-proof-
-  show "C \<noteq> []"
-    using odd_cycle_nempty[OF match_blossomD(3)[OF assms]] .
-  show "hd C = last C"
-    using odd_cycleD(3)[OF match_blossomD(3)[OF assms]] .
-  show "distinct (tl C)"
-    using match_blossom_distinct_tl[OF assms] .
-  have len: "3 \<le> length C"
-    using odd_cycleD(1)[OF match_blossomD(3)[OF assms]] .
-  have "distinct (butlast C)"
-    using match_blossomD(2)[OF assms]
-    by simp
-  hence "card (set (butlast C)) = length (butlast C)"
-    by (rule distinct_card)
-  moreover have "set (butlast C) \<subseteq> set C"
-    by (rule in_set_butlastD[THEN subsetI])
-  moreover have "2 \<le> length (butlast C)"
-    using len
-    by simp
-  ultimately show "2 \<le> card (set C)"
-    using card_mono[of "set C" "set (butlast C)"]
-    by simp
-qed
-
-lemma blossom_cycle_subset:
-  assumes "path E (stem @ C)"
-  shows "set C \<subseteq> Vs E"
-proof(rule subsetI)
-  fix x
-  assume "x \<in> set C"
-  thus "x \<in> Vs E"
-    by (rule mem_path_Vs[OF path_suff[OF assms]])
-qed
-
 subsection \<open>Contracting an edge list\<close>
 
 definition \<^marker>\<open>provenance ai_human\<close> "quotient_vertex C u v = (if v \<in> set C then u else v)"
@@ -72,15 +33,11 @@ lemma set_quotient_edges:
   by (auto simp: quotient_edges_def)
 
 lemma quotient_edges_sym:
-  "(\<And>a b. (a, b) \<in> set es \<Longrightarrow> (b, a) \<in> set es) \<Longrightarrow>
-   (a, b) \<in> set (quotient_edges C u es) \<Longrightarrow> (b, a) \<in> set (quotient_edges C u es)"
+  "\<lbrakk>\<And>a b. (a, b) \<in> set es \<Longrightarrow> (b, a) \<in> set es;
+    (a, b) \<in> set (quotient_edges C u es)\<rbrakk> \<Longrightarrow> (b, a) \<in> set (quotient_edges C u es)"
   by (fastforce simp: set_quotient_edges)
 
 lemma quotient_edges_irrefl: "(a, a) \<notin> set (quotient_edges C u es)"
-  by (auto simp: set_quotient_edges)
-
-lemma quotient_edges_mono:
-  "set es \<subseteq> set es' \<Longrightarrow> set (quotient_edges C u es) \<subseteq> set (quotient_edges C u es')"
   by (auto simp: set_quotient_edges)
 
 lemma dVs_quotient_edges:
@@ -102,68 +59,44 @@ lemma quotient_edges_quot_graph:
            quot_graph (\<lambda>v. if v \<in> s then v else u) {{a, b} | a b. (a, b) \<in> D} - {{u}}"
     (is "?L = ?R")
 proof-
-  let ?P = "\<lambda>v. if v \<in> s then v else u"
-  have P: "?P v = quotient_vertex C u v" if "v \<in> dVs D" for v
-    using assms(4)[OF that]
-    by (simp add: quotient_vertex_def)
-  have Pimg: "?P ` {a, b} = {quotient_vertex C u a, quotient_vertex C u b}"
-    if "a \<in> dVs D" "b \<in> dVs D" for a b
-    using that
-    by (simp only: image_insert image_empty P)
-  show ?thesis
-  proof(intro equalityI subsetI)
+  define P where "P = (\<lambda>v. if v \<in> s then v else u)"
+  have endpoints: "P a = quotient_vertex C u a \<and> P b = quotient_vertex C u b"
+    if "(a, b) \<in> D" for a b
+    using assms(4)[OF Pair_Graph.dVsI(1)[OF that]]
+      assms(4)[OF Pair_Graph.dVsI(2)[OF that]]
+    by (simp add: P_def quotient_vertex_def)
+  have nonloop: "{P a, P b} \<noteq> {u} \<longleftrightarrow> P a \<noteq> P b"
+    if "(a, b) \<in> D" for a b
+    using assms(3)[of a] that by (auto simp: P_def split: if_splits)
+  have "?L = quot_graph P {{a, b} | a b. (a, b) \<in> D} - {{u}}"
+  proof (rule equalityI; rule subsetI)
     fix e
     assume "e \<in> ?L"
-    then obtain a b where ab: "e = {quotient_vertex C u a, quotient_vertex C u b}" "(a, b) \<in> D"
-        "quotient_vertex C u a \<noteq> quotient_vertex C u b"
-      using assms(1)
-      by (auto simp: set_quotient_edges)
-    have ab_dVs: "a \<in> dVs D" "b \<in> dVs D"
-      using ab(2)
-      by (auto intro: dVsI)
-    hence "e = ?P ` {a, b}"
-      by (rule trans[OF ab(1) Pimg[symmetric]])
-    moreover have "{a, b} \<in> {{a, b} | a b. (a, b) \<in> D}"
-      using ab(2)
-      by blast
-    moreover have "e \<noteq> {u}"
-      using ab(1,3)
-      by (auto simp: doubleton_eq_iff)
-    ultimately show "e \<in> ?R"
-      by (auto simp: quot_graph_def)
+    then obtain a b where edge: "e = {quotient_vertex C u a, quotient_vertex C u b}"
+      "(a, b) \<in> D" "quotient_vertex C u a \<noteq> quotient_vertex C u b"
+      using assms(1) by (auto simp: set_quotient_edges)
+    have source: "{a, b} \<in> {{a, b} | a b. (a, b) \<in> D}"
+      using edge(2) by blast
+    have "e \<in> quot_graph P {{a, b} | a b. (a, b) \<in> D}"
+      using edge_in_graph_in_quot[OF source, of P] endpoints[OF edge(2)] edge(1) by simp
+    then show "e \<in> quot_graph P {{a, b} | a b. (a, b) \<in> D} - {{u}}"
+      using edge(1,3) by auto
   next
     fix e
-    assume "e \<in> ?R"
-    then obtain a b where ab: "e = ?P ` {a, b}" "(a, b) \<in> D" "e \<noteq> {u}"
+    assume "e \<in> quot_graph P {{a, b} | a b. (a, b) \<in> D} - {{u}}"
+    then obtain a b where edge: "e = P ` {a, b}" "(a, b) \<in> D" "e \<noteq> {u}"
       by (auto simp: quot_graph_def)
-    have ab_dVs: "a \<in> dVs D" "b \<in> dVs D"
-      using ab(2)
-      by (auto intro: dVsI)
-    have neq: "quotient_vertex C u a \<noteq> quotient_vertex C u b"
-    proof
-      assume eq: "quotient_vertex C u a = quotient_vertex C u b"
-      hence "e = {quotient_vertex C u a}"
-        using ab(1)
-        by (simp only: Pimg[OF ab_dVs] eq insert_absorb2)
-      hence "quotient_vertex C u a \<noteq> u"
-        using ab(3)
-        by auto
-      hence "a \<notin> set C" "b \<notin> set C"
-        using eq
-        by (auto simp: quotient_vertex_def split: if_splits)
-      hence "a = b"
-        using eq
-        by (simp add: quotient_vertex_def)
-      thus False
-        using ab(2) assms(3)
-        by simp
-    qed
-    have "e = {quotient_vertex C u a, quotient_vertex C u b}"
-      by (rule trans[OF ab(1) Pimg[OF ab_dVs]])
-    thus "e \<in> ?L"
-      using ab(2) neq assms(1)
-      by (auto simp: set_quotient_edges)
+    have neq: "P a \<noteq> P b"
+      using nonloop[OF edge(2)] edge(1,3) by simp
+    have pair: "(quotient_vertex C u a, quotient_vertex C u b) \<in> set (quotient_edges C u es)"
+      unfolding set_quotient_edges
+      by (intro CollectI exI[of _ a] exI[of _ b])
+         (use edge(2) neq endpoints[OF edge(2)] assms(1) in auto)
+    show "e \<in> ?L"
+      by (intro CollectI exI[of _ "quotient_vertex C u a"] exI[of _ "quotient_vertex C u b"])
+         (use edge(1) endpoints[OF edge(2)] pair in auto)
   qed
+  then show ?thesis by (simp only: P_def)
 qed
 
 subsection \<open>The program state\<close>
@@ -203,6 +136,7 @@ locale Find_Aug_Path = Graph_Matching_Specs where lookup = lookup and mate_empty
                   \<exists>p. graph_augmenting_path (ugraph_abs G') (matching_abs M') p\<rbrakk>
        \<Longrightarrow> blos_search G' vs' M' \<noteq> None"
   and create_vert: "\<And>vs'. create_vert vs' \<notin> set vs'"
+  and create_vert_in_univ: "\<And>vs'. set vs' \<subseteq> K \<Longrightarrow> create_vert vs' \<in> K"
 begin
 
 definition "Find_Aug_Path_axiom \<longleftrightarrow> graph_input G vs \<and> matching_invar G M"
@@ -213,7 +147,9 @@ definition \<^marker>\<open>provenance ai_human\<close> "contract_vertices vs' C
 
 definition \<^marker>\<open>provenance ai_human\<close> "contract_graph G' vs' C u = Graph.from_list (quotient_edges C u (adjacency_edges G' vs'))"
 
-definition \<^marker>\<open>provenance ai_human\<close> "contract_matching M' vs' C u = mate_from_list (quotient_edges C u (matching_edges M' vs'))"
+definition \<^marker>\<open>provenance ai_human\<close> "contract_matching M' C u =
+  mate_contract M' (butlast C) u"
+
 
 subsubsection \<open>Lifting\<close>
 
@@ -230,29 +166,31 @@ context
   fixes E N C u vs' stem
   assumes contraction:
     "graph_input E vs'" "matching_invar E N" "blossom (ugraph_abs E) (matching_abs N) stem C"
-    "u \<notin> set vs'"
+    "u \<notin> set vs'" "u \<in> K"
 begin
 
 lemma contraction_facts:
   "graph_invar (ugraph_abs E)" "set C \<subseteq> Vs (ugraph_abs E)" "C \<noteq> []" "hd C = last C"
-  "2 \<le> card (set C)" "u \<notin> Vs (ugraph_abs E)" "Mate.invar_matching (ugraph_abs E) N"
+  "2 \<le> card (set C)" "u \<notin> Vs (ugraph_abs E)" "matching_invar_abs (ugraph_abs E) N"
   "matching (matching_abs N)" "matching_abs N \<subseteq> ugraph_abs E" "finite (matching_abs N)"
 proof-
   show "graph_invar (ugraph_abs E)"
     by (rule ugraph_abs_graph_invar[OF contraction(1)])
   show "set C \<subseteq> Vs (ugraph_abs E)"
-    by (rule blossom_cycle_subset[OF blossomD(1)[OF contraction(3)]])
+    by (rule subset_path_Vs[OF path_suff[OF blossomD(1)[OF contraction(3)]]])
   show "C \<noteq> []" "hd C = last C" "2 \<le> card (set C)"
-    using blossom_cycle_props[OF blossomD(2)[OF contraction(3)]]
+    using odd_cycle_nempty[OF match_blossomD(3)[OF blossomD(2)[OF contraction(3)]]]
+      odd_cycleD(3)[OF match_blossomD(3)[OF blossomD(2)[OF contraction(3)]]]
+      blossom_cycle_longer_2[OF blossomD(2)[OF contraction(3)]]
     by simp_all
   show "u \<notin> Vs (ugraph_abs E)"
     using contraction(4) Vs_ugraph_abs_subset_vs[OF contraction(1)]
     by blast
-  show "Mate.invar_matching (ugraph_abs E) N"
+  show "matching_invar_abs (ugraph_abs E) N"
     using contraction(2)
     by (simp add: matching_invar_def)
   show "matching (matching_abs N)" "matching_abs N \<subseteq> ugraph_abs E" "finite (matching_abs N)"
-    using matching_invar_props[OF contraction(2)]
+    using matching_invar_props[OF contraction(2)] contraction(1)
     by simp_all
 qed
 
@@ -271,7 +209,7 @@ proof-
     by (simp add: ugraph_abs_def)
   have cond: "v \<in> Vs (ugraph_abs E) - set C \<longleftrightarrow> v \<notin> set C"
     if "v \<in> dVs (Graph.digraph_abs E)" for v
-    using that Vs_ugraph_abs[OF contraction(1)]
+    using that Vs_ugraph_abs
     by simp
   have u_nin: "u \<notin> Vs (ugraph_abs E) - set C"
     using contraction_facts(6)
@@ -305,94 +243,49 @@ proof(rule from_list_graph_input)
   thus "dVs (set (quotient_edges C u (adjacency_edges E vs'))) \<subseteq> set (contract_vertices vs' C u)"
     using dVs_quotient_edges[of C u "adjacency_edges E vs'"]
     by (auto simp: contract_vertices_def)
-qed
-
-lemma matching_pairs:
-  "set (matching_edges N vs') = {(a, b). mate_lookup N a = Some b}"
-  "matching_abs N = {{a, b} | a b. (a, b) \<in> {(a, b). mate_lookup N a = Some b}}"
-  "\<And>a b. mate_lookup N a = Some b \<Longrightarrow> mate_lookup N b = Some a"
-  "\<And>a. mate_lookup N a \<noteq> Some a"
-  "dVs {(a, b). mate_lookup N a = Some b} \<subseteq> Vs (ugraph_abs E)"
-proof-
-  show "set (matching_edges N vs') = {(a, b). mate_lookup N a = Some b}"
-    by (rule matching_edges[OF contraction(1,2)])
-  show "matching_abs N = {{a, b} | a b. (a, b) \<in> {(a, b). mate_lookup N a = Some b}}"
-    by (simp add: Mate.\<M>_def')
-  show "\<And>a b. mate_lookup N a = Some b \<Longrightarrow> mate_lookup N b = Some a"
-    using Mate.invar_matchingD(2)[OF contraction_facts(7)]
-    by (auto dest: Mate.symmetric_buddiesD)
-  show "\<And>a. mate_lookup N a \<noteq> Some a"
-    using Mate.invar_matchingD(3)[OF contraction_facts(7)]
-    by (auto elim: Mate.no_self_loop_buddyE)
-  show "dVs {(a, b). mate_lookup N a = Some b} \<subseteq> Vs (ugraph_abs E)"
-    using matching_invar_mate_edge(2)[OF contraction(1,2)]
-    by (simp add: Collect_mono_iff Pair_Graph.dVs_subset Q.D_def Q.Vs_eq_dVs)
+  show "set (contract_vertices vs' C u) \<subseteq> K"
+    using graph_inputD(7)[OF contraction(1)] contraction(5)
+    by (auto simp: contract_vertices_def)
 qed
 
 lemma contract_matching_abs:
-  "matching_abs (contract_matching N vs' C u) = Q.quotG (matching_abs N)"
+  "matching_abs (contract_matching N C u) = Q.quotG (matching_abs N)"
   and contract_matching_invar:
-  "matching_invar (contract_graph E vs' C u) (contract_matching N vs' C u)"
+  "matching_invar (contract_graph E vs' C u) (contract_matching N C u)"
 proof-
-  let ?D = "{(a, b). mate_lookup N a = Some b}"
-  let ?ps = "quotient_edges C u (matching_edges N vs')"
-  have cond: "\<And>v. v \<in> dVs ?D \<Longrightarrow> v \<in> Vs (ugraph_abs E) - set C \<longleftrightarrow> v \<notin> set C"
-    using matching_pairs(5)
-    by auto
-  have e: "{{a, b} | a b. (a, b) \<in> ?D} = matching_abs N"
-    by (rule matching_pairs(2)[symmetric])
-  have sym: "\<And>a b. (a, b) \<in> ?D \<Longrightarrow> (b, a) \<in> ?D"
-  proof-
-    fix a b
-    assume "(a, b) \<in> ?D"
-    hence "mate_lookup N a = Some b"
-      by simp
-    hence "mate_lookup N b = Some a"
-      by (rule matching_pairs(3))
-    thus "(b, a) \<in> ?D"
-      by simp
+  have cycle: "odd_cycle C"
+    by (rule match_blossomD(3)[OF blossomD(2)[OF contraction(3)]])
+  have path: "alt_path (matching_abs N) (butlast C)"
+    by (rule alt_path_split_off_last[OF match_blossom_alt_cycle[OF blossomD(2)[OF contraction(3)]]])
+  have cycle_props: "set (butlast C) = set C"
+    "odd (length (butlast C))" "distinct (butlast C)"
+    by (cases C rule: list_cases_hd_and_last;
+        insert odd_cycleD[OF cycle] odd_cycle_even_verts[OF cycle]
+          match_blossomD(2)[OF blossomD(2)[OF contraction(3)]]; auto)+
+  have in_univ: "set (butlast C) \<subseteq> K"
+    using cycle_props(1) contraction_facts(2) graph_inputD(7)[OF contraction(1)]
+      Vs_ugraph_abs_subset_vs[OF contraction(1)] by blast
+  have fresh: "u \<notin> Vs (matching_abs N) - set (butlast C)"
+    using contraction_facts(6,9) Vs_subset by blast
+  let ?contr = "\<lambda>x. if x \<in> set (butlast C) then u else x"
+  have quot_eq: "quot_graph ?contr X - {{u}} = Q.quotG X" if "X \<subseteq> ugraph_abs E" for X
+  proof (rule arg_cong[where f="\<lambda>A. A - {{u}}"], rule quot_graph_cong)
+    fix e
+    assume "e \<in> X"
+    hence sub: "e \<subseteq> Vs (ugraph_abs E)"
+      using that by (auto simp: Vs_def)
+    show "?contr ` e = Q.P ` e"
+      by (rule image_cong; insert sub cycle_props(1); auto)
   qed
-  have irr: "\<And>a. (a, a) \<notin> ?D"
-    using matching_pairs(4)
-    by simp
-  have u_nin: "u \<notin> Vs (ugraph_abs E) - set C"
-    using contraction_facts(6)
-    by simp
-  have quot: "{{a, b} | a b. (a, b) \<in> set ?ps} = Q.quotG (matching_abs N)"
-  proof-
-    have "{{a, b} | a b. (a, b) \<in> set ?ps} =
-          quot_graph (\<lambda>v. if v \<in> Vs (ugraph_abs E) - set C then v else u)
-            {{a, b} | a b. (a, b) \<in> ?D} - {{u}}"
-      by (rule quotient_edges_quot_graph[OF matching_pairs(1) sym irr cond u_nin])
-    thus ?thesis
-      unfolding e
-      by simp
-  qed
-  have f1: "matching {{a, b} | a b. (a, b) \<in> set ?ps}"
-    unfolding quot
-    by (rule Q.matching_quotM[OF blossomD(2)[OF contraction(3)] contraction_facts(8,9)]) simp
-  have sym': "\<And>a b. (a, b) \<in> set (matching_edges N vs') \<Longrightarrow> (b, a) \<in> set (matching_edges N vs')"
-    using sym
-    by (simp only: matching_pairs(1))
-  have f2: "\<And>a b. (a, b) \<in> set ?ps \<Longrightarrow> (b, a) \<in> set ?ps"
-    by (rule quotient_edges_sym[OF sym'])
-  have f3: "\<And>a b. (a, b) \<in> set ?ps \<Longrightarrow> (a, b) \<in> Graph.digraph_abs (contract_graph E vs' C u)"
-  proof-
-    have "set (matching_edges N vs') \<subseteq> set (adjacency_edges E vs')"
-      using matching_pairs(1) adjacency_edges[OF contraction(1)]
-            matching_invar_mate_edge(3)[OF contraction(1,2)]
-      by auto
-    hence sub: "set ?ps \<subseteq> set (quotient_edges C u (adjacency_edges E vs'))"
-      by (rule quotient_edges_mono)
-    show "\<And>a b. (a, b) \<in> set ?ps \<Longrightarrow> (a, b) \<in> Graph.digraph_abs (contract_graph E vs' C u)"
-      using sub
-      by (auto simp: contract_graph_def Graph.from_list_correct)
-  qed
-  note mf = mate_from_list[OF contract_graph_input f2 quotient_edges_irrefl f1 f3]
-  thus "matching_abs (contract_matching N vs' C u) = Q.quotG (matching_abs N)"
-       "matching_invar (contract_graph E vs' C u) (contract_matching N vs' C u)"
-    using quot
-    by (simp_all add: contract_matching_def)
+  have precond: "Mate.contract_path_precond (ugraph_abs E) N (butlast C) u ?contr"
+    by (rule Mate.contract_path_precondI[
+          OF contraction_facts(7) path cycle_props(2,3) fresh refl in_univ contraction(5)])
+  show "matching_abs (contract_matching N C u) = Q.quotG (matching_abs N)"
+    using Mate.contract(2)[OF precond] quot_eq[OF contraction_facts(9)]
+    by (simp add: contract_matching_def)
+  show "matching_invar (contract_graph E vs' C u) (contract_matching N C u)"
+    using Mate.contract(1)[OF precond] quot_eq[OF subset_refl]
+    by (simp add: matching_invar_def contract_graph_abs contract_matching_def)
 qed
 
 lemma contract_card_Vs:
@@ -412,7 +305,7 @@ qed
 lemma contract_complete:
   assumes "\<exists>p. graph_augmenting_path (ugraph_abs E) (matching_abs N) p"
   shows "\<exists>p. graph_augmenting_path (ugraph_abs (contract_graph E vs' C u))
-                (matching_abs (contract_matching N vs' C u)) p"
+                (matching_abs (contract_matching N C u)) p"
 proof-
   obtain p where p: "graph_augmenting_path (ugraph_abs E) (matching_abs N) p"
     using assms
@@ -442,7 +335,7 @@ qed simp
 
 lemma refine_correct:
   assumes "graph_augmenting_path (ugraph_abs (contract_graph E vs' C u))
-             (matching_abs (contract_matching N vs' C u)) p"
+             (matching_abs (contract_matching N C u)) p"
   shows "graph_augmenting_path (ugraph_abs E) (matching_abs N)
            (refine (\<lambda>v. isin (Graph.neighbourhood E v)) (mate_lookup N) u C p)"
 proof-
@@ -469,7 +362,7 @@ function \<^marker>\<open>provenance ai_human\<close> (domintros) Find_Aug_Path 
           (let u = create_vert (search_vertices state);
                G' = contract_graph (search_graph state) (search_vertices state) C u;
                vs' = contract_vertices (search_vertices state) C u;
-               M' = contract_matching (search_matching state) (search_vertices state) C u
+               M' = contract_matching (search_matching state) C u
            in Find_Aug_Path
                 (state \<lparr>search_graph := G', search_vertices := vs', search_matching := M',
                         contractions := (search_graph state, search_matching state, C, u)
@@ -487,7 +380,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) Find_Aug
           (let u = create_vert (search_vertices state);
                G' = contract_graph (search_graph state) (search_vertices state) C u;
                vs' = contract_vertices (search_vertices state) C u;
-               M' = contract_matching (search_matching state) (search_vertices state) C u
+               M' = contract_matching (search_matching state) C u
            in Find_Aug_Path_impl
                 (state \<lparr>search_graph := G', search_vertices := vs', search_matching := M',
                         contractions := (search_graph state, search_matching state, C, u)
@@ -531,7 +424,7 @@ definition "Find_Aug_Path_upd1 state =
        (let u = create_vert (search_vertices state);
             G' = contract_graph (search_graph state) (search_vertices state) C u;
             vs' = contract_vertices (search_vertices state) C u;
-            M' = contract_matching (search_matching state) (search_vertices state) C u
+            M' = contract_matching (search_matching state) C u
         in state \<lparr>search_graph := G', search_vertices := vs', search_matching := M',
                   contractions := (search_graph state, search_matching state, C, u)
                                     # contractions state,
@@ -659,17 +552,24 @@ lemma call_1_facts:
   assumes "Find_Aug_Path_call_1_conds state" "invar_1 state" "invar_search state"
   obtains stem C where
     "search_result state = Some (Blossom stem C)"
+    "graph_input (search_graph state) (search_vertices state)"
+    "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
+    "create_vert (search_vertices state) \<in> K"
 proof-
   obtain stem C where sc: "search_result state = Some (Blossom stem C)"
     using assms(1)
     by (auto elim!: call_cond_elims)
+  have g: "graph_input (search_graph state) (search_vertices state)"
+          "matching_invar (search_graph state) (search_matching state)"
+    using assms(2)
+    by (auto simp: invar_1_def)
   have "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
     using blos_search(2) assms(2,3) sc
     by (auto simp: invar_1_def invar_search_def)
   thus ?thesis
-    using that sc
-    by blast
+    by (rule that[OF sc g _ create_vert create_vert_in_univ[OF graph_inputD(7)[OF g(1)]]])
 qed
 
 lemma upd1_fields:
@@ -680,7 +580,7 @@ lemma upd1_fields:
         "search_vertices (Find_Aug_Path_upd1 state) =
            contract_vertices (search_vertices state) C (create_vert (search_vertices state))"
         "search_matching (Find_Aug_Path_upd1 state) =
-           contract_matching (search_matching state) (search_vertices state) C
+           contract_matching (search_matching state) C
              (create_vert (search_vertices state))"
         "contractions (Find_Aug_Path_upd1 state) =
            (search_graph state, search_matching state, C, create_vert (search_vertices state))
@@ -695,9 +595,9 @@ lemma upd1_fields:
 subsubsection \<open>The representation invariant\<close>
 
 lemma invar_1_props[invar_props_elims]:
-  "invar_1 state \<Longrightarrow>
+  "\<lbrakk>invar_1 state;
    (\<lbrakk>graph_input (search_graph state) (search_vertices state);
-     matching_invar (search_graph state) (search_matching state)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+     matching_invar (search_graph state) (search_matching state)\<rbrakk> \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
@@ -709,39 +609,27 @@ lemma invar_1_holds_1[invar_holds_intros]:
   assumes "Find_Aug_Path_call_1_conds state" "invar_1 state" "invar_search state"
   shows "invar_1 (Find_Aug_Path_upd1 state)"
 proof-
-  obtain stem C where f:
-    "search_result state = Some (Blossom stem C)"
+  obtain stem C where result: "search_result state = Some (Blossom stem C)"
+    and contract:
+    "graph_input (search_graph state) (search_vertices state)"
+    "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
+    "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms])
-  note upd = upd1_fields[OF f(1)]
-  have fresh: "create_vert (search_vertices state) \<notin> set (search_vertices state)"
-    by (rule create_vert)
-  have g: "graph_input (search_graph state) (search_vertices state)"
-          "matching_invar (search_graph state) (search_matching state)"
-    using assms(2)
-    by (auto elim!: invar_props_elims)
+  note upd = upd1_fields[OF result]
   show ?thesis
-    using contract_graph_input[OF g f(2) fresh] contract_matching_invar[OF g f(2) fresh]
+    using contract_graph_input[OF contract] contract_matching_invar[OF contract]
     by (auto intro!: invar_props_intros simp: upd)
 qed
-
-lemma invar_1_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_1_conds state; invar_1 state\<rbrakk>
-   \<Longrightarrow> invar_1 (Find_Aug_Path_ret1 state)"
-  by auto
-
-lemma invar_1_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_2_conds state; invar_1 state\<rbrakk>
-   \<Longrightarrow> invar_1 (Find_Aug_Path_ret2 state)"
-  by auto
 
 subsubsection \<open>The stored search result\<close>
 
 lemma invar_search_props[invar_props_elims]:
-  "invar_search state \<Longrightarrow>
+  "\<lbrakk>invar_search state;
    (search_result state =
       blos_search (search_graph state) (search_vertices state) (search_matching state) \<Longrightarrow> P)
-   \<Longrightarrow> P"
+   \<rbrakk> \<Longrightarrow> P"
   by (auto simp: invar_search_def)
 
 lemma invar_search_intro[invar_props_intros]:
@@ -761,16 +649,6 @@ proof-
     unfolding invar_search_def
     by (rule upd1_fields(5)[OF f])
 qed
-
-lemma invar_search_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_1_conds state; invar_search state\<rbrakk>
-   \<Longrightarrow> invar_search (Find_Aug_Path_ret1 state)"
-  by auto
-
-lemma invar_search_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_2_conds state; invar_search state\<rbrakk>
-   \<Longrightarrow> invar_search (Find_Aug_Path_ret2 state)"
-  by auto
 
 lemma invar_search_holds[invar_holds_intros]:
   assumes "Find_Aug_Path_dom state" "invar_search state"
@@ -797,10 +675,10 @@ qed
 subsubsection \<open>Lifting gives augmenting paths of the input\<close>
 
 lemma invar_lift_props[invar_props_elims]:
-  "invar_lift state \<Longrightarrow>
+  "\<lbrakk>invar_lift state;
    ((\<forall>p. graph_augmenting_path (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) p
          \<longrightarrow> graph_augmenting_path (ugraph_abs G) (matching_abs M) (lift_path (contractions state) p))
-    \<Longrightarrow> P) \<Longrightarrow> P"
+    \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: invar_lift_def)
 
 lemma invar_lift_intro[invar_props_intros]:
@@ -814,31 +692,19 @@ lemma invar_lift_holds_1[invar_holds_intros]:
           "invar_lift state"
   shows "invar_lift (Find_Aug_Path_upd1 state)"
 proof-
-  obtain stem C where f:
-    "search_result state = Some (Blossom stem C)"
+  obtain stem C where result: "search_result state = Some (Blossom stem C)"
+    and contract:
+    "graph_input (search_graph state) (search_vertices state)"
+    "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
+    "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms(1-3)])
-  note upd = upd1_fields[OF f(1)]
-  have fresh: "create_vert (search_vertices state) \<notin> set (search_vertices state)"
-    by (rule create_vert)
-  have g: "graph_input (search_graph state) (search_vertices state)"
-          "matching_invar (search_graph state) (search_matching state)"
-    using assms(2)
-    by (auto elim!: invar_props_elims)
+  note upd = upd1_fields[OF result]
   show ?thesis
-    using refine_correct[OF g f(2) fresh] assms(4)
+    using refine_correct[OF contract] assms(4)
     by (auto intro!: invar_props_intros elim!: invar_props_elims simp: upd)
 qed
-
-lemma invar_lift_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_1_conds state; invar_lift state\<rbrakk>
-   \<Longrightarrow> invar_lift (Find_Aug_Path_ret1 state)"
-  by auto
-
-lemma invar_lift_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_2_conds state; invar_lift state\<rbrakk>
-   \<Longrightarrow> invar_lift (Find_Aug_Path_ret2 state)"
-  by auto
 
 lemma invar_lift_holds[invar_holds_intros]:
   assumes "Find_Aug_Path_dom state" "invar_1 state" "invar_search state"
@@ -855,10 +721,10 @@ qed
 subsubsection \<open>Contraction preserves the existence of augmenting paths\<close>
 
 lemma invar_complete_props[invar_props_elims]:
-  "invar_complete state \<Longrightarrow>
+  "\<lbrakk>invar_complete state;
    (((\<exists>p. graph_augmenting_path (ugraph_abs G) (matching_abs M) p) \<longrightarrow>
      (\<exists>p. graph_augmenting_path (ugraph_abs (search_graph state))
-            (matching_abs (search_matching state)) p)) \<Longrightarrow> P) \<Longrightarrow> P"
+            (matching_abs (search_matching state)) p)) \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: invar_complete_def)
 
 lemma invar_complete_intro[invar_props_intros]:
@@ -873,17 +739,15 @@ lemma invar_complete_holds_1[invar_holds_intros]:
           "invar_complete state"
   shows "invar_complete (Find_Aug_Path_upd1 state)"
 proof-
-  obtain stem C where f:
-    "search_result state = Some (Blossom stem C)"
+  obtain stem C where result: "search_result state = Some (Blossom stem C)"
+    and contract:
+    "graph_input (search_graph state) (search_vertices state)"
+    "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
+    "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms(1-3)])
-  note upd = upd1_fields[OF f(1)]
-  have fresh: "create_vert (search_vertices state) \<notin> set (search_vertices state)"
-    by (rule create_vert)
-  have g: "graph_input (search_graph state) (search_vertices state)"
-          "matching_invar (search_graph state) (search_matching state)"
-    using assms(2)
-    by (auto elim!: invar_props_elims)
+  note upd = upd1_fields[OF result]
   have comp: "(\<exists>p. graph_augmenting_path (ugraph_abs G) (matching_abs M) p) \<longrightarrow>
               (\<exists>p. graph_augmenting_path (ugraph_abs (search_graph state))
                      (matching_abs (search_matching state)) p)"
@@ -900,21 +764,11 @@ proof-
     thus "\<exists>p. graph_augmenting_path
                  (ugraph_abs (contract_graph (search_graph state) (search_vertices state) C
                                 (create_vert (search_vertices state))))
-                 (matching_abs (contract_matching (search_matching state) (search_vertices state) C
+                 (matching_abs (contract_matching (search_matching state) C
                                   (create_vert (search_vertices state)))) p"
-      by (rule contract_complete[OF g f(2) fresh])
+      by (rule contract_complete[OF contract])
   qed
 qed
-
-lemma invar_complete_holds_ret_1[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_1_conds state; invar_complete state\<rbrakk>
-   \<Longrightarrow> invar_complete (Find_Aug_Path_ret1 state)"
-  by auto
-
-lemma invar_complete_holds_ret_2[invar_holds_intros]:
-  "\<lbrakk>Find_Aug_Path_ret_2_conds state; invar_complete state\<rbrakk>
-   \<Longrightarrow> invar_complete (Find_Aug_Path_ret2 state)"
-  by auto
 
 lemma invar_complete_holds[invar_holds_intros]:
   assumes "Find_Aug_Path_dom state" "invar_1 state" "invar_search state"
@@ -936,19 +790,17 @@ lemma call_1_terminates[termination_intros]:
   assumes "Find_Aug_Path_call_1_conds state" "invar_1 state" "invar_search state"
   shows "(Find_Aug_Path_upd1 state, state) \<in> call_1_measure <*mlex*> r"
 proof-
-  obtain stem C where f:
-    "search_result state = Some (Blossom stem C)"
+  obtain stem C where result: "search_result state = Some (Blossom stem C)"
+    and contract:
+    "graph_input (search_graph state) (search_vertices state)"
+    "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
+    "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms])
-  note upd = upd1_fields[OF f(1)]
-  have fresh: "create_vert (search_vertices state) \<notin> set (search_vertices state)"
-    by (rule create_vert)
-  have g: "graph_input (search_graph state) (search_vertices state)"
-          "matching_invar (search_graph state) (search_matching state)"
-    using assms(2)
-    by (auto elim!: invar_props_elims)
+  note upd = upd1_fields[OF result]
   show ?thesis
-    using contract_card_Vs[OF g f(2) fresh]
+    using contract_card_Vs[OF contract]
     by (intro mlex_less) (simp add: call_1_measure_def upd)
 qed
 

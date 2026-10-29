@@ -31,6 +31,9 @@ and in_UD_symE: "\<lbrakk>{u, v} \<in> UD E; symmetric_digraph E; ((u, v) \<in> 
 and in_UD_symD: "\<lbrakk>{u, v} \<in> UD E; symmetric_digraph E\<rbrakk> \<Longrightarrow> (u, v) \<in> E"
   by(auto simp add: UD_def doubleton_eq_iff symmetric_digraph_def)
 
+lemma UD_of_swapped_pairs: "UD {(a, b), (b, a)} = {{a, b}}"
+  by(auto simp add: UD_def)
+
 lemma symmetric_digraph_walk_betw_vwalk_bet:
   assumes "symmetric_digraph E" "walk_betw (UD E) u p v"
   shows "vwalk_bet E u p v"
@@ -156,6 +159,36 @@ lemma D_of_edges_of_path:
     set (edges_of_vwalk p) \<union> prod.swap ` set (edges_of_vwalk p)"
   by(induction p rule: edges_of_path.induct)
     (auto split: prod.split simp add: doubleton_eq_iff)
+
+lemma UD_subseteq: "A \<subseteq> B \<Longrightarrow> UD A \<subseteq> UD B"
+  by(auto simp add: UD_def)
+
+lemma Vs_dVs_UD: "Vs (UD G) = dVs G"
+  by(auto simp add: UD_def dVs_def Vs_def)
+
+lemma finite_UD: "finite G \<longleftrightarrow> finite (UD G)"
+  unfolding UD_def
+proof(rule, goal_cases)
+  case 1
+  then show ?case 
+    using finite_vertices_iff
+    by(auto intro!: finite_UnionD[of "{{uub, uuc} |uub uuc. (uub, uuc) \<in> G}"] simp add: dVs_def)
+next
+  case 2
+  hence "G \<subseteq> Vs {{u, v} |u v. (u, v) \<in> G} \<times> Vs {{u, v} |u v. (u, v) \<in> G}" 
+    by auto
+  moreover have "finite (Vs {{u, v} |u v. (u, v) \<in> G})"
+    using 2 by(auto simp add: Vs_def)
+  ultimately show ?case 
+    by(auto intro!: finite_subset[OF _ finite_cartesian_product,
+          of G "Vs {{u, v} |u v. (u, v) \<in> G}" "Vs {{u, v} |u v. (u, v) \<in> G}"])
+qed
+
+lemma special_UD_hom_subtract:
+  assumes "\<And> u v. \<lbrakk>(u, v) \<in> G; (v, u) \<in> G\<rbrakk> \<Longrightarrow> False" "G' \<subseteq> G"
+    shows "UD (G - G') = UD G - UD G'"
+  using assms(2)
+  by(auto simp add: UD_def doubleton_eq_iff dest: assms(1)) blast
 
 context graph_abs
 begin

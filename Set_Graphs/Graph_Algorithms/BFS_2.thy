@@ -5,7 +5,7 @@
 
 theory BFS_2
   imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" Directed_Set_Graphs.Dist
-          Data_Structures.Set2_Addons Directed_Set_Graphs.More_Lists
+          Data_Structures.Set2_Addons Data_Structures.More_Lists
 begin
 
 provenance human
@@ -1123,20 +1123,17 @@ proof(intro invar_props_intros, goal_cases)
 
         ultimately have "length p - 1 > distance_set (Graph.digraph_abs G) (t_set srcs) v"
           using \<open>u \<in> t_set srcs\<close> 1
-          apply auto
-          by (metis One_nat_def order_neq_le_trans vwalk_bet_dist_set)
+          by (auto dest: vwalk_bet_dist_set[of "[G]\<^sub>g" u p v "[srcs]\<^sub>s"])
 
         hence "length p - 2 \<ge>  distance_set (Graph.digraph_abs G) (t_set srcs) v"
-          using \<open>length p > 1\<close>  
-          apply (auto simp: eval_nat_numeral)
-          by (metis leD leI Suc_diff_Suc Suc_ile_eq)
+          using \<open>length p > 1\<close> Suc_ile_eq[of "length p - Suc (Suc 0)" "distance_set [G]\<^sub>g [srcs]\<^sub>s v"]
+                Suc_diff_Suc[of "Suc 0" "length p"]
+          by (auto simp: eval_nat_numeral)
         moreover obtain p' v' where "p = p' @ [v', v]"
-          using \<open>length p > 1\<close>
-          apply (auto
-              simp: eval_nat_numeral Suc_le_length_iff Suc_le_eq[symmetric]
-              split: if_splits)
-          by (metis append.right_neutral append_butlast_last_cancel assms(8) length_Cons
-              length_butlast length_tl list.sel(3) list.size(3) nat.simps(3) vwalk_bet_def)
+          using \<open>length p > 1\<close> assms(8)
+          by(cases p rule: rev_cases3)
+            (auto  simp: eval_nat_numeral Suc_le_length_iff Suc_le_eq[symmetric] vwalk_bet_def
+                  split: if_splits)
         have "vwalk_bet (Graph.digraph_abs (parents bfs_state)) u (p' @ [v']) v'"
         proof(rule ccontr, goal_cases)
           case 1
@@ -1147,11 +1144,10 @@ proof(intro invar_props_intros, goal_cases)
           proof(elim vwalk_bet_not_vwalk_bet_elim_2[OF _ "1"], goal_cases)
             case 1
             then show ?case
-              by (metis \<open>distance_set (Graph.digraph_abs G) (t_set srcs) v \<le> enat (length p - 2)\<close> 
-                        \<open>p = p' @ [v', v]\<close> \<open>vwalk_bet (Graph.digraph_abs G) u p v\<close> assms(3)
-                        diff_is_0_eq distance_set_0 invar_2_def le_zero_eq length_append_singleton
-                        list.sel(3) not_less_eq_eq subset_eq v_not_visited vwalk_bet_endpoints(2) 
-                        vwalk_bet_vertex_decompE zero_enat_def)
+              using v_not_visited zero_enat_def \<open>p = p' @[v',v]\<close> not_less_eq_eq[of "2" "Suc (length p')"]
+                \<open>distance_set(Graph.digraph_abs G)(t_set srcs)v \<le> enat(length p - 2)\<close> 
+                \<open>vwalk_bet(Graph.digraph_abs G)u p v\<close> assms(3) distance_set_0[of v "[G]\<^sub>g" "[srcs]\<^sub>s"] 
+              by (auto elim!: invar_2_props vwalk_bet_vertex_decompE[of "[G]\<^sub>g" u "p' @ [v', v]" v p' v' "[v]"])
           next
             case (2 u'' v'')
             moreover hence "u'' \<notin> t_set (current bfs_state')"
@@ -1166,9 +1162,9 @@ proof(intro invar_props_intros, goal_cases)
               by (auto elim: invar_props_elims)
             hence "last (p @ [v']) = v''"
               using that \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u (p' @ [v']) v'\<close>[simplified bfs_state'_def[symmetric]]
-              apply (auto dest: v_in_edge_in_vwalk elim!: vwalk_bet_props intro!: no_outgoing_last)
-               apply (metis "2"(2) last_snoc no_outgoing_last v_in_edge_in_vwalk(2))
-              by (metis "2"(2) last_snoc no_outgoing_last v_in_edge_in_vwalk(2))
+                    "2"(2) no_outgoing_last[of "[parents bfs_state']\<^sub>g" "p' @ [v']" v'']
+                    v_in_edge_in_vwalk(2)[of u'' v'' "p' @ [v']"]
+              by (auto dest: v_in_edge_in_vwalk elim!: vwalk_bet_props intro!: no_outgoing_last)
             hence "v' = v''"
               using that
               by auto

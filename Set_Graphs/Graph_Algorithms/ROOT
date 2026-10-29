@@ -5,13 +5,16 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     Verified_SAT_Based_AI_Planning
     Undirected_Set_Graphs
     Data_Structures
+  directories Refinements
   theories
     RBT_Map_Extension
     DFS
     DFS_Example
+    DFS_by_Iterator
     BFS_2
     BFS_Subprocedures
     BFS_Example
+    BFS_3
     DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
@@ -22,6 +25,17 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
+    
+    Dijkstra
+    "Refinements/Dijkstra_Refinement"
+    "Refinements/Dijkstra_Instantiation"
+    "Refinements/BFS_Refinement"
+    "Refinements/BFS_Instantiation"
+    "Refinements/BFS_Code_Export"
+    "Refinements/Dijkstra_Code_Export"
+    "Refinements/DFS_Imperative"
+    "Refinements/DFS_by_Iterator_Imperative"
+    "Refinements/DFS_Code_Export"
 
 
 

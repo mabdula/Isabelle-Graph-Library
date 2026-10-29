@@ -22,6 +22,22 @@ Code templates use the ASCII form of Isabelle symbols (`\<Longrightarrow>`, ...)
 as the theories on disk must. The templates show the **intended shape only**;
 none of them has been checked by Isabelle.
 
+**Repository contents (user decision, 2026-10-28).** Only the final product
+of a formalisation process belongs in Git: the final Isabelle theories,
+`ROOT`/`ROOTS` session files, and LaTeX sources needed for PDF generation.
+Formalisation plans, progress logs, scratch or experimental theories,
+one-shot proof drafts, auxiliary scripts, backups, metrics reports, and
+generated output must not be added to Git, even if they have a `.thy` or
+LaTeX source extension.
+
+Keep such working artifacts outside the repository or in an ignored working
+directory such as `.scratch/`. Add ignore rules before creating them inside
+the repository, and verify them with `git check-ignore --no-index <path>`.
+Do not force-add ignored artifacts. When a scratch theory is ready, move
+only the final theory into its session directory. Ignore rules do not remove
+files that Git already tracks; existing tracked artifacts need an explicit
+cleanup.
+
 ---
 
 ## 0. Corpus and method
@@ -1068,3 +1084,9 @@ columns:
     - no `sublocale` connects algorithms;
     - a concrete correctness statement, if any, is an `interpretation` of the
       proofs locale plus a `[folded …]` re-export in the `_Example` theory.
+      
+---
+
+## 8. Encoding
+
+  Only ascii characters may be used. Unicode is not allowed in Isabelle theories. Only ascii escapes of the corresponding symbols may be used. Non-ascii characters make the a library build fail.

@@ -6,8 +6,8 @@ section \<open>Bellman-Ford Algorithms with Abstract Datatypes\<close>
 theory Bellman_Ford
   imports  "HOL-Library.Extended_Real" 
            Directed_Set_Graphs.Pair_Graph_Specs Directed_Set_Graphs.Awalk "HOL-Eisbach.Eisbach"
-           Parent_Map Directed_Set_Graphs.More_Lists Directed_Set_Graphs.More_Logic
-           Directed_Set_Graphs.More_Arith
+           Parent_Map Data_Structures.More_Lists Data_Structures.More_Logic
+           Data_Structures.More_Arith
 begin
 
 provenance human

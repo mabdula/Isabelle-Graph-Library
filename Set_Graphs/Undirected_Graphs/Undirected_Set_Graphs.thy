@@ -5,7 +5,7 @@
   Author: Adem Rimpapa
 *)
 theory Undirected_Set_Graphs
-  imports Undirected_Misc
+  imports Undirected_Graphs_Misc
 begin
 
 provenance human
@@ -40,6 +40,13 @@ lemma vs_transport:
   "\<lbrakk>u \<in> Vs G; \<And>e. \<lbrakk>u \<in> e; e \<in> G\<rbrakk> \<Longrightarrow> \<exists>g \<in> F. u \<in> g\<rbrakk> \<Longrightarrow>u \<in> Vs F"
   by (auto simp: vs_member)
 
+lemma not_in_Vs_no_edge: "(x \<notin> Vs G) = (\<nexists>e. e \<in> G \<and> x \<in> e)"
+  by(auto simp add: Vs_def)
+
+lemma not_in_VsE: 
+  "\<lbrakk>x \<notin> Vs G; (\<And> e. \<lbrakk>e \<in> G; x \<in> e\<rbrakk> \<Longrightarrow> False) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: Vs_def)
+
 lemma edges_are_Vs:
   assumes "{v, v'} \<in> G"
   shows "v \<in> Vs G"
@@ -55,6 +62,10 @@ lemma finite_Vs_then_finite:
   shows "finite G"
   using assms
   by (metis Vs_def finite_UnionD)
+
+lemma finite_dblton_finite_Vs:
+  "finite {{x, y} | x y. P x y} \<Longrightarrow> finite (Vs  { {x, y} | x y. P x y})"
+  by(auto simp add: Vs_def)
 
 lemma edge_commute: "{u,v} \<in> G \<Longrightarrow> {v,u} \<in> G"
   by (simp add: insert_commute)
@@ -97,6 +108,25 @@ lemma subgraph_vs_subset_eq:
   using assms
   unfolding Vs_def
   by auto
+
+lemma Vs_of_edge: "Vs {e} = e"
+  by(auto simp add: Vs_def)
+
+lemma remove_disjoint_edges_equality:
+  assumes "Vs (G - G') \<inter> Vs G' = {}"
+  shows "Vs (G - G') = Vs G - Vs G'"
+  using assms by (auto simp add: Vs_def)
+
+lemma inj_on_lifted_graph_subset:
+  "\<lbrakk>inj_on f (Vs (G \<union> G'))\<rbrakk> \<Longrightarrow> (`) f ` G' \<subseteq> (`) f ` G \<longleftrightarrow> G' \<subseteq> G"
+  by (simp add: Vs_def inj_on_image inj_on_image_subset_iff sup.commute)
+
+lemma inj_on_lifted_graph_same:
+  "\<lbrakk>inj_on f (Vs (G \<union> G'))\<rbrakk> \<Longrightarrow> (`) f ` G' = (`) f ` G \<longleftrightarrow> G' = G"
+  using inj_on_Un_image_eq_iff[OF inj_on_image, of f G G'] by(auto simp add: Vs_def)
+
+lemma Vs_of_imaged_graph: "Vs ((`) f ` G) = f` (Vs G)"
+  by(auto simp add: Vs_def)
 
 subsection \<open>Degrees\<close>
 
@@ -341,6 +371,10 @@ lemma self_not_in_Neighbourhood:
   "x \<in> V \<Longrightarrow> x \<notin> Neighbourhood G V"
   by(auto simp add: Neighbourhood_def)
 
+lemma Neighbourhood_of_one_more_same_if_nin_Vs:
+  "x \<notin> Vs G \<Longrightarrow> Neighbourhood G (insert x X) = Neighbourhood G X"
+  by(auto simp add: Neighbourhood_def)
+
 lemma Neighbourhood_neighbourhood_union_inter:
   "Neighbourhood G V = \<Union> (neighbourhood G ` V) - V"
   by(auto simp add: Neighbourhood_def neighbourhood_def insert_commute)
@@ -393,6 +427,17 @@ lemma Delta_finite:
   "finite G \<Longrightarrow> finite (Delta G X)"
   by(auto intro!: finite_subset[of  _ G] simp add: Delta_def)
 
+lemma Delta_inverse_set_mp:
+  "\<lbrakk>G \<subseteq> G'; e \<in> Delta G' X; e \<in> G\<rbrakk> \<Longrightarrow> e \<in> Delta G X"
+  by(auto simp add: Delta_def)
+
+lemma Delta_set_mp:
+  "\<lbrakk>G \<subseteq> G'; e \<in> Delta G X\<rbrakk> \<Longrightarrow> e \<in> Delta G' X"
+  by(auto simp add: Delta_def)
+
+lemma Delta_union_bound: "Delta G (X \<union> Y) \<subseteq> Delta G X \<union> Delta G Y"
+  by(auto elim!: in_DeltaE intro: in_DeltaI)
+
 subsection \<open>Removing Vertices\<close>
 
 definition remove_vertices_graph :: "'a graph \<Rightarrow> 'a set \<Rightarrow> 'a graph" (infixl "\<setminus>" 60) where
@@ -429,6 +474,10 @@ lemma in_remove_verticesI:
   "\<lbrakk>e \<in> G; e \<inter> X = {}\<rbrakk> \<Longrightarrow> e \<in> G \<setminus> X"
   unfolding remove_vertices_graph_def
   by blast
+
+lemma in_remove_vertices_graphE: 
+  "\<lbrakk>e \<in> G \<setminus> X; \<lbrakk>e \<in> G; e \<inter> X = {}\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by(auto simp add: remove_vertices_graph_def)
 
 lemma in_remove_vertices_subsetI:
   "\<lbrakk>X' \<subseteq> X; e \<in> G \<setminus> X'; e \<inter> X - X' = {}\<rbrakk> \<Longrightarrow> e \<in> G \<setminus> X"
@@ -479,13 +528,57 @@ lemma finite_remove_vertices:
 lemma remove_remove_union: "G \<setminus> X \<setminus> Y = G \<setminus> X \<union> Y"
   unfolding remove_vertices_graph_def by blast
 
-lemma remove_vertices_in_diff: "{u,v} \<in> G \<setminus> X \<Longrightarrow> {u,v} \<notin> G \<setminus> X' \<Longrightarrow> u \<in> X' - X \<or> v \<in> X' - X"
+lemma graph_diff_trans: "G \<setminus> (X \<union> Y) =  (G \<setminus> X) \<setminus>Y"
+  by (simp add: remove_remove_union)
+
+lemma remove_vertices_in_diff: 
+  "\<lbrakk>{u,v} \<in> G \<setminus> X; {u,v} \<notin> G \<setminus> X'\<rbrakk> \<Longrightarrow> u \<in> X' - X \<or> v \<in> X' - X"
   unfolding remove_vertices_graph_def
   by simp
+
+lemmas graph_diff_def = remove_vertices_graph_def
+
+lemma graph_diff_member[iff?]: "e \<in> G  \<setminus> X \<longleftrightarrow>
+   e \<in> G \<and> e \<inter> X = {}"
+  unfolding graph_diff_def by simp
+
+lemma graph_diffE:
+  "e \<in> G  \<setminus> X \<Longrightarrow>
+   (\<lbrakk>e \<in> G \<and> e \<inter> X = {}\<rbrakk> \<Longrightarrow> R)
+   \<Longrightarrow> R"
+  by (simp add: graph_diff_member)
+
+lemma graph_diffI:
+  assumes "e \<in> G"
+  assumes "e \<inter> X = {}"
+  shows "e \<in> G  \<setminus> X" 
+  using assms graph_diff_def by auto
+
+lemma graph_diff_subset: "G  \<setminus> X \<subseteq> G"
+  by (simp add: graph_diff_def)
+
+lemma vs_graph_diff: "Vs (G \<setminus> X) \<subseteq> Vs G - X"
+  unfolding graph_diff_def Vs_def
+  by blast
 
 subsection \<open>Subgraphs\<close>
 
 definition "graph_inter_Vs G X = {e | e. e \<in> G \<and> e \<subseteq> X}"
+
+notation graph_inter_Vs ( " _ \<lbrakk>_\<rbrakk>" 101)
+
+lemma in_graph_inter_VsI:
+  "\<lbrakk>e \<in> G; e \<subseteq> X\<rbrakk> \<Longrightarrow> e \<in> graph_inter_Vs G X"
+  by(auto simp add: graph_inter_Vs_def)
+
+lemma in_graph_inter_VsE:
+  "\<lbrakk> e \<in> graph_inter_Vs G X; \<lbrakk>e \<in> G; e \<subseteq> X\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow>P"
+  by(auto simp add: graph_inter_Vs_def)
+
+lemma in_graph_inter_VsD:
+  "e \<in> graph_inter_Vs G X \<Longrightarrow> e \<in> G"
+  "e \<in> graph_inter_Vs G X \<Longrightarrow> e \<subseteq> X"
+  by(auto simp add: graph_inter_Vs_def)
 
 lemma graph_inter_Vs_subset: "graph_inter_Vs G X \<subseteq> G" "Vs (graph_inter_Vs G X) \<subseteq> X"
   by(auto simp add: graph_inter_Vs_def  vs_member)
@@ -493,6 +586,53 @@ lemma graph_inter_Vs_subset: "graph_inter_Vs G X \<subseteq> G" "Vs (graph_inter
 lemma graph_inter_subset:
   "G \<subseteq> G' \<Longrightarrow> graph_inter_Vs G X \<subseteq> graph_inter_Vs G' X"
   by(auto simp add: graph_inter_Vs_def)
+
+lemma graph_inter_cong:
+  "(\<And> e.  e \<in> G \<and> e \<subseteq> X \<longleftrightarrow>  e \<in> G' \<and> e \<subseteq> X') \<Longrightarrow> graph_inter_Vs G X = graph_inter_Vs G' X'"
+  by(auto simp add: graph_inter_Vs_def)
+
+lemma graph_inter_Vs_image:
+  assumes "inj_on f (Vs G \<union> X)"
+  shows "((`) f ` G) \<lbrakk>f ` X\<rbrakk> = (image f) ` (G \<lbrakk>X\<rbrakk>)"
+proof(rule, all \<open>rule\<close>, goal_cases)
+  case (1 e)
+  then obtain ee where "f ` ee \<subseteq> f ` X" "ee \<in> G" "e = f ` ee"
+    by(auto simp add: graph_inter_Vs_def)
+  moreover hence "ee \<subseteq> X" 
+    using assms(1) not_in_VsE[of _ G] inj_on_subset[of f "Vs G \<union> X" "ee \<union> X"] 
+      inj_on_image_subset_iff[of f ee X]
+    by auto
+  ultimately show ?case 
+    by(auto intro!: in_graph_inter_VsI rev_image_eqI[of ee "G\<lbrakk>X\<rbrakk>" "f ` ee" "image f"])
+qed (auto simp add: graph_inter_Vs_def)
+
+lemma graph_inter_vert_minus:"graph_inter_Vs G (X - Y) = graph_inter_Vs G X \<setminus> Y"
+  by(auto simp add: graph_inter_Vs_def remove_vertices_graph_def)
+
+lemma graph_inter_Vs_remove_vertices_commute:
+  "graph_inter_Vs (E \<setminus> Y) X = (graph_inter_Vs E X) \<setminus> Y"
+  by(auto simp add: graph_inter_Vs_def remove_vertices_graph_def)
+
+lemma Vs_of_graph_inter_Vs: "Vs (G\<lbrakk>Vs G\<rbrakk>) = Vs G"
+  by(auto intro!: in_graph_inter_VsI bexI 
+           elim!: in_graph_inter_VsE 
+        simp add: vs_member)
+
+lemma is_part_of_graph_inter_Vs:
+  "\<lbrakk>G \<subseteq> G'; Vs G \<subseteq> X\<rbrakk> \<Longrightarrow> G \<subseteq> G' \<lbrakk>X\<rbrakk>"
+  by(auto simp add: graph_inter_Vs_def)
+
+lemma remove_irrelevants_graph_inter_Vs:
+  "A \<inter> D = {} \<Longrightarrow> (G \<setminus> A) \<lbrakk>D\<rbrakk> = G \<lbrakk>D\<rbrakk>"
+  by(auto simp add: remove_vertices_graph_def graph_inter_Vs_def)
+
+lemma graph_diff_empty:
+  shows "G = G \<setminus> {}" 
+  unfolding graph_diff_def by auto
+
+lemma graph_diff_of_empty: 
+  "{} \<setminus> X = {}"
+  using graph_diff_subset by auto
 
 subsection \<open>Bigraphs\<close>
 
@@ -526,6 +666,22 @@ lemma dblton_graph_subset[intro]:
   "\<lbrakk>dblton_graph G1; G2 \<subseteq> G1\<rbrakk> \<Longrightarrow> dblton_graph G2"
   by (auto elim!: dblton_graphE intro!: dblton_graphI) 
 
+subsection \<open>Graph homomorphisms\<close>
+
+lemma Vs_image_image: "Vs ((`) f ` E) = f ` Vs E"
+  by (auto simp: Vs_def)
+
+lemma inj_on_image_edges:
+  assumes "inj_on f (Vs E)" "M \<subseteq> E"
+  shows "inj_on ((`) f) M"
+  using assms
+  by (auto simp: Vs_def intro!: inj_on_image elim!: inj_on_subset)
+
+lemma sum_image_edges:
+  "\<lbrakk>inj_on f (Vs E); M \<subseteq> E\<rbrakk> \<Longrightarrow> sum w ((`) f ` M) = sum (\<lambda>e. w (f ` e)) M"
+  using sum.reindex[OF inj_on_image_edges, of f E M w]
+  by (simp add: comp_def)
+
 lemma doublton_inj:
   "\<lbrakk>inj_on f (Vs E); dblton_graph E\<rbrakk> \<Longrightarrow> dblton_graph ((image f) ` E)"
 proof(rule dblton_graphI, goal_cases)
@@ -539,6 +695,16 @@ proof(rule dblton_graphI, goal_cases)
   ultimately show ?case 
     by auto
 qed
+
+lemma dblton_graph_diff: "dblton_graph G \<Longrightarrow> dblton_graph (G - X)"
+  using Vs_subset[of "G - X" G]
+  by (auto intro!: finite_subset[of "Vs (G - X)" "Vs G"])
+
+lemma inj_image_dblton_graph:
+  "\<lbrakk>inj f; dblton_graph G\<rbrakk> \<Longrightarrow> dblton_graph ((image f) ` G)"
+  using inj_eq[of f]
+  by (intro dblton_graphI)(auto elim!: dblton_graphE)
+subsection \<open>Graph invariants\<close>
 
 abbreviation "graph_invar G \<equiv> dblton_graph G \<and> finite (Vs G)"
 
@@ -568,6 +734,11 @@ lemma graph_invar_subset[intro]:
 lemma graph_invar_diff: "graph_invar G \<Longrightarrow> graph_invar (G - X)"
   using Vs_subset[of "G - X" G]
   by (auto intro!: finite_subset[of "Vs (G - X)" "Vs G"])
+
+lemma inj_image_graph_invar:
+  "\<lbrakk>inj f; graph_invar G\<rbrakk> \<Longrightarrow> graph_invar ((image f) ` G)"
+  by (auto intro: inj_image_dblton_graph finite_UnionD  finite_Union finite_imageI 
+      simp add: Vs_def)
 
 lemma  undirected_of_directed_of_undirected_idem: 
   "graph_invar G \<Longrightarrow> {{v1, v2} |v1 v2. (v1,v2) \<in> {(u, v). {u, v} \<in> G}} = G" 
@@ -620,8 +791,23 @@ lemma graph_abs_empty[simp]: "graph_invar {}"
 lemma dblton_graph_union: "\<lbrakk>dblton_graph G; dblton_graph H\<rbrakk> \<Longrightarrow> dblton_graph (G \<union> H)"
   by (auto simp: graph_abs_def Vs_def dblton_graph_def)
 
+lemma dblton_graph_Union: "\<lbrakk>\<And> G. G \<in> \<G> \<Longrightarrow> dblton_graph G\<rbrakk> \<Longrightarrow> dblton_graph (\<Union> \<G>)"
+  by (auto simp: graph_abs_def Vs_def dblton_graph_def)
+
 lemma graph_invar_union: "\<lbrakk>graph_abs G; graph_abs H\<rbrakk> \<Longrightarrow> graph_abs (G \<union> H)"
   by (auto simp: graph_abs_def Vs_def dblton_graph_union)
+
+lemma graph_invar_Union:
+  assumes "finite A"
+  assumes "\<forall>a \<in> A.  graph_invar a"
+  assumes "\<forall>a \<in> A. finite (Vs a)"
+  shows "graph_invar (\<Union>A)"
+proof
+  show "dblton_graph(\<Union> A)"
+    using assms(2) by (fastforce simp: dblton_graph_def)
+  then show "finite (Vs (\<Union> A))" 
+    by (meson assms(1) assms(3) dblton_graph_finite_Vs finite_Union finite_Vs_then_finite)
+qed
 
 lemma graph_invar_compr: "\<lbrakk>u \<notin> ns; finite ns\<rbrakk> \<Longrightarrow> graph_invar {{u, v} |v. v \<in> ns}"
   by (auto simp: Vs_def dblton_graph_def)
@@ -692,6 +878,8 @@ lemma card_edge:
   using assms 
   by (auto simp add: assms card_2_iff dblton_graph_def)
 
+lemmas edge_in_E_card = card_edge
+
 lemma neighbours_of_Vs_remove_vert:
   assumes "graph_invar G"
   assumes "S \<inter> X = {}"
@@ -753,5 +941,82 @@ lemma bigraph_handshaking_lemma:
   using assms
   by(subst general_handshaking_lemma)
     (auto simp add: doublton_graph_edge_card_sums)
+
+lemma sum_card_edges2:
+  assumes "graph_invar G"
+  shows "sum card G = (\<Sum>e\<in>G. 2)"
+  by (smt (verit, del_insts) assms card_edge mem_Collect_eq subset_eq sum.cong)
+
+lemma lower_bound_for_number_of_edges:
+  assumes "graph_invar E"
+  shows "2* card E \<ge> card (Vs E)"
+  unfolding enat_ord_code(1)[symmetric]
+            bigraph_handshaking_lemma[OF assms, symmetric]
+  unfolding card_eq_sum
+proof(subst enat_sum_distr[symmetric], goal_cases)
+  case 1
+  then show ?case 
+    using assms by simp
+next
+  case 2
+  then show ?case 
+    unfolding enat_1
+    by(rule ordered_comm_monoid_add_class.sum_mono degree_Vs)+
+qed
+
+lemma Vs_inter_single_empty: "dblton_graph G \<Longrightarrow> G \<lbrakk>{x}\<rbrakk> = {}"
+  by(auto elim!: in_graph_inter_VsE)
+
+lemma dblton_graph_Vs_inter: "dblton_graph G \<Longrightarrow> dblton_graph (G \<lbrakk>X\<rbrakk>)"
+  using graph_inter_Vs_subset(1) by fastforce
+
+lemma Neighbourhood_image:
+  assumes "inj_on f (Vs G \<union> X)" "dblton_graph G"
+  shows "Neighbourhood ((image f) ` G) (f ` X) = f ` Neighbourhood G X"
+proof(rule, all \<open>rule, (elim imageE in_NeighbourhoodE)\<close>, goal_cases)
+  case (1 x y e yy)
+  then obtain u v where "e = {u, v}" "u \<noteq> v" "x = f u" "y = f v"
+    using assms(2) by(auto elim!: dblton_graphE simp add: doubleton_eq_iff)+
+  moreover then have "yy = v"
+    using 1 assms(1) edges_are_Vs_2[of u v G] 
+    by (auto simp add:  doubleton_eq_iff inj_on_def)
+  ultimately show ?case
+    using 1 
+    by (auto intro!: rev_image_eqI[of u "Neighbourhood G X" _ f] in_NeighbourhoodI[of v u G X]
+        simp add: doubleton_eq_iff insert_commute)
+next
+  case (2 x xx yy)
+  then show ?case
+    using assms(1) inj_on_contraD[of f "Vs G \<union> X" _ xx] edges_are_Vs[of xx yy G]
+    by (force intro!: in_NeighbourhoodI[of "f yy" "f xx" "(image f) ` G" "f ` X"]
+        rev_image_eqI[of "{xx, yy}" G "{f yy, f xx}" "image f"]
+        simp add: insert_commute)
+qed
+
+lemma Delta_image:
+  assumes "dblton_graph G" "inj_on f (Vs G \<union> X)"
+  shows  "Delta ((`) f ` G) (f ` X) = (image f) ` (Delta G X)"
+proof(rule, all \<open>rule, (elim in_DeltaE | elim imageE in_DeltaE)\<close>, goal_cases)
+  case (1 e u v)
+  then obtain uu vv where "{uu, vv} \<in> G"  "e= f ` {uu, vv}"
+    using assms(1) by auto
+  then obtain uu vv where "{uu, vv} \<in> G"  "u = f uu" "v = f vv" "e = f ` {uu, vv}"
+    using 1(1) by(force simp add: doubleton_eq_iff insert_commute)
+  moreover hence "uu \<in> X"
+    using "1"(3) assms(2) inj_on_image_mem_iff[of f "Vs G \<union> X" uu X] edges_are_Vs[of uu vv G]
+    by auto
+  moreover have "vv \<notin> X" 
+    using "1"(4) calculation(3) by blast
+  ultimately show ?case
+    by (auto intro!: rev_image_eqI[of "{uu, vv}" _ _ "image f"] in_DeltaI[of "{uu, vv}" uu vv G X])
+next
+  case (2 e ee u v)
+  moreover hence "f ` {u, v} \<in> ((`) f ` G)" 
+    by(intro imageI) auto
+  ultimately show ?case
+    using assms(2) Un_iff[of v "Vs G" X] Un_iff[of _ "Vs G" X] inj_on_contraD[of f "Vs G \<union> X" _ v]
+      edges_are_Vs_2[of u v G]
+    by (auto intro!: in_DeltaI[of "{f u, f v}" "f u" "f v" ]) force
+qed
 
 end

@@ -1,13 +1,54 @@
-*.thy~
-ROOT~
-ROOTS~
-Berge_Formula/output
-Berge_Lemma/output
-Edmonds_Blossom_Algorithm/output
-Matching_LPs/output
-Mincost_Flow_Algorithms/output
-Mincost_Flow_Theory/output
-Primal_Dual_Bipartite_Matching/output
-RANKING/output
-Tutte_Theorem/output
+# Only final Isabelle theories, ROOT/ROOTS files, and LaTeX sources for PDF
+# generation are eligible for tracking. Formalisation plans, scratch theories,
+# auxiliary scripts, and other working artifacts stay local and ignored.
+# This file maintains the policy; tracked files are not untracked by these rules.
+*
+!*/
+!*.thy
+!ROOT
+!ROOTS
+!*.tex
+!*.bib
+!*.sty
+!*.cls
+!*.bst
+!/.gitignore
+
+# editor backups and autosaves
+*~
+\#*#
+.#*
+
+# scratch theories used for proof experiments during refactorings
+Scratch*.thy
+scratch*.thy
+*_Scratch.thy
+*_scratch.thy
+
+# Ignore whole working directories, including theories and LaTeX within them.
+.scratch/
+scratch/
+scratch_*/
+plans/
+plan_*/
+oneshots/
+backups/
+backup_*/
+.claude/
+.codex/
+.agents/
+
+# refactoring plans and metrics (also covered by the whitelist above;
+# listed explicitly so they stay ignored if the whitelist is relaxed)
+*_Plan.md
+*_Metrics.md
+
+# snapshot copies of theories taken before refactorings
+refactoring_checkpoints/
+
+# Generated code and build output, including any .thy or .tex files within them.
+generated/
+generated_*/
+*_code_exports/
+output/
 AI_Provenance/lib/

@@ -3,8 +3,8 @@
 *)
 
 theory Naive_Primal_Dual
-  imports Directed_Set_Graphs.More_Arith "HOL-Data_Structures.Set_Specs"
-    "HOL-Data_Structures.Map_Specs"  Directed_Set_Graphs.More_Logic
+  imports Data_Structures.More_Arith "HOL-Data_Structures.Set_Specs"
+    "HOL-Data_Structures.Map_Specs"  Data_Structures.More_Logic
     Matching_LPs.Matching_LP
     Undirected_Set_Graphs.Directed_Undirected
     Egervary
@@ -12,7 +12,7 @@ begin
 
 provenance human
 
-section \<open>The Algorithm Resulting from Egerváry's Theorem in Schrijver's Book\<close>
+section \<open>The Algorithm Resulting from Egervary's Theorem in Schrijver's Book\<close>
 
 subsection \<open>Preparation, to be moved\<close>
 

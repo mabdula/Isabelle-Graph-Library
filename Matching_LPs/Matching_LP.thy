@@ -132,6 +132,31 @@ lemma to_nat_on_less_card:
   using assms
   by (auto dest: to_nat_on_finite bij_betwE)
 
+lemma one_vect_append: "1\<^sub>v n @\<^sub>v 1\<^sub>v m = 1\<^sub>v (n+m)"
+  by auto
+
+lemma zero_rows_zero_dim_vect: "0\<^sub>m 0 n1 *\<^sub>v x = vNil" 
+  by auto 
+
+lemma append_vec_vNil': "v @\<^sub>v vNil = v" 
+  by auto
+
+lemma vNil_plus: "vNil + vNil = vNil" 
+  by auto
+
+lemma append_rows_trans_vect_mul:
+  assumes "A \<in> carrier_mat n1 n2" "B \<in> carrier_mat n4 n2"
+          "x \<in> carrier_vec n1" "y \<in> carrier_vec n4"
+  shows "(A @\<^sub>r B)\<^sup>T *\<^sub>v (x @\<^sub>v y) = (A\<^sup>T *\<^sub>v x) + (B\<^sup>T *\<^sub>v y)"
+  unfolding append_rows_def
+proof(subst transpose_four_block_mat[OF assms(1) _ assms(2), of _ 0], goal_cases)
+  case 3
+  then show ?case 
+  using assms(1-4)
+  by (subst four_block_mat_mult_vec)
+     (auto simp add:  zero_rows_zero_dim_vect vNil_plus append_vec_vNil')
+qed (insert assms, auto)
+
 subsection \<open>LP Theory: Weak Duality and Slackness\<close>
 
 text \<open>A version of the weak duality theorem which does not require equality
@@ -237,6 +262,14 @@ locale matching_lp_basic =
   and G_enum_G_enum_inv: "\<And> e. e \<in> G \<Longrightarrow> G_enum_inv (G_enum e) = e"
 begin
 
+lemma finite_VsG: "finite (Vs G)" 
+  using  G_in_V bij_betw_iff_bijections[of Vs_enum V "{}"] bij_Vs_enum
+       infinite_super[of "Vs G" V] 
+  by auto
+
+lemma finite_G: "finite G" 
+  by (simp add: finite_VsG finite_Vs_then_finite)
+
 named_theorems matching_lp_theorems
 
 lemma bij_Vs_enum_inv[matching_lp_theorems]: "bij_betw Vs_enum_inv {0..< card V} V"
@@ -269,6 +302,12 @@ qed
 definition "n = card V"
 abbreviation "m \<equiv> card G"
 
+lemma G_enum_inv_inj_on: "inj_on G_enum_inv {0..<m}"
+  by (meson bij_G_enum_inv bij_betw_imp_inj_on)
+
+lemma G_enum_inj_on: "inj_on G_enum G"
+  using bij_G_enum bij_betw_def by blast
+
 definition incidence_matrix :: "real mat" where
   "incidence_matrix = mat n m (\<lambda>(i,j). of_bool (Vs_enum_inv i \<in> G_enum_inv j))"
 
@@ -287,6 +326,10 @@ lemmas [matching_lp_theorems] =
 lemma incidence_matrix_carrier_mat[intro, matching_lp_theorems]: 
   "incidence_matrix \<in> carrier_mat n m"
   unfolding incidence_matrix_def by simp
+
+lemma incidence_matrix_dims[intro, matching_lp_theorems, simp]: 
+  "dim_col incidence_matrix = m"  "dim_row incidence_matrix = n"
+  unfolding incidence_matrix_def by simp+
 
 lemma dim_primal_sol[simp,matching_lp_theorems]: "dim_vec (primal_sol M) = m"
   by (simp add: primal_sol_def)
@@ -311,6 +354,9 @@ and weight_vect_carrier_vec[intro,matching_lp_theorems]: " weight_vect w \<in> c
 lemma dim_weight_dual_sol[simp,matching_lp_theorems]: "dim_vec (dual_sol y) = n" 
 and dual_sol_carrier_vec[intro,matching_lp_theorems]: "dual_sol y \<in> carrier_vec n"
   by(auto simp add: dual_sol_def)
+
+lemma weight_vect_at_index: "i < m \<Longrightarrow> weight_vect w $ i = w (G_enum_inv i)"
+  by(auto simp add: weight_vect_def)
 
 lemma V_inv_enum[simp,matching_lp_theorems]: "v \<in> V \<Longrightarrow> Vs_enum_inv (Vs_enum v) = v"
   by(auto intro!: Vs_enum_Vs_enum_inv)
@@ -358,12 +404,12 @@ lemma
     and Vs_enum_inv[simp,matching_lp_theorems]: "i < n \<Longrightarrow> Vs_enum (Vs_enum_inv i) = i"
     and Vs_enum_inv_in_G[simp,matching_lp_theorems]: "i < n \<Longrightarrow> (Vs_enum_inv i) \<in> V"
   using G_in_V V_inv_enum apply blast
-  apply (simp add: n_def)
-  by (metis atLeastLessThan_iff bij_Vs_enum_inv bij_betwE n_def zero_le)
+  apply (simp add: n_def) 
+  by (metis atLeastLessThan_iff bij_Vs_enum_inv Fun.bij_betwE n_def zero_le)
 
 lemma G_enum_inv_in_G[simp,matching_lp_theorems]: "i < m \<Longrightarrow> (G_enum_inv i) \<in> G"
 and G_enum_less_card_G[simp,matching_lp_theorems]: "e \<in> G \<Longrightarrow> (G_enum e) < card G"
-  using atLeastLessThan_iff bij_G_enum_inv bij_G_enum bij_betwE
+  using atLeastLessThan_iff bij_G_enum_inv bij_G_enum Fun.bij_betwE
   by force+
 
 lemma Vs_enum_inv_inj_below_n[matching_lp_theorems]:
@@ -458,6 +504,31 @@ lemma dual_dot_y_vect_y_sum[matching_lp_theorems]: "1\<^sub>v n \<bullet> dual_s
                   Vs_enum_less_n
         intro!: Vs_enum_inv_in_G  bij_betwI[where f = Vs_enum_inv and g = Vs_enum]
                 comm_monoid_add_class.sum.reindex_bij_betw)
+
+lemma incidence_col_times_dual_sol:
+  assumes "{u, v} \<in> G" "G_enum {u, v} = i" "u \<noteq> v"
+  shows "col incidence_matrix i \<bullet> dual_sol (\<lambda>x. y x) = y u + y v"
+proof-
+  have "(\<Sum>ia = 0..<n. of_bool (Vs_enum_inv ia \<in> G_enum_inv i) * y (Vs_enum_inv ia)) = y u + y v"
+  proof-
+have "{0..<n} \<inter> {ia. Vs_enum_inv ia \<in> G_enum_inv i} = {Vs_enum u, Vs_enum v}" 
+    using assms(1,2)
+    by (auto simp add: Vs_of_G_enum_less_n edges_are_Vs edges_are_Vs_2)
+  moreover have "Vs_enum u \<noteq> Vs_enum v" 
+    using assms(1,3) Vs_inv_enum[of u] Vs_inv_enum[of v] edges_are_Vs[of u v G]
+      edges_are_Vs_2[of u v G] 
+    by force
+  ultimately show ?thesis
+    using assms(1) edges_are_Vs[of u v G] edges_are_Vs_2[of u v G] 
+    by auto
+  qed
+  thus ?thesis
+    using G_enum_less_card_G assms(1,2)
+    unfolding scalar_prod_def incidence_matrix_def col_def dual_sol_def 
+    by (subst sum.cong[OF refl, where h = "\<lambda> ia. of_bool (Vs_enum_inv ia \<in> G_enum_inv i) 
+                * y (Vs_enum_inv ia)"])
+        auto
+qed
 
 lemma max_weight_matching_bound_by_feasible_dual[matching_lp_theorems]:
   fixes y :: "real vec"
@@ -666,7 +737,7 @@ lemma dual_sol_lp_feasible'[matching_lp_theorems]:
   assumes "feasible_min_perfect_dual G w y" "dblton_graph G"
   shows "incidence_matrix\<^sup>T *\<^sub>v dual_sol y \<le> weight_vect w"
   unfolding incidence_matrix_def dual_sol_def less_eq_vec_def mult_mat_vec_def scalar_prod_def
-            weight_vect_def
+            weight_vect_def 
 proof (all \<open>intro conjI allI impI\<close>, simp_all, goal_cases)
   case (1 i)
   let ?indices = "{0..<n} \<inter> {ix. Vs_enum_inv ix \<in> G_enum_inv i}"
