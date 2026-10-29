@@ -2829,7 +2829,13 @@ proof-
     using get_target_for_source_ax[of b state, OF  _  refl, of f s t P]  assms 
     by(auto simp add: get_source_target_path_a_cond_def make_pairs_are elim: algo.invar_gammaE)
   hence bt_neg:"abstract_bal_map b t < 0"
-    by (smt (verit, del_insts) local.algo.\<epsilon>_axiom(1) mult_neg_pos) 
+  proof -
+    have "- local.\<epsilon> < 0"
+      using local.algo.\<epsilon>_axiom(1) by simp
+    hence "- local.\<epsilon> * current_\<gamma> state < 0"
+      using t_props(5) by (rule mult_neg_pos)
+    with t_props(2) show ?thesis by linarith
+  qed
   have s_props: "s \<in> \<V>" "(1 - local.\<epsilon>) * current_\<gamma> state < abstract_bal_map b s"
     using get_source_axioms_red(1)[of b state "current_\<gamma> state" s] assms
     by(auto simp add: get_source_target_path_a_cond_def)
