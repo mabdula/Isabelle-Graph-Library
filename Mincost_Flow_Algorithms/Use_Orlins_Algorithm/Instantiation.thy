@@ -2839,10 +2839,16 @@ proof-
   have s_props: "s \<in> \<V>" "(1 - local.\<epsilon>) * current_\<gamma> state < abstract_bal_map b s"
     using get_source_axioms_red(1)[of b state "current_\<gamma> state" s] assms
     by(auto simp add: get_source_target_path_a_cond_def)
-  hence bs_pos: "abstract_bal_map b s > 0" 
-    using t_props(5) \<epsilon>_axiom s_props(2) 
-    by (auto simp add: algebra_simps)
-       (smt (verit, best) mult_less_0_iff s_props(2))
+  hence bs_pos: "abstract_bal_map b s > 0"
+  proof -
+    have "0 < 1 - local.\<epsilon>"
+      using \<epsilon>_axiom(2) by linarith
+    hence "0 < (1 - local.\<epsilon>) * current_\<gamma> state"
+      using t_props(5) by simp
+    also have "\<dots> < abstract_bal_map b s"
+      using s_props(2) by simp
+    finally show ?thesis .
+  qed
   hence a_balance_s_not_zero:"a_balance state s \<noteq> 0"  
     using assms by(force simp add: get_source_target_path_a_cond_def)
   have knowledge: True
