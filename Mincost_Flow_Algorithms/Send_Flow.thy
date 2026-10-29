@@ -1512,8 +1512,20 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   have tP: "abstract_bal_map b t < - (1-\<epsilon>) * \<gamma>"  "t \<in> \<V>" 
     using  "1"(2,3,5,6) assms(1,4) if_send_flow_call2_cond_basic[OF assms(1,4)] 
     by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+proof (rule ccontr)
+    assume "\<not> s \<noteq> t"
+    hence "s = t" by simp
+    hence "\<epsilon> * \<gamma> < abstract_bal_map b t"
+      using sP(1) by simp
+    also have "... < - (1 - \<epsilon>) * \<gamma>"
+      using tP(1) by simp
+    finally have "\<epsilon> * \<gamma> < - (1 - \<epsilon>) * \<gamma>" .
+    hence "\<gamma> < 0"
+      by (simp add: algebra_simps)
+    thus False
+      using gamma_0 by simp
+  qed
   have b'_is: "abstract_bal_map b'= 
         (\<lambda>v. if v = s then abstract_bal_map b s - \<gamma>
         else if v = t then abstract_bal_map b t + \<gamma> else abstract_bal_map b v)"
