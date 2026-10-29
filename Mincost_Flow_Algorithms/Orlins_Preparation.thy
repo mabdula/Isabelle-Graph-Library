@@ -2491,7 +2491,18 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
                       OF E A B C D less(6) less(7-13) _ less(15) less(16) less(17)] by simp
       moreover have costs_split3: "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
              foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
-        by (metis append_eq_appendI map_sum_split)
+      proof -
+        have "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
+              foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) (QQ' @ p2) 0"
+          by (simp only: map_sum_split)
+        also have "\<dots> = foldr (\<lambda>x. (+) (\<cc> x)) p1 0 +
+                     (foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0)"
+          by (simp only: map_sum_split)
+        also have "\<dots> = foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 +
+                     foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
+          by (simp add: add.assoc)
+        finally show ?thesis .
+      qed
       moreover have "foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 \<le> \<cc> e"
       proof(rule ccontr, goal_cases)
         case 1
