@@ -1384,8 +1384,22 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
     by auto
   have tP: "abstract_bal_map b t < - \<epsilon> * \<gamma>" "resreach (abstract_flow_map f) s t" "t \<in> \<V>" 
     using if_send_flow_call1_cond_advanced[OF assms(1,4) _ _ assms(3,2,5,6)] 1 by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+  proof (rule notI)
+    assume "s = t"
+    hence "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b t"
+      using sP(1) by simp
+    with tP(1) have st_ineq: "(1 - \<epsilon>) * \<gamma> < - \<epsilon> * \<gamma>"
+      by linarith
+    have distrib: "(1 - \<epsilon>) * \<gamma> = \<gamma> - \<epsilon> * \<gamma>"
+      by (simp add: left_diff_distrib)
+    with st_ineq have "\<gamma> - \<epsilon> * \<gamma> < - \<epsilon> * \<gamma>"
+      by simp
+    hence "\<gamma> < 0"
+      by linarith
+    thus False
+      using gamma_0 by simp
+  qed
   have b'_is: "abstract_bal_map b'= 
         (\<lambda>v. if v = s then abstract_bal_map b s - \<gamma>
         else if v = t then abstract_bal_map b t + \<gamma> else abstract_bal_map b v)"
