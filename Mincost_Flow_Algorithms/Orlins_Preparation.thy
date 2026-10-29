@@ -1769,7 +1769,17 @@ proof(induction Q rule: edges_of_path.induct)
 lemma Phi_nonneg: "invar_gamma state\<Longrightarrow> \<Phi> state \<ge> 0"
   unfolding \<Phi>_def invar_gamma_def
   apply(rule sum_nonneg) 
-  by (smt (verit, ccfv_threshold) \<epsilon>_axiom(1) divide_nonneg_pos zero_le_ceiling)
+proof -
+  assume gamma_pos: "current_\<gamma> state > 0"
+  fix v
+  assume vV: "v \<in> \<V>"
+  have h1: "0 \<le> \<bar>a_balance state v\<bar> / current_\<gamma> state"
+    by (rule divide_nonneg_pos) (use gamma_pos in auto)
+  have h2: "\<bar>a_balance state v\<bar> / current_\<gamma> state - (1 - \<epsilon>) > -1"
+    using h1 \<epsilon>_axiom(1) by linarith
+  thus "0 \<le> \<lceil>\<bar>a_balance state v\<bar> / current_\<gamma> state - (1 - \<epsilon>)\<rceil>"
+    by (simp add: zero_le_ceiling)
+qed
 
 definition add_fst ("_ +++ _") where
 "add_fst c ab = (c + prod.fst ab, prod.snd ab)"
