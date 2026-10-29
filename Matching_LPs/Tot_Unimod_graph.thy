@@ -697,7 +697,10 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           then have 12: "cofactor B i j \<in> {-1, 0, 1}"
             by(cases "even (i + j)") (auto simp add: 8)
           have "B $$ (i,j) = col B j $ i" 
-            by (metis i_j index_col)
+          proof -
+            have "i < dim_row B" "j < dim_col B" using i_j by auto
+            then show "B $$ (i, j) = col B j $ i" by (simp add: index_col)
+          qed
           have "unit_vec (dim_row B) i $ i = 1" 
             unfolding unit_vec_def 
             by (simp add: i_j)
