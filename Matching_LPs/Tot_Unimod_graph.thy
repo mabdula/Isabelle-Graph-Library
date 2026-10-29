@@ -913,8 +913,7 @@ qed
                 finally show "col B t $ j = 1" .
               qed
               have 30: "col B t \<bullet> ?u = (?u $ i) + (?u $ j)" 
-                using 19 20 21 cring_simprules(12)
-                by (metis (lifting) more_arith_simps(5))
+                using 19 20 21 by simp
               have "pick J t < card E"
                 by (metis dim_col_incidence_mat dim_submatrix(2) less(2) pick_le t)
               have "incidence_mat  $$ (pick I i, pick J t) = 1" 
