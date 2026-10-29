@@ -1035,7 +1035,18 @@ proof(rule not_has_neg_infty_cycleI, goal_cases)
     by (auto simp add: awalk_Cons_iff  create_edge'(1))
   obtain D21 D22 where D2_prop:"[new_edge (create_edge t s)]@D2 = D21@[new_edge (create_edge t s)]@D22"
                              "new_edge (create_edge t s) \<notin> set D22" 
-    by (metis append.left_neutral append_Cons split_list_last)
+  proof -
+  have "new_edge (create_edge t s) \<in> set ([new_edge (create_edge t s)] @ D2)"
+    by simp
+  from split_list_last[OF this] obtain ys zs where
+    split: "[new_edge (create_edge t s)] @ D2 = ys @ new_edge (create_edge t s) # zs"
+           "new_edge (create_edge t s) \<notin> set zs"
+    by blast
+  have eq: "[new_edge (create_edge t s)] @ D2 = ys @ [new_edge (create_edge t s)] @ zs"
+    using split(1) by simp
+  show thesis
+    using that[OF eq split(2)] .
+qed
   hence awalk_s_u:"awalk (make_pair' ` set \<E>_impl') s (map make_pair' D22) u" 
     using u_prop(1) by(auto simp add: awalk_Cons_iff  create_edge'(2))
   hence awalk_s_t:"awalk (make_pair' ` set \<E>_impl') s (map make_pair' (D22@D1)) t"
