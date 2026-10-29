@@ -1582,8 +1582,20 @@ qed
        (a, b) \<in> to_edge `
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
-    by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res make_pairs_are
-    flow_network_spec.oedge.simps(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
+  proof -
+    assume assms: "(b, a) = make_pair x" "x \<in> local.\<E>"
+    have step: "to_edge (B x) = prod.swap (make_pair x)"
+      by (simp add: cost_flow_network.to_vertex_pair.simps(2)
+            Instantiation.make_pair_def multigraph_spec.make_pair_def local.make_pair_def)
+    have to_edge_Bx: "to_edge (B x) = (a, b)"
+      using step assms(1)[symmetric] by simp
+    have mem: "B x \<in> {F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>}"
+      using assms(2) by blast
+    have img: "to_edge (B x) \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      using mem by (rule imageI)
+    show "(a, b) \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      using to_edge_Bx[symmetric] img by simp
+  qed
     show ?case
      by(auto simp add: cost_flow_network.to_vertex_pair.simps es_is_E EEE_def
           cost_flow_network.\<EE>_def make_pairs_are Instantiation.make_pair_def
