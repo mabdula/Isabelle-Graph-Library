@@ -350,7 +350,18 @@ proof-
       using G_enum_G_enum_inv by fastforce
   qed
   moreover have "x \<in> G \<Longrightarrow> x \<in> G_enum_inv ` {0..<card G}" for x
-    by (metis G_enum_G_enum_inv bij_G_enum bij_betwE image_eqI)
+  proof -
+    assume x_in_G: "x \<in> G"
+    have "G_enum x \<in> G_enum ` G"
+      using x_in_G by (rule imageI)
+    also have "G_enum ` G = {0..<card G}"
+      using bij_G_enum by (simp add: bij_betw_def)
+    finally have "G_enum x \<in> {0..<card G}" .
+    hence "G_enum_inv (G_enum x) \<in> G_enum_inv ` {0..<card G}"
+      by (rule imageI)
+    thus "x \<in> G_enum_inv ` {0..<card G}"
+      using G_enum_G_enum_inv[OF x_in_G] by simp
+  qed
   ultimately show ?thesis
     by(auto simp add: bij_betw_def inj_on_def)
 qed
