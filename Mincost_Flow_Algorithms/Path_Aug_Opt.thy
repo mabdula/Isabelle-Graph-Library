@@ -84,7 +84,7 @@ fun sndvv where
   "sndvv (additional e) = sndv e"
 
 lemma sndvv_sndv: "sndvv e = sndv (to_redge e)" 
-  by (metis sndvv.simps(1) sndvv.simps to_redge.elims)
+  by (cases e) simp_all
 
 text \<open>Pattern for case analysis.\<close>
 
