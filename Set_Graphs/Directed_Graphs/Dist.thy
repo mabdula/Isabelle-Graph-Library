@@ -668,7 +668,7 @@ proof(goal_cases)
     by (simp add: plus_eq_infty_iff_enat)
   then obtain w' where "w' \<in> U'" "distance_set G U' v = distance G w' v" "reachable G w' v"
     using 1
-    by (metis dist_not_inf')
+    by (blast dest: dist_not_inf')
 *)
 
 lemma distance_set_union:
