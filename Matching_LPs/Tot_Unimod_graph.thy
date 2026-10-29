@@ -534,8 +534,14 @@ proof -
       using submatrix_index[OF i' k'] .
     finally show ?thesis .
   qed
-  have "pick I i < card (Vs E)" 
-    by (metis assms(3,4) dim_row_incidence_mat dim_submatrix(1) pick_le)
+    have "dim_row B = card {a. a < dim_row (incidence_mat) \<and> a \<in> I}"
+      by (simp add: assms(4) dim_submatrix(1))
+    with assms(3) have "i < card {a. a < dim_row (incidence_mat) \<and> a \<in> I}"
+      by simp
+    then have "pick I i < dim_row (incidence_mat)"
+      using pick_le by blast
+    then have "pick I i < card (Vs E)"
+      by (simp add: dim_row_incidence_mat)
   have "pick J k < card E" 
     by (metis assms(2,4) dim_col_incidence_mat dim_submatrix(2) pick_le)
   have "(incidence_mat ) $$ (pick I i, pick J k) = 1 \<or> 
