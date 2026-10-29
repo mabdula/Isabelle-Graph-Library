@@ -1572,9 +1572,17 @@ proof (rule ccontr)
         thus ?thesis by linarith
       qed
     also have "... = \<lceil>\<bar> abstract_bal_map b t \<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1" 
-      apply(simp, rule cong[of ceiling], simp)
-      using tP gamma_0 \<epsilon>_axiom 
-      by auto (smt (verit, ccfv_SIG) diff_divide_distrib mult_neg_pos)
+      proof -
+        have eps_pos: "1 - \<epsilon> > 0"
+          using \<epsilon>_axiom(2) by linarith
+        have "(1 - \<epsilon>) * \<gamma> > 0"
+          using eps_pos gamma_0 mult_pos_pos by blast
+        hence "abstract_bal_map b t < 0"
+          using tP(1) by linarith
+        hence "\<bar>abstract_bal_map b t\<bar> = - abstract_bal_map b t"
+          by simp
+        thus ?thesis by simp
+      qed
     finally show ?thesis by simp
   qed
   have bs_decr:"\<lceil> \<bar> abstract_bal_map b s - \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> \<le> \<lceil> \<bar>abstract_bal_map b s\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil>"
