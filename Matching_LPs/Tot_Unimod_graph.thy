@@ -649,7 +649,11 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
               unfolding unit_vec_def 
               by (simp add: i_j asm)
             show "B $$ (k, j) = 0" 
-              by (metis \<open>B $$ (k, j) = col B j $v k\<close> \<open>unit_vec (dim_row B) i $v k = 0\<close> i_j)
+              proof -
+              have "col B j = unit_vec (dim_row B) i" using i_j by blast
+              with \<open>B $$ (k, j) = col B j $v k\<close> \<open>unit_vec (dim_row B) i $v k = 0\<close>
+              show "B $$ (k, j) = 0" by simp
+            qed
           qed
           then have "(\<Sum>k \<in> {0..<dim_row B}. B $$ (k,j) * cofactor B k j) =
                B $$ (i,j) * cofactor B i j" 
