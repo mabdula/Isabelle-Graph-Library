@@ -52,7 +52,7 @@ next
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = an_edge (ab, b) ; y = an_edge (aa, ba) ; z = an_edge (ab, bb) \<rbrakk> \<Longrightarrow> b \<le> bb"
     for aa ab ba b bb
-    using order.trans by metis
+    by (auto split: if_split_asm simp: order_refl intro: order_trans)
   have b: "\<lbrakk> if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = an_edge (a, b) ;
