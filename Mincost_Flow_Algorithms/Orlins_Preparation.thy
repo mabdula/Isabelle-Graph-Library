@@ -2333,7 +2333,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
           = connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable (to_graph (\<FF> state)) (fstv e) (sndv e)"
-      by (metis in_connected_componentE in_connected_componentI2)  
+      by (fastforce intro: in_connected_componentI2 elim: in_connected_componentE)
     have e_rcap: "rcap f e > 0" 
       using augpath_rcap_pos_strict e_prop(1) less.prems(1) by blast
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
