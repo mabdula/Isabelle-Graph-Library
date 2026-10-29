@@ -179,7 +179,7 @@ next
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba) \<rbrakk> \<Longrightarrow> b = ba"
     for a aa b ba
-    by (metis order_antisym_conv)
+    by (auto split: if_split_asm simp: order_antisym_conv)
   have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba)\<rbrakk> \<Longrightarrow> a = aa"
