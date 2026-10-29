@@ -824,7 +824,40 @@ proof-
   have gamma_pos: "\<gamma> > 0"
     unfolding \<gamma>_def
     using Rcap_pos t_is_neg b_s_pos
-    by (smt (verit) ereal_infty_less(1) min.absorb3 min_def real_of_ereal.simps(1) zero_less_real_of_ereal)
+  proof -
+    have ne_le: "\<And>x y::ereal. x \<le> y \<Longrightarrow> y \<noteq> \<infinity> \<Longrightarrow> x \<noteq> \<infinity>"
+    proof -
+      fix x y :: ereal
+      assume "x \<le> y" "y \<noteq> \<infinity>"
+      show "x \<noteq> \<infinity>"
+      proof (rule notI)
+        assume "x = \<infinity>"
+        with \<open>x \<le> y\<close> have "\<infinity> \<le> y" by simp
+        then have "y = \<infinity>" by (simp add: ereal_infty_less_eq(1))
+        with \<open>y \<noteq> \<infinity>\<close> show False by simp
+      qed
+    qed
+    have fin1: "min (ereal (b s)) (ereal (- b t)) \<le> ereal (b s)"
+      by (rule min.cobounded1)
+    then have ne1: "min (ereal (b s)) (ereal (- b t)) \<noteq> \<infinity>"
+      using PInfty_neq_ereal(1)[of "b s"] by (rule ne_le)
+    have fin2: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) \<le> min (ereal (b s)) (ereal (- b t))"
+      by (rule min.cobounded1)
+    then have ne2: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) \<noteq> \<infinity>"
+      using ne1 by (rule ne_le)
+    have conj_fact: "0 < min (min (b s) (- b t)) (Rcap f (set P)) \<and>
+                    min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> \<infinity>"
+    proof
+      show "0 < min (min (b s) (- b t)) (Rcap f (set P))"
+        using b_s_pos t_is_neg Rcap_pos by simp
+    next
+      show "min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> \<infinity>"
+        using ne2 by simp
+    qed
+    show "0 < Rcap f (set P) \<Longrightarrow> b t < 0 \<Longrightarrow> 0 < b s \<Longrightarrow>
+          0 < real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))"
+      using conj_fact by (simp add: zero_less_real_of_ereal)
+  qed
 
   have s_hd_P: "s = fstv (hd P)"
   using get_min_augpath_axioms(2)[of f s t P, OF resreach_f_s_t] 
