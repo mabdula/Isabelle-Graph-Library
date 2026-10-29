@@ -4265,7 +4265,14 @@ proof(goal_cases)
       by auto
     hence bx0:"abstract_bal_map b x < 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have gamma_pos: "0 < current_\<gamma> state"
+        using knowledge(7) by (simp add: algo.invar_gamma_def)
+      have pos: "0 < \<epsilon> * current_\<gamma> state"
+        using \<epsilon>_axiom(1) gamma_pos by (rule mult_pos_pos)
+      then show ?thesis
+        using x_prop(2) by linarith
+    qed
     hence x_not_s:"x \<noteq> s"
       using bs0 by auto
     hence x_in_dom:"x\<in>dom (connection_lookup bf)" "prod.fst (the (connection_lookup bf x)) \<noteq> None"
