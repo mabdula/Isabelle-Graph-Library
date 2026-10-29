@@ -80,7 +80,7 @@ next
   case (3 x y z)
   then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
-    by(auto split: if_split simp add: less_le_not_le ) (metis order.trans)+
+    by (auto split: if_splits simp add: less_le_not_le intro: order.trans)
 next
   case (4 x y)
   then show ?case 
