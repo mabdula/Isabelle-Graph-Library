@@ -4178,9 +4178,24 @@ proof-
   hence P_in_E: "set PP \<subseteq> EEE"
     by (meson image_subset_iff cost_flow_network.o_edge_res subsetI) 
   have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
-    using  weight_Pbf_snd s_dist_le_qq_weight Pbf_props(2)[simplified sym[OF PP_def]]
-           qq_prop(5) bf_weight_leq_res_costs knowledge(16) 
-    by (smt (verit, best) leD le_ereal_less)
+  proof -
+    have "ereal (foldr (\<lambda>e. (+) (\<cc> e)) PP 0) =
+            weight_backward (a_not_blocked state) (a_current_flow state) (rev Pbf)"
+      using Pbf_props(2)[simplified sym[OF PP_def]] by simp
+    also have "\<dots> = prod.snd (the (connection_lookup bf s))"
+      using weight_Pbf_snd by simp
+    also have "\<dots> = prod.snd (the (connection_lookup bf ss))"
+      using ss_is_s by simp
+    also have "\<dots> \<le> weight_backward (a_not_blocked state) (a_current_flow state)
+                   (awalk_verts t (map cost_flow_network.to_vertex_pair
+                                     (map cost_flow_network.erev (rev qq))))"
+      using s_dist_le_qq_weight by simp
+    also have "\<dots> \<le> foldr (\<lambda>x. (+) (\<cc> x)) qq 0"
+      using bf_weight_leq_res_costs by simp
+    also have "\<dots> \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
+      using qq_prop(5) by simp
+    finally show ?thesis by simp
+  qed
   moreover have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) = cost_flow_network.\<CC> PP"
     unfolding cost_flow_network.\<CC>_def 
     by(subst distinct_sum, simp add: distinctP, meson add.commute)
