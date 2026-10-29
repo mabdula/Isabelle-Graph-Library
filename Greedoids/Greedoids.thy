@@ -580,7 +580,14 @@ qed
             then have "(nth l i) \<notin> Y" by simp
             have "card (set k) < card (set l)" using \<open>(set k) \<subset> (set l)\<close> by (simp add: \<open>finite X\<close> psubset_card_mono)
             then have "length k < length l" using l_prop k_prop(3)
-              by (metis distinct_card)
+            proof -
+              have "distinct l" using l_prop by simp
+              have "distinct k" using k_prop(3) by simp
+              have l_card: "length l = card (set l)" using distinct_card[OF \<open>distinct l\<close>] by simp
+              have k_card: "length k = card (set k)" using distinct_card[OF \<open>distinct k\<close>] by simp
+              show "length k < length l"
+                using \<open>card (set k) < card (set l)\<close> l_card k_card by simp
+            qed
             then have "i < length l" using i_prop by simp
             then have "set (take i l) \<union> {nth l i} = set (take (i + 1) l)" using set_take_union_nth by simp
             have "set (take (i + 1) l) \<in> F" using l_prop \<open>i < length l\<close> by auto
