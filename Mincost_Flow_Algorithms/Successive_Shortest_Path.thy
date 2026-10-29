@@ -604,7 +604,23 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
     unfolding \<gamma>_def using integral_min
-    by (metis  min_def real_of_ereal.simps(1))
+  proof (cases "ereal (min (b s) (- b t)) \<le> Rcap f (set P)")
+    case True
+    hence gamma_val_eq1:
+      "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) = min (b s) (- b t)"
+      by (simp add: min_def)
+    show "is_integral (real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))))"
+      unfolding gamma_val_eq1
+      using \<open>is_integral (min (b s) (- b t))\<close> .
+  next
+    case False
+    hence gamma_val_eq2:
+      "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) = real_of_ereal (Rcap f (set P))"
+      by (simp add: min_def)
+    show "is_integral (real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))))"
+      unfolding gamma_val_eq2
+      using \<open>is_integral (real_of_ereal (Rcap f (set P)))\<close> .
+  qed
 
   have P_augpath:"augpath f P"
     using  get_min_augpath_axioms(2)[of f s t P, OF resreach_f_s_t]
