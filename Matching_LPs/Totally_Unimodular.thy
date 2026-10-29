@@ -3823,8 +3823,15 @@ proof
     have 1:"i - nr1 \<ge> nr2" 
       using False by linarith
     have 8: "row (B @\<^sub>r C) (i - nr1) = row C (i - (nr1+nr2))" 
-      using append_rows_nth(2)[OF B C 1] 
-      by (metis \<open>i < nr1 + nr2 + nr3\<close> \<open>nr1 \<le> i\<close> add.assoc add.commute diff_diff_eq less_diff_conv2)
+    proof -
+      have "i - nr1 < nr2 + nr3"
+        using \<open>nr1 \<le> i\<close> \<open>i < nr1 + nr2 + nr3\<close> by linarith
+      have "row (B @\<^sub>r C) (i - nr1) = row C (i - nr1 - nr2)"
+        using append_rows_nth(2)[OF B C 1 \<open>i - nr1 < nr2 + nr3\<close>] .
+      also have "i - nr1 - nr2 = i - (nr1 + nr2)"
+        by simp
+      finally show "row (B @\<^sub>r C) (i - nr1) = row C (i - (nr1 + nr2))" .
+    qed
     have "row ((A @\<^sub>r B) @\<^sub>r C) i = row C (i - (nr1+nr2))"
       using append_rows_nth(2)[of "A @\<^sub>r B" "nr1+nr2" n C nr3 i] 
       by (meson False \<open>i < nr1 + nr2 + nr3\<close> assms carrier_append_rows leI)
