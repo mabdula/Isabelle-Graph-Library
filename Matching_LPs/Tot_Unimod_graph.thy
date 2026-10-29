@@ -495,8 +495,24 @@ qed
       using 1 by blast
   qed
   show "B $$ (t,k) = 0"
-    by (metis (no_types, lifting) \<open>incidence_mat $$ (t1, k1) = 0\<close> asm(1) assms(2,6) 
-        dim_submatrix(1-2) k1 submatrix_index t1)
+  proof -
+    have "t < card {i. i < dim_row incidence_mat \<and> i \<in> I}"
+      using asm(1) assms(6) by (simp add: dim_submatrix(1))
+    moreover have "k < card {j. j < dim_col incidence_mat \<and> j \<in> J}"
+      using assms(2) assms(6) by (simp add: dim_submatrix(2))
+    ultimately have "submatrix incidence_mat I J $$ (t, k) = incidence_mat $$ (pick I t, pick J k)"
+      by (rule submatrix_index)
+    hence eq1: "B $$ (t, k) = incidence_mat $$ (pick I t, pick J k)"
+      using assms(6) by simp
+    have hi: "pick I t = t1"
+      using t1 by simp
+    have hk: "pick J k = k1"
+      using k1 by simp
+    have eq2: "incidence_mat $$ (pick I t, pick J k) = incidence_mat $$ (t1, k1)"
+      using hi hk by simp
+    show "B $$ (t, k) = 0"
+      using eq1 eq2 \<open>incidence_mat $$ (t1, k1) = 0\<close> by simp
+  qed
 qed
 
 lemma submatrix_incidence_zero_or_one:
