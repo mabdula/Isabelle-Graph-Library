@@ -867,7 +867,7 @@ qed
               qed
               have 21: "col B t \<bullet> ?u = sum (\<lambda> k. (col B t $ k) * (?u $ k)) {0..<dim_row B}"
                 unfolding scalar_prod_def 
-                by (metis dim_vec)
+                by (simp add: dim_vec)
               have 19: "sum (\<lambda> k. (col B t $ k) * (?u $ k)) {0..<dim_row B} = 
                         (col B t $ i) * (?u $ i) + (col B t $ j) * (?u $ j)" 
               proof -
