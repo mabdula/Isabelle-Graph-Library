@@ -324,8 +324,20 @@ qed
 lemma bij_G_enum_inv[matching_lp_theorems]: "bij_betw G_enum_inv {0..< card G} G"
 proof-
   have "\<lbrakk>x < card G; y < card G; G_enum_inv x = G_enum_inv y\<rbrakk> \<Longrightarrow> x = y" for x y
-    by (metis G_enum_G_enum_inv atLeastLessThan_iff bij_G_enum bij_betw_def imageE
-        zero_le)
+  proof -
+    assume x_less: "x < card G" and y_less: "y < card G"
+      and eq: "G_enum_inv x = G_enum_inv y"
+    have im: "{0..<card G} = G_enum ` G"
+      using bij_G_enum by (simp add: bij_betw_def)
+    from x_less have "x \<in> {0..<card G}" by simp
+    with im obtain ex where ex: "ex \<in> G" "G_enum ex = x" by auto
+    from y_less have "y \<in> {0..<card G}" by simp
+    with im obtain ey where ey: "ey \<in> G" "G_enum ey = y" by auto
+    have "G_enum_inv x = ex" using ex(1) ex(2)[symmetric] by (simp add: G_enum_G_enum_inv)
+    moreover have "G_enum_inv y = ey" using ey(1) ey(2)[symmetric] by (simp add: G_enum_G_enum_inv)
+    ultimately have "ex = ey" using eq by simp
+    thus "x = y" using ex ey by simp
+  qed
   moreover have "xa < card G \<Longrightarrow> G_enum_inv xa \<in> G" for xa
     by (metis (no_types, lifting) G_enum_G_enum_inv atLeastLessThan_iff bij_G_enum bij_betw_def
         imageE zero_le)
