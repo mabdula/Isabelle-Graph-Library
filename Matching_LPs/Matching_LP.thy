@@ -506,7 +506,14 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
     by blast
   ultimately have gt_1: "1 < card ?indices" 
     using Suc_lessI   card_gt_0_iff 
-    by (metis One_nat_def)
+  proof -
+    have ne: "?indices \<noteq> {}" and neq: "card ?indices \<noteq> Suc 0"
+      using \<open>?indices \<noteq> {} \<and> (card ?indices) \<noteq> Suc 0\<close> by auto
+    have "0 < card ?indices"
+      using ne \<open>finite ?indices\<close> by (simp add: card_gt_0_iff)
+    with neq show "1 < card ?indices"
+      by linarith
+  qed
   then obtain ei1 where ei1: "ei1 \<in> ?indices"
     by (metis card_eq_0_iff ex_in_conv not_less0)
   with gt_1 have "0 < card (?indices - {ei1})"
