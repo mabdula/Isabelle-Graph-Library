@@ -580,7 +580,13 @@ proof -
     using convex_lincomb_less_1_coeff[of c Wsl x] using Wc assms(1) 
     using assms(4) by blast
   then have "c 0 \<noteq> 1" 
-    by (metis Wc length_greater_0_conv less_numeral_extra(4))
+  proof -
+    assume c_lt_1: "\<forall>i<length Wsl. c i < 1"
+    have "Wsl \<noteq> []" using Wc by auto
+    hence "0 < length Wsl" by (simp add: length_greater_0_conv)
+    hence "c 0 < 1" using c_lt_1 by blast
+    thus "c 0 \<noteq> 1" by (simp add: less_imp_neq)
+  qed
   let ?f = "(\<lambda>i. c (i + 1) / (1 - c 0))" 
   have "sum ?f {0..<length ax} = 1" using sum_except_one 
     by (metis \<open>Wsl = a # ax\<close> \<open>c 0 \<noteq> 1\<close> \<open>sum c {0..<length Wsl} = 1\<close>)
