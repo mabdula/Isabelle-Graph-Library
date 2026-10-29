@@ -3620,9 +3620,21 @@ proof
       by (meson Missing_Matrix.append_rows_nth(1) True assms(1) mat_of_rows_carrier(1) 
           submatrix_minus_last_row_carr)
     have 2: "row (submatrix A {0..<nr - 1} UNIV) i = row A (pick  {0..<nr - 1} i)"
-      using row_submatrix_UNIV[of i A "{0..<nr - 1}"]
-      by (metis (no_types, lifting) A True carrier_matD(1) dim_submatrix(1) 
-          submatrix_minus_last_row_carr row_submatrix_UNIV)
+      proof -
+        have dim_eq1: "dim_row (submatrix A {0..<nr - 1} UNIV) =
+                       card {i. i < dim_row A \<and> i \<in> {0..<nr - 1}}"
+          using dim_submatrix(1) by blast
+        have dim_eq2: "dim_row (submatrix A {0..<nr - 1} UNIV) = nr - 1"
+          using carrier_matD(1)[OF submatrix_minus_last_row_carr[OF A]] .
+        have h1: "i < dim_row (submatrix A {0..<nr - 1} UNIV)"
+          using True dim_eq2 by simp
+        have card_eq: "card {i. i < dim_row A \<and> i \<in> {0..<nr - 1}} = nr - 1"
+          using dim_eq1 dim_eq2 by presburger
+        have h2: "i < card {i. i < dim_row A \<and> i \<in> {0..<nr - 1}}"
+          using True card_eq by simp
+        show ?thesis
+          using row_submatrix_UNIV[of i A "{0..<nr - 1}"] h1 h2 by blast
+      qed
     have "i \<in> {0..<nr - 1}" using True 
       by simp
     then have 1: "pick {0..<nr - 1} (card {a \<in> {0..<nr - 1}. a < i}) = i" 
