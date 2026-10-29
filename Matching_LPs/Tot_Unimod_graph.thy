@@ -946,8 +946,16 @@ qed
                 by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(3) less(2)
                     one_then_in_edge pick_le)
               have "incidence_mat  $$ (pick I j, pick J t) = 1"
-                by (metis (no_types, lifting) dim_submatrix(1) dim_submatrix(2) i_j(2) i_j(4) 
-                    less(2) submatrix_index t)
+                proof -
+                  have j_lt: "j < card {i. i < dim_row incidence_mat \<and> i \<in> I}"
+                    using i_j(4) less(2) by (simp add: dim_submatrix(1))
+                  have t_lt: "t < card {j. j < dim_col incidence_mat \<and> j \<in> J}"
+                    using t less(2) by (simp add: dim_submatrix(2))
+                  have "B $$ (j, t) = incidence_mat $$ (pick I j, pick J t)"
+                    using less(2) submatrix_index[OF j_lt t_lt] by simp
+                  then show ?thesis
+                    using i_j(2) by simp
+                qed
               then have 24: "Vs_enum_inv (pick I j) \<in> G_enum_inv (pick J t)" 
                 by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(4) less(2)
                     one_then_in_edge pick_le)
