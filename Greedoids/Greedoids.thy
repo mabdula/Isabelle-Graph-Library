@@ -505,7 +505,10 @@ proof (unfold_locales)
           case True
           have "set l = X" using l_prop by auto
           then have "nth l 0 \<in> X" 
-            by (metis Int_lower1 True \<open>finite X\<close> assum5 card.empty card_length card_seteq gr_zeroI less_nat_zero_code nth_mem)
+          proof -
+  have "l \<noteq> []" using \<open>X \<noteq> {}\<close> \<open>set l = X\<close> by auto
+  then show ?thesis using \<open>set l = X\<close> by (cases l) auto
+qed
           then have "nth l 0 \<notin> Y" using True by blast
           then have "nth l 0 \<in> X - Y" using \<open>nth l 0 \<in> X\<close> by simp
           have "l \<noteq> []" using \<open>X \<noteq> {}\<close> \<open>set l = X\<close> by auto
