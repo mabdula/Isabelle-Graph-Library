@@ -3803,8 +3803,16 @@ proof
     have 6: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n" 
       using assms(2) assms(3) by blast
     have "i < nr1 + nr2 + nr3" 
-      by (metis append_rows_def asmi assms carrier_matD(1) 
-          index_mat_four_block(2) index_zero_mat(2))
+    proof -
+      have AB: "A @\<^sub>r B \<in> carrier_mat (nr1 + nr2) n"
+        using A B carrier_append_rows by blast
+      have "(A @\<^sub>r B) @\<^sub>r C \<in> carrier_mat (nr1 + nr2 + nr3) n"
+        using AB C carrier_append_rows by blast
+      then have "dim_row ((A @\<^sub>r B) @\<^sub>r C) = nr1 + nr2 + nr3"
+        using carrier_matD(1) by blast
+      then show ?thesis
+        using asmi by linarith
+    qed
     have 7: "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" 
       using append_rows_nth(2)[of A nr1 n "B @\<^sub>r C" "nr2 + nr3" i]
       by (metis Groups.add_ac(1) 6 \<open>i < nr1 + nr2 + nr3\<close> \<open>nr1 \<le> i\<close>  assms(1))
