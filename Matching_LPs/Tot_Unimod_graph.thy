@@ -957,8 +957,23 @@ qed
                     using i_j(2) by simp
                 qed
               then have 24: "Vs_enum_inv (pick I j) \<in> G_enum_inv (pick J t)" 
-                by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(4) less(2)
-                    one_then_in_edge pick_le)
+                proof -
+                  assume eq: "incidence_mat $$ (pick I j, pick J t) = 1"
+                  have j_less: "j < dim_row (submatrix incidence_mat I J)"
+                    using i_j(4) less(2) by simp
+                  have pickIj_less: "pick I j < dim_row incidence_mat"
+                    using pick_le j_less by (auto simp add: dim_submatrix(1))
+                  have pickIj_card: "pick I j < card (Vs E)"
+                    using pickIj_less dim_row_incidence_mat by simp
+                  have t_less: "t < dim_col (submatrix incidence_mat I J)"
+                    using t less(2) by simp
+                  have pickJt_less: "pick J t < dim_col incidence_mat"
+                    using pick_le t_less by (auto simp add: dim_submatrix(2))
+                  have pickJt_card: "pick J t < card E"
+                    using pickJt_less dim_col_incidence_mat by simp
+                  show ?thesis
+                    using one_then_in_edge[OF pickIj_card pickJt_card] eq by blast
+                qed
               have 22: "(G_enum_inv (pick J t)) \<in> E"
                 using \<open>pick J t < m\<close> matching_lp_theorems(27) by presburger
               have 27: "Vs_enum_inv (pick I i) \<noteq> Vs_enum_inv (pick I j)"   
