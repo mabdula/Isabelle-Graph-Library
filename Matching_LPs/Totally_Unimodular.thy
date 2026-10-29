@@ -3916,7 +3916,14 @@ next
   case (Suc nr2)
   have 1: "B = (submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [row B (nr2)])" 
     using append_last_row_submatrix_is_mat 
-    by (metis Suc(2) diff_add_inverse plus_1_eq_Suc zero_less_Suc)
+    proof -
+      have B_carr: "B \<in> carrier_mat (Suc nr2) n"
+        using Suc(2) by blast
+      have "B = (submatrix B {0..<Suc nr2 - 1} UNIV) @\<^sub>r (mat_of_rows n [row B (Suc nr2 - 1)])"
+        using append_last_row_submatrix_is_mat[OF B_carr zero_less_Suc] by blast
+      then show ?thesis
+        by simp
+    qed
   have 2: "submatrix B {0..<nr2} UNIV \<in> carrier_mat nr2 n" 
     by (metis Suc(2) diff_Suc_1 submatrix_minus_last_row_carr)
   have 3: "\<forall> i < nr2. \<exists> j. row (submatrix B {0..<nr2} UNIV) i = unit_vec n j"
