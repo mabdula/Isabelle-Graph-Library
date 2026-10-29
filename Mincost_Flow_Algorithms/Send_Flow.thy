@@ -2709,11 +2709,26 @@ lemma send_flow_Phi_final[send_flow_results]:
           "invar_above_6Ngamma state"
           "state' = send_flow state"
   shows   "a_current_flow  state' e \<ge> a_current_flow state e - \<Phi> state*current_\<gamma> state'"
-  using send_flow_Phi[of state state' e] Phi_nonneg[of state] assms
-    invar_gammaE send_flow_invar_gamma_pres Phi_nonneg  
-    send_flow_Phi[of state state' e] 
-    send_flow_termination
-  by(smt mult_less_cancel_right_disj of_int_le_iff)
+proof -
+  have dom: "send_flow_dom state"
+    using send_flow_termination[OF assms(1,2,3,4,5,6)] .
+  have invar_gamma': "invar_gamma state'"
+    unfolding assms(7) using send_flow_invar_gamma_pres[OF dom assms(2)] .
+  have gamma_pos: "0 < current_\<gamma> state'"
+    using invar_gamma' by (auto elim: invar_gammaE)
+  have Phi'_nonneg: "0 \<le> \<Phi> state'"
+    using Phi_nonneg[OF invar_gamma'] .
+  have Phi_ineq: "a_current_flow state' e \<ge> a_current_flow state e - (\<Phi> state - \<Phi> state') * current_\<gamma> state'"
+    using send_flow_Phi[OF assms(1,2,3,4,5,6) assms(7)] .
+  have int_le: "\<Phi> state - \<Phi> state' \<le> \<Phi> state"
+    using Phi'_nonneg by simp
+  have real_le: "real_of_int (\<Phi> state - \<Phi> state') \<le> real_of_int (\<Phi> state)"
+    using int_le of_int_le_iff by blast
+  have times_le: "(\<Phi> state - \<Phi> state') * current_\<gamma> state' \<le> \<Phi> state * current_\<gamma> state'"
+    using mult_right_mono[OF real_le] gamma_pos by (simp add: less_imp_le)
+  show ?thesis
+    using Phi_ineq times_le by linarith
+qed
 
 theorem send_flow_invar_integral_pres[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
