@@ -1,5 +1,5 @@
 theory Alt_BFS_Imperative
-  imports Alt_BFS_Dist "HOL-Imperative_HOL.Imperative_HOL" Imperative.Array_Range_Iteration
+  imports Micali_Vazirani.Alt_BFS_Dist "HOL-Imperative_HOL.Imperative_HOL" Imperative.Array_Range_Iteration
 begin
 
 section \<open>Imperative Refinement of the Alternating BFS\<close>

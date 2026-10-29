@@ -1,4 +1,4 @@
-theory Assignment_Solver_Export
+theory Assignment_Solver_Code_Export
   imports
     Assignment_Solver
     Imperative.Code_Target_Machine_Int
@@ -13,7 +13,7 @@ text \<open>The program @{const asn_solve_int} of \<open>Assignment_Solver.thy\<
 
 export_code asn_solve_int Asn_opt Asn_infeas Asn_unknown checking SML_imp
 
-text \<open>The code is written to \<open>generated/Assignment_SML\<close> next to this theory, where the build of
+text \<open>The code is written to \<open>Assignment_Solver_code_exports/Assignment_SML\<close> next to this theory, where the build of
       the solver (\<open>Use_Assignment_Solver/driver/Makefile\<close>) reads it.\<close>
 
 ML \<open>

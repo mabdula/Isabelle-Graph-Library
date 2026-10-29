@@ -1,5 +1,5 @@
 theory IDFS_Imperative
-  imports IDFS Imperative.Bounded_Stack_Specs_Imp Imperative.Fixed_Univ_Set_Specs_Imp
+  imports Micali_Vazirani.IDFS Data_Structures.Bounded_Stack_Specs_Imp Data_Structures.Fixed_Univ_Set_Specs_Imp
 begin
 
 section \<open>Imperative Refinement of the Incremental DFS\<close>

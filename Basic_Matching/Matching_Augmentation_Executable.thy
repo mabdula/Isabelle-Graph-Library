@@ -4,7 +4,7 @@
 
 theory Matching_Augmentation_Executable
   imports
-    Matching
+    Matching_Specs
     Directed_Set_Graphs.Summary
     Undirected_Set_Graphs.Pair_Graph_Berge_Adaptor
     Data_Structures.Fixed_Univ_Map_Specs
@@ -542,6 +542,24 @@ proof-
   show "invar_matching G (rematch M l r)"
     using invar' sym' loop' symmetric_buddy_matching[OF sym' loop'] inv(4,5,6) assms(4)
     by (auto intro!: invar_matchingI simp add: M')
+qed
+
+sublocale matching: Matching_Specs K nil invar_matching "\<M>" buddy_get
+proof(unfold_locales, goal_cases)
+  case 1
+  show ?case by (rule nil)
+next
+  case (2 G M)
+  then show ?case by (rule invar_matchingD(4))
+next
+  case (3 G M)
+  then show ?case by (rule invar_matchingD(6))
+next
+  case (4 G M u v)
+  have "{u, v} \<in> \<M> M \<longleftrightarrow> buddy_lookup M u = Some v"
+    using 4 symmetric_buddiesD[OF invar_matchingD(2)[OF 4]]
+    by (auto simp: \<M>_def' doubleton_eq_iff)
+  then show ?case by (auto simp: buddy_lookup_def)
 qed
 
 end

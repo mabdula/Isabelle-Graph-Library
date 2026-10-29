@@ -304,7 +304,7 @@ code_printing
 
 subsection \<open>Writing the Code to Files\<close>
 
-text \<open>The code of the given constants for one target, written to \<open>generated/<dir_name>\<close> next to
+text \<open>The code of the given constants for one target, written to \<open><name>_code_exports/<dir_name>\<close> next to
   the theory of the given context. A target that produces a single file (SML, Scala) writes it
   under the given file name, a target that produces several files (Go) under their own names.\<close>
 
@@ -312,8 +312,10 @@ ML \<open>
   fun write_machine_code ctxt consts module_name target dir_name file_name =
     let
       val (files, _) = Code_Target.produce_code ctxt false consts target module_name NONE [];
-      val dir = Path.append (Resources.master_directory (Proof_Context.theory_of ctxt))
-        (Path.make ["generated", dir_name]);
+      val thy = Proof_Context.theory_of ctxt;
+      val export_name = unsuffix "_Code_Export" (Context.theory_base_name thy);
+      val dir = Path.append (Resources.master_directory thy)
+        (Path.make [export_name ^ "_code_exports", dir_name]);
       fun write (names, code) =
         let
           val path = Path.append dir (Path.make (if null names then [file_name] else names));
@@ -323,4 +325,3 @@ ML \<open>
 \<close>
 
 end
-

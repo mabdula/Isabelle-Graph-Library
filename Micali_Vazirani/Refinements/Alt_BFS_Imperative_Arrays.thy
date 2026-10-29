@@ -1,5 +1,5 @@
 theory Alt_BFS_Imperative_Arrays
-  imports Alt_BFS_Imperative Alt_BFS_Lists
+  imports Alt_BFS_Imperative "../Alt_BFS_Lists"
 begin
 
 section \<open>The Imperative Alternating BFS on Arrays\<close>

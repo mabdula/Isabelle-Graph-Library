@@ -4,11 +4,7 @@
 *)
 
 theory Dist
-<<<<<<< HEAD
   imports Directed_Set_Graphs.enat_misc Vwalk
-=======
-  imports enat_misc Vwalk
->>>>>>> main
 begin
 
 provenance human

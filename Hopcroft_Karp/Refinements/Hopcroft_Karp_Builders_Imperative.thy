@@ -20,25 +20,25 @@ context Hopcroft_Karp_Phase
 begin
 
 lemma free_sources_foldr:
-  "foldr (\<lambda>v (b, S). if mate_lookup m v = None then (False, insert v S) else (b, S)) vs
+  "foldr (\<lambda>v (b, S). if mate_get m v = nil then (False, insert v S) else (b, S)) vs
      (True, vset_empty) = (free_vertices vs m = [], free_vertex_set vs m)"
   by (induction vs) (auto simp: free_vertices_def free_vertex_set_def split: prod.splits)
 
 lemma alt_graphs_foldl:
-  "foldl (\<lambda>(M, U) (u, v). if mate_lookup m u = Some v then (G.add_edge M u v, U)
+  "foldl (\<lambda>(M, U) (u, v). if mate_get m u = v then (G.add_edge M u v, U)
                           else (M, G.add_edge U u v)) (M0, U0) es =
-   (foldl (\<lambda>G (u, v). G.add_edge G u v) M0 (filter (\<lambda>(u, v). mate_lookup m u = Some v) es),
-    foldl (\<lambda>G (u, v). G.add_edge G u v) U0 (filter (\<lambda>(u, v). mate_lookup m u \<noteq> Some v) es))"
+   (foldl (\<lambda>G (u, v). G.add_edge G u v) M0 (filter (\<lambda>(u, v). mate_get m u = v) es),
+    foldl (\<lambda>G (u, v). G.add_edge G u v) U0 (filter (\<lambda>(u, v). mate_get m u \<noteq> v) es))"
   by (induction es arbitrary: M0 U0) auto
 
 lemma alt_graphs_from_list:
-  "foldl (\<lambda>(M, U) (u, v). if mate_lookup m u = Some v then (G.add_edge M u v, U)
+  "foldl (\<lambda>(M, U) (u, v). if mate_get m u = v then (G.add_edge M u v, U)
                           else (M, G.add_edge U u v)) (empty, empty) es =
    (G.from_list (matched_edges es m), G.from_list (unmatched_edges es m))"
   by (simp add: alt_graphs_foldl G.from_list_def matched_edges_def unmatched_edges_def)
 
 definition "copy_edge m VE VO (d :: 'v labelled_vtx \<Rightarrow> nat) =
-  (\<lambda>(u, v). if mate_lookup m u = Some v
+  (\<lambda>(u, v). if mate_get m u = v
            then (if u \<in> VO \<and> v \<in> VE \<and> d (Vtx Even v) = d (Vtx Odd u) + 1
                  then [(Vtx Even v, Vtx Odd u)] else [])
            else (if u \<in> VE \<and> v \<in> VO \<and> d (Vtx Odd v) = d (Vtx Even u) + 1
@@ -66,7 +66,7 @@ proof-
     by (simp add: add_copies_eq CGraph.from_list_def copies_edges_dist_concat)
 qed
 
-definition "root_cond m VO t \<longleftrightarrow> mate_lookup m t = None \<and> t \<in> VO"
+definition "root_cond m VO t \<longleftrightarrow> mate_get m t = nil \<and> t \<in> VO"
 
 definition "min_step m VO (d :: 'v labelled_vtx \<Rightarrow> nat) k t =
   (if root_cond m VO t
@@ -134,7 +134,8 @@ subsection \<open>The program\<close>
 text \<open>The primitive operations. The edges and the vertices are given as arrays.\<close>
 
 locale Hopcroft_Karp_Builders_Imperative_spec =
-  fixes mate_lookup_imp :: "'mi \<Rightarrow> 'v::heap \<Rightarrow> 'v option Heap"
+  fixes nil :: "'v::heap"
+    and mate_get_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v Heap"
     and g_empty_imp :: "'imp_G Heap"
     and g_add_edge_imp :: "'imp_G \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'imp_G Heap"
     and c_empty_imp :: "'gi Heap"
@@ -159,8 +160,8 @@ text \<open>The sources: a right fold over the vertices, mirroring @{term "foldr
   vertices. The flag records whether there is no free vertex.\<close>
 
 definition "free_sources_step Mi =
-  (\<lambda>v (b, S). do { mv \<leftarrow> mate_lookup_imp Mi v;
-                  if mv = None then do { S' \<leftarrow> src_insert_imp v S; return (False, S') }
+  (\<lambda>v (b, S). do { mv \<leftarrow> mate_get_imp Mi v;
+                  if mv = nil then do { S' \<leftarrow> src_insert_imp v S; return (False, S') }
                   else return (b, S) })"
 
 definition "free_sources_imp (Vi :: 'v array) Mi =
@@ -172,8 +173,8 @@ text \<open>The matching and the non-matching graph: a left fold over the edges,
   @{const Pair_Graph_Specs.from_list} of the filtered edges.\<close>
 
 definition "alt_graphs_step Mi =
-  (\<lambda>(u, v) (M, U). do { mu \<leftarrow> mate_lookup_imp Mi u;
-                        if mu = Some v then do { M' \<leftarrow> g_add_edge_imp M u v; return (M', U) }
+  (\<lambda>(u, v) (M, U). do { mu \<leftarrow> mate_get_imp Mi u;
+                        if mu = v then do { M' \<leftarrow> g_add_edge_imp M u v; return (M', U) }
                         else do { U' \<leftarrow> g_add_edge_imp U u v; return (M, U') } })"
 
 definition "alt_graphs_imp (Ei :: ('v \<times> 'v) array) Mi =
@@ -192,8 +193,8 @@ definition "add_copy_imp Gi CVi x y =
 
 definition "copies_step Mi VEi VOi Di =
   (\<lambda>(u, v) (Gi, CVi).
-     do { mu \<leftarrow> mate_lookup_imp Mi u;
-          if mu = Some v
+     do { mu \<leftarrow> mate_get_imp Mi u;
+          if mu = v
           then do { a \<leftarrow> vis_isin_imp VOi u;
                     b \<leftarrow> vis_isin_imp VEi v;
                     du \<leftarrow> dist_lookup_imp Di (Vtx Odd u);
@@ -219,9 +220,9 @@ text \<open>The roots: a left fold over the vertices computes the minimal level 
   with an odd copy, and a right fold pushes the odd copies of those of minimal level.\<close>
 
 definition "root_cond_imp Mi VOi t =
-  do { mt \<leftarrow> mate_lookup_imp Mi t;
+  do { mt \<leftarrow> mate_get_imp Mi t;
        a \<leftarrow> vis_isin_imp VOi t;
-       return (mt = None \<and> a) }"
+       return (mt = nil \<and> a) }"
 
 definition "min_level_step Mi VOi Di =
   (\<lambda>t k. do { c \<leftarrow> root_cond_imp Mi VOi t;
@@ -280,9 +281,9 @@ text \<open>The primitive operations meet the specifications of the correspondin
   @{const vtx}.\<close>
 
 locale Hopcroft_Karp_Builders_Imperative =
-  Hopcroft_Karp_Phase where lookup = lookup and c_lookup = c_lookup and mate_lookup = mate_lookup
+  Hopcroft_Karp_Phase where K = univ and lookup = lookup and c_lookup = c_lookup and mate_get = mate_get
     and lookup_dist = lookup_dist +
-  Hopcroft_Karp_Builders_Imperative_spec where mate_lookup_imp = mate_lookup_imp
+  Hopcroft_Karp_Builders_Imperative_spec where mate_get_imp = mate_get_imp
     and g_add_edge_imp = g_add_edge_imp and c_add_edge_imp = c_add_edge_imp
     and src_insert_imp = src_insert_imp and vis_isin_imp = vis_isin_imp
     and dist_lookup_imp = dist_lookup_imp and paths_snoc_imp = paths_snoc_imp
@@ -296,9 +297,9 @@ locale Hopcroft_Karp_Builders_Imperative =
     and fixed_univ_set_insert_imp = set_insert_imp and fixed_univ_set_isin_imp = set_isin_imp
   for lookup :: "'adjmap \<Rightarrow> 'v::heap \<Rightarrow> 'vset option"
   and c_lookup :: "'cadjmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'cvset option"
-  and mate_lookup :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v option"
+  and mate_get :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v"
   and lookup_dist :: "'dmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> enat option"
-  and mate_lookup_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v option Heap"
+  and mate_get_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v Heap"
   and g_add_edge_imp :: "'imp_G \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'imp_G Heap"
   and c_add_edge_imp :: "'gi \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'gi Heap"
   and src_insert_imp :: "'v \<Rightarrow> 'imp_src \<Rightarrow> 'imp_src Heap"
@@ -318,8 +319,8 @@ locale Hopcroft_Karp_Builders_Imperative =
     and imp_vis_assn :: "'vset \<Rightarrow> 'imp_vis \<Rightarrow> assn"
     and imp_dist_assn :: "'dist \<Rightarrow> 'imp_dist \<Rightarrow> assn"
     and paths_assn :: "'v labelled_vtx list list \<Rightarrow> 'ips \<Rightarrow> assn"
-  assumes mate_lookup_rule:
-    "\<And>m Mi v. <mate_assn m Mi> mate_lookup_imp Mi v <\<lambda>r. mate_assn m Mi * \<up>(r = mate_lookup m v)>"
+  assumes mate_get_rule:
+    "\<And>m Mi v. <mate_assn m Mi> mate_get_imp Mi v <\<lambda>r. mate_assn m Mi * \<up>(r = mate_get m v)>"
   and g_empty_rule: "<emp> g_empty_imp <graph_assn empty>"
   and g_add_edge_rule:
     "\<And>H Hi u v. \<lbrakk>u \<in> univ; v \<in> univ\<rbrakk> \<Longrightarrow>
@@ -377,11 +378,11 @@ lemma free_sources_step_rule:
   assumes "v \<in> univ"
   shows "<(case acc of (b, S) \<Rightarrow> \<lambda>(bi, Si). imp_src_assn S Si * \<up>(bi = b)) acci * mate_assn m Mi>
            free_sources_step Mi v acci
-         <\<lambda>r. (case (\<lambda>(b, S). if mate_lookup m v = None then (False, insert v S) else (b, S)) acc of
+         <\<lambda>r. (case (\<lambda>(b, S). if mate_get m v = nil then (False, insert v S) else (b, S)) acc of
                 (b, S) \<Rightarrow> \<lambda>(bi, Si). imp_src_assn S Si * \<up>(bi = b)) r * mate_assn m Mi>"
   using assms
   by (cases acc; cases acci)
-     (sep_auto heap: mate_lookup_rule src_insert_rule simp: free_sources_step_def)
+     (sep_auto heap: mate_get_rule src_insert_rule simp: free_sources_step_def)
 
 lemma free_sources_imp_rule:
   assumes "set vs \<subseteq> univ"
@@ -390,7 +391,7 @@ lemma free_sources_imp_rule:
                    \<up>(b \<longleftrightarrow> free_vertices vs m = [])>"
 proof-
   note fold = array_foldr_all_rule[where acc_assn = "\<lambda>(b, S) (bi, Si). imp_src_assn S Si * \<up>(bi = b)"
-    and f = "\<lambda>v (b, S). if mate_lookup m v = None then (False, insert v S) else (b, S)"
+    and f = "\<lambda>v (b, S). if mate_get m v = nil then (False, insert v S) else (b, S)"
     and F = "mate_assn m Mi" and fi = "free_sources_step Mi" and xs = vs and arr = Vi,
     OF free_sources_step_rule, OF subsetD[OF assms]]
   have R: "<Vi \<mapsto>\<^sub>a vs * imp_src_assn vset_empty S * mate_assn m Mi>
@@ -412,12 +413,12 @@ lemma alt_graphs_step_rule:
   shows "<(case acc of (M, U) \<Rightarrow> \<lambda>(Mgi, Ugi). graph_assn M Mgi * graph_assn U Ugi) acci *
           mate_assn m Mi>
            alt_graphs_step Mi e acci
-         <\<lambda>r. (case (\<lambda>(M, U) (u, v). if mate_lookup m u = Some v then (G.add_edge M u v, U)
+         <\<lambda>r. (case (\<lambda>(M, U) (u, v). if mate_get m u = v then (G.add_edge M u v, U)
                                      else (M, G.add_edge U u v)) acc e of
                 (M, U) \<Rightarrow> \<lambda>(Mgi, Ugi). graph_assn M Mgi * graph_assn U Ugi) r * mate_assn m Mi>"
   using assms
   by (cases e; cases acc; cases acci)
-     (sep_auto heap: mate_lookup_rule g_add_edge_rule simp: alt_graphs_step_def)
+     (sep_auto heap: mate_get_rule g_add_edge_rule simp: alt_graphs_step_def)
 
 lemma alt_graphs_imp_rule:
   assumes "set edges \<subseteq> univ \<times> univ"
@@ -428,7 +429,7 @@ lemma alt_graphs_imp_rule:
 proof-
   note fold = array_foldl_all_rule[where
       acc_assn = "\<lambda>(M, U) (Mgi, Ugi). graph_assn M Mgi * graph_assn U Ugi"
-    and f = "\<lambda>(M, U) (u, v). if mate_lookup m u = Some v then (G.add_edge M u v, U)
+    and f = "\<lambda>(M, U) (u, v). if mate_get m u = v then (G.add_edge M u v, U)
                             else (M, G.add_edge U u v)"
     and F = "mate_assn m Mi" and fi = "alt_graphs_step Mi" and xs = edges and arr = Ei,
     OF alt_graphs_step_rule, OF subsetD[OF assms]]
@@ -457,9 +458,9 @@ lemma copies_step_rule:
          <\<lambda>r. (case add_copies acc (copy_edge m (t_set VE) (t_set VO) (dist_lookup D) e) of
                 (H, C) \<Rightarrow> \<lambda>(Gi, CVi). cgraph_assn H Gi * set_assn C CVi * \<up>(C \<subseteq> vtx -` univ)) r *
               (mate_assn m Mi * imp_vis_assn VE VEi * imp_vis_assn VO VOi * imp_dist_assn D Di)>"
-  using assms
+  using assms (*takes long*)
   by (cases e; cases acc; cases acci)
-     (sep_auto heap: mate_lookup_rule vis_isin_rule dist_lookup_rule cset.fixed_univ_set_insert_rule
+     (sep_auto heap: mate_get_rule vis_isin_rule dist_lookup_rule cset.fixed_univ_set_insert_rule
                      c_add_edge_rule
                simp: copies_step_def add_copy_imp_def copy_edge_def add_copies_def)
 
@@ -506,7 +507,7 @@ lemma root_cond_imp_rule:
   shows "<mate_assn m Mi * imp_vis_assn VO VOi> root_cond_imp Mi VOi t
          <\<lambda>r. mate_assn m Mi * imp_vis_assn VO VOi * \<up>(r \<longleftrightarrow> root_cond m (t_set VO) t)>"
   using assms
-  by (sep_auto heap: mate_lookup_rule vis_isin_rule simp: root_cond_imp_def root_cond_def)
+  by (sep_auto heap: mate_get_rule vis_isin_rule simp: root_cond_imp_def root_cond_def)
 
 lemma min_level_step_rule:
   assumes "vset_inv VO" "t \<in> univ"
@@ -637,7 +638,7 @@ text \<open>With the remaining operations of @{locale Hopcroft_Karp_Phase_Impera
 
 locale Hopcroft_Karp_Phase_Builders_Imperative =
   Hopcroft_Karp_Builders_Imperative where lookup = lookup and c_lookup = c_lookup
-    and mate_lookup = mate_lookup and lookup_dist = lookup_dist and mate_lookup_imp = mate_lookup_imp
+    and mate_get = mate_get and lookup_dist = lookup_dist and mate_get_imp = mate_get_imp
     and g_add_edge_imp = g_add_edge_imp and c_add_edge_imp = c_add_edge_imp
     and src_insert_imp = src_insert_imp and vis_isin_imp = vis_isin_imp
     and dist_lookup_imp = dist_lookup_imp and paths_snoc_imp = paths_snoc_imp
@@ -645,9 +646,9 @@ locale Hopcroft_Karp_Phase_Builders_Imperative =
     and stack_abstract = stack_abstract and dist_lookup = dist_lookup
   for lookup :: "'adjmap \<Rightarrow> 'v::heap \<Rightarrow> 'vset option"
   and c_lookup :: "'cadjmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'cvset option"
-  and mate_lookup :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v option"
+  and mate_get :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v"
   and lookup_dist :: "'dmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> enat option"
-  and mate_lookup_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v option Heap"
+  and mate_get_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v Heap"
   and g_add_edge_imp :: "'imp_G \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'imp_G Heap"
   and c_add_edge_imp :: "'gi \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'gi Heap"
   and src_insert_imp :: "'v \<Rightarrow> 'imp_src \<Rightarrow> 'imp_src Heap"

@@ -1,5 +1,5 @@
 theory Disjoint_Paths_Search_Imperative
-  imports Disjoint_Paths_Search Imperative.Bounded_Stack_Specs_Imp
+  imports Hopcroft_Karp.Disjoint_Paths_Search Data_Structures.Bounded_Stack_Specs_Imp
 begin
 
 section \<open>Imperative Refinement of the Disjoint-Paths Search\<close>

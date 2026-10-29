@@ -1,5 +1,6 @@
 theory Hopcroft_Karp_Imperative
   imports Hopcroft_Karp_Builders_Imperative Hopcroft_Karp_Top_Loop_Imperative
+          Basic_Matching.Matching_Augmentation_Executable
 begin
 
 section \<open>The Imperative Hopcroft-Karp Algorithm\<close>
@@ -43,8 +44,11 @@ end
 subsection \<open>The algorithm\<close>
 
 locale Hopcroft_Karp_Imperative =
+  mate_impl: matching_augmentation univ mate_map_invar mate_update mate_get mate_empty nil +
   Hopcroft_Karp_Phase_Builders_Imperative where lookup = lookup and c_lookup = c_lookup
-    and mate_lookup = mate_lookup and lookup_dist = lookup_dist and mate_lookup_imp = mate_lookup_imp
+    and mate_invar = "Matching_Augmentation_Specs.invar_matching univ mate_map_invar mate_get nil"
+    and mate_matching = "Matching_Augmentation_Specs.\<M> mate_get nil"
+    and mate_get = mate_get and lookup_dist = lookup_dist and mate_get_imp = mate_get_imp
     and g_add_edge_imp = g_add_edge_imp and c_add_edge_imp = c_add_edge_imp
     and src_insert_imp = src_insert_imp and vis_isin_imp = vis_isin_imp
     and dist_lookup_imp = dist_lookup_imp and paths_snoc_imp = paths_snoc_imp
@@ -54,9 +58,12 @@ locale Hopcroft_Karp_Imperative =
     and path_pop_imp = path_pop_imp
   for lookup :: "'adjmap \<Rightarrow> 'v::heap \<Rightarrow> 'vset option"
   and c_lookup :: "'cadjmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'cvset option"
-  and mate_lookup :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v option"
+  and mate_map_invar :: "'mate \<Rightarrow> bool"
+  and mate_update :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'mate"
+  and mate_empty :: 'mate
+  and mate_get :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v"
   and lookup_dist :: "'dmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> enat option"
-  and mate_lookup_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v option Heap"
+  and mate_get_imp :: "'mi \<Rightarrow> 'v \<Rightarrow> 'v Heap"
   and g_add_edge_imp :: "'imp_G \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'imp_G Heap"
   and c_add_edge_imp :: "'gi \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'gi Heap"
   and src_insert_imp :: "'v \<Rightarrow> 'imp_src \<Rightarrow> 'imp_src Heap"
@@ -74,7 +81,7 @@ locale Hopcroft_Karp_Imperative =
   assumes mate_empty_rule: "<emp> mate_empty_imp <mate_assn mate_empty>"
     and mate_update_rule:
       "\<And>M Mi u v. \<lbrakk>u \<in> univ; v \<in> univ\<rbrakk> \<Longrightarrow>
-       <mate_assn M Mi> mate_update_imp Mi u v <mate_assn (mate_update u v M)>"
+       <mate_assn M Mi> mate_update_imp Mi u v <mate_assn (mate_update M u v)>"
     and paths_is_empty_rule:
       "\<And>ps Psi. <paths_assn ps Psi> paths_is_empty_imp Psi <\<lambda>r. paths_assn ps Psi * \<up>(r \<longleftrightarrow> ps = [])>"
     and path_is_empty_rule:
@@ -85,6 +92,13 @@ locale Hopcroft_Karp_Imperative =
                     <\<lambda>(w', Psi'). paths_assn (q # ps) Psi' * \<up>(w' = w)>"
     and paths_drop_rule: "\<And>q ps Psi. <paths_assn (q # ps) Psi> paths_drop_imp Psi <paths_assn ps>"
 begin
+
+abbreviation "mate_invar \<equiv> mate_impl.invar_matching"
+abbreviation "mate_matching \<equiv> mate_impl.\<M>"
+abbreviation "mate_augment \<equiv> mate_impl.augment_impl"
+
+lemmas mate_augmentation_correct = mate_impl.augmentation_correct
+lemmas mate_empty_props = mate_impl.empty_matching_props
 
 sublocale loop: Hopcroft_Karp_Loop_Imperative_spec
   where empty_matching_imp = mate_empty_imp and phase_imp = "phase_imp.hopcroft_karp_phase_imp Ei Vi"
@@ -173,11 +187,13 @@ interpretation hk_loop: Hopcroft_Karp_Loop_Imperative
 proof(unfold_locales, goal_cases)
   case (1 M)
   thus ?case
-    by (rule mate_invarD(4))
+    by (rule mate_impl.invar_matchingD(4))
 next
   case 2
-  show ?case
-    using mate_empty_props by auto
+  have "Vs (hk_input.ugraph_abs Gin) \<subseteq> univ"
+    using input_univ by (auto simp: hk_input.ugraph_abs_def Vs_def dVs_def)
+  then show ?case
+    by (rule mate_empty_props(1))
 next
   case 3
   show ?case

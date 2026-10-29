@@ -29,7 +29,7 @@ declare [[default_code_width = 1000]]
 export_code matching_imp b_matching_imp weighted_matching_int_imp weighted_b_matching_int_imp
   checking SML_imp Scala_imp
 
-text \<open>The code for each target is written to \<open>generated/<target>\<close> next to this theory.\<close>
+text \<open>The code for each target is written to \<open>Bipartite_Matching_code_exports/<target>\<close> next to this theory.\<close>
 
 ML \<open>
   fun write_matching_code target dir_name file_name =
@@ -44,4 +44,3 @@ ML \<open>
 \<close>
 
 end
-

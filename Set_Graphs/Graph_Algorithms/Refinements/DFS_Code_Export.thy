@@ -74,7 +74,7 @@ code_printing code_module Uint32 \<rightharpoonup> (SML)
 
 export_code dfs_input_arrays_run dfs_edges_run checking SML_imp Scala_imp
 
-text \<open>The code for each target is written to \<open>generated/DFS_<variant>_<target>\<close> next to this
+text \<open>The code for each target is written to \<open>DFS_code_exports/DFS_<variant>_<target>\<close> next to this
   theory.\<close>
 
 ML \<open>

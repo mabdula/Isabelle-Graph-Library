@@ -38,7 +38,7 @@ code_printing
 export_code fifo_push_relabel_impl fifo_push_relabel_init_impl fifo_push_relabel_run_impl
   compute_flow_val_impl checking SML_imp Scala_imp
 
-text \<open>The code for each target is written to \<open>generated/<target>\<close> next to this theory.\<close>
+text \<open>The code for each target is written to \<open>AFP_FIFO_Push_Relabel_code_exports/<target>\<close> next to this theory.\<close>
 
 ML \<open>
   fun write_afp_fifo_code target dir_name file_name =
@@ -81,4 +81,3 @@ ML_val \<open>
 \<close>
 
 end
-

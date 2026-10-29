@@ -5,11 +5,7 @@
   Author: Adem Rimpapa
 *)
 theory Undirected_Set_Graphs
-<<<<<<< HEAD
   imports Undirected_Graphs_Misc
-=======
-  imports Undirected_Misc
->>>>>>> main
 begin
 
 provenance human

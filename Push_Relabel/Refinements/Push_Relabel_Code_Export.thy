@@ -17,7 +17,7 @@ text \<open>The three programs on integer capacities of \<open>Push_Relabel_Inst
 export_code push_relabel_fifo_run_int push_relabel_rtf_run_int push_relabel_hl_run_int
   checking SML_imp Scala_imp
 
-text \<open>The code for each target is written to \<open>generated/<target>\<close> next to this theory.\<close>
+text \<open>The code for each target is written to \<open>Push_Relabel_code_exports/<target>\<close> next to this theory.\<close>
 
 ML \<open>
   fun write_push_relabel_code target dir_name file_name =

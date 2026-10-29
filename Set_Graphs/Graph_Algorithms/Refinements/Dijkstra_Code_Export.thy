@@ -18,7 +18,7 @@ text \<open>The programs on integers of \<open>Dijkstra_Instantiation.thy\<close
 export_code dijkstra_shortest_path_int dijkstra_sp_compute_int dijkstra_sp_query_int
   checking SML_imp Scala_imp
 
-text \<open>The code for each target is written to \<open>generated/Dijkstra_<target>\<close> next to this
+text \<open>The code for each target is written to \<open>Dijkstra_code_exports/Dijkstra_<target>\<close> next to this
   theory.\<close>
 
 ML \<open>

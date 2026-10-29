@@ -23,6 +23,15 @@ theories
   "Rooted_Arborescense/Rooted_Arborescense"
   "Rooted_Arborescense/Rooted_Arborescense_Refinement"
 
+  "Refinements/Acyclic_Flow_Refinement"
+  "Refinements/Network_Simplex_Refinement"
+  "Refinements/Network_Simplex_Instantiation_Refinement"
+  "Refinements/Mincost_Oracle_Certificates_Refinement"
+  "Refinements/Mincost_Oracle_Certificates_Pluggable_Refinement"
+  "Refinements/Mincost_Solver_Reduction_Refinement"
+  "Refinements/Code_Target_Nat_Machine"
+  "Refinements/DIMACS_Solver"
+  "Refinements/DIMACS_Solver_Code_Export"
 
 
 document_files

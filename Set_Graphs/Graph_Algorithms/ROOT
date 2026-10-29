@@ -33,7 +33,9 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     "Refinements/BFS_Instantiation"
     "Refinements/BFS_Code_Export"
     "Refinements/Dijkstra_Code_Export"
+    "Refinements/DFS_Imperative"
     "Refinements/DFS_by_Iterator_Imperative"
+    "Refinements/DFS_Code_Export"
 
 
 

@@ -13,6 +13,7 @@ session Basic_Matching = "Undirected_Set_Graphs" +
 
   theories
     Matching
+    Matching_Specs
     Berge
     Weighted_Matchings_Reductions
     

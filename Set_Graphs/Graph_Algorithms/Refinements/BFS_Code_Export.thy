@@ -47,8 +47,8 @@ definition parent_rbt :: "((nat \<times> nat) \<times> color) tree \<Rightarrow>
 export_code graph_rbt build_rbt_sources BFS_dag_rbt BFS_check_reachable_rbt parent_rbt
   checking SML Scala
 
-text \<open>The code for each target is written to \<open>generated/BFS_CSR_<target>\<close> and
-  \<open>generated/BFS_RBT_<target>\<close> next to this theory.\<close>
+text \<open>The code for each target is written to \<open>BFS_code_exports/BFS_CSR_<target>\<close> and
+  \<open>BFS_code_exports/BFS_RBT_<target>\<close> next to this theory.\<close>
 
 ML \<open>
   val csr_consts = [\<^const_name>\<open>bfs_csr_run\<close>, \<^const_name>\<open>bfs_path\<close>];

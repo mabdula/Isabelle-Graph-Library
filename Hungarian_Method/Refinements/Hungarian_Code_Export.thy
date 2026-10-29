@@ -20,7 +20,7 @@ export_code hungarian_csr_run_int hungarian_csr_max_perfect_run_int
   hungarian_csr_mw_run_int hungarian_csr_mwmc_run_int
   checking SML_imp Scala_imp
 
-text \<open>The code for each target is written to \<open>generated/<target>\<close> next to this theory.\<close>
+text \<open>The code for each target is written to \<open>Hungarian_code_exports/<target>\<close> next to this theory.\<close>
 
 ML \<open>
   fun write_hungarian_code target dir_name file_name =

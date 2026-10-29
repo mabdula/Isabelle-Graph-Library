@@ -49,7 +49,7 @@ theories
 	"Refinements/Path_Search_Shortcut_Imperative"
 	"Refinements/Neighbourhood_Best_Scan_Imperative"
 	"Refinements/Assignment_Solver"
-	"Refinements/Assignment_Solver_Export"
+	"Refinements/Assignment_Solver_Code_Export"
 	"Refinements/Hungarian_Code_Export"
 
 document_files

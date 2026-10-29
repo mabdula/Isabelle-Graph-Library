@@ -49,5 +49,6 @@ refactoring_checkpoints/
 # Generated code and build output, including any .thy or .tex files within them.
 generated/
 generated_*/
+*_code_exports/
 output/
 AI_Provenance/lib/

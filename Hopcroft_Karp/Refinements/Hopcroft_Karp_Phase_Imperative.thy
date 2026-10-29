@@ -1,5 +1,5 @@
 theory Hopcroft_Karp_Phase_Imperative
-  imports Hopcroft_Karp_Phase Micali_Vazirani.Alt_BFS_Imperative
+  imports Hopcroft_Karp.Hopcroft_Karp_Phase Micali_Vazirani.Alt_BFS_Imperative
           Micali_Vazirani.IDFS_Imperative Disjoint_Paths_Search_Imperative
 begin
 
@@ -31,7 +31,7 @@ begin
 
 definition "copies_edges_dist edges m VE VO d =
   concat (map (\<lambda>(u, v).
-     if mate_lookup m u = Some v
+     if mate_get m u = v
      then (if u \<in> VO \<and> v \<in> VE \<and> d (Vtx Even v) = d (Vtx Odd u) + 1
            then [(Vtx Even v, Vtx Odd u)] else [])
      else (if u \<in> VE \<and> v \<in> VO \<and> d (Vtx Odd v) = d (Vtx Even u) + 1
@@ -126,7 +126,7 @@ text \<open>The vertices are drawn from a universe @{term univ}, and their copie
   @{term stack_assn} (@{locale bounded_stack_imp}).\<close>
 
 locale Hopcroft_Karp_Phase_Imperative =
-  Hopcroft_Karp_Phase where lookup = lookup and c_lookup = c_lookup and mate_lookup = mate_lookup
+  Hopcroft_Karp_Phase where K = univ and lookup = lookup and c_lookup = c_lookup and mate_get = mate_get
     and lookup_dist = lookup_dist +
   Hopcroft_Karp_Phase_Imperative_spec where free_sources_imp = free_sources_imp
     and copies_graph_imp = copies_graph_imp and alt_graphs_imp = alt_graphs_imp
@@ -141,7 +141,7 @@ locale Hopcroft_Karp_Phase_Imperative =
     and fixed_univ_set_insert_imp = set_insert_imp and fixed_univ_set_isin_imp = set_isin_imp
   for lookup :: "'adjmap \<Rightarrow> 'v::heap \<Rightarrow> 'vset option"
   and c_lookup :: "'cadjmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> 'cvset option"
-  and mate_lookup :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v option"
+  and mate_get :: "'mate \<Rightarrow> 'v \<Rightarrow> 'v"
   and lookup_dist :: "'dmap \<Rightarrow> 'v labelled_vtx \<Rightarrow> enat option"
   and free_sources_imp :: "'vi \<Rightarrow> 'mi \<Rightarrow> (bool \<times> 'imp_src) Heap"
   and copies_graph_imp :: "'ei \<Rightarrow> 'mi \<Rightarrow> 'imp_vis \<Rightarrow> 'imp_vis \<Rightarrow> 'imp_dist \<Rightarrow> ('gi \<times> 'si) Heap"
@@ -413,7 +413,7 @@ proof-
                (u, v) \<in> bfs_dist.dist_dag (t_set (d_vis_even dist_final))
                           (t_set (d_vis_odd dist_final)) (dist_lookup (d_dists dist_final))" for u v
     by (simp only: isin_bfs_dag' dist_final_props(7))
-  show ?thesis
+  show ?thesis (*takes long*)
     unfolding copies_edges_def copies_edges_dist_def dag bfs_dist.dist_dag_def
     by (intro arg_cong[where f = concat] map_cong refl)
        (auto simp: matched_edges_def unmatched_edges_def)
