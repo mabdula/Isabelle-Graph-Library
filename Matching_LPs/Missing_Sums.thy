@@ -119,7 +119,12 @@ lemma swap_zero_fun_nonneg:
   assumes "\<forall>ia < length xs. 0 \<le> f ia" 
   shows "\<forall>ia < length xs. 0 \<le> (f(0 := f j, j := f 0)) ia"
   using assms swap_fun_nonneg 
-  by (metis bot_nat_0.not_eq_extremum less_nat_zero_code)
+proof -
+  have "0 < length xs"
+    using assms(1) by linarith
+  then show ?thesis
+    using swap_fun_nonneg[of 0 xs j f] assms(1) assms(2) by simp
+qed
 
 lemma sum_of_swap_fun_eq:
   assumes "finite A"
