@@ -354,7 +354,12 @@ qed
       using dim_row_incidence_mat by simp
   qed
   have "j1 < (card (Vs E))" 
-    using dim_row_incidence_mat j1 by metis
+  proof -
+  have "j1 < dim_row (incidence_mat)"
+    using j1 by simp
+  then show ?thesis
+    by (simp add: dim_row_incidence_mat)
+qed
   have "pick I i \<noteq> pick I j" 
     by (metis assms(3-6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl not_less
         not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
