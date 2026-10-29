@@ -3710,7 +3710,27 @@ proof (rule ccontr)
       proof (rule ccontr)
         assume "{u',x''} \<notin> M'"
         with rm_G' \<open>{u',x''} \<in> G \<setminus> {x}\<close> consider (u'_matched') "\<exists>x3. {u',x3} \<in> M'" | (u'_unmatched') "\<exists>u''. {u'',x''} \<in> M'"
-          by (metis graph_invar_no_edge_no_vertex insert_commute maximal_matching_def ranking_matchingE)
+          proof -
+            obtain e where e_M': "e \<in> M'" and e_vtx: "u' \<in> e \<or> x'' \<in> e"
+              using ranking_matching_maximalE[OF rm_G' \<open>{u',x''} \<in> G \<setminus> {x}\<close>]
+              by blast
+            from e_M' e_vtx have "u' \<in> Vs M' \<or> x'' \<in> Vs M'"
+              by (auto intro: vs_member_intro)
+            then show thesis
+            proof (elim disjE)
+              assume "u' \<in> Vs M'"
+              then obtain x3 where "{u',x3} \<in> M'"
+                by (meson graph_invar_vertex_edgeE ranking_matchingE rm_G')
+              then show thesis
+                using that by blast
+            next
+              assume "x'' \<in> Vs M'"
+              then obtain u'' where "{u'',x''} \<in> M'"
+                by (meson graph_invar_vertex_edgeE' ranking_matchingE rm_G')
+              then show thesis
+                using that by blast
+            qed
+          qed
 
         then show False
         proof cases
