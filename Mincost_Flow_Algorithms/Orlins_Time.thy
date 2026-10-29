@@ -49,11 +49,20 @@ lemma terminated_mono: "return (prod.snd ((orlins_one_step_time_check  ^^ i) ini
                                  = (orlins_one_step_time_check  ^^ i) init"
 proof(induction k arbitrary: i init)
   case (Suc k)
-  then show ?case
-  apply(subst add.commute, subst add_Suc, subst add.commute)
-  apply(subst funpow.simps(2), subst o_apply)
-  apply(subst (2) surjective_pairing, subst orlins_one_step_time_check.simps)
-  by (smt (z3) return.exhaust surjective_pairing)
+  have IH: "(orlins_one_step_time_check ^^ (i + k)) init = (orlins_one_step_time_check ^^ i) init"
+    using Suc.IH[OF Suc.prems] .
+  have step_stable: "orlins_one_step_time_check ((orlins_one_step_time_check ^^ i) init)
+                     = (orlins_one_step_time_check ^^ i) init"
+    using terminated_mono_one_step[OF Suc.prems]
+    by (simp add: funpow.simps(2) o_apply)
+  have "(orlins_one_step_time_check ^^ (i + Suc k)) init
+      = orlins_one_step_time_check ((orlins_one_step_time_check ^^ (i + k)) init)"
+    by (simp add: add_Suc_right funpow.simps(2) o_apply)
+  also have "... = orlins_one_step_time_check ((orlins_one_step_time_check ^^ i) init)"
+    by (simp add: IH)
+  also have "... = (orlins_one_step_time_check ^^ i) init"
+    by (simp add: step_stable)
+  finally show ?case .
 qed simp
 
 lemma succ_fail_not_changes_time:
