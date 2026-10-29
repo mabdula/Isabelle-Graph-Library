@@ -3743,8 +3743,16 @@ proof
         qed
       have "row (A @\<^sub>r B) i = row A i" 
         using Missing_Matrix.append_rows_nth(1) True assms(1-2) by blast
-      then show ?thesis 
-        by (metis 1 2 3 4 asmi asmj index_row(1))
+      then have row_eq: "row (A @\<^sub>r B @\<^sub>r C) i = row ((A @\<^sub>r B) @\<^sub>r C) i"
+          using 1 2 by simp
+        have i1: "i < dim_row (A @\<^sub>r B @\<^sub>r C)"
+          using asmi 4 by simp
+        have i2: "i < dim_row ((A @\<^sub>r B) @\<^sub>r C)"
+          using asmi by simp
+        have "row (A @\<^sub>r B @\<^sub>r C) i $ j = row ((A @\<^sub>r B) @\<^sub>r C) i $ j"
+          using row_eq by simp
+        then show ?thesis
+          using 3 i1 i2 asmi asmj index_row(1) by simp
     next
       case False
       have 5: "row (A @\<^sub>r B) i = row B (i - nr1)" 
