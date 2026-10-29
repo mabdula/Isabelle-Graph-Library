@@ -3668,8 +3668,35 @@ proof
     have "i = nr - 1" 
       using False 6 asmi by linarith
     then show ?thesis 
-      by (metis 4 5 asmi asmj assms(1) carrier_matD(2) row_apend_last_row index_row(1)
-          submatrix_minus_last_row_carr row_carrier)
+    proof -
+      have i_eq: "i = nr - 1"
+        using False 6 asmi by linarith
+      have C_carr: "submatrix A {0..<nr - 1} UNIV \<in> carrier_mat (nr - 1) n"
+        using submatrix_minus_last_row_carr[OF assms(1)] .
+      have row_carr: "Matrix.row A (nr - 1) \<in> carrier_vec n"
+        using row_carrier[of A "nr-1"] carrier_matD(2)[OF assms(1)] by simp
+      have row_last: "Matrix.row (submatrix A {0..<nr - 1} UNIV @\<^sub>r
+                        mat_of_rows n [Matrix.row A (nr - 1)]) (nr - 1) = Matrix.row A (nr - 1)"
+        using row_apend_last_row[OF C_carr row_carr refl] .
+      have dimA_row: "i < dim_row A"
+        using i_eq assms(2) carrier_matD(1)[OF assms(1)] by simp
+      have dimA_col: "j < dim_col A"
+        using asmj 4 by simp
+      have "A $$ (i, j) = Matrix.row A i $ j"
+        using dimA_row dimA_col by (simp add: index_row(1))
+      also have "\<dots> = Matrix.row A (nr - 1) $ j"
+        using i_eq by simp
+      also have "\<dots> = Matrix.row (submatrix A {0..<nr - 1} UNIV @\<^sub>r
+                        mat_of_rows n [Matrix.row A (nr - 1)]) (nr - 1) $ j"
+        using row_last by simp
+      also have "\<dots> = Matrix.row (submatrix A {0..<nr - 1} UNIV @\<^sub>r
+                        mat_of_rows n [Matrix.row A (nr - 1)]) i $ j"
+        using i_eq by simp
+      also have "\<dots> = (submatrix A {0..<nr - 1} UNIV @\<^sub>r
+                      mat_of_rows n [Matrix.row A (nr - 1)]) $$ (i, j)"
+        using asmi asmj by (simp add: index_row(1))
+      finally show ?thesis .
+    qed
   qed
 qed
 
