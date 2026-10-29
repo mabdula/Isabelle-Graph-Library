@@ -11,6 +11,7 @@ theories
   Decomposition
   Hitchcock_Reduction
   Cost_Optimality
+  Optimality_Certification
   Preliminaries
   Residual
   STFlow

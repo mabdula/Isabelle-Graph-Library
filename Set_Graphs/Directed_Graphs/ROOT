@@ -41,7 +41,8 @@ session "Directed_Set_Graphs" = "HOL-Eisbach" +
     Multigraph_Weighted_Paths
     Multigraph
     Multigraph_Potentials
-    
+    Edge_Iterators
+
     CSR_Buildup
     CSR_Graph_Spec
     "Refinements/CSR_Buildup_Imperative"
