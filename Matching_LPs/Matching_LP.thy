@@ -515,7 +515,12 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
       by linarith
   qed
   then obtain ei1 where ei1: "ei1 \<in> ?indices"
-    by (metis card_eq_0_iff ex_in_conv not_less0)
+  proof -
+    have "?indices \<noteq> {}"
+      using gt_1 \<open>finite ?indices\<close> by (auto simp add: card_gt_0_iff)
+    then show thesis
+      using that by blast
+  qed
   with gt_1 have "0 < card (?indices - {ei1})"
     by auto
   then obtain ei2 where ei2: "ei2 \<in> ?indices" "ei1 \<noteq> ei2"
