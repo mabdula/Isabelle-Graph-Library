@@ -3758,10 +3758,15 @@ proof
       have 5: "row (A @\<^sub>r B) i = row B (i - nr1)" 
         by (meson B False True assms(1) gram_schmidt.append_rows_index_same' not_le)
       have "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" 
-        by (smt (verit, ccfv_SIG) B C False 4 add_diff_inverse_nat append_rows_def 
-            append_rows_index_same append_rows_index_same' asmi assms(1) carrier_matD(1)
-            carrier_matD(2) carrier_matI index_mat_four_block(2) index_row(2) index_zero_mat(2) 
-            nat_add_left_cancel_less not_less)
+      proof -
+        have BC: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n"
+          using assms(2) assms(3) by blast
+        have lt: "i < nr1 + (nr2 + nr3)"
+          using True by linarith
+        show ?thesis
+          using BC False lt assms(1) gram_schmidt.append_rows_index_same' not_le
+          by meson
+      qed
       then show ?thesis 
         by (metis (no_types, lifting) B C False True 1 5 3 4 add_diff_inverse_nat 
             append_rows_index_same asmi asmj carrier_matD(1) index_row(1) nat_add_left_cancel_less)
