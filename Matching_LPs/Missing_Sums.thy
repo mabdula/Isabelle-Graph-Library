@@ -589,7 +589,11 @@ proof -
   qed
   let ?f = "(\<lambda>i. c (i + 1) / (1 - c 0))" 
   have "sum ?f {0..<length ax} = 1" using sum_except_one 
-    by (metis \<open>Wsl = a # ax\<close> \<open>c 0 \<noteq> 1\<close> \<open>sum c {0..<length Wsl} = 1\<close>)
+  proof -
+    have "sum c {0..<length (a # ax)} = 1"
+      using \<open>sum c {0..<length Wsl} = 1\<close> \<open>Wsl = a # ax\<close> by simp
+    from sum_except_one[OF this \<open>c 0 \<noteq> 1\<close>] show ?thesis .
+  qed
   have "set ax \<subseteq> set Wsl" 
     using \<open>Wsl = a # ax\<close> by auto
   then have "set ax \<subseteq> carrier_vec n" using assms(1) Wc
