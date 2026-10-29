@@ -105,7 +105,12 @@ proof -
   then have "\<forall>y. y \<in> ?set_diff \<longrightarrow> List.member l y" using  \<open>length l > 0\<close> by simp
   then have "List.member l x" using \<open>x \<in> ?set_diff\<close> by simp
   then obtain i where "(nth l i) = x" "i < length l" 
-    by (metis \<open>\<forall>y. y \<in> set l - set k \<longrightarrow> y \<in> set l\<close> \<open>x \<in> set l - set k\<close> in_set_conv_nth)
+  proof -
+    have "x \<in> set l" using \<open>x \<in> set l - set k\<close> by simp
+    then obtain i where "i < length l" "l ! i = x"
+      using in_set_conv_nth by meson
+    then show thesis using that by auto
+  qed
   then have "(nth l i) \<in> ?set_diff" using \<open>x \<in> ?set_diff\<close> by simp
   then have "i \<in> ?S" using \<open>i < length l\<close> by simp
   then have "?S \<noteq> {} \<and> finite ?S" by auto
