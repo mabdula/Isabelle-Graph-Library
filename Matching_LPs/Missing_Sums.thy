@@ -568,8 +568,7 @@ lemma elem_of_P_is_lin_comb:
   obtains y z l where "y \<in> P \<inter> \<int>\<^sub>v" "z \<in> P" "x = l \<cdot>\<^sub>v y + (1 - l) \<cdot>\<^sub>v z" "l > 0 \<and> l < 1"
 proof -
   obtain Wsl c where Wc: "convex_lincomb_list c Wsl x \<and> c 0 \<noteq> 0 \<and> (set Wsl) \<subseteq> P \<inter> \<int>\<^sub>v \<and> Wsl \<noteq> []"
-    using elem_int_hull_lincomb_list 
-    by (metis assms)
+    by (rule elem_int_hull_lincomb_list[OF assms(1) assms(2) assms(3) assms(4)])
   then have lin_comb_x: 
     "lincomb_list c Wsl = x \<and> (\<forall> i < length Wsl. c i \<ge> 0) \<and> sum c {0..<length Wsl} = 1"
     using convex_lincomb_list_def nonneg_lincomb_list_def Wc by blast
