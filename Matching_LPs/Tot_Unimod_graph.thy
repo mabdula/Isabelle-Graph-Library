@@ -1062,8 +1062,7 @@ qed
               qed
             then have 31: "B\<^sup>T *\<^sub>v ?u = 0\<^sub>v (dim_row B\<^sup>T)" 
               unfolding mult_mat_vec_def zero_vec_def
-              by (metis (no_types, lifting) dim_vec eq_vecI index_transpose_mat(2) index_vec) 
-            have 3: "\<exists>v. v \<in> carrier_vec (dim_row B\<^sup>T) \<and> 
+              by auto            have 3: "\<exists>v. v \<in> carrier_vec (dim_row B\<^sup>T) \<and> 
                         v \<noteq> 0\<^sub>v (dim_row B\<^sup>T) \<and> B\<^sup>T *\<^sub>v v = 0\<^sub>v (dim_row B\<^sup>T)" 
               by (metis "1" 31 32 index_transpose_mat(2) vec_carrier)
             have 2: "B\<^sup>T \<in> carrier_mat (dim_row B) (dim_row B)" using 1 
