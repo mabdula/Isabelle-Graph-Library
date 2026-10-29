@@ -2,6 +2,8 @@ theory IDFS_Lists
   imports IDFS Alt_BFS_Lists
 begin
 
+provenance human
+
 section \<open>The Incremental DFS on Neighbour Lists\<close>
 
 text \<open>The incremental DFS for vertices that are natural numbers: graphs map a vertex to the list

@@ -2,6 +2,8 @@ theory Top_Loop
   imports Alt_BFS Layered_Digraph
 begin
 
+provenance human
+
 text \<open>The Micali-Vazirani top loop. Milestone 1: the output of alternating
 BFS, read on parity-labelled vertex copies and reversed, is a layered digraph
 in the sense required by DDFS.\<close>

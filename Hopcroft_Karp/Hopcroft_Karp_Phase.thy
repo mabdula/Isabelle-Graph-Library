@@ -3,6 +3,8 @@ theory Hopcroft_Karp_Phase
           "Basic_Matching.Matching_Specs"
 begin
 
+provenance ai_human
+
 section \<open>The Phase of the Hopcroft-Karp Algorithm\<close>
 
 text \<open>One phase of the Hopcroft-Karp algorithm, over abstract operations: the input graph and

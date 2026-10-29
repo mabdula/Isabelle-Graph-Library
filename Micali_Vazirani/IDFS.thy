@@ -2,6 +2,8 @@ theory IDFS
   imports DFS_Avoid Layered_Digraph
 begin
 
+provenance human
+
 text \<open>The incremental DFS assumed by the DDFS development, stated ops-generically over the
 executable ADT (\<^locale>\<open>Pair_Graph_Specs\<close> + \<^locale>\<open>Set2\<close>), so that the very same
 witness realises the DDFS interface under any backend --- plain sets (mathematical reading)

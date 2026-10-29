@@ -3,6 +3,8 @@ theory Layered_Digraph
           Directed_Set_Graphs.Pair_Graph_Specs
 begin
 
+provenance human
+
 text \<open>The layered digraphs searched by the incremental DFS (IDFS.thy) and by DDFS
 (DDFS.thy), together with the path vocabulary of both. Split out of DDFS.thy so that the
 incremental DFS and its users do not depend on DDFS.\<close>

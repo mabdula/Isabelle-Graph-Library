@@ -2,6 +2,8 @@ theory Alt_BFS_Example
   imports Alt_BFS Graph_Algorithms_Dev.BFS_Example
 begin
 
+provenance human
+
 instantiation parity :: linorder
 begin
 definition less_eq_parity :: "parity \<Rightarrow> parity \<Rightarrow> bool" where

@@ -2,6 +2,8 @@ theory Alt_BFS_Lists
   imports Alt_BFS_Dist
 begin
 
+provenance human
+
 section \<open>The Distance BFS on Neighbour Lists\<close>
 
 text \<open>An instance of the alternating BFS and of the distance BFS for vertices that are natural

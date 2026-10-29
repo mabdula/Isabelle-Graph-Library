@@ -2,6 +2,8 @@ theory DDFS_Example
   imports DDFS_Interpretation IDFS_Example Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
+provenance human
+
 text \<open>
 Executable end-to-end DDFS demo at the RBT backend.
 This file defines concrete plain-set digraphs (diamond, chain), their RBT

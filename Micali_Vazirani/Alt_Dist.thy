@@ -3,6 +3,8 @@ theory Alt_Dist
           "HOL-Library.Multiset" 
 begin
 
+provenance human
+
 section \<open>Alternating Distances\<close>
 
 subsection \<open>Alternating Distance from a vertex\<close>

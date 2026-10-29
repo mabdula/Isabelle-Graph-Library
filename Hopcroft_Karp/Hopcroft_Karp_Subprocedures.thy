@@ -3,6 +3,8 @@ theory Hopcroft_Karp_Subprocedures
           Basic_Matching.Matching_Augmentation_Executable
 begin
 
+provenance ai
+
 section \<open>Sub-procedures of the Hopcroft-Karp Algorithm at Red-Black Trees\<close>
 
 text \<open>The phase of @{theory Hopcroft_Karp.Hopcroft_Karp_Phase} at red-black trees: the input
@@ -13,13 +15,13 @@ text \<open>The phase of @{theory Hopcroft_Karp.Hopcroft_Karp_Phase} at red-blac
 
 subsection \<open>The matching, represented by its mate function\<close>
 
-definition "mate_get nil M u = (case lookup M u of None \<Rightarrow> nil | Some v \<Rightarrow> v)"
+definition \<^marker>\<open>provenance ai_human\<close> "mate_get nil M u = (case lookup M u of None \<Rightarrow> nil | Some v \<Rightarrow> v)"
 
 lemma mate_fixed_univ_map:
   "fixed_univ_map K M.invar (\<lambda>M u v. update u v M) (mate_get nil)"
   by unfold_locales (auto simp: mate_get_def M.map_update M.invar_update)
 
-global_interpretation mate: Matching_Augmentation_Specs "- {nil}" M.invar
+global_interpretation \<^marker>\<open>provenance ai_human\<close> mate: Matching_Augmentation_Specs "- {nil}" M.invar
   "\<lambda>M u v. update u v M" "mate_get nil" Leaf nil
   for nil
   defines mate_augment = mate.augment_impl
@@ -28,7 +30,7 @@ global_interpretation mate: Matching_Augmentation_Specs "- {nil}" M.invar
     and mate_lookup = mate.buddy_lookup
   by (auto intro!: Matching_Augmentation_Specs.intro mate_fixed_univ_map)
 
-interpretation mate_thms: matching_augmentation "- {nil}" M.invar
+interpretation \<^marker>\<open>provenance ai_human\<close> mate_thms: matching_augmentation "- {nil}" M.invar
   "\<lambda>M u v. update u v M" "mate_get nil" Leaf nil
   for nil
   by (auto intro!: matching_augmentation.intro matching_augmentation_axioms.intro
@@ -68,7 +70,7 @@ qed
 
 subsection \<open>The input\<close>
 
-global_interpretation hopcroft_karp_input_rbt: Hopcroft_Karp_Input
+global_interpretation \<^marker>\<open>provenance ai_human\<close> hopcroft_karp_input_rbt: Hopcroft_Karp_Input
   where insert = insert_rbt and isin = isin and t_set = Tree2.set_tree and sel = sel
     and vset_empty = Leaf and vset_delete = RBT.delete and vset_inv = vset_inv
     and lookup = lookup and adjmap_inv = M.invar
@@ -80,7 +82,7 @@ global_interpretation hopcroft_karp_input_rbt: Hopcroft_Karp_Input
 
 subsection \<open>The input graph as a list of edges\<close>
 
-definition "adjacency_edges Gin vs =
+definition \<^marker>\<open>provenance ai_human\<close> "adjacency_edges Gin vs =
   concat (map (\<lambda>u. map (Pair u) (Tree2.inorder (G.neighbourhood Gin u))) vs)"
 
 lemma adjacency_edges_set:
@@ -90,7 +92,7 @@ lemma adjacency_edges_set:
 
 subsection \<open>The phase\<close>
 
-global_interpretation phase: Hopcroft_Karp_Phase
+global_interpretation \<^marker>\<open>provenance ai_human\<close> phase: Hopcroft_Karp_Phase
   where empty = RBT_Set.empty and delete = RBT_Map.delete and lookup = lookup
     and insert = insert_rbt and isin = isin and t_set = Tree2.set_tree and sel = sel
     and update = update and adjmap_inv = M.invar and vset_empty = Leaf
@@ -163,10 +165,10 @@ lemma phase_bfs_code_unfold[code_unfold]:
 
 lemmas IDFS_impl_rbt_code[code] = phase.IDFS_impl_c_def[folded avoid_impl_rbt_def]
 
-definition "disjoint_paths_search_impl_rbt blk CG P =
+definition \<^marker>\<open>provenance ai_human\<close> "disjoint_paths_search_impl_rbt blk CG P =
   phase.phase_search.Disjoint_Paths_Search_impl blk CG P"
 
-definition "disjoint_paths_search_rbt blk rs CG P =
+definition \<^marker>\<open>provenance ai_human\<close> "disjoint_paths_search_rbt blk rs CG P =
   phase.phase_search.Disjoint_Paths_Search_run_impl blk rs CG P"
 
 lemmas disjoint_paths_search_impl_rbt_code[code] =

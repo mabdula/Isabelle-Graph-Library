@@ -2,6 +2,8 @@ theory IDFS_Example
   imports IDFS Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
+provenance human
+
 text \<open>The incremental DFS (DFS\_avoid) at the red-black-tree backend, with its code
 equations. Split out of DDFS\_Example.thy so that executable users of the incremental DFS
 do not depend on DDFS.\<close>

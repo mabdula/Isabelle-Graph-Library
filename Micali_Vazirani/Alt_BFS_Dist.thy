@@ -2,6 +2,8 @@ theory Alt_BFS_Dist
   imports Alt_BFS
 begin
 
+provenance human
+
 section \<open>The Alternating BFS with Distances Only\<close>
 
 text \<open>A variant of the alternating BFS that does not build the BFS DAG. It keeps the frontier,

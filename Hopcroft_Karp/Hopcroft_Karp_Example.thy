@@ -2,6 +2,8 @@ theory Hopcroft_Karp_Example
   imports Hopcroft_Karp_Subprocedures
 begin
 
+provenance ai_human
+
 section \<open>The Executable Hopcroft-Karp Algorithm\<close>
 
 subsection \<open>Code equations for the graph operations\<close>
