@@ -3805,9 +3805,31 @@ next
 next
   case (4 ee)
 hence c:"conv ((make_pair ee)) =  F ee"
-  by (metis assms(1) cost_flow_network.erev.simps(2) cost_flow_network.fstv.simps(1)
-      cost_flow_network.sndv.simps(1) image_iff local.algo.consist_fstv local.algo.consist_sndv
-      make_pair_fst_snd surjective_pairing)
+proof -
+  from 4 have F_mem: "F ee \<in> conv ` forst"
+    by (auto simp add: cost_flow_network.erev.simps)
+  then obtain x where x_forst: "x \<in> forst" and x_eq: "conv x = F ee"
+    by (auto simp add: image_iff)
+  have pair_mem: "(prod.fst x, prod.snd x) \<in> forst" using x_forst by simp
+  have fu: "cost_flow_network.fstv (conv x) = prod.fst x"
+    using local.algo.consist_fstv[OF assms(1) pair_mem] by simp
+  have su: "cost_flow_network.sndv (conv x) = prod.snd x"
+    using local.algo.consist_sndv[OF assms(1) pair_mem] by simp
+  have fst_eq: "prod.fst x = fst ee"
+    using fu x_eq cost_flow_network.fstv.simps by simp
+  have snd_eq: "prod.snd x = snd ee"
+    using su x_eq cost_flow_network.sndv.simps by simp
+  have x_is: "x = make_pair ee"
+  proof -
+    have "x = (prod.fst x, prod.snd x)" by (rule surjective_pairing)
+    also have "\<dots> = (fst ee, snd ee)" using fst_eq snd_eq by simp
+    also have "\<dots> = make_pair ee" by (simp add: make_pair_fst_snd)
+    finally show ?thesis .
+  qed
+  have "conv (make_pair ee) = conv x" using x_is by simp
+  also have "\<dots> = F ee" by (rule x_eq)
+  finally show ?thesis .
+qed
   hence b:"(make_pair ee) \<in> forst"
     using 4 by (fastforce simp add: make_pairs_are)
   hence a:"prod.swap (make_pair ee) \<in> forst"using 4 by (fastforce simp add: make_pairs_are)
