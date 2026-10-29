@@ -515,7 +515,18 @@ qed
   then obtain i where i: "i < length Wsl \<and> c i \<noteq> 0" 
     by (metis Ints_0 Ws_c'(2) Ws_subs Wsl assms(4) convex_lincom_int inf.boundedE)
   have Ws_swap: "Ws = set (Wsl[0:= Wsl ! i, i:=Wsl ! 0])"
-    by (metis i Wsl length_pos_if_in_set nth_mem set_swap)
+  proof -
+  have i_len: "i < length Wsl"
+    using i by blast
+  have i_mem: "Wsl ! i \<in> set Wsl"
+    using i_len by (rule nth_mem)
+  have len_pos: "0 < length Wsl"
+    using i_mem by (rule length_pos_if_in_set)
+  have swap_eq: "set (Wsl[0 := Wsl ! i, i := Wsl ! 0]) = set Wsl"
+    using set_swap[OF len_pos i_len] .
+  show ?thesis
+    using Wsl swap_eq by simp
+  qed
  have "Ws \<noteq> {}" 
     using \<open>x \<in> convex_hull Ws\<close> convex_hull_empty(2) by blast
  then have "Wsl \<noteq> []" 
