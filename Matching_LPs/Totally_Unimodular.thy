@@ -3925,7 +3925,8 @@ next
         by simp
     qed
   have 2: "submatrix B {0..<nr2} UNIV \<in> carrier_mat nr2 n" 
-    by (metis Suc(2) diff_Suc_1 submatrix_minus_last_row_carr)
+    using submatrix_minus_last_row_carr[OF Suc(2)]
+    by simp
   have 3: "\<forall> i < nr2. \<exists> j. row (submatrix B {0..<nr2} UNIV) i = unit_vec n j"
   proof safe
     fix i
