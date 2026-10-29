@@ -404,7 +404,14 @@ qed
   then have "(incidence_mat ) $$ (i1, k1) = 1" 
     using assms(7) i1 k1 by presburger
   have "(incidence_mat ) $$ (pick I j, pick J k) = B  $$ (j,k)" 
-    by (metis (no_types, lifting) assms(2,4,6) dim_submatrix(1-2) submatrix_index)
+  proof -
+    have j_lt: "j < card {i. i < dim_row (incidence_mat ) \<and> i \<in> I}"
+      using assms(4) assms(6) by (simp add: dim_submatrix(1))
+    have k_lt: "k < card {j. j < dim_col (incidence_mat ) \<and> j \<in> J}"
+      using assms(2) assms(6) by (simp add: dim_submatrix(2))
+    show "(incidence_mat ) $$ (pick I j, pick J k) = B  $$ (j, k)"
+      using submatrix_index[OF j_lt k_lt] assms(6) by simp
+  qed
   then have "(incidence_mat ) $$ (j1, k1) = 1" 
     using assms(7) j1 k1 by presburger
   then have 1: "(\<forall> t < card (Vs E). (t\<noteq>i1 \<and> t \<noteq> j1) \<longrightarrow> (incidence_mat ) $$ (t,k1) = 0)"
