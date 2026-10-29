@@ -277,7 +277,25 @@ next
         then obtain X Y where X_prop: "X \<in> \<X>" "x \<in> X" "X - {x} \<in> \<X>" "\<not> X \<subseteq> {x}"
                         and   Y_prop: "Y \<in> \<X>" "x \<in> Y" "Y - {x} \<in> \<X>" "\<not> Y \<subseteq> {x}" 
                         and  X_neq_Y: "X \<noteq> Y" 
-          by simp (metis (mono_tags, lifting) card.infinite card_le_Suc0_iff_eq le_SucI le_zero_eq mem_Collect_eq)
+          proof -
+            let ?A = "{X \<in> \<X>. x \<in> X \<and> X - {x} \<in> \<X> \<and> X - {x} \<noteq> {}}"
+            have not_mem: "{x} \<notin> ?A" by auto
+            have card_eq: "?A - {{x}} = ?A" using not_mem by auto
+            have fin_A: "finite ?A" using finite_X by (auto intro: finite_subset)
+            assume cont: "\<And>X Y. X \<in> \<X> \<Longrightarrow> x \<in> X \<Longrightarrow> X - {x} \<in> \<X> \<Longrightarrow> \<not> X \<subseteq> {x}
+              \<Longrightarrow> Y \<in> \<X> \<Longrightarrow> x \<in> Y \<Longrightarrow> Y - {x} \<in> \<X> \<Longrightarrow> \<not> Y \<subseteq> {x} \<Longrightarrow> X \<noteq> Y \<Longrightarrow> thesis"
+            assume neg: "\<not> Suc (card (?A - {{x}})) \<le> 2"
+            have not_le: "\<not> card ?A \<le> 1"
+              using neg by (simp add: card_eq)
+            then obtain a1 a2 where a1a2: "a1 \<in> ?A" "a2 \<in> ?A" "a1 \<noteq> a2"
+              using card_le_Suc0_iff_eq[OF fin_A] by auto
+            have X_witness: "a1 \<in> \<X>" "x \<in> a1" "a1 - {x} \<in> \<X>" "\<not> a1 \<subseteq> {x}"
+              using a1a2(1) by auto
+            have Y_witness: "a2 \<in> \<X>" "x \<in> a2" "a2 - {x} \<in> \<X>" "\<not> a2 \<subseteq> {x}"
+              using a1a2(2) by auto
+            show thesis
+              by (rule that[OF X_witness Y_witness a1a2(3)])
+          qed
         hence X_Y_subs:"X \<subseteq> Y \<or> Y \<subseteq> X" using IH(4)[simplified laminar_def] by auto
         show ?case
         proof(rule disjE[OF X_Y_subs], goal_cases)
