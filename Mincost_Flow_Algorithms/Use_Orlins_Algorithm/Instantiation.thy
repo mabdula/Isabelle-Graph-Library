@@ -2350,7 +2350,47 @@ proof(rule nexistsI, goal_cases)
                     awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (if l = [] then v' else last l);zs \<noteq> []\<rbrakk>
         \<Longrightarrow> awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (prod.snd (to_edge (last zs)))"
       for v v' l z zs 
-      by(metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+    proof -
+      assume c_eq: "c = v # v' # l"
+         and cc_eq: "cc = z # zs"
+         and z_eq: "to_edge z = (v, v')"
+         and map_eq: "map to_edge zs = edges_of_vwalk (v' # l)"
+         and awalk5: "awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (if l = [] then v' else last l)"
+         and zs_ne: "zs \<noteq> []"
+      have edges_ne: "edges_of_vwalk (v' # l) \<noteq> []"
+        using map_eq zs_ne by fastforce
+      have last_eq1: "last ((v, v') # edges_of_vwalk (v' # l)) = last (edges_of_vwalk (v' # l))"
+        using edges_ne by (simp add: last_ConsR)
+      have last_eq2: "last (edges_of_vwalk (v' # l)) = to_edge (last zs)"
+      proof -
+        have "last (edges_of_vwalk (v' # l)) = last (map to_edge zs)"
+          using map_eq by simp
+        also have "\<dots> = to_edge (last zs)"
+          using zs_ne by (rule last_map)
+        finally show ?thesis .
+      qed
+      have p_ne: "(v, v') # edges_of_vwalk (v' # l) \<noteq> []" by simp
+      have target_snd: "prod.snd (to_edge (last zs)) = (if l = [] then v' else last l)"
+      proof (cases "l = []")
+        case True
+        then show ?thesis
+          using map_eq zs_ne by simp
+      next
+        case False
+        then have len: "2 \<le> length (v' # l)" by (cases l) simp_all
+        have lv: "last (v' # l) = prod.snd (last (edges_of_vwalk (v' # l)))"
+          using len by (rule Vwalk.last_v_snd_last_e)
+        have "prod.snd (to_edge (last zs)) = prod.snd (last (edges_of_vwalk (v' # l)))"
+          using last_eq2 by simp
+        also have "\<dots> = last (v' # l)"
+          by (rule sym[OF lv])
+        also have "\<dots> = (if l = [] then v' else last l)"
+          by (cases l) simp_all
+        finally show ?thesis .
+      qed
+      show "awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (prod.snd (to_edge (last zs)))"
+        using awalk5 target_snd by simp
+    qed
       show ?thesis
     apply(rule edges_of_vwalk.elims [OF sym[OF same_edges]])
     using path_with_props(1) same_edges 
