@@ -2340,7 +2340,13 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
       by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
     hence costs_split: "foldr (\<lambda>x. (+) (\<cc> x)) p 0 =
                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
-      by(induction p1, auto, metis foldr_append foldr_last_append map_sum_split)  
+      proof -
+        have general: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@[e]@p2) 0 =
+                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
+          by (induction p1) (auto simp add: algebra_simps)
+        from p1p2 have "p = p1@[e]@p2" by simp
+        then show ?thesis using general by simp
+      qed
     have costs_split2: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@p2) 0 =
                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
         by(induction p1, auto)  
