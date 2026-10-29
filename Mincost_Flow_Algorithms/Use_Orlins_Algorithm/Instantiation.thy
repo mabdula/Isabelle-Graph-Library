@@ -2410,7 +2410,14 @@ proof(rule nexistsI, goal_cases)
   proof(rule, rule ccontr, goal_cases)
     case (1 e)
     hence "to_edge e \<in> set (edges_of_vwalk c)"
-      by (metis map_in_set same_edges)
+    proof -
+      from 1(1) have img: "to_edge e \<in> to_edge ` set cc"
+        by (rule imageI)
+      then have inset: "to_edge e \<in> set (map to_edge cc)"
+        by simp
+      from inset show ?thesis
+        by (auto simp: same_edges)
+    qed
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = c" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
