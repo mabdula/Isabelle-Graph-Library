@@ -3767,9 +3767,34 @@ proof
           using BC False lt assms(1) gram_schmidt.append_rows_index_same' not_le
           by meson
       qed
-      then show ?thesis 
-        by (metis (no_types, lifting) B C False True 1 5 3 4 add_diff_inverse_nat 
-            append_rows_index_same asmi asmj carrier_matD(1) index_row(1) nat_add_left_cancel_less)
+      then have row_eq: "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" .
+        show ?thesis
+        proof -
+          have i_ge: "nr1 \<le> i"
+            using False by linarith
+          have i_lt_sum: "i < nr1 + nr2"
+            using True by linarith
+          have i_nr1_less: "i - nr1 < nr2"
+            using i_ge i_lt_sum by linarith
+          have i_lt_dimB: "i - nr1 < dim_row B"
+            using i_nr1_less B by simp
+          have row_B_eq: "row (B @\<^sub>r C) (i - nr1) = row B (i - nr1)"
+            using append_rows_index_same[OF B C, rule_format, of "i - nr1", OF i_lt_dimB] .
+          have row_lhs: "row (A @\<^sub>r B @\<^sub>r C) i = row B (i - nr1)"
+            using row_eq row_B_eq by simp
+          have row_rhs: "row ((A @\<^sub>r B) @\<^sub>r C) i = row B (i - nr1)"
+            using 1 5 by simp
+          have i_lt_dim: "i < dim_row (A @\<^sub>r B @\<^sub>r C)"
+            using asmi 4 by simp
+          have j_lt_dim: "j < dim_col (A @\<^sub>r B @\<^sub>r C)"
+            using asmj 3 by simp
+          have step1: "(A @\<^sub>r B @\<^sub>r C) $$ (i, j) = row (A @\<^sub>r B @\<^sub>r C) i $ j"
+            using i_lt_dim j_lt_dim by (simp add: index_row)
+          have step2: "((A @\<^sub>r B) @\<^sub>r C) $$ (i, j) = row ((A @\<^sub>r B) @\<^sub>r C) i $ j"
+            using asmi asmj by (simp add: index_row)
+          show ?thesis
+            using step1 step2 row_lhs row_rhs by simp
+        qed
     qed
   next
     case False
