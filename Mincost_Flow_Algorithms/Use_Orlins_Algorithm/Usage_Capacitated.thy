@@ -1026,7 +1026,7 @@ proof(rule not_has_neg_infty_cycleI, goal_cases)
     using top(1,2)
     by(induction D)(auto simp add: \<E>_impl'_def \<c>'_def c_lookup'_def)
   then obtain D1 D2 where D_prop:"D = D1@[new_edge (create_edge t s)]@D2" "new_edge (create_edge t s) \<notin> set D1"
-    by (metis single_in_append split_list_first)
+    by (fastforce dest: split_list_first)
   then obtain u where u_prop: "awalk (make_pair' ` set \<E>_impl') u
                     (map make_pair' (D1@[new_edge (create_edge t s)]@D2)) u"
       "0 < length (map make_pair' (D1@[new_edge (create_edge t s)]@D2))"
