@@ -1178,7 +1178,12 @@ proof -
     have 7: "submatrix (A @\<^sub>r - 1\<^sub>m n) {0..<nr} UNIV = 
             submatrix A {0..<nr} UNIV @\<^sub>r submatrix (- 1\<^sub>m n) 
                                          ((\<lambda> i. i - nr) ` ({0..<nr} - {0..<nr})) UNIV"
-      by (metis append_submatrix_is_submatrix assms(1) one_carrier_mat uminus_carrier_iff_mat)
+    proof -
+      have "- 1\<^sub>m n \<in> carrier_mat n n"
+        by (simp add: uminus_carrier_iff_mat one_carrier_mat)
+      from append_submatrix_is_submatrix[OF assms(1) this]
+      show ?thesis .
+    qed
     have "submatrix A {0..<nr} UNIV = A" 
       by (metis assms(1) assms(2) itself_is_subsyst_set_idcs prod.sel(1) sub_system_fst)
     have "submatrix (- 1\<^sub>m n) ((\<lambda> i. i - nr) ` ({0..<nr} - {0..<nr})) UNIV =
