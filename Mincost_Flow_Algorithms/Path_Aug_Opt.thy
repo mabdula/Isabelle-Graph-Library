@@ -219,10 +219,40 @@ text \<open>Furthermore, we see some topological properties.\<close>
 lemma h_path_split1: 
   assumes "hpath (xs@ys)" "xs \<noteq> []"
   shows "hpath xs"
-  using assms(2)
-  apply(induction "xs@ys" arbitrary:  xs ys rule: hpath_induct, simp add: assms)
-   apply(force intro: list.exhaust hpath_intros) 
-  by (smt (verit, ccfv_SIG) append_eq_Cons_conv hpath_simps)  
+proof -
+  have aux: "\<And>As Bs. xs @ ys = As @ Bs \<Longrightarrow> As \<noteq> [] \<Longrightarrow> hpath As"
+  proof (induction arbitrary: As Bs rule: hpath_induct[OF assms(1)])
+    case (1 e As Bs)
+    have "As = [e]"
+      using "1.prems" by (cases As) auto
+    then show ?case
+      by (simp add: hpath_intros(1))
+  next
+    case (2 e d es As Bs)
+    obtain xs' where xs_def: "As = e # xs'" "d # es = xs' @ Bs"
+      using "2.prems" by (cases As) auto
+    show ?case
+    proof (cases "xs' = []")
+      case True
+      with xs_def show ?thesis
+        by (simp add: hpath_intros(1))
+    next
+      case False
+      with xs_def(2) obtain es' where es'_def: "xs' = d # es'" "es = es' @ Bs"
+        by (auto simp: Cons_eq_append_conv)
+      have hxs': "hpath xs'"
+        using "2.IH"[OF xs_def(2) False] .
+      have "hpath (d # es')"
+        using hxs' es'_def(1) by simp
+      hence "hpath (e # d # es')"
+        using "2.hyps"(1) hpath_intros(2) by blast
+      then show ?thesis
+        using xs_def(1) es'_def(1) by simp
+    qed
+  qed
+  then show ?thesis
+    using aux[of xs ys] assms(2) by simp
+qed
 
 lemma h_path_split2: 
   assumes "hpath (xs@ys)" "ys \<noteq> []"
