@@ -408,7 +408,14 @@ proof -
   have "length (a # ax) = 1 + length ax" 
     by simp
   then have 0:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = sum (\<lambda>i. f i) {1..<length (a # ax)}"
-    by (metis Nat.add_0_right  add.commute sum.shift_bounds_nat_ivl)
+proof -
+  have shift: "sum f {0 + 1..<length ax + 1} = sum (\<lambda>i. f (i + 1)) {0..<length ax}"
+    by (rule sum.shift_bounds_nat_ivl)
+  have len: "length (a # ax) = length ax + 1"
+    by simp
+  from shift len show ?thesis
+    by simp
+qed
   then have "(1/(1 - f 0)) * sum (\<lambda>i. f (i + 1)) {0..<length ax} =
               (1/(1 - f 0)) * sum (\<lambda>i. f i) {1..<length (a # ax)}" by simp
   have 1:"sum ?g {0..<length ax} = (1/(1 - f 0)) * sum (\<lambda>i. f (i + 1)) {0..<length ax}"  
