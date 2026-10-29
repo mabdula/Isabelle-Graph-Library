@@ -88,7 +88,30 @@ qed
        x = another_edge (ab, b) ;
        y = another_edge (aa, ba) ; z = another_edge (ab, bb)\<rbrakk> \<Longrightarrow> b \<le> bb"
     for aa ab b ba bb
-    using order.trans by metis
+  proof -
+    assume p1: "if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False"
+      and p2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
+      and "x = another_edge (ab, b)" and "y = another_edge (aa, ba)" and "z = another_edge (ab, bb)"
+    have p1': "ab < aa \<or> ab = aa \<and> b \<le> ba"
+      using p1 by (auto simp add: less_le_not_le split: if_splits)
+    have p2': "aa < ab \<or> aa = ab \<and> ba \<le> bb"
+      using p2 by (auto simp add: less_le_not_le split: if_splits)
+    show "b \<le> bb"
+    proof (cases "ab = aa")
+      case True
+      then have "\<not> ab < aa" by simp
+      with p1' have hb: "b \<le> ba" by auto
+      from True have "\<not> aa < ab" by simp
+      with p2' have hba: "ba \<le> bb" by auto
+      from hb hba show ?thesis by (rule order_trans)
+    next
+      case False
+      with p1' have h1: "ab < aa" by auto
+      from False p2' have h2: "aa < ab" by auto
+      from order_less_trans[OF h1 h2] have "ab < ab" .
+      then show ?thesis by simp
+    qed
+  qed
   have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = another_edge (a, b) ;
