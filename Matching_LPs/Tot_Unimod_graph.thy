@@ -243,8 +243,16 @@ next
   then show ?thesis
     using pick_in_set_inf by auto
 qed
-  ultimately show ?thesis 
-    by (metis (no_types, lifting) assms dim_submatrix(1) row_submatrix_UNIV)
+  moreover have "row B j = row A (pick I j)"
+  proof -
+    have "dim_row B = card {i. i < dim_row A \<and> i \<in> I}"
+      using assms(1) dim_submatrix(1) by simp
+    hence j_less: "j < card {i. i < dim_row A \<and> i \<in> I}"
+      using assms(2) by linarith
+    thus ?thesis
+      using assms(1) row_submatrix_UNIV[OF j_less] by simp
+  qed
+  ultimately show ?thesis by blast
 qed
 
 lemma submatrix_not_more_than_two:
