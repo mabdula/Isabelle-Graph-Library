@@ -181,8 +181,15 @@ qed
   hence a2:"b\<bullet>y  =  (A *\<^sub>v x) \<bullet>y" by auto
   have "c\<bullet>x - (A\<^sup>T *\<^sub>v y)\<bullet>x = 0"
     using slack_dual
-    by (metis A c carrier_matD(2) carrier_vecI dim_mult_mat_vec index_transpose_mat(2)
-        minus_scalar_prod_distrib x)
+  proof -
+    have AT: "A\<^sup>T \<in> carrier_mat nc nr"
+      using A by simp
+    have ATy: "A\<^sup>T *\<^sub>v y \<in> carrier_vec nc"
+      using AT y by (rule mult_mat_vec_carrier)
+    have "(c - A\<^sup>T *\<^sub>v y) \<bullet> x = c \<bullet> x - (A\<^sup>T *\<^sub>v y) \<bullet> x"
+      using minus_scalar_prod_distrib[OF c ATy x] .
+    with slack_dual show ?thesis by simp
+  qed
   hence a3:  "c\<bullet>x = (A\<^sup>T *\<^sub>v y)\<bullet>x " by simp
   moreover have "... = (A *\<^sub>v x) \<bullet>y"
     by (metis A comm_scalar_prod mult_mat_vec_carrier transpose_vec_mult_scalar x y)
