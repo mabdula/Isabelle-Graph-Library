@@ -607,7 +607,12 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
             using j1 j2 by (simp add: cols_nth)
         qed
         have 3:"\<zero>\<^bsub>module_vec TYPE(real) (dim_row B)\<^esub>\<in> set (cols B)" 
-          by (metis \<open>0\<^sub>v (dim_row B) \<in> set (cols B)\<close> module_vec_simps(2))
+        proof -
+          have "\<zero>\<^bsub>module_vec TYPE(real) (dim_row B)\<^esub> = 0\<^sub>v (dim_row B)"
+            by (simp add: module_vec_simps(2))
+          then show ?thesis
+            using \<open>0\<^sub>v (dim_row B) \<in> set (cols B)\<close> by simp
+        qed
         have 4:"Module.module class_ring (module_vec TYPE(real) (dim_row B))" 
           using vec_module by blast
         have 5:" carrier class_ring \<noteq> {\<zero>\<^bsub>class_ring\<^esub> ::real}" using False 
