@@ -230,7 +230,12 @@ next
 
 lemma is_integral_neg: "is_integral x \<Longrightarrow> is_integral (- x)"
   unfolding is_integral_def 
-  by (metis of_int_minus)
+proof -
+    assume "\<exists>n::int. x = real_of_int n"
+    then obtain n where "x = real_of_int n" by auto
+    hence "- x = real_of_int (- n)" by simp
+    thus "\<exists>n::int. - x = real_of_int n" by (rule exI)
+  qed
 
 lemmas is_integral_ceiling = ceiling_of_int
 
