@@ -3464,7 +3464,21 @@ lemma get_source_for_target_ax:
     using s_props by(auto simp add: ss_is_s connections_def  bf_def)
   have s_neq_t: "s \<noteq> t"
     using t_prop s_prop "1"(1) "1"(2) invar_gamma_def
-    by (smt (verit, best) "1"(6) mult_minus_left mult_mono')
+  proof -
+    show "s \<noteq> t"
+    proof
+      assume st: "s = t"
+      have gam: "0 < current_\<gamma> state" using "1"(6) invar_gamma_def by auto
+      have hi: "a_balance state t < (\<epsilon> - 1) * current_\<gamma> state"
+        using t_prop "1"(1) "1"(2) by simp
+      have lo: "\<epsilon> * current_\<gamma> state < a_balance state t"
+        using s_prop st by simp
+      have "\<epsilon> * current_\<gamma> state < (\<epsilon> - 1) * current_\<gamma> state"
+        by (rule less_trans[OF lo hi])
+      then show False
+        using gam mult_less_cancel_right_disj[of \<epsilon> "current_\<gamma> state" "\<epsilon> - 1"] by simp
+    qed
+  qed
   have s_in_dom: "s \<in> dom (connection_lookup  connections)"
     using s_prop
     by (auto simp add: bellman_ford.bellman_ford_init_dom_is[OF bellman_ford]
