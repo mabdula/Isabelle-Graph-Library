@@ -16,6 +16,9 @@
 !/LICENSE
 !/ARTEFACT_README.md
 !Paper_Index/README.md
+!/evaluation/experiments_smoke.sh
+!/evaluation/experiments_8h.sh
+!/evaluation/experiments_full.sh
 
 # editor backups and autosaves
 *~
