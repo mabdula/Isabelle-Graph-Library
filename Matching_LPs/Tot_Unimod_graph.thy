@@ -877,8 +877,16 @@ qed
                   by (meson atLeastLessThan_iff empty_subsetI finite_atLeastLessThan i_j(3) i_j(4) 
                       insert_subset sum.subset_diff zero_order(1))
                 have 16: "\<forall> k \<in> ({0..<dim_row B} - {i,j}). (col B t $ k) * (?u $ k) = 0" 
-                  by (metis Diff_iff 15 atLeastLessThan_iff insertCI 
-                      vector_space_over_itself.scale_eq_0_iff)
+                proof
+                  fix k
+                  assume "k \<in> {0..<dim_row B} - {i,j}"
+                  then have k: "k < dim_row B" "k \<noteq> i" "k \<noteq> j"
+                    by auto
+                  then have "col B t $ k = 0"
+                    using 15 by blast
+                  then show "(col B t $ k) * (?u $ k) = 0"
+                    by simp
+                qed
                 have 18: "sum (\<lambda> k. (col B t $ k) * (?u $ k)) ({0..<dim_row B} - {i,j}) = 0" 
                   by (metis (no_types, lifting) "16" sum.neutral)
                 have "sum (\<lambda> k. (col B t $ k) * (?u $ k)) {i,j} = 
