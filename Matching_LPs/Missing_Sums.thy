@@ -433,7 +433,12 @@ qed
   then have 2:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = 1 - f 0" 
     using 0 by linarith 
   then have "(1/(1 - f 0)) * (1 - f 0) =  1" using `f 0 \<noteq> 1` 
-    by (metis nonzero_eq_divide_eq r_right_minus_eq)
+  proof -
+    have "1 - f 0 \<noteq> 0"
+      using `f 0 \<noteq> 1` by simp
+    then show ?thesis
+      by (simp add: divide_simps)
+  qed
   then show ?thesis 
     using 1 2 by presburger
 qed
