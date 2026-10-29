@@ -857,7 +857,14 @@ qed
                 using submatrix_not_more_than_two[OF 6 t i_j(3) i_j(4) i_j(5) less(2)] using  i_j 
                 by blast 
               then have 15: "\<forall>k < dim_row B. (k \<noteq> i \<and> k \<noteq> j) \<longrightarrow> col B t $ k = 0" 
-                by (metis index_col t)
+              proof (intro allI impI)
+                fix k
+                assume "k < dim_row B" "k \<noteq> i \<and> k \<noteq> j"
+                then have "B $$ (k, t) = 0"
+                  using \<open>\<forall>k < dim_row B. (k \<noteq> i \<and> k \<noteq> j) \<longrightarrow> B $$ (k,t) = 0\<close> by blast
+                then show "col B t $ k = 0"
+                  using index_col[OF \<open>k < dim_row B\<close> t] by simp
+              qed
               have 21: "col B t \<bullet> ?u = sum (\<lambda> k. (col B t $ k) * (?u $ k)) {0..<dim_row B}"
                 unfolding scalar_prod_def 
                 by (metis dim_vec)
