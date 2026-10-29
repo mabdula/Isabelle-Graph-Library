@@ -361,8 +361,35 @@ qed
     by (simp add: dim_row_incidence_mat)
 qed
   have "pick I i \<noteq> pick I j" 
-    by (metis assms(3-6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl not_less
-        not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
+  proof (cases "finite I")
+    case True
+    have dimB: "dim_row B \<le> card I"
+      using dim_row_mat_less_card_I[OF True] assms(6) by simp
+    have iI: "i < card I" and jI: "j < card I"
+      using assms(3,4) dimB by simp_all
+    consider (less) "i < j" | (equal) "i = j" | (greater) "j < i"
+      by linarith
+    then show ?thesis
+    proof cases
+      case less
+      with True jI have "pick I i < pick I j"
+        using pick_mono_le by blast
+      then show ?thesis by simp
+    next
+      case equal
+      with assms(5) show ?thesis by simp
+    next
+      case greater
+      with True iI have "pick I j < pick I i"
+        using pick_mono_le by blast
+      then show ?thesis by simp
+    qed
+  next
+    case False
+    then have "infinite I" by simp
+    then show ?thesis
+      using pick_eq_iff_inf assms(5) by blast
+  qed
   then have "i1 \<noteq> j1" 
     using i1 j1 by blast
   have "(incidence_mat ) $$ (pick I i, pick J k) = B  $$ (i,k)" 
