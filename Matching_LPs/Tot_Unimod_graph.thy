@@ -450,8 +450,39 @@ qed
     qed
   qed
   have "pick I t \<noteq> pick I j"
-    by (metis asm(1,3) assms(4,6) diff_is_0_eq diff_less_mono dim_row_mat_less_card_I less_irrefl 
-        not_less not_less_iff_gr_or_eq not_less_zero pick_mono_inf pick_mono_le)
+  proof(cases "finite I")
+    case True
+    have dim_le: "dim_row B \<le> card I"
+      using dim_row_mat_less_card_I[OF True] assms(6) by simp
+    have t_lt: "t < card I" using asm(1) dim_le by linarith
+    have j_lt: "j < card I" using assms(4) dim_le by linarith
+    have "t < j \<or> j < t" using asm(3) by linarith
+    then show ?thesis
+    proof
+      assume lt: "t < j"
+      have "pick I t < pick I j" using pick_mono_le[OF j_lt lt] .
+      thus ?thesis by (rule less_imp_neq)
+    next
+      assume gt: "j < t"
+      have "pick I j < pick I t" using pick_mono_le[OF t_lt gt] .
+      hence "pick I j \<noteq> pick I t" by (rule less_imp_neq)
+      thus ?thesis by (rule not_sym)
+    qed
+  next
+    case False
+    have "t < j \<or> j < t" using asm(3) by linarith
+    then show ?thesis
+    proof
+      assume lt: "t < j"
+      have "pick I t < pick I j" using pick_mono_inf[OF False lt] .
+      thus ?thesis by (rule less_imp_neq)
+    next
+      assume gt: "j < t"
+      have "pick I j < pick I t" using pick_mono_inf[OF False gt] .
+      hence "pick I j \<noteq> pick I t" by (rule less_imp_neq)
+      thus ?thesis by (rule not_sym)
+    qed
+  qed
   then have "(incidence_mat) $$ (t1, k1) = 0" 
     by (metis 1 \<open>pick I t \<noteq> pick I i\<close> dim_row_incidence_mat i1 j1 t1)
   show "B $$ (t,k) = 0"
