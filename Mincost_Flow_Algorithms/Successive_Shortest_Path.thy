@@ -234,7 +234,7 @@ lemma SSP_simps:
     apply(thin_tac " SSP_call_4_cond state")
     apply(subst SSP.psimps[OF assms])
     unfolding SSP_upd4_def
-    apply(simp split: option.splits if_splits, metis)
+    apply(simp split: option.splits if_splits, simp add: Let_def)
     done    
   by (auto simp add: SSP.psimps[OF assms]
                        SSP_ret_1_cond_def SSP_ret1_def
