@@ -1237,7 +1237,18 @@ proof(goal_cases)
     using \<open>forest G'\<close>  \<open>G \<subseteq> G'\<close> 
     by(auto dest: forest_subset intro!: forest_shortest_path)
   then show ?case
-    by (metis (no_types, lifting) "1"(1) "1"(2) "1"(3) \<open>vwalk_bet G u p v\<close> distance_set_0 distance_set_shortest_path reachable_in_dVs(1) vwalk_bet_endpoints(2) vwalk_bet_subset)
+    proof -
+      from \<open>vwalk_bet G u p v\<close> \<open>G \<subseteq> G'\<close> have "vwalk_bet G' u p v"
+        by (rule vwalk_bet_subset)
+      with \<open>forest G'\<close> have "shortest_path G' u p v"
+        by (rule forest_shortest_path)
+      with \<open>shortest_path G u p v\<close> have
+        "distance_set G Vs v = distance G u v" and
+        "distance_set G' Vs v = distance G' u v"
+        using \<open>u \<in> Vs\<close> by (auto intro: distance_set_shortest_path)
+      then show ?case
+        using "1"(2) "1"(3) "1"(4) by (auto intro: distance_forest)
+    qed
 qed*)
 
 subsection \<open>Level Graphs\<close>
