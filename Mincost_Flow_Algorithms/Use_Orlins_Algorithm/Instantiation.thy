@@ -4533,7 +4533,28 @@ proof(goal_cases)
     ultimately have "resreach  (abstract_flow_map f) x t"
       using cost_flow_network.augpath_imp_resreach[OF , of " (abstract_flow_map f)" pp]
             path_hd p_prop(3,4) path_last
-      by (metis One_nat_def hd_append2 last_snoc le_numeral_extra(4) list.size(3) not_less_eq_eq subsetI)
+      proof -
+        have p_ne: "p \<noteq> []"
+          using p_prop(4) by auto
+        have fstv_hd_pp: "fstv (hd pp) = x"
+          using path_hd[symmetric] by (simp add: last_snoc)
+        have sndv_last_pp: "sndv (last pp) = t"
+          by (simp add: path_last[symmetric] hd_append2[OF p_ne] p_prop(3))
+        have Rcap_pp: "0 < cost_flow_network.Rcap (abstract_flow_map f) (set pp)"
+          using transformed(2) knowledge(3)
+          by (auto intro: linorder_class.Min_gr_iff simp add: cost_flow_network.Rcap_def)
+        have aug_pp: "augpath (abstract_flow_map f) pp"
+          using prepath Rcap_pp by (simp add: cost_flow_network.augpath_def)
+        have subs_pp: "set pp \<subseteq> EEE"
+        proof (rule subsetI)
+          fix e assume "e \<in> set pp"
+          thus "e \<in> EEE"
+            using transformed(2)[of e] not_blocked_in_E cost_flow_network.o_edge_res by blast
+        qed
+        show ?thesis
+          using aug_pp fstv_hd_pp sndv_last_pp subs_pp
+          by (fastforce intro: cost_flow_network.augpath_imp_resreach)
+      qed
     thus False
       using 1 x_prop(1,2) knowledge(2) vs_is_V
       by simp
