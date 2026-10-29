@@ -1097,7 +1097,8 @@ qed
                   using det_0_iff_vec_prod_zero[OF 2] by blast
               qed
             then have "det B = 0" 
-              by (metis "2" Determinant.det_transpose Matrix.transpose_transpose)
+              using Determinant.det_transpose[OF 2] Matrix.transpose_transpose[of B] \<open>det B\<^sup>T = 0\<close>
+              by simp
             then show ?thesis 
               by blast
           qed
