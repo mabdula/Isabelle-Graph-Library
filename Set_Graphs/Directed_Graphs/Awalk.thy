@@ -1265,7 +1265,7 @@ lemma awalk_induct:
   shows   " P E u es v"
   using assms apply(induction es arbitrary: u, simp)
   subgoal for a es u
-    by(cases es, simp, metis awalk_Cons_iff awalk_Nil_iff, simp, metis awalk_Cons_iff)
+    by (cases es) (auto simp add: awalk_Cons_iff awalk_Nil_iff assms(3) assms(4))
   done
 
 lemma awalk_inductive_simps: 
