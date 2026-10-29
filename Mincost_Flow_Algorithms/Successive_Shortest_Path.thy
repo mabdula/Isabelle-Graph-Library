@@ -1081,13 +1081,17 @@ proof-
     proof
       assume "\<exists>f. is_Opt \<b> f "
       then obtain f where f_prop:"is_Opt \<b> f" by auto
-      have "sum \<b> (Rescut \<f> s) \<le> Cap (Rescut \<f> s)"
+      have le_cut: "sum \<b> (Rescut \<f> s) \<le> Cap (Rescut \<f> s)"
         using f_prop bsf_prop get_source_axioms 
         by (auto intro!: flow_less_cut[of f,simplified Extended_Real.sum_ereal]
                          Rescut_around_in_V 
                simp add:  is_Opt_def )
-      thus False using sumbb sumb0 rescutsat 
-        by (smt (verit, ccfv_threshold) ereal_less_eq(3))
+      have "ereal (sum \<b> (Rescut \<f> s)) \<le> ereal (sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s))"
+        using le_cut rescutsat by simp
+      hence "sum \<b> (Rescut \<f> s) \<le> sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s)"
+        by (simp add: ereal_less_eq)
+      thus False
+        using sumbb' by linarith
     qed
   qed
   show "return final = notyetterm \<Longrightarrow> False"
