@@ -4449,7 +4449,18 @@ proof(goal_cases)
     by(auto simp add: get_target_def get_target_aux_def) 
   hence bt0:"abstract_bal_map b t < 0"   
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def
-      by (smt (verit) divide_less_eq_1_pos mult_minus_left mult_nonneg_nonneg)+
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using knowledge(7) knowledge(2) by (simp add: invar_gamma_def)
+    have eps_lt_1: "\<epsilon> < 1"
+      using \<epsilon>_axiom(4) by linarith
+    have one_minus_eps_pos: "1 - \<epsilon> > 0"
+      using eps_lt_1 by linarith
+    have prod_pos: "(1 - \<epsilon>) * \<gamma> > 0"
+      using one_minus_eps_pos gamma_pos by (rule mult_pos_pos)
+    show ?thesis
+      using t_prop(1) prod_pos by linarith
+  qed
   have "\<not> (\<exists> s \<in> VV. abstract_bal_map b s > \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t) \<longleftrightarrow> 
             (ss = None)"
   proof(rule,  all \<open>rule ccontr\<close>, goal_cases)
