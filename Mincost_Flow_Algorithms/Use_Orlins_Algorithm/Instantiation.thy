@@ -2518,8 +2518,25 @@ proof( goal_cases)
          t \<in> set vs \<and> prod.snd (the (connection_lookup connections t)) < PInfty"
     using t_props by(auto simp add: tt_is_t connections_def  bf_def)
   have t_neq_s: "t \<noteq> s"
-    using t_prop s_prop "1"(1) "1"(2) invar_gamma_def
-    by (smt (verit, best) "1"(6) mult_minus_left mult_mono')
+  proof (rule notI)
+    assume t_eq_s: "t = s"
+    have gamma_pos: "0 < \<gamma>"
+      using "1"(6) "1"(2) by (simp add: invar_gamma_def)
+    have t_prop1: "a_balance state t < - \<epsilon> * current_\<gamma> state"
+      using t_prop by (rule conjunct1)
+    have upper: "abstract_bal_map b s < - \<epsilon> * \<gamma>"
+      using t_prop1 t_eq_s "1"(1) "1"(2) by auto
+    have lower: "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b s"
+      using s_prop(2) by simp
+    have combine_ineq: "(1 - \<epsilon>) * \<gamma> < - \<epsilon> * \<gamma>"
+      using lower upper by linarith
+    have eq1: "(1 - \<epsilon>) * \<gamma> = \<gamma> - \<epsilon> * \<gamma>"
+      by (simp add: algebra_simps)
+    have "\<gamma> < 0"
+      using combine_ineq eq1 by linarith
+    thus False
+      using gamma_pos by simp
+  qed
   have t_in_dom: "t \<in> dom (connection_lookup  connections)"
     using t_prop
     by (auto simp add: bellman_ford.bellman_ford_init_dom_is[OF bellman_ford]
