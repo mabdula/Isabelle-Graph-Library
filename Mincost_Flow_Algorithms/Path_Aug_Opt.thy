@@ -76,7 +76,7 @@ fun fstvv where
   "fstvv (additional e) = fstv e"
 
 lemma fstvv_fstv: "fstvv e = fstv (to_redge e)"
-  by (metis fstvv.simps(1) fstvv.simps to_redge.elims)
+  by (cases e) simp_all
 
 fun sndvv where
   "sndvv (blue e) = sndv e"|
