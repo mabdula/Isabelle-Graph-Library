@@ -422,7 +422,12 @@ qed
     using mult_hom.hom_sum[of "(1/(1 - f 0))" "(\<lambda>i. f (i + 1))" "{0..<length ax}"]
     by simp
   then have "f 0 + sum f {1..<length (a#ax)} = sum f {0..<length (a#ax)}" 
-    by (metis \<open>length (a # ax) = 1 + length ax\<close> add.commute sum_range_divided_at_zero)
+  proof -
+    have "length (a # ax) = length ax + 1"
+      using \<open>length (a # ax) = 1 + length ax\<close> by (simp add: add.commute)
+    then show ?thesis
+      using sum_range_divided_at_zero[of f "length ax"] by simp
+  qed
   then have "f 0 + sum f {1..<length (a#ax)} = 1" 
     by (metis  \<open>sum f {0..<length (a#ax)} = 1\<close>)
   then have 2:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = 1 - f 0" 
