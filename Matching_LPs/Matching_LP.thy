@@ -192,7 +192,13 @@ qed
   qed
   hence a3:  "c\<bullet>x = (A\<^sup>T *\<^sub>v y)\<bullet>x " by simp
   moreover have "... = (A *\<^sub>v x) \<bullet>y"
-    by (metis A comm_scalar_prod mult_mat_vec_carrier transpose_vec_mult_scalar x y)
+  proof -
+    have "(A\<^sup>T *\<^sub>v y) \<bullet> x = y \<bullet> (A *\<^sub>v x)"
+      using A x y by (simp add: transpose_vec_mult_scalar)
+    also have "\<dots> = (A *\<^sub>v x) \<bullet> y"
+      using mult_mat_vec_carrier[OF A x] y by (simp add: comm_scalar_prod)
+    finally show ?thesis .
+  qed
   ultimately show ?thesis
     using a2 by simp
 qed
