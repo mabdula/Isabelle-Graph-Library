@@ -657,8 +657,27 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           qed
           then have "(\<Sum>k \<in> {0..<dim_row B}. B $$ (k,j) * cofactor B k j) =
                B $$ (i,j) * cofactor B i j" 
-            by (metis (mono_tags, lifting) atLeast0LessThan only_one_nonzero_is_sum 
-                finite_atLeastLessThan i_j lessThan_iff vector_space_over_itself.scale_eq_0_iff)
+          proof -
+          assume fact0: "\<forall>k < dim_row B. k \<noteq> i \<longrightarrow> B $$ (k,j) = 0"
+          have i_mem: "i \<in> {0..<dim_row B}"
+            using i_j by simp
+          have subset: "{i} \<subseteq> {0..<dim_row B}"
+            using i_mem by simp
+          have zero_outside: "\<forall>k \<in> {0..<dim_row B} - {i}. B $$ (k,j) * cofactor B k j = 0"
+          proof
+            fix k
+            assume "k \<in> {0..<dim_row B} - {i}"
+            then have "k < dim_row B" "k \<noteq> i" by auto
+            with fact0 have "B $$ (k,j) = 0" by blast
+            then show "B $$ (k,j) * cofactor B k j = 0" by simp
+          qed
+          have "(\<Sum>k \<in> {0..<dim_row B}. B $$ (k,j) * cofactor B k j) =
+                (\<Sum>k \<in> {i}. B $$ (k,j) * cofactor B k j)"
+            by (rule sum.mono_neutral_right[OF finite_atLeastLessThan subset zero_outside])
+          also have "\<dots> = B $$ (i,j) * cofactor B i j" by simp
+          finally show "(\<Sum>k \<in> {0..<dim_row B}. B $$ (k,j) * cofactor B k j) =
+             B $$ (i,j) * cofactor B i j" .
+        qed
           then have 13: "det B = B $$ (i,j) * cofactor B i j" 
             by (metis 10 atLeast0LessThan)
           have 8:"cofactor B i j = (-1)^(i+j) * det (mat_delete B i j)" 
