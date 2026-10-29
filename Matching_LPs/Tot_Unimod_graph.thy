@@ -899,7 +899,19 @@ qed
                   using R.show_l_zero 17 18 by linarith
               qed
               have 20: "(col B t $ i) = 1 \<and> (col B t $ j) = 1" 
-                by (metis i_j(1) i_j(2) i_j(3) i_j(4) index_col t)
+              proof (intro conjI)
+                have "col B t $ i = B $$ (i, t)"
+                  using i_j(3) t by (rule index_col)
+                also have "\<dots> = 1"
+                  by (rule i_j(1))
+                finally show "col B t $ i = 1" .
+              next
+                have "col B t $ j = B $$ (j, t)"
+                  using i_j(4) t by (rule index_col)
+                also have "\<dots> = 1"
+                  by (rule i_j(2))
+                finally show "col B t $ j = 1" .
+              qed
               have 30: "col B t \<bullet> ?u = (?u $ i) + (?u $ j)" 
                 using 19 20 21 cring_simprules(12)
                 by (metis (lifting) more_arith_simps(5))
