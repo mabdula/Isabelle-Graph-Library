@@ -166,11 +166,36 @@ proof safe
       case False
       have "{Vs_enum_inv i, Vs_enum_inv j, Vs_enum_inv t} \<subseteq>  G_enum_inv k"
         by (simp add: 1 2 3)
+      then have sub: "{Vs_enum_inv i, Vs_enum_inv j, Vs_enum_inv t} \<subseteq>  G_enum_inv k" .
+      have fin: "finite (G_enum_inv k)"
+        using False by simp
+      have neq_ij: "Vs_enum_inv i \<noteq> Vs_enum_inv j"
+      proof
+        assume "Vs_enum_inv i = Vs_enum_inv j"
+        then have "i = j" using assms(3) assms(4) matching_lp_theorems(29)
+          unfolding local.n_def by blast
+        then show False using assms(5) by simp
+      qed
+      have neq_it: "Vs_enum_inv i \<noteq> Vs_enum_inv t"
+      proof
+        assume "Vs_enum_inv i = Vs_enum_inv t"
+        then have "i = t" using assms(3) asm(1) matching_lp_theorems(29)
+          unfolding local.n_def by blast
+        then show False using asm(2) by simp
+      qed
+      have neq_jt: "Vs_enum_inv j \<noteq> Vs_enum_inv t"
+      proof
+        assume "Vs_enum_inv j = Vs_enum_inv t"
+        then have "j = t" using assms(4) asm(1) matching_lp_theorems(29)
+          unfolding local.n_def by blast
+        then show False using asm(3) by simp
+      qed
+      have card3: "card {Vs_enum_inv i, Vs_enum_inv j, Vs_enum_inv t} = 3"
+        using neq_ij neq_it neq_jt by simp
+      have le3: "card {Vs_enum_inv i, Vs_enum_inv j, Vs_enum_inv t} \<le> card (G_enum_inv k)"
+        using card_mono[OF fin sub] .
       then show ?thesis
-        using  "1" "2" "3" asm(1,2,3) assms(3,4,5)  matching_lp_theorems(19)[OF assms(3)]
-              matching_lp_theorems(19)[OF assms(4)]  matching_lp_theorems(19)[OF asm(1)] 
-        unfolding card_2_iff' atomize_ball[symmetric]
-        by metis
+        using card3 by linarith
     qed
     have "G_enum_inv k \<in> E"
       by (simp add: assms(2) matching_lp_theorems(27)) 
