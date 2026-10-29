@@ -672,7 +672,13 @@ proof
                 then obtain y where y_prop: "y \<in> X - Y \<and> Y \<union> {y} \<in> F" by auto
                 then have "y \<notin> Y" by simp
                 then have "card (Y \<union> {y}) = card Y + card {y}" using \<open>card Y = i\<close> 
-                  by (metis Nat.add_0_right \<open>0 < i \<and> i < card X\<close> add_Suc_right card_1_singleton_iff card_gt_0_iff card_insert_disjoint insert_is_Un sup_commute)
+                  proof -
+                  have "finite Y" using x_Y_Z_prop \<open>finite X\<close> finite_subset by blast
+                  moreover have "finite {y}" by simp
+                  moreover have "Y \<inter> {y} = {}" using \<open>y \<notin> Y\<close> by simp
+                  ultimately show "card (Y \<union> {y}) = card Y + card {y}"
+                    by (simp add: card_Un_disjoint)
+                  qed
                 then have 1: "card (Y \<union> {y}) = i + 1" using \<open>card Y = i\<close> by simp
                 have 3: "Y \<union> {y} \<subseteq> X" using y_prop x_Y_Z_prop by simp
                 have 4: "Y \<subset> Y \<union> {y}" using \<open>y \<notin> Y\<close> by auto
