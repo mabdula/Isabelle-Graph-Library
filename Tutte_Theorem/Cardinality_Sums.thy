@@ -215,7 +215,7 @@ next
   moreover have "\<exists>!b1. b1 \<in> C\<union>{b} \<and> b1 \<in> x" 
     using \<open>b \<in> B \<and> b \<in> x\<close> calculation(1) by blast
   ultimately show ?case 
-    using `\<forall>a\<in>F. b \<notin> a` by (smt (verit, ccfv_SIG) insert_iff)
+    by (blast intro!: exI[of _ "C \<union> {b}"])
 qed
 
 
