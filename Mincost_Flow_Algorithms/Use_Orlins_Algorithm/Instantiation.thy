@@ -3549,10 +3549,17 @@ lemma get_source_for_target_ax:
   ultimately have "augpath (a_current_flow state) P"
     by(auto simp add: cost_flow_network.augpath_def)
   moreover have "fstv (hd P) = s" 
-    using awalk_f same_edges Pbf_opt_path  awalk_ends[OF Pbf_props(1)] s_neq_t
-          P_def bellman_ford.opt_vs_path_def[OF bellman_ford]
-                        bellman_ford.vs_path_def[OF bellman_ford] Pbf_def
-    by (metis (no_types, lifting))  
+  proof -
+    have "hd Pbf = t" "last Pbf = s"
+      using Pbf_opt_path
+      by (auto simp add: bellman_ford.opt_vs_path_def[OF bellman_ford]
+                         bellman_ford.vs_path_def[OF bellman_ford] Pbf_def)
+    have hl: "last Pbf = fstv (hd P)"
+      using awalk_ends[OF Pbf_props(1) awalk_f[unfolded same_edges]]
+            s_neq_t \<open>hd Pbf = t\<close> \<open>last Pbf = s\<close>
+      by auto
+    with \<open>last Pbf = s\<close> show "fstv (hd P) = s" by simp
+  qed
   moreover have "sndv (last P) = t" 
     using awalk_f same_edges Pbf_opt_path  awalk_ends[OF Pbf_props(1)] s_neq_t
     using P_def bellman_ford.opt_vs_path_def[OF bellman_ford]
