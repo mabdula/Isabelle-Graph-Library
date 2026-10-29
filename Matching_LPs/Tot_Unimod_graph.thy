@@ -347,7 +347,12 @@ proof -
     using dim_col_incidence_mat by simp
 qed
   have "i1 < (card (Vs E))"
-    using dim_row_incidence_mat i1 by metis
+  proof -
+    have "i1 < dim_row (incidence_mat)"
+      using i1 by simp
+    then show "i1 < card (Vs E)"
+      using dim_row_incidence_mat by simp
+  qed
   have "j1 < (card (Vs E))" 
     using dim_row_incidence_mat j1 by metis
   have "pick I i \<noteq> pick I j" 
