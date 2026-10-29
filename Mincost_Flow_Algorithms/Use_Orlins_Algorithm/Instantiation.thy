@@ -3996,7 +3996,12 @@ proof-
   proof(goal_cases)
     case 1
     hence 11: "cost_flow_network.erev e \<in> set  qq"
-      using in_set_map cost_flow_network.erve_erve_id[OF  ] set_rev by metis
+    proof -
+      from 1 obtain x where x_qq: "x \<in> set qq" and e_eq: "e = cost_flow_network.erev x"
+        by (auto simp add: set_map set_rev)
+      from x_qq show ?thesis
+        by (simp add: e_eq cost_flow_network.erve_erve_id)
+    qed
     note e_es[OF 1]
     moreover have oedgeF:"oedge e \<in> to_set (actives state) \<or> oedge e \<in> \<F> state"
       using e_in  1 by (auto simp add: \<F>_def)
