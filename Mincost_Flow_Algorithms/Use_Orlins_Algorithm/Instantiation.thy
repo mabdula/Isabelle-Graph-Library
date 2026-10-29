@@ -1262,18 +1262,49 @@ lemma find_cheapest_backward_props:
 
 lemma get_edge_and_costs_forward_not_MInfty:
   "prod.snd( get_edge_and_costs_forward nb f u v) \<noteq>MInfty"
-  unfolding get_edge_and_costs_forward_def
-  using not_both_realising_edges_none[of u v] 
-        imageI[OF conjunct1[OF 
-             find_cheapest_forward_props[OF prod.collapse refl, 
-                          of f nb _ "create_edge u v" PInfty]],
-            of prod.snd , simplified image_def, simplified]
-        imageI[OF conjunct1[OF 
-              find_cheapest_backward_props[OF prod.collapse refl, 
-                          of f nb _ "create_edge v u" PInfty]],
-                 of prod.snd, simplified image_def, simplified]
-  by(auto split: if_split prod.split option.split)
-    (metis MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv)+
+proof -
+  define ingoing_edges where "ingoing_edges =
+            (case realising_edges_lookup realising_edges
+                  (u, v) of
+            None \<Rightarrow> [] | Some list \<Rightarrow> list)"
+  define outgoing_edges where "outgoing_edges =
+            (case realising_edges_lookup realising_edges
+                  (v, u) of
+            None \<Rightarrow> [] | Some list \<Rightarrow> list)"
+  define ef where "ef = prod.fst (find_cheapest_forward f nb ingoing_edges
+             (create_edge u v) PInfty)"
+  define cf where "cf = prod.snd (find_cheapest_forward f nb ingoing_edges
+             (create_edge u v) PInfty)"
+  define eb where "eb = prod.fst (find_cheapest_backward f nb outgoing_edges
+             (create_edge v u) PInfty)"
+  define cb where "cb = prod.snd (find_cheapest_backward f nb outgoing_edges
+             (create_edge v u) PInfty)"
+  define edges_and_costs where "edges_and_costs =
+        Set.insert (create_edge u v, PInfty)
+         {(e, ereal (\<c> e)) |e. e \<in> set ingoing_edges \<and> nb e \<and> ereal (f e) < \<u> e}"
+  define edges_and_costs' where "edges_and_costs' =
+        Set.insert (create_edge v u, PInfty)
+         {(e, ereal (- \<c> e)) |e. e \<in> set outgoing_edges \<and> nb e \<and> 0 < ereal (f e)}"
+  have ef_cf_prop: "(ef, cf) \<in> edges_and_costs"
+    using find_cheapest_forward_props[of ef cf f nb ingoing_edges
+                          "create_edge u v" PInfty edges_and_costs]
+    by (auto simp add: cf_def edges_and_costs_def ef_def)
+  hence cf_not_MInfty: "cf \<noteq> MInfty"
+    by (auto simp add: edges_and_costs_def MInfty_neq_PInfty MInfty_neq_ereal)
+  have eb_cb_prop: "(eb, cb) \<in> edges_and_costs'"
+    using find_cheapest_backward_props[of eb cb f nb outgoing_edges
+                          "create_edge v u" PInfty edges_and_costs']
+    by (auto simp add: cb_def edges_and_costs'_def eb_def)
+  hence cb_not_MInfty: "cb \<noteq> MInfty"
+    by (auto simp add: edges_and_costs'_def MInfty_neq_PInfty MInfty_neq_ereal)
+  have goalI: "prod.snd (if cf \<le> cb then (F ef, cf) else (B eb, cb)) \<noteq> MInfty"
+    using cf_not_MInfty cb_not_MInfty by auto
+  show ?thesis
+    unfolding get_edge_and_costs_forward_def Let_def
+    using goalI
+    by (auto split: if_split option.split prod.split
+        simp add: cf_def cb_def ef_def eb_def ingoing_edges_def outgoing_edges_def)
+qed
 
 lemma get_edge_and_costs_backward_not_MInfty:
   "prod.snd( get_edge_and_costs_backward nb f u v) \<noteq>MInfty"
