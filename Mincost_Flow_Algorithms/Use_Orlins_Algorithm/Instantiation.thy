@@ -3777,9 +3777,23 @@ next
   case (3 ee)
   hence c:"conv (prod.swap (make_pair ee)) =  B ee"
     using 3(2)[of "fst ee" "snd ee" ee] assms(3)[of "make_pair ee"] 
-    by (metis assms(1) cost_flow_network.erev.simps(1) cost_flow_network.fstv.simps(2)
-        cost_flow_network.sndv.simps(2) image_iff local.algo.consist_fstv local.algo.consist_sndv
-        local.multigraph.make_pair''(1,2) make_pairs_are(1) prod.swap_def surjective_pairing)
+    proof -
+      have "B ee \<in> conv ` forst"
+        using "3" by (simp add: cost_flow_network.erev.simps(1))
+      then obtain u v where uv: "(u, v) \<in> forst" "conv (u, v) = B ee"
+        by (auto simp add: image_iff)
+      have u_eq: "u = snd ee"
+        using local.algo.consist_fstv[OF assms(1) uv(1)] uv(2)
+        by (simp add: cost_flow_network.fstv.simps(2))
+      have v_eq: "v = fst ee"
+        using local.algo.consist_sndv[OF assms(1) uv(1)] uv(2)
+        by (simp add: cost_flow_network.sndv.simps(2))
+      have "prod.swap (make_pair ee) = (u, v)"
+        using u_eq v_eq
+        by (simp add: local.make_pair_def prod.swap_def)
+      thus ?thesis
+        using uv(2) by simp
+    qed
   hence b:"prod.swap (make_pair ee) \<in> forst"
     using 3 by (fastforce simp add: make_pairs_are)
   hence a:"make_pair ee \<in> forst"using 3 by (fastforce simp add: make_pairs_are)
