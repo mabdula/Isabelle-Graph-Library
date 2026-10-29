@@ -2083,7 +2083,13 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     case True
     hence p_allowed_edges:"set p \<subseteq> allowed_edges" 
       unfolding less
-      by (metis Collect_mem_eq assms(10) cnt_P_0_set less.prems(6))
+    proof -
+      assume "cnt_P p (\<lambda>e. e \<notin> {e |e. e \<in> \<EE> \<and> oedge e \<in> to_set (actives state)} \<union> \<F>_redges state) = 0"
+      then have "set p \<subseteq> {r. r \<in> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state}"
+        by (simp add: cnt_P_0_set)
+      then show "set p \<subseteq> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state"
+        by blast
+    qed
     show ?thesis 
       apply(rule exI[of _ p])
       using less p_allowed_edges 
