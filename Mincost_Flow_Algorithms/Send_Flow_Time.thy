@@ -231,7 +231,7 @@ proof(rule send_flow_call1_condE[OF assms(1)],  goal_cases)
     apply(rule ordered_comm_monoid_add_class.sum_pos2[OF \<V>_finite s_exists(2)])
     using assms(2) s_exists(1)
      by(auto simp add: pos_less_divide_eq 1 elim!: invar_gammaE)
-      (smt (verit, best) \<epsilon>_axiom(1) divide_nonneg_pos zero_le_ceiling)
+      (use \<epsilon>_axiom(1) in \<open>force intro: divide_nonneg_pos add_nonneg_pos\<close>)
  qed
 
 lemma send_flow_call2_cond_Phi: 
