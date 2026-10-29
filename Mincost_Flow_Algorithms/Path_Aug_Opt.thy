@@ -2841,7 +2841,20 @@ Otherwise there was a negative cycle and since this was in the residual graph
       assume assm:" \<not> 0 \<le> (\<Sum>D\<in>cycles'. sum cc (set D))"
       hence "(\<Sum>D\<in>cycles'. sum cc (set D)) < 0" by auto
       then obtain D where D_props: "D \<in> cycles'" "sum cc (set D) < 0" 
-        by (smt (verit) sum_nonneg)
+      proof -
+        have "\<exists>D\<in>cycles'. sum cc (set D) < 0"
+        proof (rule ccontr)
+          assume "\<not> (\<exists>D\<in>cycles'. sum cc (set D) < 0)"
+          hence "\<And>D. D \<in> cycles' \<Longrightarrow> 0 \<le> sum cc (set D)"
+            by (auto simp add: not_less)
+          hence "0 \<le> (\<Sum>D\<in>cycles'. sum cc (set D))"
+            by (rule sum_nonneg)
+          with assm show False
+            by simp
+        qed
+        then show thesis
+          using that by blast
+      qed
       have "\<exists> cycles. (\<forall> D \<in> set cycles. precycle D) \<and> 
                 (\<Sum> e \<in> set D. cc e) = foldr (\<lambda> D costs. \<CC> D + costs) cycles (0::real) \<and>
                 set (map to_redge D) = \<Union>{set D| D. D \<in> set cycles}"
