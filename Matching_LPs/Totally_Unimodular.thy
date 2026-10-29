@@ -4145,7 +4145,11 @@ proof -
         by simp
     qed
     have "pick {j} 0 = j" 
-      by (metis card_eq_1_iff less_one pick_in_set singletonD)
+    proof -
+      have "0 < card {j} \<or> infinite {j}" by simp
+      hence "pick {j} 0 \<in> {j}" using pick_in_set by blast
+      thus "pick {j} 0 = j" by simp
+    qed
     then have "det (submatrix A {i} {j}) = A $$ (i, j)" 
       using 4 5 \<open>pick {i} 0 = i\<close> by presburger
     then show "A $$ (i, j) = 1" 
