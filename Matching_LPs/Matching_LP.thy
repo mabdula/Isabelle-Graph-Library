@@ -308,7 +308,15 @@ proof-
 qed
 
   moreover have "x \<in> V \<Longrightarrow> x \<in> Vs_enum_inv ` {0..<card V}" for x
-    by (metis Vs_enum_Vs_enum_inv bij_Vs_enum bij_betwE imageI)
+  proof -
+    assume x: "x \<in> V"
+    from bij_Vs_enum x have "Vs_enum x \<in> {0..<card V}"
+      by (rule bij_betw_apply)
+    hence "Vs_enum_inv (Vs_enum x) \<in> Vs_enum_inv ` {0..<card V}"
+      by (rule imageI)
+    with Vs_enum_Vs_enum_inv[OF x] show "x \<in> Vs_enum_inv ` {0..<card V}"
+      by simp
+  qed
   ultimately show ?thesis
     by(auto simp add: bij_betw_def inj_on_def)
 qed
