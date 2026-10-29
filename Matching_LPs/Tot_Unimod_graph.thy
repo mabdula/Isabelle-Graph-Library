@@ -221,7 +221,14 @@ lemma exist_index_in_submat:
   shows "\<exists> i < dim_row A. i \<in> I \<and> row B j = row A i  \<and> i = pick I j"
 proof -
   have "(pick I j) < dim_row A"  
-    by (metis assms(1) assms(2) dim_submatrix(1) pick_le)
+  proof -
+    have "dim_row B = card {i. i < dim_row A \<and> i \<in> I}"
+      using assms(1) dim_submatrix(1) by simp
+    hence "j < card {i. i < dim_row A \<and> i \<in> I}"
+      using assms(2) by simp
+    then show ?thesis
+      by (rule pick_le)
+  qed
   moreover have "(pick I j) \<in> I" 
     apply(cases "finite I") 
     using  dim_row_mat_less_card_I pick_in_set_le 
