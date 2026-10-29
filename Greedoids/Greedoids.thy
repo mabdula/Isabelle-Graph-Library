@@ -392,7 +392,12 @@ proof
             qed
             have "set (take (length l - 1) l) \<in> F" using l_prop by simp
             then have  "((set (take (length l) l)) - {nth l (length l - 1)}) \<in> F" using factone facttwo 
-              by (metis Diff_insert_absorb Un_empty_right Un_insert_right)
+            proof -
+              have "set (take (length l) l) - {nth l (length l - 1)} = set (take (length l - 1) l)"
+                using factone facttwo by auto
+              then show ?thesis
+                using \<open>set (take (length l - 1) l) \<in> F\<close> by simp
+            qed
             then have "X - {x} \<in> F" using l_prop \<open>nth l (length l - 1) = x\<close> by simp
             have "x \<in> X" using l_prop \<open>nth l (length l - 1) = x\<close>  \<open>l \<noteq> []\<close> by auto
             then show "\<exists>x\<in>X. X - {x} \<in> F" using \<open>X - {x} \<in> F\<close> by auto
