@@ -293,8 +293,20 @@ proof-
     finally show "x = y" .
   qed
   moreover have "xa < card V \<Longrightarrow> Vs_enum_inv xa \<in> V" for xa
-    by (metis (full_types) atLeastLessThan_iff bij_Vs_enum bij_betw_def imageE
-        Vs_enum_Vs_enum_inv  zero_le)
+    proof -
+  assume xa: "xa < card V"
+  then have "xa \<in> {0..<card V}"
+    by simp
+  then have "xa \<in> Vs_enum ` V"
+    using bij_Vs_enum by (simp add: bij_betw_def)
+  then obtain v where v: "v \<in> V" "Vs_enum v = xa"
+    by blast
+  have "Vs_enum_inv xa = v"
+    using v Vs_enum_Vs_enum_inv by fastforce
+  then show "Vs_enum_inv xa \<in> V"
+    using v(1) by simp
+qed
+
   moreover have "x \<in> V \<Longrightarrow> x \<in> Vs_enum_inv ` {0..<card V}" for x
     by (metis Vs_enum_Vs_enum_inv bij_Vs_enum bij_betwE imageI)
   ultimately show ?thesis
