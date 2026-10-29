@@ -484,7 +484,13 @@ lemma dual_sol_i_is[matching_lp_theorems]: "i < n \<Longrightarrow> dual_sol y $
 
 lemma G_enum_inv_same_args_same[matching_lp_theorems]:
   "\<lbrakk>i < m; j < m; G_enum_inv i = G_enum_inv j\<rbrakk> \<Longrightarrow> i = j"
-  by (metis G_enum_inv)
+proof -
+  assume i: "i < m" and j: "j < m" and eq: "G_enum_inv i = G_enum_inv j"
+  from eq have "G_enum (G_enum_inv i) = G_enum (G_enum_inv j)"
+    by simp
+  with i j show "i = j"
+    by (simp add: G_enum_inv)
+qed
 
 lemma matching_zero_one_entries[matching_lp_theorems]:
   assumes "matching M" 
