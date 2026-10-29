@@ -784,8 +784,8 @@ then have zero_at: "\<And>i. i < dim_row B \<Longrightarrow> col B k $ i = 0"
                 proof(rule ccontr)
                   assume "B $$ (j, k) \<noteq> 0"
                   then have "B $$ (j, k) = 1" 
-                    using submatrix_incidence_zero_or_one \<open>graph_invar E\<close>
-                    by (metis \<open>k < dim_col B\<close> asm(1)  less.prems)
+                    using submatrix_incidence_zero_or_one[OF \<open>graph_invar E\<close> \<open>k < dim_col B\<close> asm(1) less.prems]
+                    by auto
                   then show False 
                     using asm_not i asm(1) asm(2) by blast
                 qed
