@@ -120,8 +120,38 @@ lemma prepath_split1:
 lemma prepath_split2: 
   assumes "prepath (xs@ys)"
   shows   "ys \<noteq> []  \<Longrightarrow> prepath ys"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  by (simp add: Cons_eq_append_conv prepath_intros(1)) (metis append_eq_Cons_conv prepath_intros(2))
+proof -
+  assume ne: "ys \<noteq> []"
+  have imp: "prepath (xs @ ys) \<Longrightarrow> ys \<noteq> [] \<Longrightarrow> prepath ys"
+  proof (induction xs arbitrary: ys)
+    case Nil
+    then show ?case by simp
+  next
+    case (Cons e es)
+    note prems = this
+    show ?case
+    proof -
+      have p': "prepath (e # (es @ ys))"
+        using prems(2) by simp
+      have nonempty: "es @ ys \<noteq> []"
+        using prems(3) by simp
+      have "prepath (es @ ys)"
+      proof (rule prepath_cases[OF p'])
+        fix e'
+        assume "e # es @ ys = [e']"
+        with nonempty show "prepath (es @ ys)" by simp
+      next
+        fix e' d es'
+        assume eq: "e # es @ ys = e' # d # es'"
+        assume pd: "prepath (d # es')"
+        from eq have "es @ ys = d # es'" by simp
+        with pd show "prepath (es @ ys)" by simp
+      qed
+      with Cons.IH prems(3) show "prepath ys" by blast
+    qed
+  qed
+  with assms imp ne show "prepath ys" by blast
+qed
 
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
