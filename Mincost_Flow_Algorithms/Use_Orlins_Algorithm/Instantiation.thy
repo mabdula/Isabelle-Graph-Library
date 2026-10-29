@@ -2627,7 +2627,7 @@ proof( goal_cases)
   proof(rule, rule ccontr, goal_cases)
     case (1 e)
     hence "to_edge e \<in> set (edges_of_vwalk Pbf)"
-      by (metis map_in_set same_edges)
+      by (fastforce simp add: same_edges[symmetric] image_iff)
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = Pbf" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
