@@ -596,7 +596,16 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           show "dim_col B = dim_row B" using 1 by (rule sym)
         qed
         have "0\<^sub>v (dim_row B) \<in> (set (cols B))" 
-          by (metis True cols_length cols_nth in_set_conv_nth)
+        proof -
+          obtain j where j1: "j < dim_col B" and j2: "col B j = 0\<^sub>v (dim_row B)"
+            using True by blast
+          have "j < length (cols B)"
+            using j1 by (simp add: cols_length)
+          hence "cols B ! j \<in> set (cols B)"
+            by (rule nth_mem)
+          thus "0\<^sub>v (dim_row B) \<in> set (cols B)"
+            using j1 j2 by (simp add: cols_nth)
+        qed
         have 3:"\<zero>\<^bsub>module_vec TYPE(real) (dim_row B)\<^esub>\<in> set (cols B)" 
           by (metis \<open>0\<^sub>v (dim_row B) \<in> set (cols B)\<close> module_vec_simps(2))
         have 4:"Module.module class_ring (module_vec TYPE(real) (dim_row B))" 
