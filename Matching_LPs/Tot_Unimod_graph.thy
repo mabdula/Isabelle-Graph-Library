@@ -751,7 +751,15 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
                       using \<open>\<not> (\<exists>i<dim_row B. B $$ (i, k) = 1)\<close> i by blast
                   qed
                 then have "\<forall>i<dim_row B. col B k $ i = 0"
-                  by (metis \<open>k < dim_col B\<close> index_col)
+                proof (intro allI impI)
+                  fix i
+                  assume "i < dim_row B"
+                  then have "col B k $ i = B $$ (i, k)"
+                    using \<open>k < dim_col B\<close> by (simp add: index_col)
+                  also have "\<dots> = 0"
+                    using \<open>i < dim_row B\<close> \<open>\<forall>i<dim_row B. B $$ (i, k) = 0\<close> by blast
+                  finally show "col B k $ i = 0" .
+                qed
                 then have "col B k = 0\<^sub>v (dim_row B)"
                   unfolding zero_vec_def 
                   by (metis Matrix.zero_vec_def dim_col dim_vec eq_vecI index_zero_vec(1))
