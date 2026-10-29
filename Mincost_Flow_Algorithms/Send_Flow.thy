@@ -937,9 +937,18 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
       using s_prop(1) by (simp add: unf)
   qed
   have b_t: "abstract_bal_map b t < 0"
-    using t_prop assms(2)  \<epsilon>_axiom(2)
-    unfolding invar_gamma_def unf
-    by auto (smt (z3) mult_neg_pos)
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using assms(2) by (auto simp add: unf(3) elim!: invar_gammaE)
+    have eps_lt_1: "\<epsilon> < 1"
+      using \<epsilon>_axiom(2) by linarith
+    have "(1 - \<epsilon>) * \<gamma> > 0"
+      using eps_lt_1 gamma_pos by simp
+    hence "- (1 - \<epsilon>) * \<gamma> < 0"
+      using mult_neg_pos[of "\<epsilon> - 1" \<gamma>] eps_lt_1 gamma_pos by simp
+    thus ?thesis
+      using t_prop(1) by linarith
+  qed
   have s_rep: "representative state s = s" 
     using s_prop assms(3) b_s unf
     by (simp add: assms(4) from_underlying_invars'(12))
