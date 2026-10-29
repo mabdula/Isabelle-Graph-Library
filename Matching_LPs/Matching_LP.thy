@@ -149,7 +149,8 @@ proof -
     unfolding scalar_prod_def
     using A c x yA x0
     by (auto intro!: sum_mono mult_right_mono simp: less_eq_vec_def)
-  also have "\<dots> = y \<bullet> (A *\<^sub>v x)" using x y A by (metis transpose_vec_mult_scalar)
+  also have "\<dots> = y \<bullet> (A *\<^sub>v x)"
+  using x y A by (simp add: transpose_vec_mult_scalar)
   also have "\<dots> \<le> y \<bullet> b" 
     unfolding scalar_prod_def using A b Axb y0
     by (auto intro!: sum_mono mult_left_mono simp: less_eq_vec_def)
