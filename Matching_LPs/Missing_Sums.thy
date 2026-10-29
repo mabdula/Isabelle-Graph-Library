@@ -617,7 +617,13 @@ proof -
   have 3:"a \<in> P \<inter> \<int>\<^sub>v" 
     using \<open>Wsl = a # ax\<close> Wc  by force
   have 4:"c 0 > 0" 
-    by (metis Wc \<open>\<forall>i<length Wsl. 0 \<le> c i\<close> length_greater_0_conv order_le_imp_less_or_eq)
+  proof -
+    from Wc have "Wsl \<noteq> []" by blast
+    hence "0 < length Wsl" by (simp add: length_greater_0_conv)
+    hence "0 \<le> c 0" using \<open>\<forall>i<length Wsl. 0 \<le> c i\<close> by blast
+    moreover from Wc have "c 0 \<noteq> 0" by blast
+    ultimately show "c 0 > 0" by (simp add: order_less_le)
+  qed
   have 5:"c 0 \<le> 1" using member_le_sum[of 0 "{0..<length Wsl}" c] 
     using \<open>Wsl = a # ax\<close> lin_comb_x by force
   then show ?thesis using 1 2 3 4 5
