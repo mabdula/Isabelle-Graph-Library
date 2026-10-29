@@ -379,7 +379,13 @@ proof
               then have assum3: "List.member (take (length l - 1) l) (nth l (length l - 1))" 
                 using  \<open>l \<noteq> []\<close> assum2 by simp
               have "l = (take (length l - 1) l) @ [nth l (length l - 1)]" using \<open>l \<noteq> []\<close> 
-                by (metis Suc_diff_1 \<open>0 < length l\<close> \<open>length l - 1 < length l\<close> order_refl take_Suc_conv_app_nth take_all_iff)
+              proof -
+                have "Suc (length l - 1) = length l" using \<open>0 < length l\<close> by simp
+                hence "take (Suc (length l - 1)) l = l" by simp
+                moreover have "take (Suc (length l - 1)) l = take (length l - 1) l @ [l ! (length l - 1)]"
+                  using take_Suc_conv_app_nth \<open>length l - 1 < length l\<close> by blast
+                ultimately show "l = take (length l - 1) l @ [l ! (length l - 1)]" by simp
+              qed
               then have "\<not> (distinct l)"
                 using assum2 distinct_take not_distinct_conv_prefix by blast
               then show False using l_prop by simp
