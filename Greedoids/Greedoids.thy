@@ -556,7 +556,20 @@ qed
             have "distinct l" using l_prop by simp
             have "distinct k" using k_prop(3) by simp
             have "X \<inter> Y \<subset> X" using \<open>X \<inter> Y \<noteq> {}\<close>
-              by (metis \<open>finite Y\<close> assum5 inf.cobounded1 inf.cobounded2 order.asym psubsetI psubset_card_mono)
+            proof -
+              show "X \<inter> Y \<subset> X"
+              proof (rule psubsetI)
+                show "X \<inter> Y \<subseteq> X" by (rule inf.cobounded1)
+              next
+                show "X \<inter> Y \<noteq> X"
+                proof
+                  assume "X \<inter> Y = X"
+                  then have "X \<subseteq> Y" by auto
+                  then have "card X \<le> card Y" using \<open>finite Y\<close> by (blast intro: card_mono)
+                  then show False using assum5 by simp
+                qed
+              qed
+            qed
             then have "(set k) \<subset> (set l)" using l_prop k_prop(1) by simp
             then have assum6: "\<exists>i. i \<le> length k \<and> set (take i l) \<subseteq> set k \<and> (nth l i) \<in> (set l) - (set k)" using subset_list_el 
                 \<open>distinct l\<close> \<open>distinct k\<close> \<open>(nth l 0) = (nth k 0)\<close> \<open>l \<noteq> []\<close> \<open>set k \<subset> set l\<close> \<open>k \<noteq> []\<close> by metis
