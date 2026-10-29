@@ -3836,7 +3836,22 @@ proof
       using append_rows_nth(2)[of "A @\<^sub>r B" "nr1+nr2" n C nr3 i] 
       by (meson False \<open>i < nr1 + nr2 + nr3\<close> assms carrier_append_rows leI)
     then show ?thesis 
-      by (metis 7 8 3 4 asmi asmj index_row(1))
+    proof -
+      assume row_eq0: "row ((A @\<^sub>r B) @\<^sub>r C) i = row C (i - (nr1+nr2))"
+      have row_eq: "row (A @\<^sub>r B @\<^sub>r C) i = row ((A @\<^sub>r B) @\<^sub>r C) i"
+        using 7 8 row_eq0 by simp
+      have i1: "i < dim_row (A @\<^sub>r B @\<^sub>r C)"
+        using asmi 4 by simp
+      have j1: "j < dim_col (A @\<^sub>r B @\<^sub>r C)"
+        using asmj 3 by simp
+      have "(A @\<^sub>r B @\<^sub>r C) $$ (i, j) = row (A @\<^sub>r B @\<^sub>r C) i $ j"
+        using i1 j1 by simp
+      also have "\<dots> = row ((A @\<^sub>r B) @\<^sub>r C) i $ j"
+        using row_eq by simp
+      also have "\<dots> = ((A @\<^sub>r B) @\<^sub>r C) $$ (i, j)"
+        using asmi asmj by simp
+      finally show ?thesis .
+    qed
   qed
 qed
 
