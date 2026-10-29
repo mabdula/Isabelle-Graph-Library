@@ -843,7 +843,20 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   have b_s: "abstract_bal_map b s > 0"
     using s_prop assms(2)
     unfolding invar_gamma_def unf 
-    by (smt (verit, ccfv_SIG) \<epsilon>_axiom(2) add_divide_distrib divide_eq_1_iff mul_zero_cancel)
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using assms(2) by (auto elim!: invar_gammaE simp add: unf)
+    have eps_le_1: "\<epsilon> \<le> 1"
+      using \<epsilon>_axiom(2) by linarith
+    have nonneg: "(1 - \<epsilon>) * current_\<gamma> state \<ge> 0"
+    proof (rule mult_nonneg_nonneg)
+      show "0 \<le> 1 - \<epsilon>" using eps_le_1 by simp
+    next
+      show "0 \<le> current_\<gamma> state" using gamma_pos unf(3) by linarith
+    qed
+    then show "(1 - \<epsilon>) * current_\<gamma> state < a_balance state s \<Longrightarrow> s \<in> \<V> \<Longrightarrow> 0 < current_\<gamma> state \<Longrightarrow> 0 < a_balance state s"
+      by linarith
+  qed
   have b_t: "abstract_bal_map b t < 0"
     using t_prop assms(2)
     unfolding invar_gamma_def unf
