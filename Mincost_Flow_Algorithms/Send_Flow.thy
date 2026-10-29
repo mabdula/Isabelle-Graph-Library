@@ -1547,7 +1547,12 @@ proof (rule ccontr)
     case False
     have "\<lceil>\<bar>abstract_bal_map b t + \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> = \<lceil> (\<gamma> + abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil>"
       using False 
-      by (smt (verit, best))
+    proof -
+      from False have "abstract_bal_map b t + \<gamma> \<ge> 0" by linarith
+      hence "\<bar>abstract_bal_map b t + \<gamma>\<bar> = \<gamma> + abstract_bal_map b t"
+        by (simp add: abs_of_nonneg add.commute)
+      thus ?thesis by simp
+    qed
     also have "... \<le> \<lceil> \<epsilon> - (1 - \<epsilon>)\<rceil>" 
       apply(rule ceiling_mono, simp, subst pos_divide_le_eq[OF gamma_0])
       using False tP(1) by argo
