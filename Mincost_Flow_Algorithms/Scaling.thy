@@ -539,7 +539,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (metis prod_cases3)
+    by (cases "the (get_source_target_path f b)") simp
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF 3])
     using b_def f_def stp_def by simp
