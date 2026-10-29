@@ -1559,7 +1559,21 @@ proof(rule ccontr)
     using C_prop  
     by (auto simp add: image_def augcycle_def \<EE>_def)
   ultimately show False using conservative_weights aa(1)
-    by metis  
+  proof -
+    assume f1: "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0"
+      and f2: "map to_vertex_pair C = map make_pair (map oedge C)"
+      and f3: "set (map oedge C) \<subseteq> \<E>"
+      and cw: "\<nexists> Ca. closed_w (make_pair ` \<E>) (map make_pair Ca)
+                 \<and> set Ca \<subseteq> \<E>
+                 \<and> foldr (\<lambda> e acc. acc + \<c> e) Ca 0 < 0"
+      and a5: "closed_w (make_pair ` \<E>) (map to_vertex_pair C)"
+    have a1: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C))"
+      using a5 by (simp only: f2)
+    have False
+      using cw[unfolded not_ex, rule_format, of "map oedge C"] a1 f3 f1
+      by blast
+    thus False by simp
+  qed
 qed
 
 lemma invar_opt_initial_state:
