@@ -713,8 +713,13 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           show ?thesis
           proof(cases "dim_row B = 0")
             case True
-            have "det B = 1" using det_dim_zero 
-              by (metis "1" True carrier_mat_triv)
+            have "B \<in> carrier_mat 0 0"
+            proof (rule carrier_matI)
+              show "dim_row B = 0" using True by simp
+              show "dim_col B = 0" using True 1 by simp
+            qed
+            then have "det B = 1"
+              by (rule det_dim_zero)
             then show ?thesis by auto
           next
             case False
