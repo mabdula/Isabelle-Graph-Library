@@ -531,9 +531,32 @@ qed
     using \<open>x \<in> convex_hull Ws\<close> convex_hull_empty(2) by blast
  then have "Wsl \<noteq> []" 
     using \<open>Ws \<noteq> {}\<close> Wsl by fastforce
-  then show ?thesis
-    using convex_lincomb_list_swap[of c Wsl x i] Ws_c'
-    by (metis Ws_swap Ws_subs Wsl c fun_upd_other fun_upd_same i list_update_nonempty that)
+  show ?thesis
+  proof (rule that[of "c(0 := c i, i := c 0)" "Wsl[0 := Wsl ! i, i := Wsl ! 0]"])
+    have i_lt: "i < length Wsl" and ci_neq: "c i \<noteq> 0"
+      using i by auto
+    have Wsl_carr: "set Wsl \<subseteq> carrier_vec n"
+      using Ws_subs Wsl by simp
+    have swap_conv: "convex_lincomb_list (c(0 := c i, i := c 0)) (Wsl[0 := Wsl ! i, i := Wsl ! 0]) x"
+      by (rule convex_lincomb_list_swap[OF c Wsl_carr i_lt])
+    have c0_neq: "(c(0 := c i, i := c 0)) 0 \<noteq> 0"
+    proof (cases "i = 0")
+      case True
+      then show ?thesis using ci_neq by simp
+    next
+      case False
+      then show ?thesis using ci_neq by simp
+    qed
+    have set_sub: "set (Wsl[0 := Wsl ! i, i := Wsl ! 0]) \<subseteq> P \<inter> \<int>\<^sub>v"
+      unfolding Ws_swap[symmetric] using Ws_c'(2) .
+    have nonempty: "Wsl[0 := Wsl ! i, i := Wsl ! 0] \<noteq> []"
+      using \<open>Wsl \<noteq> []\<close> by (simp add: list_update_nonempty)
+    show "convex_lincomb_list (c(0 := c i, i := c 0)) (Wsl[0 := Wsl ! i, i := Wsl ! 0]) x \<and>
+          (c(0 := c i, i := c 0)) 0 \<noteq> 0 \<and>
+          set (Wsl[0 := Wsl ! i, i := Wsl ! 0]) \<subseteq> P \<inter> \<int>\<^sub>v \<and>
+          Wsl[0 := Wsl ! i, i := Wsl ! 0] \<noteq> []"
+      using swap_conv c0_neq set_sub nonempty by blast
+  qed
 qed
 
 lemma elem_of_P_is_lin_comb:
