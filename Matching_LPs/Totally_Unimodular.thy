@@ -3590,8 +3590,22 @@ proof
     using 6 carrier_matD(1)[OF assms(1)] by simp
   show 4: "dim_col A = dim_col (submatrix A {0..<nr - 1} UNIV @\<^sub>r
                     mat_of_rows n [Matrix.row A (nr - 1)])" 
-    by (metis assms(1) carrier_matD(2) row_apend_last_row index_row(2)
-        submatrix_minus_last_row_carr row_carrier)
+  proof -
+    have 1: "submatrix A {0..<nr - 1} UNIV \<in> carrier_mat (nr - 1) n"
+      using submatrix_minus_last_row_carr[OF A] by blast
+    have 2: "mat_of_rows n [Matrix.row A (nr - 1)] \<in> carrier_mat 1 n"
+      unfolding carrier_mat_def
+      by (simp add: mat_of_rows_carrier(2) mat_of_rows_carrier(3))
+    have "submatrix A {0..<nr - 1} UNIV @\<^sub>r mat_of_rows n [Matrix.row A (nr - 1)]
+            \<in> carrier_mat (nr - 1 + 1) n"
+      using carrier_append_rows[OF 1 2] by blast
+    then have "dim_col (submatrix A {0..<nr - 1} UNIV @\<^sub>r
+                 mat_of_rows n [Matrix.row A (nr - 1)]) = n"
+      using carrier_matD(2) by blast
+    moreover have "dim_col A = n"
+      using assms(1) carrier_matD(2) by blast
+    ultimately show ?thesis by simp
+  qed
   fix i j
   assume asmi: "i < dim_row (submatrix A {0..<nr - 1} UNIV @\<^sub>r 
                              mat_of_rows n [Matrix.row A (nr - 1)])"
