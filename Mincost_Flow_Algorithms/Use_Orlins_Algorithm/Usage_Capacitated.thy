@@ -85,7 +85,7 @@ next
   case (4 x y)
   then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
-    by(auto split: if_split simp add: less_le_not_le) (metis nle_le)+
+    by(auto split: if_split simp add: less_le_not_le) (auto split: if_splits simp add: less_le_not_le intro: antisym)+
 next
   case (5 x y)
   then show ?case 
