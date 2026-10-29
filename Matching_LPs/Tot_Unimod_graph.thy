@@ -679,7 +679,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
              B $$ (i,j) * cofactor B i j" .
         qed
           then have 13: "det B = B $$ (i,j) * cofactor B i j" 
-            by (metis 10 atLeast0LessThan)
+            using 10 by (simp add: atLeast0LessThan)
           have 8:"cofactor B i j = (-1)^(i+j) * det (mat_delete B i j)" 
             using Determinant.cofactor_def by blast
           have 9:"mat_delete B i j = submatrix (incidence_mat ) (I - {pick I i}) (J - {pick J j})"
