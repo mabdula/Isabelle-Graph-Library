@@ -445,7 +445,15 @@ proof(rule ccontr)
 qed
 
 lemma  Vs_enum_less_card[matching_lp_theorems]: "v \<in> V \<Longrightarrow> Vs_enum v < card V"
-  by (metis atLeastLessThan_iff bij_Vs_enum bij_betw_def imageI)
+proof -
+  assume "v \<in> V"
+  hence "Vs_enum v \<in> Vs_enum ` V"
+    by blast
+  also have "\<dots> = {0..<card V}"
+    using bij_Vs_enum by (simp add: bij_betw_def)
+  finally show "Vs_enum v < card V"
+    by (simp add: atLeastLessThan_iff)
+qed
 
 lemma Vs_enum_less_n[matching_lp_theorems]: "v \<in> V \<Longrightarrow> Vs_enum v  < n"
   by (simp add: Vs_enum_less_card n_def)
