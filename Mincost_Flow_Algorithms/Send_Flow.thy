@@ -925,7 +925,17 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   have b_s: "abstract_bal_map b s > 0"
     using s_prop assms(2)
     unfolding invar_gamma_def unf 
-    by (smt (verit) \<epsilon>_axiom(1) mult_pos_pos)
+  proof -
+    have gamma_0: "0 < \<gamma>"
+    proof -
+      have "0 < current_\<gamma> state" using assms(2) by (auto elim!: invar_gammaE)
+      thus ?thesis using unf(3) by simp
+    qed
+    have "0 < \<epsilon> * \<gamma>"
+      using \<epsilon>_axiom(1) gamma_0 by (rule mult_pos_pos)
+    then show "0 < a_balance state s"
+      using s_prop(1) by (simp add: unf)
+  qed
   have b_t: "abstract_bal_map b t < 0"
     using t_prop assms(2)  \<epsilon>_axiom(2)
     unfolding invar_gamma_def unf
