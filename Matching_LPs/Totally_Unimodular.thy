@@ -3879,8 +3879,18 @@ proof
     case True
     have "row (A @\<^sub>r B) i = row A i" 
       using Missing_Matrix.append_rows_nth(1) True assms(1) assms(2) by blast
-    then show ?thesis 
-      by (metis 1 2 asmi asmj index_row(1))
+    then have eqr: "row (A @\<^sub>r B) i $ j = row A i $ j"
+      by simp
+    have i_row: "i < dim_row (A @\<^sub>r B)"
+      using 2 asmi by simp
+    have j_col: "j < dim_col (A @\<^sub>r B)"
+      using 1 asmj by simp
+    have eq1: "row (A @\<^sub>r B) i $ j = (A @\<^sub>r B) $$ (i, j)"
+      by (rule index_row(1)[OF i_row j_col])
+    have eq2: "row A i $ j = A $$ (i, j)"
+      by (rule index_row(1)[OF asmi asmj])
+    from eq1 eqr eq2 show ?thesis
+      by simp
   next
     case False
     then show ?thesis 
