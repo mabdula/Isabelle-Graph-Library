@@ -1699,7 +1699,21 @@ proof-
             using X_Y_props(3) Y_subs_Y' by blast
           hence "Y' = X"
             using Y'_def x_prop(2) 
-            by (metis connected_components_member_eq disjoint_iff)
+            proof -
+              obtain z where z_props: "z \<in> X" "z \<in> Y"
+                using X_Y_props(3) by auto
+              then have z_in_Y': "z \<in> Y'"
+                using Y_subs_Y' by auto
+              have z_mem_y: "z \<in> connected_component (to_graph (\<FF> stateX)) y"
+                using z_in_Y' Y'_def by simp
+              have z_mem_x: "z \<in> connected_component (to_graph (\<FF> stateX)) x"
+                using z_props(1) x_prop(2) by simp
+              have "Y' = connected_component (to_graph (\<FF> stateX)) z"
+                using connected_components_member_eq[OF z_mem_y] by (simp add: Y'_def)
+              also have "\<dots> = X"
+                using connected_components_member_eq[OF z_mem_x] x_prop(2) by simp
+              finally show "Y' = X" .
+            qed
           moreover have "Y' \<noteq> X"
             using X_Y_props Y_subs_Y' by simp
           ultimately show ?thesis by simp
