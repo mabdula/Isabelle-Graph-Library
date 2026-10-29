@@ -348,8 +348,8 @@ proof -
     using assms using uedges_def2 graph_symmetric by auto
   moreover then consider "e\<^sub>u = uEdge x y" | "e\<^sub>u = uEdge y x"
     using is_rep by auto
-  ultimately consider "{u,v} = set_of_uedge (uEdge x y)" | "{u,v} = set_of_uedge (uEdge y x)"
-    by cases metis+
+  ultimately have "{u,v} = set_of_uedge (uEdge x y) \<or> {u,v} = set_of_uedge (uEdge y x)"
+    using is_rep by (cases "e\<^sub>u = uEdge x y") auto
   hence "{u,v} = {x,y}" 
     by (auto simp: set_of_uedge)
   then consider "u = x" "v = y" | "u = y" "v = x"
