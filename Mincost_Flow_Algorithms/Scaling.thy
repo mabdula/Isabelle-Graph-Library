@@ -711,7 +711,14 @@ proof-
   define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (metis prod_cases3)
+proof -
+  obtain s' t' P' where "the (get_source_target_path f b) = (s', t', P')"
+    by (rule prod_cases3)
+  hence "(s', t', P') = the (get_source_target_path f b)"
+    by (rule sym)
+  thus thesis
+    by (rule that)
+qed
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF assms(1)])
     using b_def f_def stp_def by simp
