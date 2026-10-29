@@ -374,8 +374,8 @@ proof -
     using sumlist_upt_same[of Wsl i c] apply (simp add: x_sumlist assms(2) assms(3))
     using swap_zero_fun_nonneg[of i Wsl c] assms(3) cll  apply presburger
     using sum_of_swap_fun_eq[of "{0..<length Wsl}" 0 i c] 
-    by (metis assms(3) atLeastLessThan_iff cll linorder_le_less_linear 
-        not_less_zero sum.infinite zero_less_iff_neq_zero)
+using sum_of_swap_fun_eq[of "{0..<length Wsl}" 0 i c] cll assms(3)
+      by force
 qed
 
 lemma convex_lincomb_in_convex_hull_list:
