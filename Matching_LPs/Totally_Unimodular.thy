@@ -4228,7 +4228,7 @@ proof rule+
         then have "det A' = -1 \<or> det A' = 1"
           using \<open>Determinant.det A' \<noteq> 0\<close> by blast
         then have "abs (det A') = 1"
-          by (metis abs_1 abs_neg_one)
+          by auto
         then have "\<exists> x \<in> F. 1 \<cdot>\<^sub>v x \<in>  \<int>\<^sub>v"
           using \<open>\<exists>x\<in>F. \<bar>Determinant.det A'\<bar> \<cdot>\<^sub>v x \<in> \<int>\<^sub>v\<close> by presburger
         then show "\<exists> x \<in> F. x \<in>  \<int>\<^sub>v"
