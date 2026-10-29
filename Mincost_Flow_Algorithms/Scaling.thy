@@ -281,8 +281,7 @@ lemma SSP_simps:
     apply(rule SSP_call_3_condE, simp)
     apply(subst SSP.psimps[OF assms])
     unfolding SSP_upd3_def
-    apply(simp split: option.splits if_splits, metis)
-    done    
+    by (auto simp: Let_def split: option.splits if_splits prod.splits)
   by (auto simp add: SSP.psimps[OF assms]
                        SSP_ret_1_cond_def SSP_ret1_def
                        SSP_ret_2_cond_def SSP_ret2_def
