@@ -803,7 +803,24 @@ then have zero_at: "\<And>i. i < dim_row B \<Longrightarrow> col B k $ i = 0"
                 fix ia
                 assume "ia < dim_vec (unit_vec (dim_row B) i)" 
                 then show "col B k $v ia = unit_vec (dim_row B) i $v ia" 
-                  by (metis 13 14 i \<open>k < dim_col B\<close> dim_col index_col index_unit_vec(1))
+                proof -
+                  have ia_less: "ia < dim_row B"
+                    using \<open>ia < dim_vec (unit_vec (dim_row B) i)\<close> by simp
+                  have i_less: "i < dim_row B" and i_one: "B $$ (i, k) = 1"
+                    using i by auto
+                  show "col B k $v ia = unit_vec (dim_row B) i $v ia"
+                  proof(cases "ia = i")
+                    case True
+                    then show ?thesis
+                      using ia_less i_less i_one \<open>k < dim_col B\<close> by (simp add: index_col index_unit_vec(1))
+                  next
+                    case False
+                    then have "B $$ (ia, k) = 0"
+                      using 13 ia_less by blast
+                    then show ?thesis
+                      using ia_less i_less False \<open>k < dim_col B\<close> by (simp add: index_col index_unit_vec(1-2))
+                  qed
+                qed
               qed
               then show False using `\<not> (\<exists>j<dim_col B. \<exists>i<dim_row B. col B j = unit_vec (dim_row B) i)`
                 using \<open>i < dim_row B \<and> B $$ (i, k) = 1\<close> \<open>k < dim_col B\<close> by blast
