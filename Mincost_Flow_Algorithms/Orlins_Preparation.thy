@@ -94,12 +94,56 @@ lemma consistI:
   using assms by(force simp add:  consist_def split: prod.split) 
 
 lemma consist_conv_inj:"consist E conv \<Longrightarrow> a \<in> E \<Longrightarrow> b \<in> E \<Longrightarrow> conv a = conv b \<Longrightarrow> a = b"
-  unfolding consist_def
-  apply(rule Redge.induct[of _ "conv a"])
-  apply(all \<open>rule Redge.induct[ of _ "conv b"]\<close>)
-  apply(all \<open>cases a\<close>, all \<open>cases b\<close>)
-  using Redge.inject Redge.distinct
-  by (smt (verit) case_prod_conv prod.inject)+
+proof -
+  assume consist: "consist E conv" and aE: "a \<in> E" and bE: "b \<in> E" and eq: "conv a = conv b"
+  obtain a1 a2 where a_def: "a = (a1, a2)" by (cases a)
+  obtain b1 b2 where b_def: "b = (b1, b2)" by (cases b)
+  have aE': "(a1, a2) \<in> E" using aE a_def by simp
+  have bE': "(b1, b2) \<in> E" using bE b_def by simp
+  obtain ea where ea_spec: "conv (a1, a2) = F ea \<and> make_pair ea = (a1, a2) \<or>
+                            conv (a1, a2) = B ea \<and> make_pair ea = (a2, a1)"
+    using consistD(1)[OF consist aE'] by blast
+  obtain eb where eb_spec: "conv (b1, b2) = F eb \<and> make_pair eb = (b1, b2) \<or>
+                            conv (b1, b2) = B eb \<and> make_pair eb = (b2, b1)"
+    using consistD(1)[OF consist bE'] by blast
+  have eq': "conv (a1, a2) = conv (b1, b2)"
+    using eq a_def b_def by simp
+  have ab_eq: "(a1, a2) = (b1, b2)"
+  proof -
+    from ea_spec show ?thesis
+    proof (rule disjE)
+      assume h1: "conv (a1, a2) = F ea \<and> make_pair ea = (a1, a2)"
+      from eb_spec show ?thesis
+      proof (rule disjE)
+        assume h2: "conv (b1, b2) = F eb \<and> make_pair eb = (b1, b2)"
+        from h1 h2 eq' have feq: "F ea = F eb" by simp
+        hence eaeb: "ea = eb" using Redge.inject by simp
+        with h1 h2 show ?thesis by simp
+      next
+        assume h2: "conv (b1, b2) = B eb \<and> make_pair eb = (b2, b1)"
+        from h1 h2 eq' have fdeq: "F ea = B eb" by simp
+        hence False using Redge.distinct by simp
+        thus ?thesis ..
+      qed
+    next
+      assume h1: "conv (a1, a2) = B ea \<and> make_pair ea = (a2, a1)"
+      from eb_spec show ?thesis
+      proof (rule disjE)
+        assume h2: "conv (b1, b2) = F eb \<and> make_pair eb = (b1, b2)"
+        from h1 h2 eq' have bdeq: "B ea = F eb" by simp
+        hence False using Redge.distinct by simp
+        thus ?thesis ..
+      next
+        assume h2: "conv (b1, b2) = B eb \<and> make_pair eb = (b2, b1)"
+        from h1 h2 eq' have beq: "B ea = B eb" by simp
+        hence eaeb: "ea = eb" using Redge.inject by simp
+        with h1 h2 have "(a2, a1) = (b2, b1)" by simp
+        thus ?thesis by simp
+      qed
+    qed
+  qed
+  from ab_eq a_def b_def show "a = b" by simp
+qed
 
 end
 
