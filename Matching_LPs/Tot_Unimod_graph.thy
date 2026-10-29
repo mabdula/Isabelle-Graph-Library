@@ -272,7 +272,23 @@ proof safe
         i1 < dim_row (incidence_mat ) \<and> 
         i1 = pick I i"
     using exist_index_in_submat 
-    by (metis (no_types, lifting) assms(3,6) dim_submatrix(1) exist_index_in_submat) 
+  proof -
+    have i_dim: "i < dim_row (submatrix (incidence_mat ) I UNIV)"
+    proof -
+      have "dim_row (submatrix (incidence_mat ) I J) = dim_row (submatrix (incidence_mat ) I UNIV)"
+        by (simp add: dim_submatrix(1))
+      then show ?thesis
+        using assms(3) assms(6) by simp
+    qed
+    obtain i1 where i1_props: "i1 < dim_row (incidence_mat )" "i1 \<in> I"
+      "row (submatrix (incidence_mat ) I UNIV) i = row (incidence_mat ) i1" "i1 = pick I i"
+      using exist_index_in_submat[of "submatrix (incidence_mat ) I UNIV" "incidence_mat "] i_dim
+      by blast
+    have row_eq: "row (incidence_mat ) i1 = row (submatrix (incidence_mat ) I UNIV) i"
+      using i1_props(3)[symmetric] .
+    show thesis
+      using that[OF conjI[OF row_eq conjI[OF i1_props(1) i1_props(4)]]] .
+  qed
   obtain j1 where j1: "row (incidence_mat ) j1 = 
         row (submatrix (incidence_mat ) I UNIV) j \<and> 
         j1 < dim_row (incidence_mat ) \<and> 
