@@ -793,7 +793,13 @@ then have zero_at: "\<And>i. i < dim_row B \<Longrightarrow> col B k $ i = 0"
               have "col B k = unit_vec (dim_row B) i" 
               proof 
                 show 14: "dim_vec (col B k) = dim_vec (unit_vec (dim_row B) i)"
-                  by (metis dim_col index_unit_vec(3))
+                proof -
+                  have "dim_vec (col B k) = dim_row B"
+                    by (rule dim_col)
+                  also have "\<dots> = dim_vec (unit_vec (dim_row B) i)"
+                    by (simp add: index_unit_vec(3))
+                  finally show ?thesis .
+                qed
                 fix ia
                 assume "ia < dim_vec (unit_vec (dim_row B) i)" 
                 then show "col B k $v ia = unit_vec (dim_row B) i $v ia" 
