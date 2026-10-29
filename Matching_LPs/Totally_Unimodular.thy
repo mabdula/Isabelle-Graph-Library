@@ -3932,8 +3932,22 @@ next
     fix i
     assume asmi: "i < nr2"
     obtain k where k: "row (submatrix B {0..<nr2} UNIV) i = row B k \<and> k < dim_row B" 
-      by (smt (verit, best) Missing_Matrix.append_rows_nth(1) Suc(2) 1 2 asmi basic_trans_rules(19) 
-          carrier_matD(1) lessI mat_of_rows_carrier(1))
+    proof -
+      have carrB: "mat_of_rows n [Matrix.row B nr2] \<in> carrier_mat 1 n"
+        by force
+      have step1: "Matrix.row ((submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [Matrix.row B nr2])) i =
+                   Matrix.row (submatrix B {0..<nr2} UNIV) i"
+        using Missing_Matrix.append_rows_nth(1) 2 carrB asmi by meson
+      have step2: "Matrix.row B i =
+                   Matrix.row ((submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [Matrix.row B nr2])) i"
+        using arg_cong[OF 1, of "\<lambda>M. Matrix.row M i"] .
+      have row_eq: "Matrix.row (submatrix B {0..<nr2} UNIV) i = Matrix.row B i"
+        using step1 step2 by simp
+      have less: "i < dim_row B"
+        using Suc(2) asmi carrier_matD(1) by fastforce
+      show thesis
+        using that[OF conjI[OF row_eq less]] .
+    qed
     then have "\<exists>j. row B k = unit_vec n j" 
       by (metis Suc(2) Suc(3) carrier_matD(1))
     then show "\<exists>j. Matrix.row (submatrix B {0..<nr2} UNIV) i = unit_vec n j"
