@@ -4062,7 +4062,17 @@ next
             (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [- unit_vec n j])" 
     by presburger
   then show ?case 
-    by (metis 4 2 5 assms(1) carrier_append_rows tot_unimod_append_minus_unit_vec)
+  proof -
+    obtain j' where jq: "row B nr2 = - unit_vec n j'"
+      using Suc(3) by blast
+    have carr: "A @\<^sub>r submatrix B {0..<nr2} UNIV \<in> carrier_mat (nr1 + nr2) n"
+      using carrier_append_rows[OF assms(1) 2] .
+    have cong_m: "mat_of_rows n [row B nr2] = mat_of_rows n [- unit_vec n j']"
+      using jq by (rule arg_cong)
+    have tu: "tot_unimodular ((A @\<^sub>r submatrix B {0..<nr2} UNIV) @\<^sub>r mat_of_rows n [- unit_vec n j'])"
+      using tot_unimod_append_minus_unit_vec[OF carr 5] .
+    show ?case using 4 cong_m tu by simp
+  qed
 qed
 
 lemma tot_unimod_append_one:
