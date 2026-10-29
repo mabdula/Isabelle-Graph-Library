@@ -28,26 +28,8 @@ subdirectory and its own session, with all of the sessions in the session group
 
 ## Building and checking
 
-Each section is its own session, and all eight sessions share the group
-`paper_index`. Run the commands from the repository root, so that the library
-sessions are on the session path. To check one section without building the rest
-of the library, build its session, for example:
-
-```
-isabelle build -d . -d Paper_Index Paper_Index_21_Graph_Models_And_Reasoning
-```
-
-To check all eight sections, which builds the whole library on which they depend,
-build the group:
-
-```
-isabelle build -d . -d Paper_Index -g paper_index
-```
-
-A green build is the verification: if any listed theorem, definition or locale no
-longer exists under the referenced name, the corresponding antiquotation makes the
-build fail and names the stale entry. To include the index in the top-level build
-of the artefact, add `Paper_Index` to the repository `ROOTS` file.
+The commands that build the index are in `ARTEFACT_README.md` at the repository
+root.
 
 ## Coverage
 
