@@ -543,7 +543,16 @@ proof -
     then have "pick I i < card (Vs E)"
       by (simp add: dim_row_incidence_mat)
   have "pick J k < card E" 
-    by (metis assms(2,4) dim_col_incidence_mat dim_submatrix(2) pick_le)
+proof -
+    have "dim_col B = card {j. j < dim_col incidence_mat \<and> j \<in> J}"
+      using assms(4) dim_submatrix(2) by blast
+    hence "k < card {j. j < dim_col incidence_mat \<and> j \<in> J}"
+      using assms(2) by simp
+    hence "k < card {j. j < card E \<and> j \<in> J}"
+      by (simp add: dim_col_incidence_mat)
+    thus ?thesis
+      by (fastforce intro: pick_le)
+  qed
   have "(incidence_mat ) $$ (pick I i, pick J k) = 1 \<or> 
         (incidence_mat ) $$ (pick I i, pick J k) = 0"
     using \<open>pick I i < card (Vs E)\<close> \<open>pick J k < card E\<close> elems_incidence_one_zero by blast
