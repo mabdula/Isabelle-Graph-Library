@@ -1549,7 +1549,19 @@ proof(goal_cases)
   have help1: "\<lbrakk> (a, b) = prod.swap (make_pair d); prod.swap (make_pair d) \<notin> make_pair ` \<E>; d \<in> \<E>\<rbrakk> 
                \<Longrightarrow> (b, a) \<in> make_pair ` local.\<E>" for a b d
   using cost_flow_network.to_vertex_pair.simps 
-  by (metis imageI swap_simp swap_swap)
+proof -
+  assume asm1: "(a, b) = prod.swap (make_pair d)"
+     and asm2: "prod.swap (make_pair d) \<notin> make_pair ` \<E>"
+     and asm3: "d \<in> \<E>"
+  obtain x y where xy: "make_pair d = (x, y)"
+    by fastforce
+  have ba_eq: "(b, a) = make_pair d"
+    using asm1 xy by auto
+  have "make_pair d \<in> make_pair ` local.\<E>"
+    using asm3 by (rule imageI)
+  with ba_eq show "(b, a) \<in> make_pair ` local.\<E>"
+    by simp
+qed
   have help2: "\<lbrakk>(a, b) = make_pair x ; x \<in> local.\<E> \<rbrakk>\<Longrightarrow>
        make_pair x \<in> to_edge `
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
