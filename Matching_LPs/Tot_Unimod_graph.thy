@@ -986,7 +986,34 @@ qed
                 hence "i = j" 
                   using basic_trans_rules(22) dim_row_mat_less_card_I[of I] i_j(3,4) less(2) not_less_iff_gr_or_eq
                       pick_eq_iff_inf[of I] pick_mono_le[of i I j] pick_mono_le[of j I i] 
-                  by metis
+                proof (cases "finite I")
+                  case True
+                  have "dim_row B \<le> card I"
+                    using dim_row_mat_less_card_I[OF True] less(2) by simp
+                  hence bounds: "i < card I" "j < card I"
+                    using i_j(3) i_j(4) by linarith+
+                  show "i = j"
+                  proof (rule ccontr)
+                    assume neq: "i \<noteq> j"
+                    then consider (lt) "i < j" | (gt) "j < i" by linarith
+                    then show False
+                    proof cases
+                      case lt
+                      hence "pick I i < pick I j"
+                        using bounds(2) pick_mono_le by blast
+                      then show False using \<open>pick I j = pick I i\<close> by simp
+                    next
+                      case gt
+                      hence "pick I j < pick I i"
+                        using bounds(1) pick_mono_le by blast
+                      then show False using \<open>pick I j = pick I i\<close> by simp
+                    qed
+                  qed
+                next
+                  case False
+                  then show "i = j"
+                    using pick_eq_iff_inf[of I i j] \<open>pick I j = pick I i\<close> by simp
+                qed
                 thus ?case 
                   using i_j(5) by simp
               qed
