@@ -2130,7 +2130,16 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
            connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable  (to_graph (\<FF> state)) (fstv e) (sndv e)"
-      by (metis in_connected_componentE in_connected_componentI2)
+    proof -
+      assume eq: "connected_component (to_graph (\<FF> state)) (fstv e) =
+                  connected_component (to_graph (\<FF> state)) (sndv e)"
+      have "sndv e \<in> connected_component (to_graph (\<FF> state)) (sndv e)"
+        by (rule in_connected_componentI2) simp
+      with eq have "sndv e \<in> connected_component (to_graph (\<FF> state)) (fstv e)"
+        by simp
+      thus ?thesis
+        by (auto elim: in_connected_componentE)
+    qed
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
       by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
     show ?thesis 
