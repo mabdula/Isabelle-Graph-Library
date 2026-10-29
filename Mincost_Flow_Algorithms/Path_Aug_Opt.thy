@@ -189,9 +189,30 @@ lemma augpath_to_hpath:
   assumes "augpath f mapes" "mapes = (map to_redge es)"
   shows   "hpath es"
   using assms(2)
-  apply(induction arbitrary: es rule: augpath_induct[OF assms(1)])
-  using hpath_intros(1) 
-  by (force, smt (verit, best) fstvv_fstv hpath_simps map_eq_Cons_D sndvv_sndv)
+proof (induction arbitrary: es rule: augpath_induct[OF assms(1)])
+  case (1 f x xs)
+  then obtain ee where "xs = [ee]"
+    by (cases xs; auto)
+  then show ?case
+    using hpath_intros(1) by simp
+next
+  case (2 f e d rest lista)
+  obtain ee ess where es_def: "lista = ee # ess" "e = to_redge ee"
+      "d # rest = map to_redge ess"
+    using "2.hyps" "2.prems" by (cases lista; auto)
+  have hpath_ess: "hpath ess"
+    by (rule "2.IH"[OF es_def(3)])
+  obtain dd fss where ess_def: "ess = dd # fss" "d = to_redge dd"
+    using es_def(3) by (cases ess; auto)
+  have sndvv_fstvv: "sndvv ee = fstvv dd"
+    using "2.hyps" es_def(2) ess_def(2) by (auto simp add: fstvv_fstv sndvv_sndv)
+  have "hpath (dd # fss)"
+    using hpath_ess ess_def(1) by simp
+  from sndvv_fstvv this have "hpath (ee # dd # fss)"
+    by (rule hpath_intros(2))
+  then show ?case
+    by (simp add: es_def(1) ess_def(1))
+qed
 
 text \<open>Furthermore, we see some topological properties.\<close>
 
