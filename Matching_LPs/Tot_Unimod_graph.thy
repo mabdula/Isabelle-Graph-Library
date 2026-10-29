@@ -631,7 +631,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
         proof(cases "\<exists>j<dim_col B. \<exists> i < dim_row B. col B j = unit_vec (dim_row B) i")
           case True
           have 2:"B \<in> carrier_mat (dim_row B) (dim_row B)" 
-            by (metis "1" carrier_matI)
+            by (intro carrier_matI) (auto simp: 1)
           obtain j i where i_j:"j<dim_col B \<and> i < dim_row B \<and> col B j = unit_vec (dim_row B) i"
             using True by auto
           have 3: "j < dim_row B" using i_j 
