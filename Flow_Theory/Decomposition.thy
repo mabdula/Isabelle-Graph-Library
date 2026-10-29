@@ -201,11 +201,8 @@ proof(induction g n v rule: find_cycle.induct)
     moreover have "i<length (e#es) \<Longrightarrow>
                     fst ((e#es) ! i) = find_cycle g (Suc n) v ! i \<and>
                     snd ((e#es) ! i) = find_cycle g (Suc n) v ! (i + 1)" for i
-        using es_def 
-        apply(cases i)
-        apply (metis (no_types, lifting) One_nat_def aaa add_is_1 find_cycle.elims find_cycle_prop
-                       nth_Cons_0 nth_Cons_Suc)
-        using find_cycle_prop by auto
+        using es_def
+        by (cases i; cases n) (use aaa find_cycle_prop in auto)
     moreover have " flowpath g (e#es)" 
         using  calculation(2)[of 1] calculation(2)[of 0] es_def find_cycle_prop aaa
         by (cases es) (auto intro: flowpath_intros)
