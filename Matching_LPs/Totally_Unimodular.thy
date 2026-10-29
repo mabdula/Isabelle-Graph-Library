@@ -4035,7 +4035,12 @@ next
         using that[of i] row_eq i_less by blast
     qed
     then have "\<exists>j. row B k = - unit_vec n j" 
-      by (metis Suc(2) Suc(3) carrier_matD(1))
+    proof -
+      have "k < dim_row B" using k by blast
+      moreover have "dim_row B = Suc nr2" using carrier_matD(1)[OF Suc(2)] by blast
+      ultimately have "k < Suc nr2" by simp
+      then show ?thesis using Suc(3) by blast
+    qed
     then show "\<exists>j. Matrix.row (submatrix B {0..<nr2} UNIV) i = - unit_vec n j"
       using k by presburger
   qed
