@@ -4127,7 +4127,12 @@ proof -
       using 1 2 by force
     then have 4: "det (submatrix A {i} {j}) = (submatrix A {i} {j}) $$ (0,0)"
       using determinant_one_element 
-      by (metis mat_carrier)
+    proof -
+      have carr: "submatrix A {i} {j} \<in> carrier_mat 1 1"
+        using 3 mat_carrier by simp
+      then show ?thesis
+        using determinant_one_element by simp
+    qed
     have 5: "(submatrix A {i} {j}) $$ (0,0) =  A $$ (pick {i} 0, pick {j} 0)" 
       by (simp add: 3)
     have "pick {i} 0 = i" 
