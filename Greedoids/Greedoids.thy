@@ -220,7 +220,13 @@ proof -
   then have "?S \<noteq> {}" by auto
   have "\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<in> F" by simp
   then have "\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<subseteq> E" using assms(1) unfolding set_system_def by simp
-  then have S_prop: "\<forall>Z. Z \<in> ?S \<longrightarrow> finite Z" using \<open>finite E\<close> finite_subset by (metis (mono_tags, lifting))
+  have S_prop: "\<forall>Z. Z \<in> ?S \<longrightarrow> finite Z"
+  proof (rule allI, rule impI)
+    fix Z
+    assume "Z \<in> ?S"
+    with \<open>\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<subseteq> E\<close> have "Z \<subseteq> E" by blast
+    then show "finite Z" using \<open>finite E\<close> finite_subset by blast
+  qed
   let ?P = "{card Z | Z. Z \<supseteq> X \<and> Z \<subseteq> X \<union> Y \<and> Z \<in> F}"
   have "?P \<noteq> {} \<and> finite ?P" using \<open>finite ?S\<close> \<open>?S \<noteq> {}\<close> by simp
   then obtain x where "x = Max ?P" by simp
