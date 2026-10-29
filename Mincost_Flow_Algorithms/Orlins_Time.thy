@@ -255,9 +255,22 @@ next
         show ?case
         proof(insert 2,(subst (asm) let_swap[of "add_fst tt"])+, cases k, goal_cases)
         case 1
+        define state'time where
+          "state'time = maintain_forest_time (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+        define state''time where
+          "state''time = send_flow_time (prod.snd state'time)"
+        have unfolded: "add_fst tt (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time, prod.snd state''time)
+                 = (tfin, state')"
+          using 1 by (simp add: funpow_0 Let_def state'time_def state''time_def)
+        have snd_eq: "prod.snd state''time = state'"
+          and tfin_eq: "tfin = tt + (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time)"
+          using unfolded by (auto simp add: add_fst_def)
+        have dom': "orlins_time_dom (tt, state')"
+          using assms(2) by (blast intro: orlins_time.domintros)
+        have step_result: "orlins_time tt (prod.snd state''time) = (tt, state')"
+          using dom' snd_eq assms(2) by (auto simp add: orlins_time.psimps)
         thus ?case
-          by (smt (verit) add.commute add_fst_def fst_conv funpow_0 orlins_time.domintros orlins_time.psimps
-              snd_conv)
+          by (simp add: Let_def state'time_def state''time_def add_fst_def step_result tfin_eq add.commute)
         next
         case (2 nat)
         show ?case 
