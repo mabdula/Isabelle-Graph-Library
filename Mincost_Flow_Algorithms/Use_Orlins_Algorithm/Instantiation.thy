@@ -4566,7 +4566,13 @@ proof(goal_cases)
     note 2 = 2 this
     hence "abstract_bal_map b s > 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def 
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have "0 < \<epsilon>" using \<epsilon>_axiom(1) by simp
+      moreover have "0 < \<gamma>" using knowledge(7,2) by (simp add: algo.invar_gamma_def)
+      ultimately have "0 < \<epsilon> * \<gamma>" by (rule mult_pos_pos)
+      hence "- \<epsilon> * \<gamma> < 0" by simp
+      with 2(4) show ?thesis by linarith
+    qed
     hence t_not_s:"t \<noteq> s"
       using bt0 by auto
     have f_is: "abstract_flow_map f = a_current_flow state"
