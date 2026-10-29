@@ -888,7 +888,10 @@ qed
                     by simp
                 qed
                 have 18: "sum (\<lambda> k. (col B t $ k) * (?u $ k)) ({0..<dim_row B} - {i,j}) = 0" 
-                  by (metis (no_types, lifting) "16" sum.neutral)
+                proof (rule sum.neutral)
+                  show "\<forall>k\<in>{0..<dim_row B} - {i,j}. (col B t $ k) * (?u $ k) = 0"
+                    using "16" by blast
+                qed
                 have "sum (\<lambda> k. (col B t $ k) * (?u $ k)) {i,j} = 
                       (col B t $ i) * (?u $ i) + (col B t $ j) * (?u $ j)"
                   by (meson i_j(5) sum_two_elements)
