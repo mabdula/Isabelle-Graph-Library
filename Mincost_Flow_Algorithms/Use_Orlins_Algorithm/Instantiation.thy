@@ -4334,7 +4334,13 @@ proof(goal_cases)
     note 2 = this 2
     hence "abstract_bal_map b t < 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have gamma_pos: "0 < \<gamma>"
+        using knowledge(7) knowledge(2) by (simp add: algo.invar_gamma_def)
+      have "0 < \<epsilon> * \<gamma>"
+        using \<epsilon>_axiom(1) gamma_pos by (rule mult_pos_pos)
+      with 2(2) show ?thesis by linarith
+    qed
     hence t_not_s:"t \<noteq> s"
       using bs0 by auto
     have f_is: "abstract_flow_map f = a_current_flow state"
