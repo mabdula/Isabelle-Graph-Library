@@ -3862,8 +3862,13 @@ lemma append_mat_empty:
   shows "A @\<^sub>r B = A" 
 proof
   show 2: "dim_row (A @\<^sub>r B) = dim_row A" 
-    by (metis add_cancel_right_right append_rows_def assms(2) carrier_matD(1)
-        index_mat_four_block(2) index_zero_mat(2))
+  proof -
+    have carr: "A @\<^sub>r B \<in> carrier_mat (nr + 0) n"
+      using carrier_append_rows[OF A B] .
+    from carrier_matD(1)[OF carr] have "dim_row (A @\<^sub>r B) = nr + 0" .
+    also from carrier_matD(1)[OF A] have "nr + 0 = dim_row A" by simp
+    finally show "dim_row (A @\<^sub>r B) = dim_row A" .
+  qed
   show 1: "dim_col (A @\<^sub>r B) = dim_col A" 
     using assms(1) assms(2) carrier_matD(2) by blast
   fix i j
