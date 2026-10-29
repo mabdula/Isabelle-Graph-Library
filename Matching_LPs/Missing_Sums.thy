@@ -429,7 +429,7 @@ qed
       using sum_range_divided_at_zero[of f "length ax"] by simp
   qed
   then have "f 0 + sum f {1..<length (a#ax)} = 1" 
-    by (metis  \<open>sum f {0..<length (a#ax)} = 1\<close>)
+    using assms(1) by linarith
   then have 2:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = 1 - f 0" 
     using 0 by linarith 
   then have "(1/(1 - f 0)) * (1 - f 0) =  1" using `f 0 \<noteq> 1` 
