@@ -834,7 +834,14 @@ then have zero_at: "\<And>i. i < dim_row B \<Longrightarrow> col B k $ i = 0"
             have "\<forall> i < dim_row B. ?u $ i = 1 \<or> ?u $ i = -1" 
               by simp
             then have 32:"?u \<noteq> 0\<^sub>v (dim_row B)" 
-              by (metis "4" class_field.neg_1_not_0 class_field.zero_not_one index_zero_vec(1))
+proof -
+  have all_vals: "\<forall> i < dim_row B. ?u $ i = 1 \<or> ?u $ i = -1" by simp
+  have zero_lt: "0 < dim_row B" using 4 by simp
+  from all_vals zero_lt have u0: "?u $ 0 = 1 \<or> ?u $ 0 = -1" by blast
+  have z0: "0\<^sub>v (dim_row B) $ 0 = 0" using zero_lt by simp
+  from u0 z0 zero_lt have "?u $ 0 \<noteq> 0\<^sub>v (dim_row B) $ 0" by auto
+  then show "?u \<noteq> 0\<^sub>v (dim_row B)" by auto
+qed
             have "\<forall> t < dim_col B. col B t \<bullet> ?u = 0"
             proof safe
               fix t
