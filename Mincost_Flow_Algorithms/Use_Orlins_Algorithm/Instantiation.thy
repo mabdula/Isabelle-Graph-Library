@@ -3896,10 +3896,17 @@ proof-
   have t_props: "t \<in> \<V>" "- (1 - local.\<epsilon>) * current_\<gamma> state > abstract_bal_map b t"
     using get_target_axioms_red(1)[of b state "current_\<gamma> state" t] assms
     by(auto simp add: get_source_target_path_b_cond_def)
-  hence bt_pos: "abstract_bal_map b t < 0" 
-    using gamma_0 \<epsilon>_axiom t_props(2) 
-    by (auto simp add: algebra_simps)
-       (smt (verit, best) mult_less_0_iff t_props(2))
+  hence bt_pos: "abstract_bal_map b t < 0"
+  proof -
+    have "\<epsilon> \<le> 1 / 2"
+      using \<epsilon>_axiom(2) by blast
+    hence pos: "(1 - \<epsilon>) * current_\<gamma> state > 0"
+      using gamma_0 by simp
+    have "abstract_bal_map b t < - ((1 - \<epsilon>) * current_\<gamma> state)"
+      using t_props(2) by (simp add: algebra_simps)
+    thus ?thesis
+      using pos by linarith
+  qed
   hence a_balance_s_not_zero:"a_balance state t \<noteq> 0"  
     using assms by(force simp add: get_source_target_path_b_cond_def)
   have knowledge: True
