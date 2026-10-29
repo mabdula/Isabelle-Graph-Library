@@ -1443,7 +1443,7 @@ proof(rule, goal_cases)
       by auto
     ultimately obtain q where  "vwalk_bet (pred_graph (relax connections u v)) v ([v]@q@[u]) u" 
       using append_Nil[of "[u]"] 
-      by(cases p1)( cases p2, metis, simp, cases p2, fast+)
+      by(cases p1)( cases p2, fastforce intro: that[of "[]"], simp, cases p2, fast+)
     then obtain r where  r_prop:"vwalk_bet (pred_graph (relax connections u v)) v r u" "distinct r"
       by (meson distinct_vwalk_bet_def vwalk_bet_to_distinct_is_distinct_vwalk_bet)
     hence lengthr: "length r \<ge> 2"
