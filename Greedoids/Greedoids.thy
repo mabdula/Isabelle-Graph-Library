@@ -683,8 +683,18 @@ proof
                 have 3: "Y \<union> {y} \<subseteq> X" using y_prop x_Y_Z_prop by simp
                 have 4: "Y \<subset> Y \<union> {y}" using \<open>y \<notin> Y\<close> by auto
                 then have "((Y \<union> {y}) - Y) = {y}" by auto
-                then show ?thesis using 1 2 3 4 y_prop x_Y_Z_prop \<open>X \<in> F - {{}}\<close> \<open>finite X\<close>
-                  by (metis Diff_iff)
+                then show ?thesis
+                                   proof -
+                   have "y \<notin> Y" using y_prop by simp
+                   have "(Y \<union> {y}) - Y = {y}" using \<open>y \<notin> Y\<close> by auto
+                   then have "Y \<in> F \<and> Y \<union> {y} \<in> F \<and> Y \<union> {y} \<subseteq> X \<and> Y \<subset> Y \<union> {y} \<and>
+                              card (Y \<union> {y}) = i + 1 \<and> card Y = i \<and> (Y \<union> {y}) - Y = {y}"
+                     using y_prop x_Y_Z_prop 1 2 3 4 by simp
+                   then have "\<exists>Ya Za. Ya \<in> F \<and> Za \<in> F \<and> Ya \<subseteq> X \<and> Za \<subset> Ya \<and> card Ya = i + 1 \<and> card Za = i \<and> Ya - Za = {y}"
+                     by blast
+                   moreover have "y \<in> X" using y_prop by simp
+                   ultimately show ?thesis by blast
+                 qed
               qed
             qed
           qed
