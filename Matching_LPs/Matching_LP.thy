@@ -259,7 +259,39 @@ named_theorems matching_lp_theorems
 lemma bij_Vs_enum_inv[matching_lp_theorems]: "bij_betw Vs_enum_inv {0..< card V} V"
 proof-
   have "\<lbrakk>x < card V; y < card V; Vs_enum_inv x = Vs_enum_inv y\<rbrakk> \<Longrightarrow> x = y" for x y
-    by (metis Vs_enum_Vs_enum_inv atLeastLessThan_iff bij_Vs_enum bij_betw_def imageE zero_le)
+  proof -
+    assume x_less: "x < card V" and y_less: "y < card V"
+      and eq: "Vs_enum_inv x = Vs_enum_inv y"
+    have surj: "Vs_enum ` V = {0..<card V}"
+      using bij_Vs_enum by (rule bij_betw_imp_surj_on)
+    have "x \<in> Vs_enum ` V"
+      using surj x_less by (simp add: atLeastLessThan_iff zero_le)
+    then obtain vx where vx: "vx \<in> V" "Vs_enum vx = x"
+      by auto
+    have "y \<in> Vs_enum ` V"
+      using surj y_less by (simp add: atLeastLessThan_iff zero_le)
+    then obtain vy where vy: "vy \<in> V" "Vs_enum vy = y"
+      by auto
+    have "Vs_enum_inv x = Vs_enum_inv (Vs_enum vx)"
+      using vx(2) by simp
+    then have invx: "Vs_enum_inv x = vx"
+      using vx(1) by (simp add: Vs_enum_Vs_enum_inv)
+    have "Vs_enum_inv y = Vs_enum_inv (Vs_enum vy)"
+      using vy(2) by simp
+    then have invy: "Vs_enum_inv y = vy"
+      using vy(1) by (simp add: Vs_enum_Vs_enum_inv)
+    have gx: "Vs_enum (Vs_enum_inv x) = x"
+      using invx vx(2) by simp
+    have gy: "Vs_enum (Vs_enum_inv y) = y"
+      using invy vy(2) by simp
+    have "x = Vs_enum (Vs_enum_inv x)"
+      using gx by simp
+    also have "Vs_enum (Vs_enum_inv x) = Vs_enum (Vs_enum_inv y)"
+      using eq by (rule arg_cong)
+    also have "Vs_enum (Vs_enum_inv y) = y"
+      using gy by simp
+    finally show "x = y" .
+  qed
   moreover have "xa < card V \<Longrightarrow> Vs_enum_inv xa \<in> V" for xa
     by (metis (full_types) atLeastLessThan_iff bij_Vs_enum bij_betw_def imageE
         Vs_enum_Vs_enum_inv  zero_le)
