@@ -711,12 +711,66 @@ proof-
         using inv_reachable_same_repD[OF all_invars(7)] inv_rep_reachableD[OF all_invars(6)] 
           reachable_sym 
         by(force simp add: x'_def x_def xx_def xy_def y'_def y_def yy_def local.\<FF>_def r_card_def)+
-      thus ?case 
-        using inv_reachable_same_repD[OF all_invars(7), of]
-          inv_rep_reachableD[OF all_invars(6), of xx]
-          inv_rep_reachableD[OF all_invars(6), of yy]
-        unfolding  local.\<FF>_def r_card_def x'_def y'_def
-        by metis+
+      have x'_fix: "abstract_rep_map r_card x' = x'"
+      proof -
+        have "reachable (to_graph \<FF>) xx x' \<or> x' = xx"
+          using inv_rep_reachableD[OF all_invars(6), of xx] by (force simp add: x'_def \<FF>_def r_card_def)
+        then show ?thesis
+        proof
+          assume "reachable (to_graph \<FF>) xx x'"
+          hence "abstract_rep_map r_card xx = abstract_rep_map r_card x'"
+            using inv_reachable_same_repD[OF all_invars(7), of xx x']
+            by (auto simp add: x'_def \<FF>_def r_card_def)
+          then show ?thesis by (simp add: x'_def)
+        next
+          assume "x' = xx"
+          then show ?thesis by (simp add: x'_def)
+        qed
+      qed
+      have y'_fix: "abstract_rep_map r_card y' = y'"
+      proof -
+        have "reachable (to_graph \<FF>) yy y' \<or> y' = yy"
+          using inv_rep_reachableD[OF all_invars(6), of yy] by (force simp add: y'_def \<FF>_def r_card_def)
+        then show ?thesis
+        proof
+          assume "reachable (to_graph \<FF>) yy y'"
+          hence "abstract_rep_map r_card yy = abstract_rep_map r_card y'"
+            using inv_reachable_same_repD[OF all_invars(7), of yy y']
+            by (auto simp add: y'_def \<FF>_def r_card_def)
+          then show ?thesis by (simp add: y'_def)
+        next
+          assume "y' = yy"
+          then show ?thesis by (simp add: y'_def)
+        qed
+      qed
+      show ?case
+      proof -
+        consider (r_x) "reachable (to_graph \<FF>) x' v"
+               | (r_y) "reachable (to_graph \<FF>) y' v"
+               | (eq_y) "y' = v"
+               | (eq_x) "x' = v"
+          using reachables_F_v by blast
+        then show ?thesis
+        proof cases
+          case r_x
+          hence "abstract_rep_map r_card x' = abstract_rep_map r_card v"
+            using inv_reachable_same_repD[OF all_invars(7), of x' v]
+            by (auto simp add: x'_def \<FF>_def r_card_def)
+          then show ?thesis using x'_fix by auto
+        next
+          case r_y
+          hence "abstract_rep_map r_card y' = abstract_rep_map r_card v"
+            using inv_reachable_same_repD[OF all_invars(7), of y' v]
+            by (auto simp add: y'_def \<FF>_def r_card_def)
+          then show ?thesis using y'_fix by auto
+        next
+          case eq_y
+          then show ?thesis using y'_fix by auto
+        next
+          case eq_x
+          then show ?thesis using x'_fix by auto
+        qed
+      qed
     qed
   qed
 
