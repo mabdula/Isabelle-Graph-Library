@@ -1413,7 +1413,12 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
                  \<lceil> (abstract_bal_map b s - \<gamma>) / \<gamma> - (1 - \<epsilon>)\<rceil>" by simp
     also have "... = \<lceil> (abstract_bal_map b s ) / \<gamma> - (1 - \<epsilon>) - 1\<rceil>"
       using gamma_0
-      by (smt (verit) diff_divide_distrib divide_self_if)
+    proof -
+      have "\<gamma> \<noteq> 0"
+        using gamma_0 by simp
+      thus ?thesis
+        by (simp add: diff_divide_distrib divide_self_if)
+    qed
     also have "... = \<lceil> abstract_bal_map b s / \<gamma> - (1 - \<epsilon>)\<rceil> - 1" 
       using ceiling_diff_one[of "abstract_bal_map b s / \<gamma> - (1 - \<epsilon>)"] by simp
     also have "... = \<lceil> \<bar>abstract_bal_map b s \<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1"
