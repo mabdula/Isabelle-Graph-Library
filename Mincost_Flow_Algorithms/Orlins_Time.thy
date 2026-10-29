@@ -179,7 +179,20 @@ next
       case notyetterm
       hence "return state = notyetterm" 
         unfolding orlins_one_step_time_check.simps[of tt  state] add_fst_def 
-        by (smt (verit, ccfv_SIG) return.exhaust snd_conv)
+proof (cases "return state")
+  case success
+  hence "orlins_one_step_time_check (tt, state) = (tt, state)"
+    by (simp add: orlins_one_step_time_check.simps)
+  with notyetterm show ?thesis by simp
+next
+  case infeasible
+  hence "orlins_one_step_time_check (tt, state) = (tt, state)"
+    by (simp add: orlins_one_step_time_check.simps)
+  with notyetterm show ?thesis by simp
+next
+  case notyetterm
+  then show ?thesis by simp
+qed
       hence last_step_swap:"(orlins_one_step_time_check ^^  k) 
                  (orlins_one_step_time_check (orlins_one_step_time_check (tt , state))) = 
              (orlins_one_step_time_check ^^  k) 
