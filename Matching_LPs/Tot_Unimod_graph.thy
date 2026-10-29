@@ -707,7 +707,7 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
           then have "B $$ (i,j) = 1" 
             by (simp add: \<open>B $$ (i, j) = col B j $v i\<close> i_j)
           then show ?thesis 
-            by (metis 12 13 mult_cancel_right2)
+            using 12 13 by simp
         next
           case False             
           show ?thesis
