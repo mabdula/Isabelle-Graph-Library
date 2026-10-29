@@ -328,7 +328,17 @@ proof safe
          k1 < dim_col (incidence_mat ) \<and> 
          k1 = pick J k" 
     using pick_le col_submatrix_UNIV 
-    by (metis (no_types, lifting) Collect_cong \<open>k < dim_col B\<close>)
+  proof -
+    have k_card: "k < card {i. i < dim_col (incidence_mat) \<and> i \<in> J}"
+      using \<open>dim_col B = card {i. i < dim_col (incidence_mat) \<and> i \<in> J}\<close>
+        \<open>k < dim_col B\<close> by simp
+    have lt: "pick J k < dim_col (incidence_mat)"
+      using pick_le[OF k_card] by simp
+    have eq: "col (submatrix (incidence_mat) UNIV J) k = col (incidence_mat) (pick J k)"
+      using col_submatrix_UNIV[OF k_card] by simp
+    show ?thesis
+      by (rule that[of "pick J k"]) (simp_all add: eq lt)
+  qed
   have "k1 < card E" 
     using dim_col_incidence_mat k1 by metis
   have "i1 < (card (Vs E))"
