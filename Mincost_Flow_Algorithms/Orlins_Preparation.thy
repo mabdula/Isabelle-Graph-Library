@@ -1605,7 +1605,25 @@ lemma consist_oedge:
     shows "{oedge (to_rdg' (v, v'))} = oedge ` {to_rdg' (v', v), to_rdg' (v, v')}"
   apply(rule consistE[OF assms(1)])
   using   assms(2,3,4)
-  by (smt (verit, best) insert_commute oedge_both_redges_image oedge.simps(1,2) swap_simp)
+proof -
+  obtain e where e_prop: "(to_rdg' (v, v') = F e \<and> make_pair e = (v, v')) \<or>
+                          (to_rdg' (v, v') = B e \<and> make_pair e = (v', v))"
+    using consistD(1)[OF assms(1) assms(3)] by auto
+  have oedge_eq: "oedge (to_rdg' (v, v')) = oedge (to_rdg' (v', v))"
+  proof(cases "to_rdg' (v, v') = F e")
+    case True
+    hence Bev: "to_rdg' (v', v) = B e"
+      using consistD(2)[OF assms(1) assms(3) assms(2), of e] by simp
+    show ?thesis using True Bev by (simp add: oedge.simps)
+  next
+    case False
+    with e_prop have Be: "to_rdg' (v, v') = B e" by auto
+    hence Fev: "to_rdg' (v', v) = F e"
+      using consistD(2)[OF assms(1) assms(4) not_sym[OF assms(2)], of e] by simp
+    show ?thesis using Be Fev by (simp add: oedge.simps)
+  qed
+  show ?thesis by (simp add: oedge_eq)
+qed
 
 lemma  oedge_of_to_redgepath_subset:
   assumes "distinct Q" "consist E (abstract_conv_map to_rdg')" 
