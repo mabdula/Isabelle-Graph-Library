@@ -3650,7 +3650,19 @@ proof
     then have "row A i = row (submatrix A {0..<nr - 1} UNIV) i" 
       using 2 by presburger
     then show ?thesis 
-      by (metis 3 4 5 asmi asmj index_row(1))
+    proof -
+      have i_lt: "i < dim_row A" using 5 asmi by simp
+      have j_lt: "j < dim_col A" using 4 asmj by simp
+      have "A $$ (i, j) = row A i $ j"
+        using index_row(1)[OF i_lt j_lt] by simp
+      also have "\<dots> = row (submatrix A {0..<nr - 1} UNIV) i $ j"
+        using \<open>row A i = row (submatrix A {0..<nr - 1} UNIV) i\<close> by simp
+      also have "\<dots> = row (submatrix A {0..<nr - 1} UNIV @\<^sub>r mat_of_rows n [Matrix.row A (nr - 1)]) i $ j"
+        using 3 by simp
+      also have "\<dots> = (submatrix A {0..<nr - 1} UNIV @\<^sub>r mat_of_rows n [Matrix.row A (nr - 1)]) $$ (i, j)"
+        using index_row(1)[OF asmi asmj] by simp
+      finally show ?thesis .
+    qed
   next
     case False
     have "i = nr - 1" 
