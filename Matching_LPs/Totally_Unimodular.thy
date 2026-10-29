@@ -3977,9 +3977,15 @@ qed
   then have "(A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)]) = 
              (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [unit_vec n j])" 
     by presburger
-  then show ?case 
-    by (metis 4 2 \<open>tot_unimodular (A @\<^sub>r submatrix B {0..<nr2} UNIV)\<close> assms(1) carrier_append_rows
-        gram_schmidt_floor.tot_unimod_append_unit_vec)
+  then show ?case proof -
+  have 5: "A @\<^sub>r B = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [unit_vec n j])"
+    using 4 j by simp
+  have 6: "A @\<^sub>r (submatrix B {0..<nr2} UNIV) \<in> carrier_mat (nr1 + nr2) n"
+    using assms(1) 2 carrier_append_rows by blast
+  show ?case
+    using tot_unimod_append_unit_vec[OF 6 \<open>tot_unimodular (A @\<^sub>r submatrix B {0..<nr2} UNIV)\<close>] 5
+    by simp
+  qed
 qed
 
 lemma tot_unimod_append_minus_unit_vec_mat:
