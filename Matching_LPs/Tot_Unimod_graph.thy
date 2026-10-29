@@ -1185,7 +1185,14 @@ proof -
       show ?thesis .
     qed
     have "submatrix A {0..<nr} UNIV = A" 
-      by (metis assms(1) assms(2) itself_is_subsyst_set_idcs prod.sel(1) sub_system_fst)
+    proof -
+      have "sub_system A b {0..<nr} = (A, b)"
+        using itself_is_subsyst_set_idcs[OF assms(1) assms(2)] by simp
+      hence "fst (sub_system A b {0..<nr}) = A"
+        by (simp add: prod.sel(1))
+      thus "submatrix A {0..<nr} UNIV = A"
+        by (simp add: sub_system_fst)
+    qed
     have "submatrix (- 1\<^sub>m n) ((\<lambda> i. i - nr) ` ({0..<nr} - {0..<nr})) UNIV =
         submatrix (- 1\<^sub>m n) {} UNIV" 
       by simp
