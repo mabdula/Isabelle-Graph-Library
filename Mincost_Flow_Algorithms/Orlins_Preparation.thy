@@ -2141,7 +2141,12 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
         by (auto elim: in_connected_componentE)
     qed
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
-      by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
+    proof -
+      obtain ys zs where "p = ys @ e # zs"
+        using split_list[OF \<open>e \<in> set p\<close>] by blast
+      hence "ys @ [e] @ zs = p" by simp
+      thus thesis by (rule that)
+    qed
     show ?thesis 
     proof(cases rule: orE'[OF  Meson.disj_comm[OF or_reach]])
       case 2
