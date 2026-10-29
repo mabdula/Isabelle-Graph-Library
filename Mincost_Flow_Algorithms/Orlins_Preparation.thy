@@ -1414,10 +1414,34 @@ qed
 
 lemma proper_path_some_redges:
   "length l \<ge> 2 \<Longrightarrow> (to_redge_path to_rdg' l) \<noteq> []" for l to_rdg' Q
-   apply(induction to_rdg' l rule: to_redge_path.induct)
-   apply (metis list.simps(3) to_redge_path.simps(1))
-   apply (metis list.distinct(1) to_redge_path.simps(2))
-   by auto
+proof -
+  assume len: "length l \<ge> 2"
+  obtain u v rest where l_eq: "l = u # v # rest"
+  proof (cases l)
+    case Nil
+    with len show thesis by simp
+  next
+    case (Cons a as)
+    note l_a_as = this
+    show thesis
+    proof (cases as)
+      case Nil
+      with len l_a_as show thesis by simp
+    next
+      case (Cons b bs)
+      with l_a_as have "l = a # b # bs" by simp
+      then show thesis by (rule that)
+    qed
+  qed
+  show "to_redge_path to_rdg' l \<noteq> []"
+  proof (cases rest)
+    case Nil
+    with l_eq show ?thesis by simp
+  next
+    case (Cons w vs)
+    with l_eq show ?thesis by simp
+  qed
+qed
 
 lemma perpath_to_redgepath:
   "\<lbrakk>inv_conversion_consistent state; inv_digraph_abs_\<FF>_sym state; 
