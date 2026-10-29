@@ -1142,7 +1142,7 @@ proof -
   have "i < card {0..<k}" 
     by (simp add: assms)
   have "card {a\<in>{0..<k}. a < pick {0..<k} i} = i" 
-    by (metis assms card_atLeastLessThan card_pick diff_zero)
+    using card_pick \<open>i < card {0..<k}\<close> by blast
   have 2: "{a\<in>{0..<k}. a < pick {0..<k} i} = {a . a < pick {0..<k} i}" 
     by (metis \<open>i < card {0..<k}\<close> atLeast0LessThan basic_trans_rules(19) lessThan_iff pick_in_set_le)
   have "card {a . a < pick {0..<k} i} = pick {0..<k} i" 
