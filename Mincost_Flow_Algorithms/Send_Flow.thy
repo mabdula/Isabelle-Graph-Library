@@ -2997,8 +2997,14 @@ proof-
   have eps_card_V':"real (card \<V> ) * \<epsilon> - 1 \<le> 0"
     using eps_card_V by linarith
   have eps_card_rewrite:"- real (card \<V>) * \<epsilon> + 1 \<le> - real (card \<V> - 1) * \<epsilon> + 1 - \<epsilon>"
-    by(auto simp add: algebra_simps) 
-      (metis Suc_pred cardV_0 distrib_left dual_order.refl mult.right_neutral of_nat_Suc)
+    proof -
+      have card_ge: "(1::nat) \<le> card \<V>"
+        using cardV_0 by simp
+      have real_diff: "real (card \<V> - 1) = real (card \<V>) - 1"
+        using of_nat_diff[OF card_ge] by simp
+      show ?thesis
+        by (subst real_diff, simp add: algebra_simps)
+    qed
   show ?thesis
   proof(rule disjE[OF s_and_t], goal_cases)
     case 1
