@@ -170,7 +170,14 @@ lemma general_complementary_slackness:
   shows "c \<bullet> x = b \<bullet> y" 
 proof-
   have a1:"b\<bullet>y - (A *\<^sub>v x) \<bullet>y = 0" 
-    using slack_primal by (metis A b minus_scalar_prod_distrib mult_mat_vec_carrier x y)
+proof -
+  have Ax: "A *\<^sub>v x \<in> carrier_vec nr"
+    using mult_mat_vec_carrier[OF A x] .
+  have "(b - A *\<^sub>v x) \<bullet> y = b \<bullet> y - (A *\<^sub>v x) \<bullet> y"
+    using minus_scalar_prod_distrib[OF b Ax y] .
+  thus "b\<bullet>y - (A *\<^sub>v x) \<bullet>y = 0"
+    using slack_primal by simp
+qed
   hence a2:"b\<bullet>y  =  (A *\<^sub>v x) \<bullet>y" by auto
   have "c\<bullet>x - (A\<^sup>T *\<^sub>v y)\<bullet>x = 0"
     using slack_dual
