@@ -1567,7 +1567,17 @@ qed
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
     using cost_flow_network.to_vertex_pair.simps make_pairs_are
-    by(metis (mono_tags, lifting) UnI1 imageI mem_Collect_eq)
+  proof -
+    assume assms: "(a, b) = make_pair x" "x \<in> local.\<E>"
+    have to_edge_Fx: "to_edge (F x) = make_pair x"
+      using cost_flow_network.to_vertex_pair.simps make_pairs_are by simp
+    have "F x \<in> {F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>}"
+      using assms(2) by blast
+    hence "to_edge (F x) \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      by (rule imageI)
+    thus "make_pair x \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      using to_edge_Fx by simp
+  qed
   have help3: "\<lbrakk> (b, a) = make_pair x ; x \<in> local.\<E>\<rbrakk> \<Longrightarrow>
        (a, b) \<in> to_edge `
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
