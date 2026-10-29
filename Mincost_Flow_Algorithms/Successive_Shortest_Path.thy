@@ -408,7 +408,7 @@ proof(rule invar_integralI)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
     unfolding \<gamma>_def using integral_min
-    by (metis  min_def real_of_ereal.simps(1))
+    by (auto simp: min_def)
 
   show "is_integral_flow (current_flow (SSP_upd4 state))"
   proof-
