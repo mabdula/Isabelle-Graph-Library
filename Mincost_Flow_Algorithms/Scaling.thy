@@ -1042,7 +1042,42 @@ proof-
            by auto
         then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
-           by (metis dual_order.refl prepath_drop_cycles augpath_def prepath_def)
+proof -
+  have p_prepath: "prepath p"
+    using p_prop(1) unfolding augpath_def by auto
+  have p_nonempty: "p \<noteq> []"
+    using p_prepath unfolding prepath_def by auto
+  show thesis
+  proof (cases "distinct p")
+    case True
+    show thesis
+    proof (rule that[of p])
+      show "prepath p" by (rule p_prepath)
+      show "set p \<subseteq> set p" by (rule subset_refl)
+      show "fstv (hd p) = s" by (rule p_prop(3))
+      show "sndv (last p) = t" by (rule p_prop(4))
+      show "distinct p" by (rule True)
+      show "p \<noteq> []" by (rule p_nonempty)
+    qed
+  next
+    case False
+    show thesis
+    proof (rule prepath_drop_cycles[OF p_prepath subset_refl False])
+      fix ds
+      assume ds_props: "prepath ds" "distinct ds" "set ds \<subseteq> set p"
+        "fstv (hd p) = fstv (hd ds)" "sndv (last p) = sndv (last ds)" "ds \<noteq> []"
+      show thesis
+      proof (rule that[of ds])
+        show "prepath ds" by (rule ds_props(1))
+        show "set ds \<subseteq> set p" by (rule ds_props(3))
+        show "fstv (hd ds) = s" using ds_props(4) p_prop(3) by simp
+        show "sndv (last ds) = t" using ds_props(5) p_prop(4) by simp
+        show "distinct ds" by (rule ds_props(2))
+        show "ds \<noteq> []" by (rule ds_props(6))
+      qed
+    qed
+  qed
+qed
          hence "augpath \<f> p'"
            using p_prop(1) unfolding augpath_def  augpath_def Rcap_def  
            by auto
