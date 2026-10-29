@@ -154,7 +154,7 @@ proof -
   also have "\<dots> \<le> y \<bullet> b" 
     unfolding scalar_prod_def using A b Axb y0
     by (auto intro!: sum_mono mult_left_mono simp: less_eq_vec_def)
-  also have "\<dots> = b \<bullet> y" using y b by (metis comm_scalar_prod)
+  also have "\<dots> = b \<bullet> y" using y b by (rule comm_scalar_prod)
   finally show ?thesis . 
 qed
 (*TODO fix type*)
