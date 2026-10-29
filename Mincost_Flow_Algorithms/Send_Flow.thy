@@ -1560,7 +1560,17 @@ proof (rule ccontr)
     also have "... \<le> 1 -  1" by simp
     also have "... \<le> \<lceil> (- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil> -1"
       using tP(1) gamma_0 
-      by (smt (verit) mult_minus_left one_le_ceiling pos_less_divide_eq)
+      proof -
+        have "(1 - \<epsilon>) * \<gamma> < - abstract_bal_map b t"
+          using tP(1) by argo
+        hence "(1 - \<epsilon>) < (- abstract_bal_map b t) / \<gamma>"
+          using pos_less_divide_eq[OF gamma_0, of "1 - \<epsilon>" "- abstract_bal_map b t"] by simp
+        hence "0 < (- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)"
+          by linarith
+        hence "1 \<le> \<lceil>(- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil>"
+          using one_le_ceiling by blast
+        thus ?thesis by linarith
+      qed
     also have "... = \<lceil>\<bar> abstract_bal_map b t \<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1" 
       apply(simp, rule cong[of ceiling], simp)
       using tP gamma_0 \<epsilon>_axiom 
