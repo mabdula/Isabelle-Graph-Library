@@ -1431,7 +1431,14 @@ proof-
     hence ef_props: "eb \<in> set outgoing_edges" "nb eb" "ereal (f eb) > 0" by auto
     have realising_not_none: "realising_edges_lookup realising_edges (v, u) \<noteq> None"
       using  ef_props  
-      by(auto split: option.split simp add: outgoing_edges_def) metis
+    proof(cases "realising_edges_lookup realising_edges (v, u)")
+      case None
+      hence "outgoing_edges = []" by (simp add: outgoing_edges_def)
+      thus ?thesis using ef_props(1) None by simp
+    next
+      case (Some list)
+      thus ?thesis by simp
+    qed
     then obtain list where list_prop: "realising_edges_lookup realising_edges (v, u) = Some list"
       by auto
     have "set outgoing_edges = {e |e. e \<in> set \<E>_list \<and> make_pair e = (v, u)}"
