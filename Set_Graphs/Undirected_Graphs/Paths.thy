@@ -823,7 +823,7 @@ proof(induction l arbitrary: u p v rule: less_induct)
   proof(cases "e \<in> set p'")
     case True
     then obtain p1 p2 where p1p2:"p' = p1 @[e]@p2"
-      by (metis append_Cons append_self_conv2 in_set_conv_decomp_first)
+      by (fastforce dest: split_list)
     have bulast_p1_subst:"butlast (e # p1) @ [last (e # p1)] = e#p1"
       by simp
     have epath_verbose:"epath G u (butlast (e # p1) @ [last (e # p1), e] @ p2) v"
