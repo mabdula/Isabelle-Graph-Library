@@ -3710,7 +3710,18 @@ proof
   show 4: "dim_row (A @\<^sub>r B @\<^sub>r C) = dim_row ((A @\<^sub>r B) @\<^sub>r C)" 
     by (simp add: append_rows_def)
   show 3: "dim_col (A @\<^sub>r B @\<^sub>r C) = dim_col ((A @\<^sub>r B) @\<^sub>r C)" 
-    by (smt (verit, ccfv_SIG) C assms(1-2) carrier_append_rows carrier_matD(2))
+  proof -
+    have BC: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n"
+      using carrier_append_rows[OF B C] .
+    have left: "dim_col (A @\<^sub>r (B @\<^sub>r C)) = n"
+      using carrier_append_rows[OF A BC] carrier_matD(2) by blast
+    have AB: "A @\<^sub>r B \<in> carrier_mat (nr1 + nr2) n"
+      using carrier_append_rows[OF A B] .
+    have right: "dim_col ((A @\<^sub>r B) @\<^sub>r C) = n"
+      using carrier_append_rows[OF AB C] carrier_matD(2) by blast
+    show ?thesis
+      using left right by simp
+  qed
   fix i j
   assume asmi: "i < dim_row ((A @\<^sub>r B) @\<^sub>r C)"
   assume asmj: "j < dim_col ((A @\<^sub>r B) @\<^sub>r C)"
