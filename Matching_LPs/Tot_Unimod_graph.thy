@@ -1079,7 +1079,23 @@ qed
               by auto
             then have "det B\<^sup>T = 0" 
               using det_0_iff_vec_prod_zero[OF 2] using 3 1
-              by (metis index_transpose_mat(2))
+            proof -
+                from "3" obtain v where
+                  c': "v \<in> carrier_vec (dim_row B\<^sup>T)" and
+                  n': "v \<noteq> 0\<^sub>v (dim_row B\<^sup>T)" and
+                  z': "B\<^sup>T *\<^sub>v v = 0\<^sub>v (dim_row B\<^sup>T)"
+                  by blast
+                have dim_eq: "dim_row B\<^sup>T = dim_row B"
+                  using "1" by (simp add: index_transpose_mat(2))
+                have c: "v \<in> carrier_vec (dim_row B)" using c' dim_eq by simp
+                have n: "v \<noteq> 0\<^sub>v (dim_row B)" using n' dim_eq by simp
+                have z: "B\<^sup>T *\<^sub>v v = 0\<^sub>v (dim_row B)" using z' dim_eq by simp
+                then have "\<exists>w. w \<in> carrier_vec (dim_row B) \<and> w \<noteq> 0\<^sub>v (dim_row B)
+                       \<and> B\<^sup>T *\<^sub>v w = 0\<^sub>v (dim_row B)"
+                  using c n by blast
+                then show "det B\<^sup>T = 0"
+                  using det_0_iff_vec_prod_zero[OF 2] by blast
+              qed
             then have "det B = 0" 
               by (metis "2" Determinant.det_transpose Matrix.transpose_transpose)
             then show ?thesis 
