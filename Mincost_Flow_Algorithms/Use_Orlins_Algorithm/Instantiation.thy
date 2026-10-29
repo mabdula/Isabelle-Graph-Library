@@ -942,7 +942,26 @@ qed
     case 1
     note 2 = this
   then obtain a b where "x \<in>{a,b}" "(a,b) \<in> make_pair ` \<E>" 
-    by (metis in_dVsE(1) insert_iff make_pairs_are)
+  proof -
+    from 2 have "x \<in> dVs (make_pair ` \<E>)"
+      by (simp add: make_pairs_are)
+    then show thesis
+    proof (rule in_dVsE(1))
+      fix u assume u: "(u, x) \<in> make_pair ` \<E>"
+      show thesis
+      proof (rule that[of u x])
+        show "x \<in> {u, x}" by simp
+        show "(u, x) \<in> make_pair ` \<E>" using u by simp
+      qed
+    next
+      fix u assume u: "(x, u) \<in> make_pair ` \<E>"
+      show thesis
+      proof (rule that[of x u])
+        show "x \<in> {x, u}" by simp
+        show "(x, u) \<in> make_pair ` \<E>" using u by simp
+      qed
+    qed
+  qed
   then show ?case by force
 qed
   show ?thesis
