@@ -1032,7 +1032,7 @@ proof(induction k arbitrary: state state')
   case (Suc k)
   have unfold:"(orlins_one_step_check ^^ Suc k) state = 
         (orlins_one_step_check ^^ k) (orlins_one_step_check state)"
-    by (metis (mono_tags, lifting) funpow_simps_right(2) o_apply)
+    by (simp only: funpow_simps_right(2) o_apply)
   show ?case 
   proof(cases "return state = notyetterm")
     case True
