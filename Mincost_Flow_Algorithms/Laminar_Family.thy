@@ -61,7 +61,12 @@ next
       case 1
       note cardX = this
     then obtain x V where x_V_prop:"U = insert x V \<and> x \<notin> V"
-      by (metis Suc.prems(1) card_Suc_eq)
+    proof -
+      have "card U = Suc n" using Suc.prems(1) by simp
+      then obtain x V where "U = insert x V" "x \<notin> V"
+        using card_Suc_eq[THEN iffD1] by blast
+      then show thesis using that by blast
+    qed
     have V_non_empt: "V \<noteq> {}"
       using Suc Suc.prems(1) x_V_prop by fastforce
     define \<Y> where "\<Y> = {X - {x} | X.  X \<in> \<X> \<and> X - {x} \<noteq> {}}"
