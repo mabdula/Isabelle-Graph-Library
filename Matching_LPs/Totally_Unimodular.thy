@@ -4015,8 +4015,25 @@ next
     fix i
     assume asmi: "i < nr2"
     obtain k where k: "row (submatrix B {0..<nr2} UNIV) i = row B k \<and> k < dim_row B" 
-      by (smt (verit, best) Missing_Matrix.append_rows_nth(1) Suc(2) 1 2 asmi basic_trans_rules(19)
-          carrier_matD(1) lessI mat_of_rows_carrier(1))
+    proof -
+      have carrM: "mat_of_rows n [row B nr2] \<in> carrier_mat 1 n"
+        using mat_of_rows_carrier(1)[of n "[row B nr2]"] by auto
+      have row_eq: "row (submatrix B {0..<nr2} UNIV) i = row B i"
+      proof -
+        have "row B i =
+              row ((submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [row B nr2])) i"
+          using 1 by simp
+        also have "... = row (submatrix B {0..<nr2} UNIV) i"
+          using Missing_Matrix.append_rows_nth(1)[OF 2 carrM asmi] .
+        finally show ?thesis by simp
+      qed
+      have dim_row_B: "dim_row B = Suc nr2"
+        using Suc(2) carrier_matD(1) by blast
+      have i_less: "i < dim_row B"
+        using asmi dim_row_B by simp
+      show thesis
+        using that[of i] row_eq i_less by blast
+    qed
     then have "\<exists>j. row B k = - unit_vec n j" 
       by (metis Suc(2) Suc(3) carrier_matD(1))
     then show "\<exists>j. Matrix.row (submatrix B {0..<nr2} UNIV) i = - unit_vec n j"
