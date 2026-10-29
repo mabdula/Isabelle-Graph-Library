@@ -2044,8 +2044,23 @@ proof(all \<open>rule send_flow_call1_condE[OF assms(1)]\<close>, goal_cases)
     "oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state"
     "distinct P" "Rcap (abstract_flow_map f) (set P) > 0"
     using if_send_flow_call1_cond_advanced[OF assms(1,4) _ _ assms(3,2,5,6) ] 1 by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+  proof (rule notI)
+    assume s_eq_t: "s = t"
+    have "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b t"
+      using sP(1) s_eq_t by simp
+    also have "\<dots> < - \<epsilon> * \<gamma>"
+      using tP(1) by simp
+    finally have less: "(1 - \<epsilon>) * \<gamma> < - \<epsilon> * \<gamma>" .
+    have distrib: "(1 - \<epsilon>) * \<gamma> = \<gamma> - \<epsilon> * \<gamma>"
+      by (simp add: algebra_simps)
+    have "\<gamma> - \<epsilon> * \<gamma> < - \<epsilon> * \<gamma>"
+      using less distrib by simp
+    hence "\<gamma> < 0"
+      by linarith
+    thus False
+      using gamma_0 by linarith
+  qed
   have flow_dom_is: "flow_domain (current_flow state) = \<E>" "flow_invar (current_flow state)"
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
