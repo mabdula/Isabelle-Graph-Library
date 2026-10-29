@@ -1495,7 +1495,7 @@ proof-
     hence ef_props: "ef \<in> set ingoing_edges" "nb ef" "ereal (f ef) < \<u> ef" by auto
     have realising_not_none: "realising_edges_lookup realising_edges (u, v) \<noteq> None"
       using  ef_props  
-      by(auto split: option.split simp add: ingoing_edges_def) metis
+      by (cases "realising_edges_lookup realising_edges (u, v)") (auto simp add: ingoing_edges_def)
     then obtain list where list_prop: "realising_edges_lookup realising_edges (u, v) = Some list"
       by auto
     have "set ingoing_edges = {e |e. e \<in> set \<E>_list \<and> make_pair e = (u, v)}"
