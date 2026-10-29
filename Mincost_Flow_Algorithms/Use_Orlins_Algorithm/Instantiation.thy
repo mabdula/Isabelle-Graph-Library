@@ -3036,13 +3036,43 @@ proof-
     by(auto simp add: PP_def)
   moreover have awalk_f:" awalk UNIV (fstv (hd PP)) (map cost_flow_network.to_vertex_pair PP) 
                            (sndv (last PP))"
-    apply(rule edges_of_vwalk.elims [OF sym[OF same_edges]])
-    using Pbf_props(1) same_edges length_Pbf awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
-           cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
-    using calculation  Pbf_props(1) same_edges 
-    by(auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
-                        arc_implies_awalk[OF UNIV_I refl]) 
-    (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+  proof -
+    have PP_nonempty: "PP \<noteq> []"
+      using edges_of_vwalk.simps(3) length_Pbf same_edges
+      by (cases Pbf rule: list_cases3) auto
+    have edges_nonempty: "edges_of_vwalk Pbf \<noteq> []"
+      using PP_nonempty same_edges by auto
+    have awalk_ends: "prod.fst (hd (edges_of_vwalk Pbf)) = hd Pbf"
+                     "prod.snd (last (edges_of_vwalk Pbf)) = last Pbf"
+      using awalk_fst_last[OF edges_nonempty Pbf_props(1)] by auto
+    have fstv_hd: "fstv (hd PP) = hd Pbf"
+    proof -
+      have "fstv (hd PP) = prod.fst (cost_flow_network.to_vertex_pair (hd PP))"
+        by (simp add: cost_flow_network.vs_to_vertex_pair_pres)
+      also have "\<dots> = prod.fst (hd (map cost_flow_network.to_vertex_pair PP))"
+        using PP_nonempty by (simp add: hd_map)
+      also have "\<dots> = prod.fst (hd (edges_of_vwalk Pbf))"
+        by (simp add: same_edges)
+      also have "\<dots> = hd Pbf"
+        using awalk_ends(1) by simp
+      finally show ?thesis .
+    qed
+    have sndv_last: "sndv (last PP) = last Pbf"
+    proof -
+      have "sndv (last PP) = prod.snd (cost_flow_network.to_vertex_pair (last PP))"
+        by (simp add: cost_flow_network.vs_to_vertex_pair_pres)
+      also have "\<dots> = prod.snd (last (map cost_flow_network.to_vertex_pair PP))"
+        using PP_nonempty by (simp add: last_map)
+      also have "\<dots> = prod.snd (last (edges_of_vwalk Pbf))"
+        by (simp add: same_edges)
+      also have "\<dots> = last Pbf"
+        using awalk_ends(2) by simp
+      finally show ?thesis .
+    qed
+    show ?thesis
+      unfolding fstv_hd sndv_last same_edges
+      by (rule Pbf_props(1))
+  qed
   moreover have "PP \<noteq> []"
     using  edges_of_vwalk.simps(3) length_Pbf same_edges
     by(cases Pbf rule: list_cases3) auto
