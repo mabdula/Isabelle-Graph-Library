@@ -132,7 +132,49 @@ next
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = an_edge (a, b) ;y = an_edge (aa, ba)\<rbrakk> \<Longrightarrow> b = ba"
     for a aa b ba
-    by (metis order_antisym_conv)
+  proof -
+    assume h1: "if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False"
+      and h2: "if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False"
+      and "x = an_edge (a, b)"
+      and "y = an_edge (aa, ba)"
+    have b_le_ba: "b \<le> ba"
+    proof (cases "a \<le> aa \<and> \<not> aa \<le> a")
+      case True
+      then have le1: "a \<le> aa" and nle1: "\<not> aa \<le> a" by auto
+      have neq: "aa \<noteq> a"
+      proof
+        assume "aa = a"
+        then have "aa \<le> a" by simp
+        with nle1 show False by simp
+      qed
+      have cond_false: "\<not> (aa \<le> a \<and> \<not> a \<le> aa)" using nle1 by simp
+      with neq h2 have False by simp
+      then show ?thesis by (rule FalseE)
+    next
+      case False
+      with h1 have "if a = aa then b \<le> ba else False" by simp
+      then show ?thesis by (cases "a = aa") simp_all
+    qed
+    have ba_le_b: "ba \<le> b"
+    proof (cases "aa \<le> a \<and> \<not> a \<le> aa")
+      case True
+      then have le2: "aa \<le> a" and nle2: "\<not> a \<le> aa" by auto
+      have neq: "a \<noteq> aa"
+      proof
+        assume "a = aa"
+        then have "a \<le> aa" by simp
+        with nle2 show False by simp
+      qed
+      have cond_false: "\<not> (a \<le> aa \<and> \<not> aa \<le> a)" using nle2 by simp
+      with neq h1 have False by simp
+      then show ?thesis by (rule FalseE)
+    next
+      case False
+      with h2 have "if aa = a then ba \<le> b else False" by simp
+      then show ?thesis by (cases "aa = a") simp_all
+    qed
+    from b_le_ba ba_le_b show "b = ba" by (rule order_antisym)
+  qed
   have c: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba) \<rbrakk> \<Longrightarrow> b = ba"
