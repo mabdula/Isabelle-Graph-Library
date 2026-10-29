@@ -494,7 +494,16 @@ lemma elem_int_hull_lincomb_list:
 proof -
 obtain Ws c' where Ws_c':"finite Ws" "Ws \<subseteq> P \<inter> \<int>\<^sub>v" "convex_lincomb c' Ws x"
   using assms(2) unfolding integer_hull_def
-        by (smt (verit, ccfv_SIG) IntD1 \<open>x \<in> P\<close> gram_schmidt.convex_hull_def mem_Collect_eq)
+proof -
+  have "P = convex_hull (P \<inter> \<int>\<^sub>v)"
+    using assms(2) unfolding integer_hull_def by blast
+  then have "x \<in> convex_hull (P \<inter> \<int>\<^sub>v)"
+    using \<open>x \<in> P\<close> by blast
+  then obtain Ws c' where "finite Ws" "Ws \<subseteq> P \<inter> \<int>\<^sub>v" "convex_lincomb c' Ws x"
+    unfolding convex_hull_def by blast
+  then show thesis
+    using that by blast
+qed
   have Ws_subs: "Ws \<subseteq> carrier_vec n" 
     by (meson Int_subset_iff Ws_c'(2) assms(1) dual_order.trans)
   have "x \<in> convex_hull Ws" 
