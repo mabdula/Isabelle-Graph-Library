@@ -259,7 +259,13 @@ proof -
     then have "c i = 1"
       using  nonneg_sum_range_each_le[of "length L" c] 
         assms(5) nonneg_sum_1 order_le_imp_less_or_eq 
-      by metis
+    proof -
+      have nonneg_c: "\<forall>j<length L. c j \<ge> 0" using nonneg_sum_1 by blast
+      have le_sum: "c i \<le> sum c {0..<length L}"
+        using nonneg_sum_range_each_le[of "length L" c, OF nonneg_c] assms(5) by blast
+      have sum_one: "sum c {0..<length L} = 1" using nonneg_sum_1 by blast
+      show "c i = 1" using le_sum sum_one \<open>\<not> c i < 1\<close> by linarith
+    qed
     have "\<forall>j < length L. i \<noteq> j \<longrightarrow> c j = 0" 
       using sum_eq_one_elem_other_zero[of "{0..<length L}" c i] 
       by (auto simp: \<open>c i = 1\<close> assms(5) nonneg_sum_1) 
