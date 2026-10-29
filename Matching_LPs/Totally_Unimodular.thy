@@ -3814,8 +3814,12 @@ proof
         using asmi by linarith
     qed
     have 7: "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" 
-      using append_rows_nth(2)[of A nr1 n "B @\<^sub>r C" "nr2 + nr3" i]
-      by (metis Groups.add_ac(1) 6 \<open>i < nr1 + nr2 + nr3\<close> \<open>nr1 \<le> i\<close>  assms(1))
+    proof -
+    have assoc: "i < nr1 + (nr2 + nr3)"
+      using \<open>i < nr1 + nr2 + nr3\<close> by (simp only: add.assoc)
+    show ?thesis
+      using append_rows_nth(2)[OF assms(1) 6 \<open>nr1 \<le> i\<close> assoc] .
+  qed
     have 1:"i - nr1 \<ge> nr2" 
       using False by linarith
     have 8: "row (B @\<^sub>r C) (i - nr1) = row C (i - (nr1+nr2))" 
