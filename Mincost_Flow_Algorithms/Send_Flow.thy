@@ -1746,7 +1746,17 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using send_flow_call2_cond_Phi_decr[of state, OF assms(1-6)] by simp
   ultimately have "abstract_flow_map f' e \<ge> abstract_flow_map f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
     using gamma_0 
-    by (smt (verit) mult_less_cancel_left2 of_int_less_1_iff)
+  proof -
+    assume h1: "abstract_flow_map f e - \<gamma> \<le> abstract_flow_map f' e"
+    assume h2: "1 \<le> \<Phi> state - \<Phi> (send_flow_call2_upd state)"
+    assume gp: "0 < \<gamma>"
+    have h2': "(1::real) \<le> real_of_int (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
+      using h2 by simp
+    have gamma_le: "\<gamma> \<le> \<gamma> * real_of_int (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
+      using mult_left_mono[OF h2' order.strict_implies_order[OF gp]] by simp
+    show ?thesis
+      using h1 gamma_le by linarith
+  qed
   moreover have "current_\<gamma> (send_flow_call2_upd state) = \<gamma>"
     by (simp add: "1"(3) send_flow_call2_upd_changes(4))
   moreover have "current_flow (send_flow_call2_upd state) = f'"
