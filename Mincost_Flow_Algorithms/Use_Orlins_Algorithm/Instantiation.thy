@@ -674,7 +674,14 @@ lemma set_filter:
   by (auto simp add: set_invar_def to_set_def)
 
 lemma flow_invar_Leaf: "flow_invar Leaf"
-  by (metis RBT_Set.empty_def flow_empty_def flow_map.invar_empty)
+proof -
+  have flow_empty_Leaf: "flow_empty = Leaf"
+    by (simp add: flow_empty_def RBT_Set.empty_def)
+  have "flow_invar flow_empty"
+    using flow_map.invar_empty by simp
+  thus ?thesis
+    by (simp add: flow_empty_Leaf)
+qed
 
 lemma flow_invar_fold: 
  "\<lbrakk>flow_invar T; (\<And> T e. flow_invar T \<Longrightarrow> flow_invar (f e T))\<rbrakk>
