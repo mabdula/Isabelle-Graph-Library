@@ -2031,8 +2031,13 @@ proof-
       using degree_in_p_leq_2[OF uv_in_p(2)] by simp
   qed
   moreover have "enat (2 * (length p - 2)) + 1 + 2 =  enat (2* (length p -2) + 3)" 
-    by (metis add.commute add_numeral_left mult_2 numeral_Bit1_eq_inc_double numeral_One numeral_plus_one
-        of_nat_add of_nat_eq_enat one_add_one one_enat_def)
+  proof -
+    have "enat (2 * (length p - 2)) + 1 + 2 = enat (2 * (length p - 2) + 1 + 2)"
+      by (simp only: numeral_eq_enat one_enat_def plus_enat_simps(1))
+    also have "\<dots> = enat (2 * (length p - 2) + 3)"
+      by (rule arg_cong) simp
+    finally show ?thesis .
+  qed
   moreover have "enat (2 * (length p - 2)) + 2 + 1 = enat (2* (length p -2) + 3)"
   proof -
     note calc4 = calculation(4)
