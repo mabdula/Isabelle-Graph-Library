@@ -1554,7 +1554,13 @@ lemma to_rdg_hd:
 
 lemma to_rdg_last_cons: " (last (abstract_conv_map to_rdg (u, v) # to_redge_path to_rdg (v # va # vb))) =
                           (last (to_redge_path to_rdg (v # va # vb)))"
-  by (smt (verit, best) last_ConsR list.discI list.inject to_redge_path.elims)
+proof -
+  have "length (v # va # vb) \<ge> 2" by simp
+  hence "to_redge_path to_rdg (v # va # vb) \<noteq> []"
+    using proper_path_some_redges by blast
+  then show ?thesis
+    using last_ConsR by simp
+qed
 
 lemma to_rdg_last: 
   assumes "consist E (abstract_conv_map to_rdg)" "length p \<ge> 2"
