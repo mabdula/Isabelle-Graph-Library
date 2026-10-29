@@ -375,7 +375,29 @@ lemma FBP_unique: "isFBP a b \<Longrightarrow> isFBP a c \<Longrightarrow> b = c
 proof(cases a, goal_cases)
   case (1 x1)
   thus ?case
-    by(cases b, simp, metis erve_erve_id is_red_edge_def to_redge.simps(2), simp)
+  proof(cases b, goal_cases)
+    case (1 x2)
+    then show ?case by simp
+  next
+    case (2 x2)
+    then show ?case
+    proof(cases c, goal_cases)
+      case (1 y)
+      then show ?case by simp
+    next
+      case (2 y)
+      then have e: "erev x2 = erev y" by simp
+      then have "erev (erev x2) = erev (erev y)" by (rule arg_cong)
+      then have "x2 = y" by (simp add: erve_erve_id)
+      with "2" show ?case by simp
+    next
+      case (3 y)
+      then show ?case by simp
+    qed
+  next
+    case (3 x2)
+    then show ?case by simp
+  qed
 next
   case (2 x1)
   show ?case
