@@ -3576,7 +3576,14 @@ lemma get_source_for_target_ax:
   proof(rule, rule ccontr, goal_cases)
     case (1 e)
     hence "to_edge e \<in> set ( (edges_of_vwalk ( (rev Pbf))))"
-      by (metis map_in_set same_edges edges_of_vwalk_rev_swap)
+    proof -
+      have map_eq: "map to_edge P = edges_of_vwalk (rev Pbf)"
+        using same_edges edges_of_vwalk_rev_swap by simp
+      have "to_edge e \<in> set (map to_edge P)"
+        using "1"(1) by auto
+      thus ?thesis
+        using map_eq by simp
+    qed
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = rev Pbf" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
