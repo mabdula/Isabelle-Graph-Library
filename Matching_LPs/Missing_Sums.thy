@@ -446,7 +446,14 @@ qed
 lemma sumlist_distr_zero:
   assumes "m > 0"
   shows "sumlist (map f [0..<m]) = f 0 + sumlist (map f [1..<m])" 
-  by (metis M.sumlist_Cons add_zero_to_range_list assms list.simps(9))
+proof -
+  have "[0..<m] = 0 # [1..<m]"
+    using add_zero_to_range_list[OF assms] by simp
+  then have "map f [0..<m] = f 0 # map f [1..<m]"
+    by simp
+  then show ?thesis
+    by (simp add: M.sumlist_Cons)
+qed
 
 lemma sumlist_as_lincomb_two_elems:
   assumes "c 0 \<noteq> 1"
