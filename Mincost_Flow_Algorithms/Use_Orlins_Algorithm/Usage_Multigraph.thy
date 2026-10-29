@@ -58,7 +58,31 @@ next
        x = an_edge (a, b) ;
        y = an_edge (aa, ba) ; z = an_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
     for a aa ab b ba bb
-    using order.trans by metis
+proof -
+  assume h1: "if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False"
+    and h2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
+    and "x = an_edge (a, b)" and "y = an_edge (aa, ba)" and "z = an_edge (ab, bb)"
+    and "a \<noteq> ab"
+  have a_le_aa: "a \<le> aa"
+  proof (cases "a \<le> aa \<and> \<not> aa \<le> a")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    with h1 have "a = aa" by (simp split: if_split_asm)
+    then show ?thesis by simp
+  qed
+  have aa_le_ab: "aa \<le> ab"
+  proof (cases "aa \<le> ab \<and> \<not> ab \<le> aa")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    with h2 have "aa = ab" by (simp split: if_split_asm)
+    then show ?thesis by simp
+  qed
+  show "a \<le> ab" using a_le_aa aa_le_ab order.trans by blast
+qed
   have c: "\<lbrakk> if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = another_edge (ab, b) ;
