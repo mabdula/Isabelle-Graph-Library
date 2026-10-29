@@ -467,7 +467,8 @@ lemma
     and Vs_enum_inv_in_G[simp,matching_lp_theorems]: "i < n \<Longrightarrow> (Vs_enum_inv i) \<in> V"
   using G_in_V V_inv_enum apply blast
   apply (simp add: n_def)
-  by (metis atLeastLessThan_iff bij_Vs_enum_inv bij_betwE n_def zero_le)
+  using bij_betwE[OF bij_Vs_enum_inv]
+  by (fastforce simp add: n_def)
 
 lemma G_enum_inv_in_G[simp,matching_lp_theorems]: "i < m \<Longrightarrow> (G_enum_inv i) \<in> G"
 and G_enum_less_card_G[simp,matching_lp_theorems]: "e \<in> G \<Longrightarrow> (G_enum e) < card G"
