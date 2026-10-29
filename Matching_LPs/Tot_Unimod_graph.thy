@@ -340,7 +340,12 @@ proof safe
       by (rule that[of "pick J k"]) (simp_all add: eq lt)
   qed
   have "k1 < card E" 
-    using dim_col_incidence_mat k1 by metis
+proof -
+  have "k1 < dim_col (incidence_mat)"
+    using k1 by blast
+  thus ?thesis
+    using dim_col_incidence_mat by simp
+qed
   have "i1 < (card (Vs E))"
     using dim_row_incidence_mat i1 by metis
   have "j1 < (card (Vs E))" 
