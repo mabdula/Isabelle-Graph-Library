@@ -1144,7 +1144,16 @@ proof -
   have "card {a\<in>{0..<k}. a < pick {0..<k} i} = i" 
     using card_pick \<open>i < card {0..<k}\<close> by blast
   have 2: "{a\<in>{0..<k}. a < pick {0..<k} i} = {a . a < pick {0..<k} i}" 
-    by (metis \<open>i < card {0..<k}\<close> atLeast0LessThan basic_trans_rules(19) lessThan_iff pick_in_set_le)
+  proof -
+    have "finite {0..<k}"
+      by simp
+    hence "pick {0..<k} i \<in> {0..<k}"
+      using \<open>i < card {0..<k}\<close> pick_in_set_le by blast
+    hence "pick {0..<k} i < k"
+      by simp
+    thus ?thesis
+      by auto
+  qed
   have "card {a . a < pick {0..<k} i} = pick {0..<k} i" 
     using card_Collect_less_nat by blast
   then show ?thesis 
