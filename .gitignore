@@ -13,6 +13,7 @@
 !*.cls
 !*.bst
 !/.gitignore
+!/LICENSE
 
 # editor backups and autosaves
 *~
