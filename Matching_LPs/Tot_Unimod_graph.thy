@@ -484,7 +484,16 @@ qed
     qed
   qed
   then have "(incidence_mat) $$ (t1, k1) = 0" 
-    by (metis 1 \<open>pick I t \<noteq> pick I i\<close> dim_row_incidence_mat i1 j1 t1)
+  proof -
+    have "t1 \<noteq> i1"
+      using \<open>pick I t \<noteq> pick I i\<close> i1 t1 by auto
+    moreover have "t1 \<noteq> j1"
+      using \<open>pick I t \<noteq> pick I j\<close> j1 t1 by auto
+    moreover have "t1 < card (Vs E)"
+      using t1 dim_row_incidence_mat by simp
+    ultimately show ?thesis
+      using 1 by blast
+  qed
   show "B $$ (t,k) = 0"
     by (metis (no_types, lifting) \<open>incidence_mat $$ (t1, k1) = 0\<close> asm(1) assms(2,6) 
         dim_submatrix(1-2) k1 submatrix_index t1)
