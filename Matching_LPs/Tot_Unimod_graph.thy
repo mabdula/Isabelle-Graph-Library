@@ -230,10 +230,19 @@ proof -
       by (rule pick_le)
   qed
   moreover have "(pick I j) \<in> I" 
-    apply(cases "finite I") 
-    using  dim_row_mat_less_card_I pick_in_set_le 
-     apply (metis assms(1) assms(2) order_trans_rules(22))
+proof (cases "finite I")
+  case True
+  have "dim_row B \<le> card I"
+    using dim_row_mat_less_card_I[OF True] assms(1) by simp
+  hence "j < card I"
+    using assms(2) by linarith
+  then show ?thesis
+    using pick_in_set_le by simp
+next
+  case False
+  then show ?thesis
     using pick_in_set_inf by auto
+qed
   ultimately show ?thesis 
     by (metis (no_types, lifting) assms dim_submatrix(1) row_submatrix_UNIV)
 qed
