@@ -591,7 +591,10 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
         obtain j where " j < dim_col B \<and> col B j = 0\<^sub>v (dim_row B)" 
           using True by blast
         have 2:"B \<in> carrier_mat (dim_row B) (dim_row B)" 
-          by (metis "1" carrier_matI)
+        proof (rule carrier_matI)
+          show "dim_row B = dim_row B" by (rule refl)
+          show "dim_col B = dim_row B" using 1 by (rule sym)
+        qed
         have "0\<^sub>v (dim_row B) \<in> (set (cols B))" 
           by (metis True cols_length cols_nth in_set_conv_nth)
         have 3:"\<zero>\<^bsub>module_vec TYPE(real) (dim_row B)\<^esub>\<in> set (cols B)" 
