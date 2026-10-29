@@ -3734,7 +3734,13 @@ proof
     proof(cases "i < nr1")
       case True
       have 2: "row (A @\<^sub>r B @\<^sub>r C) i = row A i" 
-        by (metis True append_rows_index_same assms carrier_append_rows carrier_matD(1))
+        proof -
+          have BC: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n"
+            using assms(2) assms(3) carrier_append_rows by blast
+          show ?thesis
+            using append_rows_index_same[OF assms(1) BC, rule_format, of i] True assms(1)
+            by auto
+        qed
       have "row (A @\<^sub>r B) i = row A i" 
         using Missing_Matrix.append_rows_nth(1) True assms(1-2) by blast
       then show ?thesis 
