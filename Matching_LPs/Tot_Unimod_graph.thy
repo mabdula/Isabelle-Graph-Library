@@ -393,7 +393,14 @@ qed
   then have "i1 \<noteq> j1" 
     using i1 j1 by blast
   have "(incidence_mat ) $$ (pick I i, pick J k) = B  $$ (i,k)" 
-    by (metis (no_types, lifting) assms(2,3,6) dim_submatrix(1-2) submatrix_index)
+  proof -
+    have i_lt: "i < card {i. i < dim_row (incidence_mat ) \<and> i \<in> I}"
+      using assms(3) assms(6) by (simp add: dim_submatrix(1))
+    have k_lt: "k < card {j. j < dim_col (incidence_mat ) \<and> j \<in> J}"
+      using assms(2) assms(6) by (simp add: dim_submatrix(2))
+    show "(incidence_mat ) $$ (pick I i, pick J k) = B  $$ (i,k)"
+      using submatrix_index[OF i_lt k_lt] assms(6) by simp
+  qed
   then have "(incidence_mat ) $$ (i1, k1) = 1" 
     using assms(7) i1 k1 by presburger
   have "(incidence_mat ) $$ (pick I j, pick J k) = B  $$ (j,k)" 
