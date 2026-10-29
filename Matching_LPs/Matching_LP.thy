@@ -339,8 +339,16 @@ proof-
     thus "x = y" using ex ey by simp
   qed
   moreover have "xa < card G \<Longrightarrow> G_enum_inv xa \<in> G" for xa
-    by (metis (no_types, lifting) G_enum_G_enum_inv atLeastLessThan_iff bij_G_enum bij_betw_def
-        imageE zero_le)
+  proof -
+    assume xa_less: "xa < card G"
+    have im: "{0..<card G} = G_enum ` G"
+      using bij_G_enum by (simp add: bij_betw_def)
+    from xa_less have "xa \<in> {0..<card G}" by simp
+    with im obtain e where "e \<in> G" "G_enum e = xa"
+      by auto
+    thus "G_enum_inv xa \<in> G"
+      using G_enum_G_enum_inv by fastforce
+  qed
   moreover have "x \<in> G \<Longrightarrow> x \<in> G_enum_inv ` {0..<card G}" for x
     by (metis G_enum_G_enum_inv bij_G_enum bij_betwE image_eqI)
   ultimately show ?thesis
