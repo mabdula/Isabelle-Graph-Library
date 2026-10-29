@@ -343,7 +343,16 @@ proof(induction es)
   case (Cons e es)
   hence a: "flowpath g (e # (es @ fs))" by simp
   from this have  "flowpath g (es @ fs)"
-    by (metis list.distinct(1) list.sel(3) flowpath_simps)
+  proof (cases "es @ fs")
+    case Nil
+    then show ?thesis using flowpathI(1) by blast
+  next
+    case (Cons e' es')
+    with a have "flowpath g (e # e' # es')" by simp
+    then have fp: "flowpath g (e' # es')"
+      using flowpath_simps[of g "e # e' # es'"] by simp
+    then show ?thesis using Cons fp by simp
+  qed
   then show ?case using Cons by simp
 qed simp
 
