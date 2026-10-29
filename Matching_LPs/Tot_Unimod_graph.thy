@@ -915,7 +915,18 @@ qed
               have 30: "col B t \<bullet> ?u = (?u $ i) + (?u $ j)" 
                 using 19 20 21 by simp
               have "pick J t < card E"
-                by (metis dim_col_incidence_mat dim_submatrix(2) less(2) pick_le t)
+              proof -
+                have set_eq: "{j. j < dim_col incidence_mat \<and> j \<in> J} = {j \<in> J. j < dim_col incidence_mat}"
+                  by auto
+                have "dim_col B = card {j. j < dim_col incidence_mat \<and> j \<in> J}"
+                  using less(2) dim_submatrix(2) by simp
+                hence "t < card {j. j < dim_col incidence_mat \<and> j \<in> J}"
+                  using t by simp
+                hence "pick J t < dim_col incidence_mat"
+                  by (rule pick_le)
+                thus "pick J t < card E"
+                  by (simp add: dim_col_incidence_mat)
+              qed
               have "incidence_mat  $$ (pick I i, pick J t) = 1" 
                 by (metis (no_types, lifting) dim_submatrix(1) dim_submatrix(2) i_j(1) i_j(3) 
                     less(2) submatrix_index t)
