@@ -914,8 +914,8 @@ proof(rule ccontr)
     by(rule augcycle_to_closed_w, simp)+
   have "foldr (\<lambda> e acc. acc + \<cc> e) C 0 < 0"
     using C_prop unfolding augcycle_def \<CC>_def using distinct_sum[of C \<cc>] by simp
-  hence "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
-  moreover have "map to_vertex_pair C = map make_pair (map oedge C)"
+  hence cost_neg': "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
+  moreover have map_eq: "map to_vertex_pair C = map make_pair (map oedge C)"
   proof-
     have "e \<in> set C \<Longrightarrow> to_vertex_pair e = make_pair (oedge e)" for e
     proof(goal_cases)
@@ -928,11 +928,19 @@ proof(rule ccontr)
     thus "map to_vertex_pair C = map make_pair (map oedge C)" 
       by simp
   qed
-  moreover have "set (map oedge C) \<subseteq> \<E> " 
+  moreover have subset_E: "set (map oedge C) \<subseteq> \<E> " 
     using C_prop  
     by (auto simp add: image_def augcycle_def \<EE>_def)
-  ultimately show False using conservative_weights aa(1)
-    by metis  
+  ultimately show False
+  proof -
+    have closed_w_oedge: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C))"
+      using aa(1) map_eq by simp
+    have conj: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C)) \<and>
+          set (map oedge C) \<subseteq> \<E> \<and>
+          foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0"
+      using closed_w_oedge subset_E cost_neg' by blast
+    with conservative_weights show False by blast
+  qed
 qed
 
 text \<open>By this, we can already prove correctness.\<close>
