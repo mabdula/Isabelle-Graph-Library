@@ -270,7 +270,25 @@ proof -
       using sum_eq_one_elem_other_zero[of "{0..<length L}" c i] 
       by (auto simp: \<open>c i = 1\<close> assms(5) nonneg_sum_1) 
     then have "x \<in> \<int>\<^sub>v" using convex_lincom_int[of c L x] 
-      by (metis Ints_0 Ints_1 \<open>c i = 1\<close> assms(1) assms(3) assms(4))
+proof -
+  have "\<forall>k < length L. c k \<in> \<int>"
+  proof (intro allI impI)
+    fix k
+    assume "k < length L"
+    show "c k \<in> \<int>"
+    proof (cases "k = i")
+      case True
+      then show ?thesis using \<open>c i = 1\<close> by simp
+    next
+      case False
+      then have "c k = 0"
+        using \<open>\<forall>j < length L. i \<noteq> j \<longrightarrow> c j = 0\<close> \<open>k < length L\<close> by blast
+      then show ?thesis by simp
+    qed
+  qed
+  then show "x \<in> \<int>\<^sub>v"
+    using convex_lincom_int[of c L x] assms(1) assms(3) assms(4) by blast
+qed
     then show False 
       by (simp add: assms(2))
   qed
