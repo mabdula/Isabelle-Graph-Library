@@ -219,7 +219,7 @@ definition "SSP_upd4' state = (let b = balance state; f = current_flow state;
                                         if v = t then b t + \<gamma> else b v)  \<rparr>))"
 
 lemma SSP_upd4_same: "SSP_upd4' state = SSP_upd4 state"
-  unfolding SSP_upd4_def SSP_upd4'_def by metis
+  unfolding SSP_upd4_def SSP_upd4'_def Let_def by simp
 
 declare[[simp_trace_depth_limit=1000]]
 
