@@ -117,7 +117,7 @@ qed
        x = another_edge (a, b) ;
        y = another_edge (aa, ba) ; z = another_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
     for a aa ab b ba bb
-    using order.trans by metis
+    by (auto split: if_splits intro: order_trans)
   from 3 show ?case    
     by(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
       (auto split: if_split simp add: less_le_not_le intro: a b c d) 
