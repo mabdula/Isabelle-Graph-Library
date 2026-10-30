@@ -1216,9 +1216,46 @@ proof -
         submatrix (- 1\<^sub>m n) {} UNIV" 
       by simp
     then have 8: "A = submatrix (A @\<^sub>r - 1\<^sub>m n) {0..<nr} UNIV" 
-      by (smt (verit, best) "7" \<open>submatrix A {0..<nr} UNIV = A\<close> assms(1) index_uminus_mat(3)
-          carrier_mat_triv dim_col_submatrix_UNIV empty_set_submatrix_iz_zero_mat
-          gram_schmidt_floor.append_mat_empty index_one_mat(3) index_zero_mat(2))
+      proof -
+        have index_empty: "(\<lambda>i. i - nr) ` ({0..<nr} - {0..<nr}) = {}"
+          by simp
+        have submatrix_rewrite:
+          "submatrix (A @\<^sub>r - 1\<^sub>m n) {0..<nr} UNIV =
+           submatrix A {0..<nr} UNIV @\<^sub>r submatrix (- 1\<^sub>m n) {} UNIV"
+          using "7" index_empty by simp
+        have dim_col_uminus: "dim_col (- 1\<^sub>m n) = n"
+          by (simp add: index_uminus_mat(3) index_one_mat(3))
+        have dim_col_sub:
+          "dim_col (submatrix (- 1\<^sub>m n) {} UNIV) = n"
+          using dim_col_submatrix_UNIV[of "- 1\<^sub>m n" "{}"] dim_col_uminus
+          by simp
+        have empty_submatrix_zero: "submatrix (- 1\<^sub>m n) {} UNIV = 0\<^sub>m 0 n"
+          by (subst empty_set_submatrix_iz_zero_mat) (simp add: dim_col_sub)
+        have dim_col_A: "dim_col A = n"
+          using assms(1) carrier_mat_triv by blast
+        have sm_carrier: "submatrix A {0..<nr} UNIV \<in> carrier_mat nr n"
+          using assms(1) \<open>submatrix A {0..<nr} UNIV = A\<close> by simp
+        have zero_carrier: "0\<^sub>m 0 n \<in> carrier_mat 0 n"
+          by (simp add: index_zero_mat(2) carrier_mat_triv)
+        have append_empty: "submatrix A {0..<nr} UNIV @\<^sub>r 0\<^sub>m 0 n = submatrix A {0..<nr} UNIV"
+          using append_mat_empty[OF sm_carrier zero_carrier] by simp
+        have mat_eq:
+          "submatrix (A @\<^sub>r - 1\<^sub>m n) {0..<nr} UNIV = A"
+        proof -
+          have "submatrix (A @\<^sub>r - 1\<^sub>m n) {0..<nr} UNIV =
+              submatrix A {0..<nr} UNIV @\<^sub>r submatrix (- 1\<^sub>m n) {} UNIV"
+            using submatrix_rewrite by simp
+          also have "\<dots> = submatrix A {0..<nr} UNIV @\<^sub>r 0\<^sub>m 0 n"
+            by (rule arg_cong[OF empty_submatrix_zero])
+          also have "\<dots> = submatrix A {0..<nr} UNIV"
+            using append_empty by simp
+          also have "\<dots> = A"
+            using \<open>submatrix A {0..<nr} UNIV = A\<close> by simp
+          finally show ?thesis .
+        qed
+        show ?thesis
+          using mat_eq by simp
+      qed
 
     have 9:"b = vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr})" 
     proof
