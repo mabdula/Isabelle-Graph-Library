@@ -1359,8 +1359,28 @@ proof -
     then show "A' \<in> \<int>\<^sub>m"
       using assms(6) submatrix_int_mat by simp
   qed
-  then show "((A' @\<^sub>r (-A')) @\<^sub>r A) \<in> \<int>\<^sub>m" 
-    by (metis assms(1) assms(4) assms(6) b carrier_mat_triv gram_schmidt.append_int_mat_is_int gram_schmidt.face_is_polyhedron'(3) minus_in_Ints_mat_iff uminus_carrier_iff_mat)
+  note A'_int = this
+  have negA'_int: "- A' \<in> \<int>\<^sub>m"
+    using A'_int by (simp add: minus_in_Ints_mat_iff)
+  have A'_fst: "fst (A', b') = fst (sub_system A b I')"
+    using assms(4) by (rule arg_cong)
+  then have A'_sub: "A' = submatrix A I' UNIV"
+    by (simp add: sub_system_fst)
+  have A'_col: "dim_col A' = n"
+    using A by (simp add: A'_sub dim_col_submatrix_UNIV carrier_matD(2))
+  have A'_dims: "A' \<in> carrier_mat (dim_row A') n"
+  proof (rule carrier_matI)
+    show "dim_row A' = dim_row A'" by simp
+    show "dim_col A' = n" using A'_col by simp
+  qed
+  have negA'_dims: "- A' \<in> carrier_mat (dim_row A') n"
+    using A'_dims by (rule uminus_carrier_mat)
+  have step1_int: "(A' @\<^sub>r - A') \<in> \<int>\<^sub>m"
+    by (rule append_int_mat_is_int[OF A'_dims negA'_dims A'_int negA'_int])
+  have step1_dims: "(A' @\<^sub>r - A') \<in> carrier_mat (dim_row A' + dim_row A') n"
+    by (rule carrier_append_rows[OF A'_dims negA'_dims])
+  show "((A' @\<^sub>r (-A')) @\<^sub>r A) \<in> \<int>\<^sub>m"
+    by (rule append_int_mat_is_int[OF step1_dims A step1_int assms(6)])
   have "b' \<in> \<int>\<^sub>v" 
     using assms(4) unfolding sub_system_def
     using subvec_int_int 
