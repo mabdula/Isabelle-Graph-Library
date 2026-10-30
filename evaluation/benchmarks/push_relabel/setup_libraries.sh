@@ -53,10 +53,11 @@ fetch() {
   missing "$name" "$md5" "$@"
   return 0
 }
-# fetch_optional NAME MD5 URL...   like fetch, but returns 1 instead of stopping: for third-party code
-# that is not redistributed with the evaluation (Andrew Goldberg's hi_pr, PRF and CSA).  A copy with the
-# right md5 placed in the cache beforehand is used without any download.
-fetch_optional() {
+# try_optional NAME MD5 URL...   like fetch, but without recording a failure: returns 1 when no source
+# answers, and the caller tries another way (fetch_files) before giving the file up.  For third-party code
+# that is not redistributed with the evaluation (Andrew Goldberg's hi_pr and PRF).  A copy with the right
+# md5 placed in the cache beforehand is used without any download.
+try_optional() {
   local name=$1 md5=$2 f u; shift 2; f="$cache/$name"
   if [[ -f "$f" && "$(sum "$f")" == "$md5" ]]; then echo "have   $name"; return 0; fi
   if [[ -f "$f.unreachable" ]]; then echo "skip   $name: could not be downloaded earlier in this setup (see NOT_AVAILABLE.txt)"; return 1; fi
@@ -70,9 +71,27 @@ fetch_optional() {
     if [[ "$(sum "$f.part")" == "$md5" ]]; then mv "$f.part" "$f"; return 0; fi
     echo "       md5 $(sum "$f.part") is not $md5, trying the next source"; rm -f "$f.part"
   done
-  touch "$f.unreachable"
-  missing "$name" "$md5" "$@"
   return 1
+}
+# fetch_files DIR NAME:MD5:SHA1...   the files of an archive no site serves any more, one by one by their
+# content from Software Heritage (which keeps every file of the public repositories it has archived, under
+# its sha1) into $cache/DIR/, each checked by md5; returns 1 as soon as one cannot be got.
+fetch_files() {
+  local dir=$1 spec name md5 sha1 f u; shift
+  for spec in "$@"; do
+    IFS=: read -r name md5 sha1 <<< "$spec"; f="$cache/$dir/$name"
+    if [[ -f "$f" && "$(sum "$f")" == "$md5" ]]; then continue; fi
+    mkdir -p "$cache/$dir"; u="https://archive.softwareheritage.org/api/1/content/sha1:$sha1/raw/"
+    echo "fetch  $dir/$name  <-  $u"; rm -f "$f.part"
+    # Software Heritage answers a browser-like agent with a bot check; curl's and wget's own agents pass
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL --connect-timeout 20 --retry 1 --max-time 600 -o "$f.part" "$u" || { echo "       no answer"; return 1; }
+    else
+      wget -q --timeout=30 --tries=1 -O "$f.part" "$u" || { echo "       no answer"; return 1; }
+    fi
+    [[ "$(sum "$f.part")" == "$md5" ]] || { echo "       md5 $(sum "$f.part") is not $md5"; rm -f "$f.part"; return 1; }
+    mv "$f.part" "$f"
+  done
 }
 # not_available TEXT     records, in NOT_AVAILABLE.txt at the top of evaluation/, what is left out
 not_available() { echo "$1" >> "$here/../../NOT_AVAILABLE.txt"; echo "NOTE:  $1"; }
@@ -122,18 +141,35 @@ place lemon-1.3.1.tar.gz competitors/lemon_linked/lemon-1.3.1.tar.gz
 fi
 
 if wants '^hipr$'; then
-# Goldberg's hi_pr 3.5.  www.avglab.com no longer resolves; the Wayback Machine
-# holds the archive.  It unpacks as 3.5/, renamed to hipr-3.5/ as the study had
-# it, and the parser patch (PATCHES-FOR-THIS-STUDY) is applied.
-if fetch_optional hipr.tar cb7bd4cf8db1f15b12e3a9228b6f774b http://web.archive.org/web/2018id_/http://www.avglab.com/andrew/soft/hipr.tar; then
-  place hipr.tar competitors/hipr/code/hipr-3.5.tar
-  rm -rf competitors/hipr/code/hipr-3.5 && mkdir -p competitors/hipr/code/hipr-3.5
-  tar xf "$cache/hipr.tar" -C competitors/hipr/code/hipr-3.5 --strip-components=1
-  note competitors/hipr/code/hipr-3.5
-  patch -s competitors/hipr/code/hipr-3.5/parser.c competitors/hipr/parser.c.patch
-  check competitors/hipr/code/hipr-3.5/hi_pr.c d2b09d39c97b4294be9543e58b569ed5
-  check competitors/hipr/code/hipr-3.5/parser.c b9f61e6b7d5a45ac9b3cbef0585781b8
+# Goldberg's hi_pr 3.5.  www.avglab.com no longer resolves; the Wayback Machine holds the archive, and
+# Software Heritage its files (fetch_files).  It unpacks as 3.5/, renamed to hipr-3.5/ as the study had it,
+# and the parser patch (PATCHES-FOR-THIS-STUDY) is applied.
+hipr=competitors/hipr/code/hipr-3.5
+hipr_url=http://web.archive.org/web/2018id_/http://www.avglab.com/andrew/soft/hipr.tar
+hipr_got=
+if try_optional hipr.tar cb7bd4cf8db1f15b12e3a9228b6f774b $hipr_url; then
+  place hipr.tar $hipr.tar
+  rm -rf $hipr && mkdir -p $hipr
+  tar xf "$cache/hipr.tar" -C $hipr --strip-components=1 && hipr_got=1
+elif fetch_files hipr-3.5 \
+       COPYRIGHT:3d4e6e287d82fb44e24cf7bed5b5cc4f:62273550a92661b0f5252675156932972a467dde \
+       README:9be0cebffd3700e6ce6bc2aeaf72d6a8:4b341aea515398126edcebddf6b4778dc9b9dc4a \
+       VERSION:47c85a0334acd897a70276fb94364d29:5902646c79a2cba79ac3052421336ed68defca8c \
+       hi_pr.c:d2b09d39c97b4294be9543e58b569ed5:381cb67925f6748ff7655dbb0e84ba456a7788fd \
+       makefile:71a3a5b28da1d09271c2737a10b51c6c:0fe0e05338b55ac87a2ae24894aa27639052bb67 \
+       parser.c:de99c4800e1dfa2e0c376b41531175a0:c5aa62aed11059ab2a6964584147d21616ac30ad \
+       sample.inp:db1779cdd45ae5c03d01c5aac2f28f26:16d4358a19d729a9eb09870b573e9b62c6b3b2fb \
+       timer.c:7b7b24b6dd57f5fa90f7d9689d055aba:2e57f174d10494b9d5e6772198f323a91f33ab0f \
+       types.h:c4806e95cc80d90149e22f21d3723e31:6c51ecf9cef7d84cb70b905e0ed5ad495d7720a0; then
+  rm -rf $hipr && mkdir -p $hipr && cp "$cache"/hipr-3.5/* $hipr/ && hipr_got=1
+fi
+if [[ -n "$hipr_got" ]]; then
+  note $hipr
+  patch -s $hipr/parser.c competitors/hipr/parser.c.patch
+  check $hipr/hi_pr.c d2b09d39c97b4294be9543e58b569ed5
+  check $hipr/parser.c b9f61e6b7d5a45ac9b3cbef0585781b8
 else
+  touch "$cache/hipr.tar.unreachable"; missing hipr.tar cb7bd4cf8db1f15b12e3a9228b6f774b $hipr_url
   not_available "push_relabel/competitors/hipr: hi_pr 3.5 (hipr.tar) is not available; the hi_pr column of Tables 19 to 21 cannot be run"
 fi
 fi

@@ -53,10 +53,11 @@ fetch() {
   missing "$name" "$md5" "$@"
   return 0
 }
-# fetch_optional NAME MD5 URL...   like fetch, but returns 1 instead of stopping: for third-party code
-# that is not redistributed with the evaluation (Andrew Goldberg's hi_pr, PRF and CSA).  A copy with the
-# right md5 placed in the cache beforehand is used without any download.
-fetch_optional() {
+# try_optional NAME MD5 URL...   like fetch, but without recording a failure: returns 1 when no source
+# answers, and the caller tries another way (fetch_files) before giving the file up.  For third-party code
+# that is not redistributed with the evaluation (Andrew Goldberg's hi_pr and PRF).  A copy with the right
+# md5 placed in the cache beforehand is used without any download.
+try_optional() {
   local name=$1 md5=$2 f u; shift 2; f="$cache/$name"
   if [[ -f "$f" && "$(sum "$f")" == "$md5" ]]; then echo "have   $name"; return 0; fi
   if [[ -f "$f.unreachable" ]]; then echo "skip   $name: could not be downloaded earlier in this setup (see NOT_AVAILABLE.txt)"; return 1; fi
@@ -70,9 +71,27 @@ fetch_optional() {
     if [[ "$(sum "$f.part")" == "$md5" ]]; then mv "$f.part" "$f"; return 0; fi
     echo "       md5 $(sum "$f.part") is not $md5, trying the next source"; rm -f "$f.part"
   done
-  touch "$f.unreachable"
-  missing "$name" "$md5" "$@"
   return 1
+}
+# fetch_files DIR NAME:MD5:SHA1...   the files of an archive no site serves any more, one by one by their
+# content from Software Heritage (which keeps every file of the public repositories it has archived, under
+# its sha1) into $cache/DIR/, each checked by md5; returns 1 as soon as one cannot be got.
+fetch_files() {
+  local dir=$1 spec name md5 sha1 f u; shift
+  for spec in "$@"; do
+    IFS=: read -r name md5 sha1 <<< "$spec"; f="$cache/$dir/$name"
+    if [[ -f "$f" && "$(sum "$f")" == "$md5" ]]; then continue; fi
+    mkdir -p "$cache/$dir"; u="https://archive.softwareheritage.org/api/1/content/sha1:$sha1/raw/"
+    echo "fetch  $dir/$name  <-  $u"; rm -f "$f.part"
+    # Software Heritage answers a browser-like agent with a bot check; curl's and wget's own agents pass
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL --connect-timeout 20 --retry 1 --max-time 600 -o "$f.part" "$u" || { echo "       no answer"; return 1; }
+    else
+      wget -q --timeout=30 --tries=1 -O "$f.part" "$u" || { echo "       no answer"; return 1; }
+    fi
+    [[ "$(sum "$f.part")" == "$md5" ]] || { echo "       md5 $(sum "$f.part") is not $md5"; rm -f "$f.part"; return 1; }
+    mv "$f.part" "$f"
+  done
 }
 # not_available TEXT     records, in NOT_AVAILABLE.txt at the top of evaluation/, what is left out
 not_available() { echo "$1" >> "$here/../../NOT_AVAILABLE.txt"; echo "NOTE:  $1"; }
@@ -101,13 +120,23 @@ check() { [[ -f "$1" ]] || { echo "skip   $1 (not made: its source was not downl
 # Goldberg), on the Wayback Machine only; genrmf is the Flow Challenge 2.0's
 # corrected genrmf; washington.c the challenge's copy of the Washington generator.
 if wants '^ak$'; then
-if fetch_optional prf.tar 9d0ffcf2fce3e3fabfbc8743bfad7bc5 http://web.archive.org/web/2018id_/http://www.avglab.com/andrew/soft/prf.tar; then
-  rm -rf "$cache/prf" && mkdir -p "$cache/prf" && tar xf "$cache/prf.tar" -C "$cache/prf"
-  mkdir -p instances/generators/ak
-  cp "$cache/prf/1.8/ak.c" instances/generators/ak/ak.c
-  for f in README COPYRIGHT; do [[ -f "$cache/prf/1.8/$f" ]] && cp "$cache/prf/1.8/$f" instances/generators/ak/$f && note instances/generators/ak/$f; done
-  check instances/generators/ak/ak.c a55236f7732aa733b3c1b5ebd62da00d
+ak=instances/generators/ak
+prf_url=http://web.archive.org/web/2018id_/http://www.avglab.com/andrew/soft/prf.tar
+prf_src=
+if try_optional prf.tar 9d0ffcf2fce3e3fabfbc8743bfad7bc5 $prf_url; then
+  rm -rf "$cache/prf" && mkdir -p "$cache/prf" && tar xf "$cache/prf.tar" -C "$cache/prf" && prf_src="$cache/prf/1.8"
+elif fetch_files prf-1.8 \
+       ak.c:a55236f7732aa733b3c1b5ebd62da00d:3131fcf113d54cea2b0d4e3536d9ec4594c230a0 \
+       README:958eaccafee911afd225ed4d669e4702:132fa3e8effa77873fde9bf1e88ce594ca2dd328 \
+       COPYRIGHT:ff899e035c18a24accd09d0280069b21:95632f760b69af41ee6de15dfdda0acae7c2aa4f; then
+  prf_src="$cache/prf-1.8"
+fi
+if [[ -n "$prf_src" ]]; then
+  mkdir -p $ak
+  for f in ak.c README COPYRIGHT; do cp "$prf_src/$f" $ak/$f; note $ak/$f; done
+  check $ak/ak.c a55236f7732aa733b3c1b5ebd62da00d
 else
+  touch "$cache/prf.tar.unreachable"; missing prf.tar 9d0ffcf2fce3e3fabfbc8743bfad7bc5 $prf_url
   not_available "push_relabel/instances/generators/ak: PRF 1.8 (prf.tar, the AK generator) is not available; the AK family of Table 21 cannot be generated"
 fi
 fi

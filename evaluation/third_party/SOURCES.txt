@@ -1,6 +1,8 @@
 Third-party code setup.sh downloads into this directory (REPRO_CACHE): the file, its md5, and the sources tried in order.
 The per-package setup_libraries.sh and setup_instances.sh take these files from here and check the md5.
-Not inside: hipr.tar, prf.tar and csa-flows20.tar.gz (Andrew Goldberg's hi_pr 3.5, PRF 1.8 and CSA), see README.md.
+Not inside: hipr.tar, prf.tar and csa-flows20.tar.gz (Andrew Goldberg's hi_pr 3.5, PRF 1.8 and CSA), see README.md;
+hipr.tar and prf.tar come from the Wayback Machine, or else their files one by one from Software Heritage
+(push_relabel/setup_libraries.sh and setup_instances.sh list the hashes).
 
 apfloat-1.14.0.jar       19e0ad08927787a9c8bdb9c18070723c
                            https://repo1.maven.org/maven2/org/apfloat/apfloat/1.14.0/apfloat-1.14.0.jar
