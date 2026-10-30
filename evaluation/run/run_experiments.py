@@ -250,17 +250,17 @@ def make_plan(mode, cf, inst):
                 elif pkg == 'push_relabel':
                     files = inst.pr(fam, size, first_inst)
                     if not files and fam == 'ak' and 'ak' in na: log('   push_relabel: the AK generator is not available, family left out'); break
-                    for c in cols:
-                        if fam == 'ak' or first_inst: runs = [(files[0], k) for k in range(1, reps + 1)] if files else []   # one file, repeated
-                        else: runs = [(f, f[2]) for f in files]                                                      # one run per seed file
-                        for (fname, n, seed, path), k in runs:
-                            warm = 5 if (fam == 'ak' and c in AK_WARM) else 0
-                            cmd = program(c) + ['--tag', 'island=X;repeat=%d;seed=%d%s' % (k, seed or 1, ';warmcore=5s' if warm else '')]
-                            if c in PY: cmd += ['--memory-gb', str(MEM_GB)]
-                            cmd.append(path)
-                            jobs.append(dict(pkg=pkg, col=c, fam=fam, size=size, nodes=n, inst=fname, q='', rep=k, cmd=cmd, cwd=os.path.join(BENCH, pkg), cap=CAP,
-                                             warm=warm, mode='prlimit', as_limit=(c not in PY and c != 'jgrapht'), env={'PR_XMX': '42g'},
-                                             na=NOT_APPLICABLE.get((c, fam), ''), files=[path]))
+                    repeated = fam == 'ak' or first_inst                      # one file, repeated; else one run per seed file
+                    for fname, n, seed, path in (files[:1] if repeated else files):   # seed files outer: one on disk at a time
+                        for c in cols:
+                            for k in (range(1, reps + 1) if repeated else [seed]):
+                                warm = 5 if (fam == 'ak' and c in AK_WARM) else 0
+                                cmd = program(c) + ['--tag', 'island=X;repeat=%d;seed=%d%s' % (k, seed or 1, ';warmcore=5s' if warm else '')]
+                                if c in PY: cmd += ['--memory-gb', str(MEM_GB)]
+                                cmd.append(path)
+                                jobs.append(dict(pkg=pkg, col=c, fam=fam, size=size, nodes=n, inst=fname, q='', rep=k, cmd=cmd, cwd=os.path.join(BENCH, pkg), cap=CAP,
+                                                 warm=warm, mode='prlimit', as_limit=(c not in PY and c != 'jgrapht'), env={'PR_XMX': '42g'},
+                                                 na=NOT_APPLICABLE.get((c, fam), ''), files=[path]))
                 elif pkg in ASN:
                     n = int(size)
                     nseeds = 1 if first_inst else SEEDS_PER_SIZE[pkg]

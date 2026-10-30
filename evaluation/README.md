@@ -34,10 +34,10 @@ ran up to seven runs in parallel on 32 cores), plus two hours for the setup and 
 paper's machine, the runs of the full experiment took about 217 hours in total, so the estimate is about 435
 hours (18 days) plus the setup; the 8-hour experiment's runs took about 3 hours, so with the setup it fills its
 8 hours; the smoke test's runs take a few minutes.  The largest instances need up to about 48 GB of RAM (`PROTOCOL.txt`
-of each benchmark); the generated instances take up to 60 GB of disk in the full experiment, and are deleted
-as soon as no run needs them.  The TACAS 2027 VM as distributed has 2 processors, 8 GB of RAM and 25 GB of free disk:
-enough for the smoke test and the 8-hour experiment (whose runs stop at the sizes that no longer fit, marked `OOM`);
-for the full experiment give it the RAM and disk above.
+of each benchmark); the generated instances are deleted as soon as no run needs them, so at most about 10 GB
+of them (the largest rmf-long instance) are on disk at a time.  The TACAS 2027 VM as distributed has 2 processors, 8 GB
+of RAM and 25 GB of free disk: enough disk for every experiment, and enough RAM for the smoke test and the 8-hour
+experiment (whose runs stop at the sizes that no longer fit, marked `OOM`); for the full experiment give it the RAM above.
 
 ## Results
 
