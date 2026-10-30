@@ -1096,7 +1096,7 @@ next
   case (vwalk2 v v' vs)
   then show ?case
     apply (auto simp: dVs_def)
-    by (metis insertCI)
+    by (iprover intro: insertCI)
 qed
 
 text \<open>A lemma which allows for case splitting over paths when doing induction on graph edges.\<close>
