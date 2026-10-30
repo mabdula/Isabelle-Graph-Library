@@ -85,10 +85,10 @@ place ch9-1.1.tar.gz instances/generators/ch9-1.1.tar.gz
 if have ch9-1.1.tar.gz; then
   tar xzf "$cache/ch9-1.1.tar.gz" -O ch9-1.1/scripts/genLong-n.gr.pl > instances/generators/genLong-n.gr.pl
   patch -s instances/generators/genLong-n.gr.pl instances/generators/genLong-n.gr.pl.patch
-  check instances/generators/genLong-n.gr.pl 52eaa7cac521361faa7ab3952cf116e2
+  check instances/generators/genLong-n.gr.pl 983020569e4a18f4dc90ee3219209625
   tar xzf "$cache/ch9-1.1.tar.gz" -O ch9-1.1/scripts/genSquare-n.gr.pl > instances/generators/genSquare-n.gr.pl
   patch -s instances/generators/genSquare-n.gr.pl instances/generators/genSquare-n.gr.pl.patch
-  check instances/generators/genSquare-n.gr.pl 782604949fa20b85c16f71443420e5c5
+  check instances/generators/genSquare-n.gr.pl 6a1d23cb4da429ddd663d4ac978f5f6f
 fi
 fi
 echo "setup_instances.sh complete: kruskal"

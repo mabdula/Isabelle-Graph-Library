@@ -108,10 +108,10 @@ place ch9-1.1.tar.gz instances/generators/ch9-1.1.tar.gz
 if have ch9-1.1.tar.gz; then
   tar xzf "$cache/ch9-1.1.tar.gz" -O ch9-1.1/scripts/genLong-n.gr.pl > instances/generators/genLong-n.gr.pl
   patch -s instances/generators/genLong-n.gr.pl instances/generators/genLong-n.gr.pl.patch
-  check instances/generators/genLong-n.gr.pl 0121bb8de80ac64006018fd675b69ca9
+  check instances/generators/genLong-n.gr.pl b8b3f6849893b575aad384861066793c
   tar xzf "$cache/ch9-1.1.tar.gz" -O ch9-1.1/scripts/genSquare-n.gr.pl > instances/generators/genSquare-n.gr.pl
   patch -s instances/generators/genSquare-n.gr.pl instances/generators/genSquare-n.gr.pl.patch
-  check instances/generators/genSquare-n.gr.pl 86f78b159beb639ad4bfbf58f6ec02b3
+  check instances/generators/genSquare-n.gr.pl 152584bb7f10226ba593133626cf56b6
 fi
 fi
 # The road networks: the 9th DIMACS Challenge's USA-road-t files, downloaded
