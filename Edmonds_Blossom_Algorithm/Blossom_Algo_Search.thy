@@ -2460,7 +2460,34 @@ next
       by(intro path_invar_props[OF 2(12)])
     ultimately show ?thesis
       using 2(5)
-      by metis
+    proof (intro conjI)
+      show "last p1 \<notin> Vs M"
+        using s(2) \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close> by simp
+      show "last p2 \<notin> Vs M"
+        using s(3) \<open>last (parent_spec.follow par v2) \<notin> Vs M\<close> by simp
+      show "hd p1 \<noteq> hd p2"
+        using \<open>v1 = hd p1\<close>[symmetric] \<open>v2 = hd p2\<close>[symmetric] \<open>v1 \<noteq> v2\<close> by simp
+      show "odd (length p1)"
+        using s(2) \<open>odd (length (parent_spec.follow par v1))\<close> by simp
+      show "odd (length p2)"
+        using s(3) \<open>odd (length (parent_spec.follow par v2))\<close> by simp
+      show "distinct p1"
+        using s(2) \<open>distinct (parent_spec.follow par v1)\<close> by simp
+      show "distinct p2"
+        using s(3) \<open>distinct (parent_spec.follow par v2)\<close> by simp
+      show "path G p1"
+        using s(2) \<open>path G (parent_spec.follow par v1)\<close> by simp
+      show "path G p2"
+        using s(3) \<open>path G (parent_spec.follow par v2)\<close> by simp
+      show "{hd p1, hd p2} \<in> G"
+        using \<open>v1 = hd p1\<close>[symmetric] \<open>v2 = hd p2\<close>[symmetric] s(5) by simp
+      show "\<forall>x pref1 post1 pref2 post2. p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<longrightarrow> post1 = post2"
+        using \<open>\<forall>x pref1 post1 pref2 post2. p1 = pref1 @ x # post1 \<and> p2 = pref2 @ x # post2 \<longrightarrow> post1 = post2\<close> by fastforce
+      show "alt_path M (hd p1 # p2)"
+        using \<open>v1 = hd p1\<close>[symmetric] s(3) \<open>alt_path M (v1 # parent_spec.follow par v2)\<close> by simp
+      show "alt_path M (hd p2 # p1)"
+        using \<open>v2 = hd p2\<close>[symmetric] s(2) \<open>alt_path M (v2 # parent_spec.follow par v1)\<close> by simp
+    qed
   qed
 qed
 
