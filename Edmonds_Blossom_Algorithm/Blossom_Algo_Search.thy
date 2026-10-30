@@ -1323,8 +1323,22 @@ proof(induction "(parent_spec.follow par' v)" arbitrary: v rule: induct_list012)
     by (simp add: alt_list_empty)
 next
   case (single x)
+  have parent_par': "parent par'"
+    unfolding parent_def par'
+    using single
+    by (intro invars parent_spec_pres)+
+  have eq: "[x] = parent_spec.follow par' v"
+    using single by blast
+  have inG': "flabel' v = Some (r', Even)"
+    using single by blast
+  have "x = v"
+    using eq[symmetric] parent.follow_cons[OF parent_par']
+    by simp
+  then have "flabel' x = Some (r', Even)"
+    using inG' by simp
   then show ?case
-    by (metis (mono_tags, lifting) alt_list.simps compute_alt_path.parent_spec_pres(1) compute_alt_path_axioms par' parent.follow_cons parent.intro)
+    unfolding eq[symmetric]
+    by (rule alt_list_singleton)
 next
   case (sucsuc x y zs)
   have **:"parent par" "parent par'"
