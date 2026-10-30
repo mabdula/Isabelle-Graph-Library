@@ -1254,7 +1254,13 @@ next
         from a2n ihdisj show "a2 \<notin> set l1' \<and> a1' \<notin> set l2 \<and> set l1' \<inter> set l2 = {}"
           by auto
       qed
-      subgoal by (metis IntI empty_iff empty_set find_pfx_empty inf_right_idem list.set_intros(1))
+      subgoal premises prems
+      proof -
+        from prems have l1e: "l1' = []" using find_pfx_empty by blast
+        have "set (a1' # l1') \<inter> set l2 = {}"
+          using prems by presburger
+        with l1e show ?thesis by auto
+      qed
       subgoal premises prems
       proof -
         from prems have ne: "last (find_pfx ((=) a2) l1') \<noteq> a2" by blast
