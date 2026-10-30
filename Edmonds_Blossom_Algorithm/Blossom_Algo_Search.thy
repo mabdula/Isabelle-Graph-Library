@@ -4320,7 +4320,7 @@ lemma compute_alt_path_from_tree_sound':
   using compute_alt_path_from_tree_sound[where par = par, OF initialisation]
   unfolding compute_alt_path_spec_def
   apply(intro conjI)
-  by metis+
+  by (all \<open>blast\<close>)
 
 lemma compute_alt_path_from_tree_complete:
   fixes flabel::"'a set set \<Rightarrow> 'a set set \<Rightarrow> 'a \<Rightarrow> ('a \<times> label) option" and
