@@ -1,0 +1,56 @@
+bench_jgrapht -- JGraphT 1.5.3 PushRelabelMFImpl on a DirectedWeightedPseudograph, column "JGraphT" [code 34] (jgrapht)
+
+USAGE
+  bench_jgrapht [--source <s> --target <t>] [--tag <text>] [--repeats <k>] <instance.max>
+  bench_jgrapht --header
+  variant column: "jgrapht_push_relabel".  PR_XMX=<size> sets the heap (default 42g, as in the campaign).
+
+WHAT IS TIMED
+  Construction of PushRelabelMFImpl and getMaximumFlow(s, t), which copies the
+  graph into the algorithm's own arrays and runs to exhaustion (a maximum
+  FLOW; the library's heuristic switches at their shipped defaults).  The
+  pseudograph is filled arc by arc OUTSIDE the clock (build_ms) after the file
+  read (parse_ms).  Before the clock the same solve is run ten times on a
+  fixed-seed 16 x 24 layered warm-up network so the JIT has compiled it (not
+  measured).  Clock: WHOLE-PROCESS CPU time from /proc/self/stat (10 ms
+  ticks), user + system, so that the serial collector's work on the VM thread
+  is counted; thread_ms is the solver thread alone.  JVM flags:
+  -Xmx42g -XX:ActiveProcessorCount=1 -XX:+UseSerialGC.
+
+COLUMNS (one CSV row per run; --header prints the header line alone)
+
+  instance      base name of the .max file
+  nodes, arcs   from its problem line
+  variant       the solver/variant name this program writes (see below)
+  source,target the source and the sink, DIMACS ids 1..n, from the file's
+                `n <id> s` / `n <id> t` lines unless given with --source/--target
+  repeat        1 (every repeat of the campaign was its own process; the
+                runner stamped the repeat number, which for the seeded
+                families is the seed, into this field afterwards)
+  status        OK             the returned arc flows are a flow: within capacity,
+                               conserved at every vertex but the two ends, and
+                               the ends balance
+                OVER_CAPACITY, NOT_A_FLOW, UNBALANCED_ENDS, VALUE_MISMATCH
+                               the check failed (never seen in the published rows)
+  flow_value    the maximum flow value, summed after the clock as a cross-check
+  cpu_ms        THE MEASUREMENT: whole-process CPU time (user + system)
+                between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its split
+  thread_ms     the solver thread's CPU time over the same window (equal to
+                cpu_ms for single-threaded native programs; for the JVM it
+                drops garbage collection and is kept only to show the gap)
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  parse_ms      CPU time spent reading the file, OUTSIDE the clock
+  dedup_ms      CPU time spent collapsing parallel arcs, OUTSIDE the clock
+  build_ms      CPU time spent building the library's input structure, OUTSIDE
+                the clock (0.000 for the exports and hi_pr)
+  tag           free text copied from --tag; the campaign wrote
+                "island=<cores>;repeat=<k>;seed=<s>" and some programs append
+                their own notes (see each OUTPUT.txt)
+
+EXAMPLE
+  ak-4102.max,4102,6151,jgrapht_push_relabel,1,2,1,OK,2051,460.000,430.000,30.000,238.016,238.165,12.811,0.000,46.410,island=28-31;repeat=1;seed=1
+
+The published raw rows (published_results/push_relabel_results.zip,
+<column>/raw/<family>.csv) are these rows cut down to the columns the tables
+use; the full rows are in the campaign directories of the study.

@@ -1,0 +1,52 @@
+bench_hipr -- Goldberg's hi_pr 3.5 (highest label, gap heuristic, periodic global relabelling), column "GC" [code 10] (hipr)
+
+USAGE
+  bench_hipr [--source <s> --target <t>] [--update-freq <f>] [--tag <text>] <instance.max>
+  bench_hipr --header
+  variant column: "hi_pr".  No --repeats: hi_pr's state is global and consumed
+  by a run.  --update-freq defaults to hi_pr's own 0.5 and was never changed.
+
+WHAT IS TIMED
+  allocDS(), init(), stageOne() and stageTwo() of hi_pr compiled from the
+  distributed bytes: setup, the maximum preflow and its conversion to a maximum
+  FLOW.  hi_pr's parser writes its node and arc arrays as it reads, so the
+  structure build is the parse (parse_ms, outside; build_ms 0.000).  Clock:
+  process CPU time (getrusage).  hi_pr's operation counts go to stderr.
+
+COLUMNS (one CSV row per run; --header prints the header line alone)
+
+  instance      base name of the .max file
+  nodes, arcs   from its problem line
+  variant       the solver/variant name this program writes (see below)
+  source,target the source and the sink, DIMACS ids 1..n, from the file's
+                `n <id> s` / `n <id> t` lines unless given with --source/--target
+  repeat        1 (every repeat of the campaign was its own process; the
+                runner stamped the repeat number, which for the seeded
+                families is the seed, into this field afterwards)
+  status        OK             the returned arc flows are a flow: within capacity,
+                               conserved at every vertex but the two ends, and
+                               the ends balance
+                OVER_CAPACITY, NOT_A_FLOW, UNBALANCED_ENDS, VALUE_MISMATCH
+                               the check failed (never seen in the published rows)
+  flow_value    the maximum flow value, summed after the clock as a cross-check
+  cpu_ms        THE MEASUREMENT: whole-process CPU time (user + system)
+                between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its split
+  thread_ms     the solver thread's CPU time over the same window (equal to
+                cpu_ms for single-threaded native programs; for the JVM it
+                drops garbage collection and is kept only to show the gap)
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  parse_ms      CPU time spent reading the file, OUTSIDE the clock
+  dedup_ms      CPU time spent collapsing parallel arcs, OUTSIDE the clock
+  build_ms      CPU time spent building the library's input structure, OUTSIDE
+                the clock (0.000 for the exports and hi_pr)
+  tag           free text copied from --tag; the campaign wrote
+                "island=<cores>;repeat=<k>;seed=<s>" and some programs append
+                their own notes (see each OUTPUT.txt)
+
+EXAMPLE
+  ak-4102.max,4102,6151,hi_pr,1,2,1,OK,2051,13.286,13.286,0.000,13.286,13.288,2.677,0.000,0.000,island=4-7;repeat=1;seed=1
+
+The published raw rows (published_results/push_relabel_results.zip,
+<column>/raw/<family>.csv) are these rows cut down to the columns the tables
+use; the full rows are in the campaign directories of the study.

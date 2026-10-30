@@ -1,0 +1,53 @@
+--- dcube.c
++++ dcube_patched.c
+@@ -1,3 +1,6 @@
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
+ #include<stdio.h>
+ #include<math.h>
+ 
+@@ -24,7 +27,7 @@
+ /*    seed    X   : specifies X a random seed; default use timer */ 
+ /*---------------------------------------------------------------*/
+ 
+-#define Assert( cond , msg ) if ( ! (cond) ) {printf("msg\n"); exit(); } ; 
++#define Assert( cond , msg ) if ( ! (cond) ) {printf("msg\n"); exit(1); } ; 
+ #define MAXNODES 1000000
+ #define TRUE 1
+ #define FALSE 0
+@@ -57,6 +60,8 @@
+ /*  recommend by Knuth.  See  J. Bentley's column, ``The Software   */
+ /*  Exploratorium,''  or Knuth, Vol 2, Section 3.2.2 (Algorithm A) */ 
+ 
++long lprand();   /* forward declaration: used by sprand below */
++
+ /*----RNG Initializer------------*/
+ /* Call once before using lprand */ 
+ 
+@@ -144,6 +149,7 @@
+ 
+ /* Lookup command in table */
+ int lookup(cmd)
++char *cmd;
+ {
+  int i;
+  int stop;
+@@ -174,7 +180,7 @@
+               Assert( nodes<= MAXNODES , Recompile with higher MAXNODES. ); 
+ 	      break;
+ 	    }
+-    case 2: { sscanf( buf, "%d", &seed);
++    case 2: { sscanf( buf, "%ld", &seed);
+ 	       rand_seed  = FALSE;
+ 	       break;
+ 	    }
+@@ -202,7 +208,7 @@
+   printf("c dimension %d \n", dimension);
+   printf("c max index value  %d \n", maxloc); 
+   if (rand_seed == TRUE) printf("c random seed\n");
+-  else printf("c seed %d\n", seed);
++  else printf("c seed %ld\n", seed);
+ }
+ 
+ 

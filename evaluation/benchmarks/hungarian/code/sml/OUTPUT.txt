@@ -1,0 +1,46 @@
+bench_sml -- the verified Hungarian method export in Standard ML (MLton), column "sml" (paper: SML)
+
+USAGE
+  bench_sml [--theta-frac 1.0] [--cap 2] [--tag <text>] [--sol] <instance.asn>
+  bench_sml --header
+  (--csv is the default; --human prints a block instead; --sol appends the
+  DIMACS s/f solution lines)
+
+WHAT IS TIMED
+  One call of the export's entry point hungarian_csr_run_int (minimum weight
+  perfect matching; the graph is taken as given, never padded to a complete
+  one) on the arrays read from the file: n, theta, cap, the per-arc arrays
+  fa/ta/wa (left endpoint, right endpoint, cost) and the vertex lists la/rv.
+  The call builds its CSR itself, so that setup is inside the clock.  Reading
+  the file, building the arrays and summing the matched arcs are outside.
+  Clock: process CPU time (getrusage, user+system).  Compiled with
+  -default-type int64 because the geometric costs overflow 32-bit Int.
+
+COLUMNS (one CSV row per run; --header prints the header line alone)
+
+  instance      base name of the .asn file
+  nodes, arcs   from its problem line
+  left, right   |X| and |Y| (the n-lines mark X; the arc tails are X)
+  theta, theta_frac, cap
+                the export's two settled knobs: theta = |X| (fraction 1.000),
+                cap = 2; both are compiled in, so only these values run
+  status        OPTIMAL      a perfect matching was found (every left vertex
+                             has a mate)
+                NO_PERFECT_MATCHING / FAILED  none exists or the solver gave up
+  matched       number of matched left vertices (= |X| when OPTIMAL)
+  cost          its weight, the sum of the matched arcs' costs (minimised)
+  cpu_ms        THE MEASUREMENT: CPU time between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its user/system split
+  proc_ms       whole-process CPU time over the same window (equal to cpu_ms
+                for native programs; for the JVM it also counts the JIT
+                compiler threads and is a diagnostic, not the measurement)
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
+
+EXAMPLE (low-cost_n2048_s1.asn, the campaign's raw row)
+  instance,nodes,arcs,left,right,theta,theta_frac,cap,status,matched,cost,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,tag
+  low-cost_n2048_s1.asn,2048,22528,1024,1024,1024,1.000,2,OPTIMAL,1024,7920,30.708,25.896,4.812,30.708,30.693,low-cost;rep=1
+
+The published raw rows (published_results/hungarian_results.zip,
+<column>/<family>.csv) carry two further columns appended by the campaign
+runner, inferred_from and core, which the program itself does not print.

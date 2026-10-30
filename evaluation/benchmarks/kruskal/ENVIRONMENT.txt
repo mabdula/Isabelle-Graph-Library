@@ -1,0 +1,30 @@
+MACHINE AND SOFTWARE BEHIND THE PUBLISHED NUMBERS
+=================================================
+
+HARDWARE   Lenovo ThinkSystem SR645, 2 x AMD EPYC 7343 (16 cores each, no SMT,
+           32 cores), 8 L3 islands of 4 cores and 32 MiB, 377 GiB RAM, no swap.
+           Governor schedutil: idle cores at 1.5 GHz, 3.9 GHz under load.
+OS         Ubuntu 22.04.4 LTS, kernel 5.15.0-198-generic, x86_64.
+
+TOOLCHAINS (version; checksum of the archive or binary where we have one)
+  MLton   20241230     (the mlton binary, md5 9d6e09d40426a5aa72c6851885a3976e)
+  Go      go1.27.2 linux/amd64   go1.27.2.linux-amd64.tar.gz
+                       sha256 ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5
+  Scala   3.3.8        scala3-3.3.8.tar.gz
+                       sha256 17a03dd9c2a790b4230a7d03b741cdedca6514096e50e7189bc5e2d299db250a
+  JDK     Eclipse Temurin 21.0.12.1+1 (OpenJDK 21.0.12.1, 2026-08-18)
+  gcc/g++ 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3)
+  Python  3.10.12; packages numpy 2.2.6, scipy 1.15.3, networkx 3.4.2
+  perl    5.34.0 (ran the generator scripts; its rand() is what draws the
+          per-instance seeds from srand(971))
+
+LIBRARIES (md5)  (none of it is in the package: the setup scripts fetch each file from the source they name and check the md5)
+  e89f887559113b68657eca67cf3329b5  lemon-1.3.1.tar.gz (CMake Release build, g++ 11.4.0;
+                                    the resulting libemon.a had md5 7173df3f675c6860fb24ba5b5b65fefa)
+  f73efc783603c57d8e8e53c90af21e88  jgrapht-core-1.5.3.jar
+  53dfa9f277efd1d392148eb607d9b4a6  jheaps-0.14.jar
+  96c9761eec9dcd27dfb3711203ee4aa6  ch9-1.1.tar.gz (DIMACS generators)
+
+THE EXPORT
+  generated_code_used_for_benchmarking/MD5SUM.txt pins every file of the
+  verified code as benchmarked.  `make check' verifies it.

@@ -1,0 +1,96 @@
+HOW ONE MEASURED RUN WAS LAUNCHED -- DFS study
+==============================================
+
+Every number in Tables 5 to 8 of the paper is derived from runs launched
+exactly as follows.  The benchmark programs in this package print the raw row
+of one such run; everything around the program is described here so that a
+single run can be repeated under the same conditions.
+
+THE PROBLEM
+  A graph file (instances/) plus one source.  A FULL graph search: everything
+  reachable from the source, settled once.  The three verified exports are
+  reachability searches that stop when the top of their stack equals a
+  target, so every run passes --target 0, an id no DIMACS file names (ids
+  run 1..n); every program refuses a target inside [1, n].  The library
+  programs are called through entry points that take no target and do not
+  restart in another component (LEMON Dfs::run(s), a JGraphT
+  DepthFirstIterator with cross-component traversal off, SciPy
+  depth_first_order(i_start=s), NetworkX dfs_predecessors(G, s)).
+  The sources are in instances/queries.csv, drawn once by
+  instances/generators/draw_sources.py (master seed 20261013, this study's
+  own; per-instance RNG seeded from blake2b("20261013:<file>")).  Synthetic
+  families: one source per instance.  USA-road-t: ten sources per network,
+  query ids 0..9.  Every solver got the same source for the same instance
+  and query id.  Edge weights are parsed and ignored by every program.
+
+THE COMMAND
+  taskset -c <core> timeout -k 10 1200 <program> --source <s> --target 0 --query <q> --tag "<family>;rep=<k>" <instance.gr>
+  with, for the two Python programs, --mem-gb 45 appended (RLIMIT_AS cap).
+  <program> is one of
+    bench_sml_csr, bench_sml_lists, bench_sml_rbt          (this directory)
+    bench_scala_csr, bench_scala_lists, bench_scala_rbt    (this directory)
+    bench_go_csr, bench_go_lists, bench_go_rbt             (this directory)
+    competitors/lemon/bench_lemon                            column lemon_csr
+    competitors/lemon_linked/bench_lemon_linked              column lemon_linked
+    competitors/jgrapht/bench_jgrapht                        column jgrapht_csr
+    competitors/jgrapht_hashgraph/bench_jgrapht_hashgraph    column jgrapht_hashgraph
+    competitors/scipy/bench_scipy                            column scipy_csr
+    competitors/scipy_prebuilt/bench_scipy_prebuilt          column scipy_prebuilt
+    competitors/networkx/bench_networkx                      column networkx
+  The JVM programs are launched through their wrapper, which runs
+    java -Xmx45g -XX:ActiveProcessorCount=1 -XX:+UseSerialGC
+  so that the JVM sizes nothing for 32 cores and collects on the measured
+  thread.  The Scala wrappers give the solver thread a 24 GiB stack and the
+  Go programs ask the runtime for its maximum (1 GiB): the exports compile
+  loops into recursion and neither runtime eliminates tail calls.  A stack
+  overflow was recorded as MEMORY (OOM in the paper).
+
+REPEATS AND AGGREGATION
+  Three repeats per problem, EACH IN ITS OWN PROCESS (never --repeats 3), so
+  no repeat runs on a cache warmed by an earlier one.  The per-problem time is
+  the median of the three cpu_ms values; the table cell is the mean of the
+  per-problem medians over the ten problems of that size (ten instances, or
+  ten sources of one road network), in seconds, and the parenthesised ratio
+  is that mean divided by the SML CSR column's mean for the same size.
+  A superscript k/m marks a mean over the k of m problems that finished.
+
+PINNING
+  One run per L3 cache island, seven islands in use (cores 4, 8, 12, 16, 20,
+  24, 28 of the 8 x 4-core islands of the machine), the eighth island
+  (cores 0-3) reserved for everything that is not a measurement.  Solvers
+  were measured one group at a time (the three sml; then lemon, jgrapht,
+  scipy, networkx; then scala_csr, go_csr; scala_lists, go_lists; scala_rbt,
+  go_rbt), each group finishing every family, size and repeat before the
+  next started; the second campaign's three libraries were one group.
+
+CORE WARM-UP
+  None in this study: no spin preceded the program.  JVM warm-up inside the
+  program: see the OUTPUT.txt of the Scala programs and of bench_jgrapht.
+
+TIMEOUT AND LADDER
+  1200 s wall per run, then SIGKILL after 10 s.  A timeout is recorded as
+  TIMEOUT with empty time columns; the other repeats of that problem and
+  every larger size of that (solver, family) are recorded TIMEOUT_INFERRED
+  without being run (TO in the paper).  Out of memory likewise, as MEMORY
+  and MEMORY_INFERRED (OOM).  33 runs killed by the kernel's OOM killer
+  were recorded ERROR by the runner and shown as OOM.
+
+WHICH CAMPAIGN EACH COLUMN COMES FROM (raw rows in
+published_results/dfs_results.zip, <column>/raw/<family>.csv; the campaign
+ids are the study's results directories, named as provenance)
+  sml_csr, sml_lists, sml_rbt, scala_*, go_*, networkx,
+  lemon_linked, jgrapht_hashgraph, scipy_prebuilt   campaign 20261013_110953 (2026-10-13)
+  lemon_csr, jgrapht_csr, scipy_csr                 campaign 20261014_114618 (2026-10-14)
+  The second campaign measured the three libraries with their CSR
+  structure built inside the clock and one extra clock reading after the
+  build (clock_build_ms, clock_solve_ms), the JGraphT warm-up running on the
+  instance itself.  The first campaign's library rows are shown as the
+  *_linked / *_hashgraph / *_prebuilt columns.  Both driver versions are in
+  competitors/.
+
+THE CLOCK
+  CPU time (user + system) read immediately before and after the solver call.
+  Exports: the whole entry point, structure build included (the RBT exports'
+  cons list of arcs is their input and sits outside, in build_ms).
+  Libraries: see each OUTPUT.txt for what sits inside.  cpu_ms is the only
+  time the tables use.

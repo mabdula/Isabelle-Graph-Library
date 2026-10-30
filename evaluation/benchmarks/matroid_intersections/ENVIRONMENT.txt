@@ -1,0 +1,38 @@
+MACHINE AND SOFTWARE BEHIND THE PUBLISHED NUMBERS
+=================================================
+
+HARDWARE   Lenovo ThinkSystem SR645, 2 x AMD EPYC 7343 (16 cores each, no SMT,
+           32 cores), 8 L3 islands of 4 cores and 32 MiB, 377 GiB RAM, no swap.
+           Governor schedutil: idle cores at 1.5 GHz, 3.9 GHz under load.
+OS         Ubuntu 22.04.4 LTS, kernel 5.15.0-198-generic, x86_64.
+
+TOOLCHAINS
+  MLton   20241230   (mlton binary md5 9d6e09d40426a5aa72c6851885a3976e)
+  Go      go1.27.2 linux/amd64   go1.27.2.linux-amd64.tar.gz
+                     sha256 ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5
+  Scala   3.3.8      scala3-3.3.8.tar.gz
+                     sha256 17a03dd9c2a790b4230a7d03b741cdedca6514096e50e7189bc5e2d299db250a
+  JDK     Eclipse Temurin 21.0.12.1+1 (OpenJDK 21.0.12.1, 2026-08-18)
+  gcc     11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3): MLton's back end and the generators
+  Python  3.10.12; passagemath 10.6.48 (passagemath-modules, -graphs,
+          -categories, -objects, -environment) with cysignals 1.12.5,
+          Cython 3.3.0, gmpy2 2.3.2, memory_allocator 0.1.4, mpmath 1.3.0,
+          packaging 26.3, platformdirs 4.12.4, typing_extensions 4.16.0
+          (competitors/*/requirements.txt).  The paper's "Sage" columns ran
+          on this pip distribution of the Sage library; the modules are
+          sage.matroids.*, the release number is passagemath's.
+  awk     GNU Awk 5.1.0 (twocost.a, geomasn.a)
+
+THE EXPORT
+  generated_code_used_for_benchmarking/MD5SUM.txt pins every file of the
+  verified code as benchmarked (upload of 2026-10-09).  `make check'
+  verifies it.
+
+THE BASELINES
+  competitors/*/code/sage_*/ are the uploaded baseline scripts of 2026-10-09
+  with their instance parser removed in favour of the study's one reader
+  (asn_reader.py); md5 of the files as run:
+  2a341889d81be846d08dba72b85da00f  sage_bipartite_common.py   (oracle)
+  d46c63714838fe2b10ce35e9df2de210  sage_natural_common.py     (plain)
+  The package copies differ from these in one line only, the sys.path line
+  that locates asn_reader.py (noted in the file).

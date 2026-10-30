@@ -1,0 +1,5 @@
+(* MLton basis file of bench_sml_csr, the CSR export.  GEN is work/exports/current/dfs (the Makefile passes it). *)
+$(SML_LIB)/basis/basis.mlb
+$(GEN)/DFS_CSR_SML/DFS_CSR.sml
+gr_parser.sml
+main_csr.sml

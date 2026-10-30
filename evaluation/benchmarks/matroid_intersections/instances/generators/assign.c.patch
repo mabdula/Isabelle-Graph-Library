@@ -1,0 +1,27 @@
+--- assign.c
++++ assign_patched.c
+@@ -1,3 +1,5 @@
++#include <stdlib.h>
++#include <string.h>
+ #include<stdio.h>
+ #include<math.h>
+ 
+@@ -34,8 +36,8 @@
+ /*    seed    X   : specifies X a random seed; default use timer */ 
+ /*---------------------------------------------------------------*/
+ 
+-#define Assert( cond , msg ) if ( ! (cond) ) {printf("msg\n"); exit(); } ; 
+-#define MAXNODES 10000
++#define Assert( cond , msg ) if ( ! (cond) ) {printf("msg\n"); exit(1); } ; 
++#define MAXNODES 1048576
+ #define DEFCOST 100000
+ 
+ #define TRUE 1
+@@ -121,6 +123,7 @@
+ 
+ /* Lookup command in table */
+ int lookup(cmd)
++char *cmd;
+ {
+  int i;
+  int stop;

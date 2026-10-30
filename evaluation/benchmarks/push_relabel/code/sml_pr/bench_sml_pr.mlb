@@ -1,0 +1,6 @@
+(* MLton basis file of bench_sml_pr (highest label and FIFO in one program, chosen with --variant).
+   GEN is work/exports/current/push_relabel (the Makefile passes it). *)
+$(SML_LIB)/basis/basis.mlb
+$(GEN)/SML/Push_Relabel.sml
+max_parser.sml
+main.sml

@@ -1,0 +1,32 @@
+What this study changed in the hi_pr 3.5 distribution, and nothing else.
+
+../../setup_libraries.sh fetches the archive (code/hipr-3.5.tar, md5
+cb7bd4cf8db1f15b12e3a9228b6f774b), unpacks it to code/hipr-3.5/ and applies
+parser.c.patch beside this file.  Unpack the archive elsewhere and diff to see
+that the list below is complete.
+
+1. parser.c, line 91, one character:
+
+       -        pr_type[3],             /* for reading type of the problem */
+       +        pr_type[4],             /* for reading type of the problem */
+
+   The problem line is read with
+
+       sscanf ( in_line, "%*c %3s %ld %ld", pr_type, &n, &m )
+
+   and "%3s" writes three characters AND a terminating zero, so it needs
+   four bytes and was given three.  The zero lands in whatever follows
+   pr_type on the stack, and then strcmp(pr_type, "max") compares past the
+   end of the array and usually fails.  Built with its own makefile flags
+   (gcc -O4) by gcc 11.4 on this machine, stock hi_pr 3.5 rejects its own
+   sample.inp with "line 1 of input - it is not a Max Flow problem line."
+   It presumably worked in 2004 because the compiler of the day happened to
+   put a zero byte there.  This is a bug in reading the input file; it is
+   outside the measured region and touches no part of the algorithm.
+
+hi_pr.c IS NOT CHANGED.  Every line of the method -- init, globalUpdate,
+gap, relabel, discharge, stageOne, stageTwo, and the constants ALPHA, BETA
+and GLOB_UPDT_FREQ -- is compiled from Goldberg's bytes.  ../solve_hipr.c
+includes hi_pr.c with its main renamed by the preprocessor and supplies its
+own shell around it; see the comment at the head of that file for what the
+shell does differently and why.

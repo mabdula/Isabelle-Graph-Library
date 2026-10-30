@@ -1,0 +1,52 @@
+bench_jgrapht_hashgraph -- JGraphT 1.5.3 IntVertexDijkstraShortestPath on DirectedWeightedPseudograph, column "jgrapht_hashgraph"
+
+USAGE
+  bench_jgrapht_hashgraph --source <s> --target <t> [--query <id>] [--tag <text>] [--repeats <k>] <instance.gr>
+  bench_jgrapht_hashgraph --header
+
+WHAT IS TIMED
+  getPath(s, t) alone (it stops when t is settled; the algorithm's own setup
+  is inside the call).  The DirectedWeightedPseudograph (an object per arc,
+  hash maps around it) is filled arc by arc OUTSIDE the clock (build_ms), as
+  the first campaign of 2026-10-11 did for every library; the second campaign's CSR
+  driver is in ../jgrapht.  Before the clock the same entry point is run on a
+  synthetic graph (a seeded random digraph, m = 4n) until the JIT is quiet.
+  Clock: the solver THREAD's CPU time (ThreadMXBean), NOT including the
+  garbage collector's pause time; proc_ms is the whole process (10 ms ticks).
+  JVM flags: -Xmx45g -XX:ActiveProcessorCount=1 -XX:+UseSerialGC.  Library
+  default 4-ary heap.
+
+COLUMNS (one CSV row per run; --header prints the header line alone)
+
+  instance      base name of the .gr file
+  nodes, arcs   from its problem line
+  query         the id passed with --query (0 if none)
+  source,target the pair passed on the command line, DIMACS ids 1..n
+  repeat        1 (the campaign ran every repeat in its own process, so this is
+                always 1 in the published raw data; --repeats k prints k rows)
+  status        OPTIMAL      a path was found and its ends are (source, target)
+                UNREACHABLE  the solver finished and reported no path
+                BAD_PATH     a path came back whose ends are not (source, target)
+                MEMORY       (Python drivers) the address-space cap was hit
+  reached       1 if a path was found, else 0
+  hops          number of arcs on the returned path
+  dist          its length, the sum of the arc weights (-1 if unreachable)
+  cpu_ms        THE MEASUREMENT: CPU time between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its user/system split
+  proc_ms       whole-process CPU time over the same window (equal to cpu_ms
+                for native programs; for JVM programs it also counts the JIT
+                compiler threads and is a diagnostic, not the measurement)
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  parse_ms      CPU time spent reading the file, OUTSIDE the clock
+  dedup_ms      CPU time spent collapsing parallel arcs, OUTSIDE the clock
+                (0.000 unless the library cannot hold parallel arcs)
+  build_ms      CPU time spent marshalling the arrays into the library's input
+                format, OUTSIDE the clock (0.000 for the exports)
+  tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
+  (no clock_build_ms/clock_solve_ms columns: nothing is built inside the clock)
+
+EXAMPLE (the campaign's raw row for Square-n.10.0.gr)
+  Square-n.10.0.gr,1024,3968,0,14,787,1,OPTIMAL,1,8,3418,0.646,0.000,0.646,0.000,0.639,9.151,0.000,32.182,Square-n;rep=1
+
+The published raw rows (published_results/dijkstra_results.zip) carry two
+further columns appended by the campaign runner, inferred_from and core.

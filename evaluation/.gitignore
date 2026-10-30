@@ -1,0 +1,7 @@
+# the evaluation is tracked completely, except what its setup and runs produce
+!*
+work/
+results/
+NOT_AVAILABLE.txt
+*~
+__pycache__/

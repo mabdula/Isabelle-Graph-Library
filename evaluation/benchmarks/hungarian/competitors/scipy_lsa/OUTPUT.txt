@@ -1,0 +1,40 @@
+bench_scipy_lsa -- SciPy 1.15.3 scipy.optimize.linear_sum_assignment on a dense cost matrix, column "scipy_lsa" (paper: SciPy LSA)
+
+USAGE
+  bench_scipy_lsa [--csv] [--tag <text>] <instance.asn>
+  (the launcher fixes --solver dense)
+
+WHAT IS TIMED
+  linear_sum_assignment(matrix) alone.  The |X| x |Y| float64 matrix is
+  filled OUTSIDE the clock: a dense matrix can be filled arc by arc while the
+  file is read.  On low-cost and two-cost the absent arcs are entered at
+  |X|*cmax + 1, higher than any whole perfect matching of real arcs, so the
+  optimum is unchanged but SciPy sees a complete graph; on geometric the
+  graph is complete already.  Reading the file, compacting the vertex ids
+  and reading the cost off the answer are outside.  Clock: process CPU time
+  (getrusage).  BLAS/OpenMP thread counts are pinned to 1 before numpy is
+  imported.
+
+COLUMNS (one CSV row per run with --csv; without it a human-readable block)
+
+  instance      base name of the .asn file
+  nodes, arcs   from its problem line
+  left, right   |X| and |Y|
+  theta, theta_frac
+                always 0 and 0.000: they belong to the export's shortcut and
+                are kept so every solver's rows have the same shape
+  status        OPTIMAL, NO_PERFECT_MATCHING, or ERROR_<code> / TIMEOUT
+  matched       number of matched left vertices (= |X| when OPTIMAL)
+  cost          the weight of the matching, minimised
+  cpu_ms        THE MEASUREMENT: CPU time between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its user/system split
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
+
+EXAMPLE (the campaign's raw row, results/scipy_core.csv)
+  instance,nodes,arcs,left,right,theta,theta_frac,status,matched,cost,cpu_ms,cpu_usr_ms,cpu_sys_ms,wall_ms,tag
+  low-cost_n2048_s1.asn,2048,22528,1024,1024,0,0.000,OPTIMAL,1024,7920,26.625,26.625,0.000,26.619,low-cost;lsa;rep=1
+
+The published raw rows (published_results/hungarian_results.zip,
+<column>/<family>.csv) carry two further columns appended by the campaign
+runner, inferred_from and core, which the program itself does not print.

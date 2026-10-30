@@ -1,0 +1,65 @@
+bench_scipy -- SciPy 1.15.3 scipy.sparse.csgraph.minimum_spanning_tree on a csr_matrix built inside the clock, column "scipy"
+
+USAGE
+  bench_scipy [--tag <text>] [--repeats <k>] [--mem-gb <g>] <instance.gr>
+  bench_scipy --header
+  --mem-gb caps the address space (RLIMIT_AS); the campaign passed --mem-gb 45.
+
+WHAT IS TIMED
+  The CSR build and the solve, both inside the clock, the matrix rebuilt on
+  every repeat.  The build is csr_matrix((data, indices, indptr)) straight
+  from the collapsed edge list, which the parser delivers sorted by (lo, hi),
+  CSR order already: indptr is a bincount of the lo endpoints and a
+  cumulative sum, no sort.  (The campaign's conditions file says
+  coo_matrix(...).tocsr(); the driver that ran, this one, was changed to the
+  direct build before the campaign started -- see scipy/conditions_NOTE.txt in
+  the published zip.)  Then minimum_spanning_tree(graph), SciPy's Kruskal in
+  Cython.  Outside: reading the file (parse_ms), the parallel-edge collapse
+  (dedup_ms) and shifting every weight up by one as float64 (build_ms): SciPy
+  drops a stored zero from the returned tree, and the instances carry
+  weight-0 arcs; the shift is taken off after the clock and changes no tree.
+  Clock: process CPU time (getrusage).  BLAS thread counts are pinned to 1.
+
+COLUMNS (one CSV row per run; --header prints the header line alone)
+
+  instance      base name of the .gr file
+  nodes, arcs   from its problem line
+  edges         number of edges after the parser collapsed every unordered
+                pair {u, v} to its cheapest arc (the grids keep half their
+                arcs, the dense files about 94 %)
+  repeat        1 (the campaign ran every repeat in its own process, so this is
+                always 1 in the published raw data; --repeats k prints k rows)
+  status        SOLVED     a spanning forest came back and passed the check
+                           (no returned edge closes a cycle; the count is n
+                           minus the number of connected components)
+                BAD_TREE   the check failed
+                MEMORY     (Python programs) the address-space cap was hit
+  tree_edges    number of edges in the returned forest
+  tree_weight   their total weight, the cross-check between all seven columns
+  cpu_ms        THE MEASUREMENT: CPU time between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its user/system split (JVM programs: the collector's
+                share is counted in the user half)
+  proc_ms       whole-process CPU time over the same window (equal to cpu_ms
+                for native programs; for JVM programs it also counts the JIT
+                compiler threads and is a diagnostic, not the measurement)
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  parse_ms      CPU time spent reading the file, OUTSIDE the clock
+  dedup_ms      CPU time of the parallel-edge collapse, OUTSIDE the clock
+  build_ms      CPU time spent turning the edge list into the solver's input
+                (the export's three arrays, or the library's graph), OUTSIDE
+                the clock
+  clock_build_ms, clock_solve_ms
+                the two parts of the clocked period: first reading to the
+                reading taken after the matrix build, and from there to the
+                last reading.  They add up to cpu_ms.
+  tag           free text copied from --tag (the campaign put "<family>;rep=<k>;warmcore=3s" there)
+
+EXAMPLE
+  Square-n.10.0.gr,1024,3968,1984,1,SOLVED,1023,160439,<cpu_ms>,<usr>,<sys>,<proc>,<wall>,<parse_ms>,<dedup_ms>,<build_ms>,<clock_build_ms>,<clock_solve_ms>,Square-n
+
+The published raw rows (published_results/kruskal_results.zip, <column>/raw/
+<family>.csv) are stripped to the clocked period (cpu_ms and its parts) and
+carry the runner-appended columns inferred_from and core; the full rows with
+proc_ms, wall_ms, parse_ms, dedup_ms and build_ms stayed in the campaign
+directory.  Every program accepts --repeats <k> (k rows, one process) and
+--human (a readable block instead of CSV).

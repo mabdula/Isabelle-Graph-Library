@@ -1,0 +1,13 @@
+cysignals==1.12.5
+Cython==3.3.0
+gmpy2==2.3.2
+memory_allocator==0.1.4
+mpmath==1.3.0
+packaging==26.3
+passagemath-categories==10.6.48
+passagemath-environment==10.6.48
+passagemath-graphs==10.6.48
+passagemath-modules==10.6.48
+passagemath-objects==10.6.48
+platformdirs==4.12.4
+typing_extensions==4.16.0

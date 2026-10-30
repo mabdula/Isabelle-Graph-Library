@@ -1,0 +1,61 @@
+bench_hybrid -- the certifying hybrid solver (verified program + CSA oracle), Tables 35 to 37
+
+USAGE
+  bench_hybrid [--tag <text>] [--timeout <s>] [--no-oracle] <instance.asn>
+  The launcher runs code/driver/asn_solve.py around the timing build
+  code/driver/asn_solver_bench (which itself takes `<instance.asn> <solution>'
+  and prints the seven clock stamps on stderr); the wrapper writes the solution
+  to a temporary file, reads the stamps, reads cost and matching size back out
+  of the solution AFTER the clock has stopped, and prints one CSV row (no
+  header line; the header is given below).  --no-oracle runs the verified
+  Hungarian method alone (not a published column).
+
+WHAT IS TIMED
+  The clock is compiled into the solver (asn_clock.c, -DASN_TIMING):
+  CLOCK_PROCESS_CPUTIME_ID, user+system CPU time of the process, never wall
+  time, read at seven points (milliseconds since process start):
+    0 t_parsed       the .asn file is in the SML arrays; the verified program is entered next
+    1 t_oracle_in    the verified screen is done, the oracle is being called
+    2 t_csa_start    C side: CSA's input built, CSA about to run
+    3 t_csa_done     CSA returned; the certificate generators start
+    4 t_leave_c      certificate built, returning to SML
+    5 t_oracle_done  back in the verified program
+    6 t_done         the verified program has finished (certificate checked)
+  Reading the file is before stamp 0 and writing the solution after stamp 6.
+  A stamp never reached prints -1 and the spans needing it are blank.
+
+COLUMNS (one CSV row per run)
+  instance        base name of the .asn file
+  nodes, arcs     from the problem line; left = number of `n' lines, right = nodes - left
+  status          OPTIMAL (a perfect matching was returned), INFEASIBLE, TIMEOUT, ERROR
+  matched         number of `f' lines of the solution
+  cost            the matching's cost (`s' line); minimisation
+  oracle          what the oracle answered: optimal | infeasible | unknown | not asked
+                  (`optimal' means the verified checker accepted CSA's certificate;
+                  in every published run it did)
+  cpu_ms          THE MEASUREMENT: t_done - t_parsed, the whole verified program
+  t_parsed .. t_done            the seven stamps
+  screen_ms       0->1  the verified screen (every node on an arc?)
+  glue_in_ms      1->2  C-side setup of CSA's input (index maps, arrays, adjacency, scans)
+  csa_ms          2->3  CSA itself (its own structure build and the scaling loop)
+  cert_ms         3->4  the certificate generators
+  glue_out_ms     4->5  the return to SML
+  check_cleanup_ms 5->6 the verified checker (plus the Hungarian method, only if the check failed)
+  wall_ms         wall time of the whole process, parsing and printing included; nothing is derived from it
+  tag             free text from --tag (the campaign: "<family>;rep=<k>;warmcore=3s")
+
+THE PAPER'S COLUMNS, in terms of this row
+  Oracle = csa_ms,  Cert. = cert_ms,  Check = check_cleanup_ms,
+  Glue   = screen_ms + glue_in_ms + glue_out_ms  (= Total - Oracle - Cert. - Check),
+  Total  = cpu_ms,  Total/Oracle = cpu_ms / csa_ms.
+  Each table entry is the mean over the ten instances of a size of the
+  per-instance median-of-three-repeats value (published_results/hybrid_timings.zip
+  carries, per instance, the whole row of the repeat whose cpu_ms is the median).
+
+EXAMPLE (the campaign's raw row for low-cost_n2048_s1.asn)
+  instance,nodes,arcs,left,right,status,matched,cost,oracle,cpu_ms,t_parsed,t_oracle_in,t_csa_start,t_csa_done,t_leave_c,t_oracle_done,t_done,screen_ms,glue_in_ms,csa_ms,cert_ms,glue_out_ms,check_cleanup_ms,wall_ms,tag
+  low-cost_n2048_s1.asn,2048,22528,1024,1024,OPTIMAL,1024,7920,optimal,2.236,4.955,5.047,5.717,7.035,7.150,7.150,7.191,0.092,0.670,1.318,0.115,0.000,0.041,9.176,low-cost;rep=1;warmcore=3s
+
+The published raw rows (published_results/hybrid_timings.zip, <family>/<family>_all_runs.csv)
+carry two further columns appended by the campaign runner, inferred_from and
+core, which the program itself does not print.

@@ -1,0 +1,29 @@
+MACHINE AND SOFTWARE BEHIND THE PUBLISHED NUMBERS
+=================================================
+
+HARDWARE   Lenovo ThinkSystem SR645, 2 x AMD EPYC 7343 (16 cores each, no SMT,
+           32 cores), 8 L3 islands of 4 cores and 32 MiB, 377 GiB RAM, no swap.
+           Governor schedutil: idle cores at 1.5 GHz, 3.9 GHz under load.
+OS         Ubuntu 22.04.4 LTS, kernel 5.15.0-198-generic, x86_64.
+
+TOOLCHAINS (version; checksum of the archive or binary where we have one)
+  MLton   20241230     (bin/mlton md5 9d6e09d40426a5aa72c6851885a3976e)
+  JDK     Eclipse Temurin 21.0.12.1+1 (OpenJDK 21.0.12.1, 2026-08-18)
+  gcc/g++ 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3)
+  Python  3.10.12; packages numpy 2.2.6, scipy 1.15.3, networkx 3.4.2
+  (Scala 3.3.8 and Go 1.27.2 built the unmeasured Scala and Go exports.)
+
+LIBRARIES AND REFERENCE CODE (md5)  (none of it is in the package: the setup scripts fetch each file from the source they name and check the md5)
+  e89f887559113b68657eca67cf3329b5  lemon-1.3.1.tar.gz (CMake Release build, g++ 11.4.0)
+  f73efc783603c57d8e8e53c90af21e88  jgrapht-core-1.5.3.jar
+  53dfa9f277efd1d392148eb607d9b4a6  jheaps-0.14.jar
+  19e0ad08927787a9c8bdb9c18070723c  apfloat-1.14.0.jar
+  cb7bd4cf8db1f15b12e3a9228b6f774b  hipr-3.5.tar (Goldberg's hi_pr 3.5)
+  47718b07ece55b0e57236ae0a1fb9f30  genrmf.c      (Flow Challenge 2.0 genrmfDimacs.zip)
+  11c0e0b48daf9a08599ab0811d9cd0f8  washington.c  (Flow Challenge 2.0)
+  a55236f7732aa733b3c1b5ebd62da00d  ak.c          (PRF 1.8)
+
+THE EXPORTS
+  generated_code_used_for_benchmarking/MD5SUM.txt pins every file of the
+  verified code as benchmarked (the new export under SML/, Scala/, Go/; the
+  AFP export under AFP/).  `make check' verifies it.

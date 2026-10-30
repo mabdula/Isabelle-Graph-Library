@@ -1,0 +1,15 @@
+ak: Cherkassky and Goldberg's AK generator, 9 rungs, ONE instance per rung.
+ak takes no seed and is fully determined by its argument K (n = 4K + 6,
+m = 6K + 7), so the three repeats of the raw rows are three runs of the same
+instance and the paper's cell is their median.  Files were named ak-<n>.max
+and deleted after use; no checksum was recorded.  Command (output on stdout):
+
+ak-4102      n=4102      m=6151        ak 1024 > ak-4102.max
+ak-8198      n=8198      m=12295       ak 2048 > ak-8198.max
+ak-16390     n=16390     m=24583       ak 4096 > ak-16390.max
+ak-32774     n=32774     m=49159       ak 8192 > ak-32774.max
+ak-65542     n=65542     m=98311       ak 16384 > ak-65542.max
+ak-131078    n=131078    m=196615      ak 32768 > ak-131078.max
+ak-262150    n=262150    m=393223      ak 65536 > ak-262150.max
+ak-524294    n=524294    m=786439      ak 131072 > ak-524294.max
+ak-1048582   n=1048582   m=1572871     ak 262144 > ak-1048582.max

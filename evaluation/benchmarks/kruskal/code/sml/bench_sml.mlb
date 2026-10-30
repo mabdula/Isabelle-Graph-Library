@@ -1,0 +1,5 @@
+(* MLton basis file of bench_sml.  GEN is work/exports/current/kruskal (the Makefile passes it). *)
+$(SML_LIB)/basis/basis.mlb
+$(GEN)/Kruskal_SML/Kruskal_Imperative_Min.sml
+gr_parser.sml
+main.sml

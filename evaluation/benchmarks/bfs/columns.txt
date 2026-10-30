@@ -1,0 +1,11 @@
+# The solver columns of the BFS tables: column name, the single-run program (relative to this directory), fixed arguments.
+# run/run_experiments.py reads this; `make column-<name>` builds the program.  README.txt describes every column.
+sml_csr            bench_sml_csr
+sml_rbt            bench_sml_rbt
+lemon_csr          competitors/lemon/bench_lemon
+lemon_linked       competitors/lemon_linked/bench_lemon_linked
+jgrapht_csr        competitors/jgrapht/bench_jgrapht
+jgrapht_hashgraph  competitors/jgrapht_hashgraph/bench_jgrapht_hashgraph
+scipy_csr          competitors/scipy/bench_scipy
+scipy_prebuilt     competitors/scipy_prebuilt/bench_scipy_prebuilt
+networkx           competitors/networkx/bench_networkx

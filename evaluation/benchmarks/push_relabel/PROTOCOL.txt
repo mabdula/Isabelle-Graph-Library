@@ -1,0 +1,90 @@
+HOW ONE MEASURED RUN WAS LAUNCHED -- push-relabel study
+=======================================================
+
+Every number in Tables 19 to 21 of the paper derives from runs launched as
+follows.  The benchmark programs in this package print the raw row of one
+such run; everything around the program is described here so that a single
+run can be repeated under the same conditions.
+
+THE PROBLEM
+  One DIMACS .max file, generated on the fly by one of the three generators
+  (instances/seeds/<family>.txt gives the exact command line of every
+  instance), solved from the file's own source and sink (`n <id> s`,
+  `n <id> t`).  Instances were deleted after use; the generators are
+  deterministic, so the command line is the instance.
+
+THE COMMAND
+  prlimit --cpu=1200 [--as=48318382080] taskset -c <island> <program> --tag "island=<island>;repeat=<k>;seed=<s>" <instance.max>
+  * --cpu=1200: the timeout is 1200 s of CPU TIME per solver call, imposed by
+    the kernel (RLIMIT_CPU), with a 3600 s wall-clock backstop.
+  * --as=45 GiB of address space for the native programs; the two Python
+    programs got --memory-gb 45 on their own command line instead, and the
+    JVM program got PR_XMX=42g in its environment (a 42 GB heap) and no
+    address-space limit.
+  * <island> is one of 4-7, 8-11, 12-15, 16-19, 20-23, 24-27, 28-31 (an L3
+    cache island of four cores); the program is single-threaded and the
+    kernel keeps it on that island.
+  * <program> is one of
+      bench_sml_pr --variant hl          column sml_hl        "SML HL"
+      bench_sml_pr --variant fifo        column sml_fifo      "SML FIFO"
+      bench_sml_afp                      column sml_afp       "SML AFP"
+      competitors/lemon/bench_lemon      column lemon_csr     "LEMON CSR"
+      competitors/hipr/bench_hipr        column hipr          "GC" (hi_pr)
+      competitors/jgrapht/bench_jgrapht  column jgrapht       "JGraphT"
+      competitors/scipy/bench_scipy      column scipy_csr     "SciPy Dinic CSR"
+      competitors/networkx/bench_networkx column networkx     "NetworkX"
+    and, from the first campaign's driver versions (competitors/lemon_linked,
+    competitors/scipy_prebuilt), the columns
+    lemon_linked "LEMON linked" and scipy_prebuilt "SciPy Dinic prebuilt".
+
+REPEATS, INSTANCES AND AGGREGATION
+  rmf-long and wash-rlg-long: THREE INSTANCES per rung, seeds 1, 2, 3; the
+  raw row's repeat column is the seed; each instance solved ONCE by each
+  solver; the table cell is the mean of the three CPU times (in seconds).
+  ak: ONE instance per rung (ak takes no seed), solved three times, each
+  repeat its own process; the cell is the median of the three.
+  The parenthesised ratio is the cell divided by the SML HL cell of the
+  same rung.  A cell marked k/m is a mean over the k of m that finished.
+
+ORDER AND PINNING
+  Up to seven runs at once, one per island; island 0-3 never carried a
+  measured run.  Within a rung the solvers ran in phases, each phase finishing
+  before the next: sml_hl and sml_fifo; lemon; hipr; sml_afp; then networkx,
+  scipy and jgrapht.  The ladder was climbed rung by rung; a solver that timed
+  out, ran out of memory or of stack on a rung was not run on any larger rung
+  of that family (TO / OOM in the paper; NOT_ATTEMPTED in the raw rows).
+  The AFP export was not run on rmf-long at all (its network model forbids
+  antiparallel arcs; n/a in the paper), and from n = 65,538 its 32-bit index
+  overflows (OVF in the paper; ERROR in the raw rows).
+
+CORE WARM-UP
+  The campaigns of 2026-10-12 and 2026-10-14 ran the program with no
+  preceding spin.  The lemon_csr rows of ak-4102 .. ak-131078 and the
+  scipy_csr rows of ak-4102 .. ak-16390 (campaign 20261015_warm_ak, three
+  repeats each) were measured with a 5 s busy spin on the target core
+  immediately before the program (run/warm_then_exec.py at the top of
+  evaluation/; it
+  narrows the affinity to the core it is on, spins, then execs the program
+  on that core, outside every clock the program reads; the row's tag ends
+  in ";warmcore=5s"):
+      prlimit ... taskset -c <island> python3 ../run/warm_then_exec.py 5 -- <program> ... <instance.max>
+  To reproduce one of those rows, warm the core as above.
+
+WHICH CAMPAIGN EACH COLUMN COMES FROM (raw rows in
+published_results/push_relabel_results.zip, <column>/raw/<family>.csv)
+  sml_hl, sml_fifo, sml_afp, hipr, jgrapht, networkx,
+  lemon_linked, scipy_prebuilt           campaign 20261012_133154 (2026-10-12)
+  lemon_csr, scipy_csr                   campaign 20261014_174311 (2026-10-14)
+                                         with the nine short ak rungs from
+                                         campaign 20261015_warm_ak (2026-10-15)
+  The 2026-10-14 campaign measured LEMON on StaticDigraph (CSR) and SciPy
+  with the CSR matrix built inside the clock; the first campaign's LEMON
+  (SmartDigraph, built outside) and SciPy (matrix prebuilt) rows are the
+  *_linked and *_prebuilt columns.
+
+THE CLOCK
+  Whole-process CPU time (user + system) read immediately before and after
+  the solver call.  Exports: the whole entry point, structure build included.
+  Libraries: see each OUTPUT.txt for what sits inside.  For the JVM the
+  figure is /proc/self/stat in 10 ms ticks so that the serial collector's
+  work is counted.  cpu_ms is the only time the tables use.

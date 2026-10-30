@@ -1,0 +1,39 @@
+bench_scipy_mwfbm -- SciPy 1.15.3 scipy.sparse.csgraph.min_weight_full_bipartite_matching on a csr_matrix built inside the clock, column "scipy_mwfbm_csr" (paper: SciPy MWFBM CSR)
+
+USAGE
+  bench_scipy_mwfbm [--csv] [--tag <text>] <instance.asn>
+  (the launcher fixes --solver sparse)
+
+WHAT IS TIMED
+  csr_matrix((w, (rows, cols)), shape=(|X|, |Y|)) from the parsed arrays --
+  a sort-and-pack pass over the complete arc list -- and then
+  min_weight_full_bipartite_matching on it; both inside the clock.  Reading
+  the file, compacting the vertex ids and reading the cost off the answer
+  are outside.  If any cost is <= 0 every cost is lifted by 1 before the
+  clock (a stored zero would be dropped from the matrix) and the lift is
+  taken off the reported cost.  The program refuses the instance if the
+  matrix does not hold exactly one entry per arc.  Clock: process CPU time
+  (getrusage).
+
+COLUMNS (one CSV row per run with --csv; without it a human-readable block)
+
+  instance      base name of the .asn file
+  nodes, arcs   from its problem line
+  left, right   |X| and |Y|
+  theta, theta_frac
+                always 0 and 0.000: they belong to the export's shortcut and
+                are kept so every solver's rows have the same shape
+  status        OPTIMAL, NO_PERFECT_MATCHING, or ERROR_<code> / TIMEOUT
+  matched       number of matched left vertices (= |X| when OPTIMAL)
+  cost          the weight of the matching, minimised
+  cpu_ms        THE MEASUREMENT: CPU time between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its user/system split
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
+
+EXAMPLE (the campaign's raw row)
+  geometric_n256_s1.asn,256,16384,128,128,0,0.000,OPTIMAL,128,13230824,3.637,3.637,0.000,3.633,geometric;rep=1
+
+The published raw rows (published_results/hungarian_results.zip,
+<column>/<family>.csv) carry two further columns appended by the campaign
+runner, inferred_from and core, which the program itself does not print.

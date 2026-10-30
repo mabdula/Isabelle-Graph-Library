@@ -1,0 +1,59 @@
+bench_sml -- the verified export Kruskal_Imperative_Min in Standard ML (MLton), column "sml"
+
+USAGE
+  bench_sml [--tag <text>] [--repeats <k>] <instance.gr>
+  bench_sml --header
+
+WHAT IS TIMED
+  One call of the export's entry point kruskal_imp_min (costs as the export's
+  rationals made with rat_of_int, the endpoint pairs, the identity edge-index
+  array, the vertex count nodes+1 so DIMACS ids index directly).  Inside the
+  call the export negates and copies the costs, sorts the index array with its
+  own quicksort, initialises its union-find array and runs the Kruskal loop;
+  all of that is inside the clock.  Outside: reading the file (parse_ms), the
+  parallel-edge collapse (dedup_ms) and repacking the parser's arrays into the
+  three input arrays (build_ms; rebuilt for every repeat because the export
+  sorts the index array in place).  The answer is checked after the clock.
+  Clock: process CPU time (getrusage, user+system).
+
+COLUMNS (one CSV row per run; --header prints the header line alone)
+
+  instance      base name of the .gr file
+  nodes, arcs   from its problem line
+  edges         number of edges after the parser collapsed every unordered
+                pair {u, v} to its cheapest arc (the grids keep half their
+                arcs, the dense files about 94 %)
+  repeat        1 (the campaign ran every repeat in its own process, so this is
+                always 1 in the published raw data; --repeats k prints k rows)
+  status        SOLVED     a spanning forest came back and passed the check
+                           (no returned edge closes a cycle; the count is n
+                           minus the number of connected components)
+                BAD_TREE   the check failed
+                MEMORY     (Python programs) the address-space cap was hit
+  tree_edges    number of edges in the returned forest
+  tree_weight   their total weight, the cross-check between all seven columns
+  cpu_ms        THE MEASUREMENT: CPU time between the two clock readings
+  cpu_usr_ms, cpu_sys_ms   its user/system split (JVM programs: the collector's
+                share is counted in the user half)
+  proc_ms       whole-process CPU time over the same window (equal to cpu_ms
+                for native programs; for JVM programs it also counts the JIT
+                compiler threads and is a diagnostic, not the measurement)
+  wall_ms       wall-clock time over the same window; nothing is derived from it
+  parse_ms      CPU time spent reading the file, OUTSIDE the clock
+  dedup_ms      CPU time of the parallel-edge collapse, OUTSIDE the clock
+  build_ms      CPU time spent turning the edge list into the solver's input
+                (the export's three arrays, or the library's graph), OUTSIDE
+                the clock
+  tag           free text copied from --tag (the campaign put "<family>;rep=<k>;warmcore=3s" there)
+
+EXAMPLE (Square-n.10.0.gr; the campaign's raw row, stripped, reads
+  Square-n.10.0.gr,1024,3968,1984,1,SOLVED,1023,160439,0.342,0.000,0.342,,,Square-n;rep=1;warmcore=3s,,4)
+  instance,nodes,arcs,edges,repeat,status,tree_edges,tree_weight,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,tag
+  Square-n.10.0.gr,1024,3968,1984,1,SOLVED,1023,160439,0.357,0.000,0.357,0.357,0.351,0.510,0.196,0.022,Square-n
+
+The published raw rows (published_results/kruskal_results.zip, <column>/raw/
+<family>.csv) are stripped to the clocked period (cpu_ms and its parts) and
+carry the runner-appended columns inferred_from and core; the full rows with
+proc_ms, wall_ms, parse_ms, dedup_ms and build_ms stayed in the campaign
+directory.  Every program accepts --repeats <k> (k rows, one process) and
+--human (a readable block instead of CSV).

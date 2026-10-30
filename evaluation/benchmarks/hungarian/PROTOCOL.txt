@@ -1,0 +1,83 @@
+HOW ONE MEASURED RUN WAS LAUNCHED -- Hungarian method study
+============================================================
+
+Every number in Tables 22 to 24 of the paper is derived from runs launched
+as follows.  The benchmark programs in this package print the raw row of
+one such run; everything around the program is described here so that a
+single run can be repeated under the same conditions.  The raw rows the
+tables were computed from are in published_results/hungarian_results.zip
+(one directory per column, one CSV per family, plus README.txt and
+COLUMNS.txt).
+
+THE PROBLEM
+  One DIMACS .asn file (instances/): a bipartite graph with |X| = |Y|, costs
+  minimised, a perfect matching always exists.  No queries, no seeds beyond
+  the generator's.  Ten instances per size (generator seeds 1..10).
+
+THE COMMAND
+  exports (campaign 20261010_115840):
+    taskset -c <core> timeout -k 10 1200 <program> --theta-frac 1.0 --cap 2 --tag "<family>;rep=<k>" <instance.asn>
+  libraries (campaigns 20261010_165412 and 20261014_190404):
+    taskset -c <core> timeout -k 10 1200 <program> --csv --tag "<family>;rep=<k>" <instance.asn>
+    (csa: the wrapper also passed --timeout 1200 to its child and the outer
+    cap was 1320 s; the JVM warm-up of up to 60 s sits inside the cap)
+  <program> is one of
+    bench_sml, bench_scala, bench_go                     columns sml, scala, go
+    competitors/scipy_lsa/bench_scipy_lsa                scipy_lsa
+    competitors/scipy_mwfbm/bench_scipy_mwfbm            scipy_mwfbm_csr
+    competitors/jgrapht_kuhnmunkres/bench_jgrapht_kuhnmunkres   jgrapht_kuhnmunkres_threadgc
+    competitors/jgrapht_mwbm/bench_jgrapht_mwbm          jgrapht_mwbm_csr
+    competitors/jgrapht_mwbm_hashgraph/...               jgrapht_mwbm_hashgraph
+    competitors/csa/bench_csa                            csa_q_csr
+    competitors/ortools/bench_ortools                    ortools
+  JVM flags (in the launchers): Scala -Xmx16g, JGraphT -Xmx24g, both with
+  -XX:ActiveProcessorCount=1 -XX:+UseSerialGC, so the JVM sizes nothing for
+  32 cores and collects on the measured thread.  Scala's solver thread gets
+  a 24 GB stack.
+
+REPEATS AND AGGREGATION
+  Three repeats per instance, EACH IN ITS OWN PROCESS.  The per-instance time
+  is the median of the three cpu_ms values; the table cell is the mean of the
+  per-instance medians over the ten instances of that size, in seconds, and
+  the parenthesised ratio is that mean divided by the SML column's mean for
+  the same size.
+
+PINNING
+  One run per L3 cache island; island 0-3 reserved for everything that is not
+  a measurement.  Exports and the 2026-10-10 reference run: seven workers on
+  cores 4, 8, 12, 16, 20, 24, 28.  The 2026-10-14 campaign: six workers on
+  cores 8..28.  The 2026-10-08 sweeps behind scipy_lsa (results/scipy_core.csv)
+  and jgrapht_mwbm_hashgraph (results/jgrapht_20261008_203157.csv) ran eight
+  workers on cores 0, 4, ..., 28 and without a ladder; their conditions files
+  in the zip record this.
+
+CORE WARM-UP
+  None in this study: no spin preceded the program.  JVM warm-up inside
+  the programs: Scala three solves of a 24x24 instance; JGraphT a seeded
+  random instance through the measured function until two whole solves
+  provoke no compilation (60 s cap); OR-Tools one 8x8 solve.
+
+TIMEOUT AND LADDER
+  1200 s wall per run, then SIGKILL after 10 s.  TIMEOUT rows have empty
+  time columns; the other repeats of that instance and every larger size of
+  that (solver, family) are TIMEOUT_INFERRED without being run (TO in the
+  paper).  Sizes climb in order within each (solver, family).
+
+WHICH CAMPAIGN EACH COLUMN COMES FROM (ids as in COLUMNS.txt of the zip)
+  sml, scala, go                 20261010_115840  (2026-10-10)
+  ortools                        20261010_165412  (2026-10-10)
+  scipy_lsa                      scipy_core.csv   (2026-10-08 sweep, 8 workers)
+  jgrapht_mwbm_hashgraph         jgrapht_20261008_203157.csv (2026-10-08 sweep)
+  csa_q_csr, scipy_mwfbm_csr, jgrapht_kuhnmunkres_threadgc, jgrapht_mwbm_csr
+                                 20261014_190404  (2026-10-14, with the
+                                 structure build inside the clock)
+  The zip also carries csa_q_prebuilt, scipy_mwfbm_prebuilt and
+  jgrapht_kuhnmunkres_thread, which the paper's tables do not use.
+
+THE CLOCK
+  CPU time read immediately before and after the solver call.  Exports: the
+  whole entry point, CSR build included.  Libraries: a structure that can be
+  filled arc by arc while the file is read is built outside the clock; one
+  that needs the complete arc list is built inside it, as the first part of
+  the clocked period.  Each OUTPUT.txt says what is inside.  cpu_ms is the
+  only time the tables use.

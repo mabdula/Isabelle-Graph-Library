@@ -1,0 +1,7 @@
+# The solver columns of the Kruskal tables: column name, the single-run program (relative to this directory), fixed arguments.
+# run/run_experiments.py reads this; `make column-<name>` builds the program.  README.txt describes every column.
+sml                bench_sml
+lemon              competitors/lemon/bench_lemon
+jgrapht            competitors/jgrapht/bench_jgrapht
+scipy              competitors/scipy/bench_scipy
+networkx           competitors/networkx/bench_networkx

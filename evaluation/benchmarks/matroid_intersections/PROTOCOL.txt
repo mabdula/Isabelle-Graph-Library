@@ -1,0 +1,80 @@
+HOW ONE MEASURED RUN WAS LAUNCHED -- matroid intersection study
+================================================================
+
+Every number in Tables 25 to 28 of the paper is derived from runs launched
+exactly as follows.  The benchmark programs in this package print the raw
+line of one such run; everything around the program is described here so
+that a single run can be repeated under the same conditions.
+
+THE PROBLEM
+  One instance file and one of the four problems.  matching and
+  weighted_matching read <family>_n<N>_s<K>.asn; b_matching and
+  weighted_b_matching read the .bmatch file of the same graph with the
+  stamped capacities (instances/README.txt).  Every solver got the same file.
+  Weights are the arc costs of the .asn file, maximised; capacities 1
+  everywhere is ordinary matching.
+
+THE COMMAND
+  taskset -c <core> timeout -k 10 1200 <program> <problem> <instance>
+  <program> is one of
+    bench_sml, bench_scala, bench_go                 (this directory)
+    competitors/sage_oracle/bench_sage_oracle        column "Sage (our oracle)"
+    competitors/sage_plain/bench_sage_plain          column "Sage (plain)"
+  The Scala program is launched through its wrapper, which runs
+    java -Xmx16g -XX:ActiveProcessorCount=1 -XX:+UseSerialGC
+  and makes the measured call on a thread with a 24576 MB stack
+  (SOLVE_STACK_MB), after a warm-up of three solves of a fixed complete
+  bipartite graph with 24 vertices a side (see code/scala/OUTPUT.txt).
+
+REPEATS AND AGGREGATION
+  ONE run per instance (no repeats).  Five seeds per size.  A table cell is
+  the mean of the five cpu_ms values of that size, in seconds; for Table 25
+  (matching and b-matching), where low-cost and two-cost share their graphs,
+  the cell is the mean over the ten runs of both families.  The
+  parenthesised ratio is the cell divided by the SML cell of the same size;
+  (-) where the SML mean is 0 ms.  A superscript k/m marks a mean over the k
+  of m instances that finished.
+
+PINNING
+  One run per L3 cache island, seven islands in use (cores 4, 8, 12, 16, 20,
+  24, 28 of the 8 x 4-core islands of the machine), the eighth island
+  (cores 0-3) reserved for everything that is not a measurement.  taskset is
+  outermost so the timeout wrapper is confined to the run's core as well.
+  No warm-up spin preceded the program.
+
+TIMEOUT AND LADDER
+  1200 s wall per run, then SIGKILL after 10 s.  A timeout is recorded as
+  `timeout' with no cpu_ms; every larger size of that solver, problem and
+  family is recorded `timeout_inferred' without being run (TO in the paper).
+  The propagation never crosses a solver, a problem or a family.  The Scala
+  program dying of "out of heap" (the dense geometric instances at -Xmx16g)
+  is read the same way (OOM in the paper); this campaign still attempted the
+  larger sizes and recorded them as errors, so those rows are measured where
+  a later campaign would infer them.
+
+THE GRID
+  low-cost and two-cost: n = 32, 64, ..., 32768 (11 sizes), seeds 1-5.
+  geometric:             n = 32, 64, ..., 4096 (8 sizes), seeds 1-5.
+  All four problems, all five solvers, 3000 runs at most.  Every solver runs
+  the whole ladder, small rungs included.
+
+WHICH CAMPAIGN THE COLUMNS COME FROM
+  All five columns: the single campaign of 2026-10-09 23:05 to 2026-10-10
+  (campaign id 20261009_224301), raw rows in published_results/solver_csvs.zip
+  (<solver>/<problem>/<family>.csv, 13 columns, 3000 rows; its
+  conditions.txt is the campaign's own flags file).  Before the timed runs
+  an agreement check ran the five solvers on two validation instances
+  (val_n32_s1, val_n256_s1, the low-cost recipe at n = 32 and 256): all
+  agreed on card for the unweighted problems and on weight for the weighted
+  ones.
+
+THE CLOCK
+  CPU time (user + system) read immediately before the call into the solver
+  and immediately on return: for the exports, the entry point and the
+  forcing of the thunk it returns, with the instance already read into
+  arrays; for Sage, the intersection call alone, with the two matroids
+  already built (time.process_time).  Reading the instance, building the
+  matroids, checking the answer and computing card and weight are all
+  outside.  The Scala figure is the solver THREAD's clock (ThreadMXBean),
+  which under the serial collector omits collection pauses; proc_ms beside
+  it is the whole process.  cpu_ms is the only time the tables use.

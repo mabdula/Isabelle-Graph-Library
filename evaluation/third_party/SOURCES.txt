@@ -1,0 +1,52 @@
+Third-party code setup.sh downloads into this directory (REPRO_CACHE): the file, its md5, and the sources tried in order.
+The per-package setup_libraries.sh and setup_instances.sh take these files from here and check the md5.
+Not inside: hipr.tar, prf.tar and csa-flows20.tar.gz (Andrew Goldberg's hi_pr 3.5, PRF 1.8 and CSA), see README.md.
+
+apfloat-1.14.0.jar       19e0ad08927787a9c8bdb9c18070723c
+                           https://repo1.maven.org/maven2/org/apfloat/apfloat/1.14.0/apfloat-1.14.0.jar
+                           https://repo.maven.apache.org/maven2/org/apfloat/apfloat/1.14.0/apfloat-1.14.0.jar
+                           https://maven.aliyun.com/repository/central/org/apfloat/apfloat/1.14.0/apfloat-1.14.0.jar
+assign.c                 98bba042619c8f1c1664b74631958a86
+                           https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/assign.c
+                           http://web.archive.org/web/2026id_/https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/assign.c
+ch9-1.1.tar.gz           96c9761eec9dcd27dfb3711203ee4aa6
+                           http://www.diag.uniroma1.it/~challenge9/code/ch9-1.1.tar.gz
+                           https://users.diag.uniroma1.it/challenge9/code/ch9-1.1.tar.gz
+                           http://web.archive.org/web/20251111005635id_/http://www.diag.uniroma1.it/~challenge9/code/ch9-1.1.tar.gz
+dcube.c                  3b1fcbbb4e1689444c20954fa7042e28
+                           https://archive.dimacs.rutgers.edu/pub/netflow/generators/matching/dcube.c
+                           http://web.archive.org/web/2026id_/https://archive.dimacs.rutgers.edu/pub/netflow/generators/matching/dcube.c
+fastutil-8.5.18.jar      e8335a737dbff6c6912f31e8cad5730a
+                           https://repo1.maven.org/maven2/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar
+                           https://repo.maven.apache.org/maven2/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar
+                           https://maven.aliyun.com/repository/central/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar
+genrmfDimacs.zip         9b9f8bda810e02c842b4111066508063
+                           http://coral.ise.lehigh.edu/flow-challenge-2-0/files/2026/09/genrmfDimacs.zip
+                           http://web.archive.org/web/2026id_/http://coral.ise.lehigh.edu/flow-challenge-2-0/files/2026/09/genrmfDimacs.zip
+geomasn.a                e390c3b59ba217ce8c1e5f2112c5b1ad
+                           https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/geomasn.a
+                           http://web.archive.org/web/2026id_/https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/geomasn.a
+jgrapht-core-1.5.3.jar   f73efc783603c57d8e8e53c90af21e88
+                           https://repo1.maven.org/maven2/org/jgrapht/jgrapht-core/1.5.3/jgrapht-core-1.5.3.jar
+                           https://repo.maven.apache.org/maven2/org/jgrapht/jgrapht-core/1.5.3/jgrapht-core-1.5.3.jar
+                           https://maven.aliyun.com/repository/central/org/jgrapht/jgrapht-core/1.5.3/jgrapht-core-1.5.3.jar
+jgrapht-opt-1.5.3.jar    16186f39791c4ca131ef00908a0bd984
+                           https://repo1.maven.org/maven2/org/jgrapht/jgrapht-opt/1.5.3/jgrapht-opt-1.5.3.jar
+                           https://repo.maven.apache.org/maven2/org/jgrapht/jgrapht-opt/1.5.3/jgrapht-opt-1.5.3.jar
+                           https://maven.aliyun.com/repository/central/org/jgrapht/jgrapht-opt/1.5.3/jgrapht-opt-1.5.3.jar
+jheaps-0.14.jar          53dfa9f277efd1d392148eb607d9b4a6
+                           https://repo1.maven.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14.jar
+                           https://repo.maven.apache.org/maven2/org/jheaps/jheaps/0.14/jheaps-0.14.jar
+                           https://maven.aliyun.com/repository/central/org/jheaps/jheaps/0.14/jheaps-0.14.jar
+lemon-1.3.1.tar.gz       e89f887559113b68657eca67cf3329b5
+                           http://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.tar.gz
+                           http://web.archive.org/web/2024id_/http://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.tar.gz
+readme                   54e2cf2e11d86d0df42d9288a8fee68d
+                           https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/readme
+                           http://web.archive.org/web/2026id_/https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/readme
+twocost.a                f51724183524b2a2d7dbb19bd1b32dce
+                           https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/twocost.a
+                           http://web.archive.org/web/2026id_/https://archive.dimacs.rutgers.edu/pub/netflow/generators/network/twocost.a
+washington.c             11c0e0b48daf9a08599ab0811d9cd0f8
+                           https://coral.ise.lehigh.edu//wp-content/uploads/washington.c
+                           http://web.archive.org/web/2026id_/https://coral.ise.lehigh.edu/wp-content/uploads/washington.c

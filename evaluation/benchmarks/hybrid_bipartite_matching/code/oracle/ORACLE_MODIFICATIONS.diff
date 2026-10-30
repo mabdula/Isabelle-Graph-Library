@@ -1,0 +1,324 @@
+MODIFICATIONS OF THE ORACLE'S CSA SOURCES
+=========================================
+code/oracle/csa/ is Goldberg and Kennedy's CSA 1.2 (precise-costs variant, built as
+csa_q: -DQUEUE_ORDER) as distributed by the 13th DIMACS Implementation Challenge,
+Network Flows 2.0 (csa-flows20.tar.gz, md5 e07d8ad4b68bba1096f39eba7cfd7dda), turned
+into a library callable from the verified solver; setup_libraries.sh makes it from
+the tarball and this diff.  Every change is guarded by
+CSA_LIBRARY and described in README_solver.md, section 'The oracle'.
+code/oracle/pristine_csa/ holds the unmodified files (csa/prec_costs/*.c overriding
+csa/*.c as the distribution's own build does), and this is the complete diff,
+line endings ignored (the distribution uses CRLF):
+
+--- pristine_csa/main.c
++++ csa/main.c
+@@ -121,6 +121,7 @@
+ char	*banner =
+ "==========================================================================";
+ 
++#ifndef	CSA_LIBRARY
+ void	show_usage(name)
+ 
+ char	*name;
+@@ -316,6 +317,8 @@
+ #endif
+ }
+ 
++#endif	/* CSA_LIBRARY */
++
+ double	compute_cost()
+ 
+ {
+@@ -333,6 +336,7 @@
+ return(cost);
+ }
+ 
++#ifndef	CSA_LIBRARY
+ void	display_results(time)
+ 
+ unsigned	time;
+@@ -449,3 +453,124 @@
+ display_results(time);
+ return(0);
+ }
++#endif	/* CSA_LIBRARY */
++
++#ifdef	CSA_LIBRARY
++/*
++Library entry (added for the certifying assignment solver): solve the
++instance given by arrays (see parse_arrays() in parse.c) with the
++default scale factor, without printing anything.
++
++Termination guard: CSA does not terminate if the instance has no
++perfect matching (see README), because the prices of the right-hand
++nodes then decrease without bound within one refine. A relabeling that
++takes a price below price_floor (set before each refine, see below)
++stops the computation (csa_aborted). If a perfect matching exists, the
++prices stay above the floor; a wrong firing would only cost time, since
++the caller then falls back on a verified solver.
++
++Returns 0 if CSA finished, 1 if the guard fired, 2 if out of memory.
++*/
++double	price_floor;
++int	csa_aborted;
++
++int	csa_solve_arrays(nl, nr, arcs, tl, hd, cs)
++
++unsigned	nl, nr, arcs;
++const long	*tl, *hd, *cs;
++
++{
++extern	unsigned long	parse_arrays();
++extern	stack		st_create();
++#ifdef	QUEUE_ORDER
++extern	queue		q_create();
++#endif
++extern	int	update_epsilon();
++extern	void	refine();
++unsigned long	max_cost;
++rhs_ptr	r_v;
++#ifdef	QUICK_MIN
++lhs_ptr	l_v;
++void	best_build();
++#endif
++
++max_cost = parse_arrays(nl, nr, arcs, tl, hd, cs);
++if (max_cost == ~0UL) return(2);
++/*
++With all costs zero, parse() would start (and end) at epsilon 0
++without matching anything.
++*/
++epsilon = max_cost > 0 ? (double) max_cost : 1.0;
++scale_factor = DEFAULT_SCALE_FACTOR;
++po_cost_thresh = 2.0 * (double) n * (scale_factor + 1);
++create_active(n);
++#ifdef	QUICK_MIN
++for (l_v = head_lhs_node; l_v != tail_lhs_node; l_v++)
++  if (!l_v->node_info.few_arcs)
++    best_build(l_v);
++rebuilds = 0;
++#endif
++
++#ifdef	PREC_COSTS
++min_epsilon = 2.0 / (double) (n + 1);
++#else
++min_epsilon = 1.0 / (double) (n + 1);
++#endif
++csa_aborted = FALSE;
++
++while (epsilon > min_epsilon && !csa_aborted)
++  {
++  (void) update_epsilon();
++  /*
++  The floor for this refine: the lowest price at its start, minus
++  16 (n + 1) (scale_factor + 1) max(epsilon, 1). For epsilon >= 1 this
++  is eight times the bound CSA itself uses for pricing out
++  (po_cost_thresh * epsilon); below 1, the integer cost gaps dominate
++  the price changes, hence the max. On feasible instances the drops
++  measured stay well below it; without a perfect matching, the first
++  refine never ends and the prices fall without bound.
++  */
++  price_floor = head_rhs_node->p;
++  for (r_v = head_rhs_node; r_v != tail_rhs_node; r_v++)
++    if (r_v->p < price_floor) price_floor = r_v->p;
++  price_floor -= 16.0 * (double) (n + 1) * (scale_factor + 1.0) *
++		 (epsilon > 1.0 ? epsilon : 1.0);
++  refine();
++  }
++return(csa_aborted ? 1 : 0);
++}
++
++/* The rhs node (0-based) lhs node i is matched to, or -1. */
++long	csa_lhs_match(i)
++
++unsigned	i;
++
++{
++lr_aptr	a = head_lhs_node[i].matched;
++
++return(a == NULL ? -1 : (long) (a->head - head_rhs_node));
++}
++
++/* The price of rhs node j (0-based). */
++double	csa_rhs_price(j)
++
++unsigned	j;
++
++{
++return(head_rhs_node[j].p);
++}
++
++void	csa_release()
++
++{
++(void) free((char *) head_lr_arc);
++(void) free((char *) head_lhs_node);
++(void) free((char *) head_rhs_node);
++#ifdef	QUEUE_ORDER
++(void) free((char *) active->storage);
++#else
++(void) free((char *) active->bottom);
++#endif
++(void) free((char *) active);
++}
++#endif	/* CSA_LIBRARY */
+--- pristine_csa/parse.c
++++ csa/parse.c
+@@ -25,6 +25,7 @@
+ "Can't obtain enough memory to solve this problem.",
+ };
+ 
++#ifndef	CSA_LIBRARY
+ parse_error(err_index)
+ 
+ int err_index;
+@@ -36,6 +37,7 @@
+ 	      err_messages[(err_index % ERRBASE) - 1]);
+ exit(1);
+ }
++#endif	/* CSA_LIBRARY */
+ 
+ typedef	struct	temp_arc	{
+ 				lhs_ptr	tail;
+@@ -52,6 +54,7 @@
+ extern	rl_aptr	head_rl_arc, tail_rl_arc;
+ #endif
+ 
++#ifndef	CSA_LIBRARY
+ unsigned long	parse()
+ 
+ {
+@@ -266,3 +269,96 @@
+ 
+ return(max_cost);
+ }
++#endif	/* CSA_LIBRARY */
++
++#ifdef	CSA_LIBRARY
++/*
++Library entry (added for the certifying assignment solver): the same
++data structures as parse() builds, from arrays instead of stdin.
++Arc i runs from lhs node tl[i] (0-based, < nl) to rhs node hd[i]
++(0-based, < nr) and costs cs[i]. Returns the maximum absolute cost,
++as parse() does. Only the configuration the solver builds is
++supported (precise costs, no reverse arcs); NULL on out of memory is
++reported by returning ~0UL.
++*/
++#if	defined(STORE_REV_ARCS) || defined(ROUND_COSTS)
++#error	"parse_arrays supports precise costs without reverse arcs only"
++#endif
++
++unsigned long	parse_arrays(nl, nr, arcs, tl, hd, cs)
++
++unsigned	nl, nr, arcs;
++const long	*tl, *hd, *cs;
++
++{
++unsigned	i, tail;
++long	*lhs_degree, cost;
++unsigned long	max_cost = 0;
++lr_aptr	a;
++lhs_ptr	l_v;
++rhs_ptr	r_v;
++
++n = nl + nr;
++m = arcs;
++head_lr_arc = (lr_aptr) malloc((m + 1) * sizeof(struct lr_arc));
++tail_lr_arc = head_lr_arc + m;
++head_lhs_node = (lhs_ptr) malloc((nl + 1) * sizeof(struct lhs_node));
++tail_lhs_node = head_lhs_node + nl;
++head_rhs_node = (rhs_ptr) malloc((nr + 1) * sizeof(struct rhs_node));
++tail_rhs_node = head_rhs_node + nr;
++lhs_degree = (long *) malloc((nl + 1) * sizeof(long));
++if ((head_lr_arc == NULL) || (head_lhs_node == NULL) ||
++    (head_rhs_node == NULL) || (lhs_degree == NULL))
++  return(~0UL);
++
++for (tail = 0; tail < nl; tail++)
++  lhs_degree[tail] = 0;
++for (i = 0; i < m; i++)
++  {
++  lhs_degree[tl[i]]++;
++  cost = cs[i] < 0 ? -cs[i] : cs[i];
++  if ((unsigned long) cost > max_cost) max_cost = cost;
++  }
++
++a = head_lr_arc;
++for (tail = 0, l_v = head_lhs_node; l_v != tail_lhs_node; l_v++, tail++)
++  {
++  l_v->priced_out = l_v->first = a;
++  l_v->matched = NULL;
++  a += lhs_degree[tail];
++#ifdef	QUICK_MIN
++  if (lhs_degree[tail] < NUM_BEST + 1)
++    l_v->node_info.few_arcs = TRUE;
++  else
++    l_v->node_info.few_arcs = FALSE;
++#endif
++  }
++tail_lhs_node->priced_out = a;
++
++for (r_v = head_rhs_node; r_v != tail_rhs_node; r_v++)
++  {
++  r_v->node_info.priced_in = TRUE;
++  r_v->matched = NULL;
++  r_v->p = 0.0;
++  }
++
++for (i = m; i-- > 0; )
++  {
++  l_v = head_lhs_node + tl[i];
++  a = l_v->first + (--lhs_degree[tl[i]]);
++  a->head = head_rhs_node + hd[i];
++#ifdef	MIN_COST
++  a->c = (double) cs[i];
++#else
++  a->c = (double) -cs[i];
++#endif
++#ifdef	USE_SP_AUG_FORWARD
++  a->tail = l_v;
++#endif
++  }
++
++(void) free((char *) lhs_degree);
++
++return(max_cost);
++}
++#endif	/* CSA_LIBRARY */
+--- pristine_csa/refine.c
++++ csa/refine.c
+@@ -37,6 +37,11 @@
+ 
+ extern	double		po_cost_thresh;
+ 
++#ifdef	CSA_LIBRARY
++extern	double		price_floor;
++extern	int		csa_aborted;
++#endif
++
+ #ifdef	USE_SP_AUG
+ extern	void		sp_aug();
+ #endif
+@@ -318,6 +323,9 @@
+ */
+ relabelings++;
+ w->p -= adm_gap + epsilon;
++#ifdef	CSA_LIBRARY
++if (w->p < price_floor) csa_aborted = TRUE;
++#endif
+ }
+ 
+ void	refine()
+@@ -367,8 +375,12 @@
+ while ((total_e > 0) || (old_refine_work_po = REFINE_WORK,
+ 			 !check_po_arcs()))
+ #else
++#ifdef	CSA_LIBRARY
++while ((total_e > EXCESS_THRESH) && !csa_aborted)
++#else
+ while (total_e > EXCESS_THRESH)
+ #endif
++#endif
+   {
+ #ifdef	USE_P_UPDATE
+   if (REFINE_WORK - old_refine_work_upd > upd_work_thresh)

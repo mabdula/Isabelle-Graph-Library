@@ -1,0 +1,64 @@
+HOW ONE MEASURED RUN WAS LAUNCHED -- hybrid bipartite matching solver
+====================================================================
+
+Every number in Tables 35 to 37 of the paper derives from runs launched as
+follows (campaign 20261016_003216 of 2026-10-16, 810 runs, all OPTIMAL with
+the oracle's certificate accepted; its raw rows and its conditions file are in
+published_results/hybrid_timings.zip).
+
+THE PROBLEM
+  One DIMACS .asn instance (instances/README.txt).  Families low-cost and
+  two-cost at n = 2048, 4096, 8192, 16384, 32768 (the study grid) and
+  65536, 131072, 262144, 524288, 1048576 (added for this solver); geometric at
+  n = 256 .. 4096 and 8192, 16384.  Generator seeds 1..10 at every size.
+
+THE COMMAND
+  taskset -c <core> timeout -k 10 1324 python3 ../run/warm_then_exec.py 3 -- \
+      python3 code/driver/asn_solve.py --binary code/driver/asn_solver_bench \
+      --timeout 1200 --csv --tag "<family>;rep=<k>;warmcore=3s" <instance.asn>
+  which is, with the launcher of this package,
+  taskset -c <core> timeout -k 10 1324 python3 ../run/warm_then_exec.py 3 -- \
+      ./bench_hybrid --timeout 1200 --tag "<family>;rep=<k>;warmcore=3s" <instance.asn>
+  (the outer timeout is 1200 + 120 + 3 + 1 s; the solver's own cap, enforced
+  by asn_solve.py, is 1200 s of wall time).
+
+THE WARM SPIN
+  warm_then_exec.py (run/ at the top of evaluation/) narrows the affinity to the one core it is on, busy-spins
+  for 3 s and then execs the solver on that core.  The spin is a separate
+  process and is outside every clock the solver reads.  Every published row
+  carries warmcore=3s in its tag.
+
+REPEATS AND AGGREGATION
+  Three repeats per instance, EACH ITS OWN PROCESS.  Per instance, the
+  repeat whose cpu_ms is the median of the three; per (family, size) the mean
+  over the ten instances of that per-instance value, in milliseconds in the
+  paper (Oracle, Cert., Check, Glue, Total; Total/Oracle is the ratio of the
+  two means).  See code/OUTPUT.txt for the mapping of the columns.
+
+PINNING
+  Seven runs at a time, one per L3 island (cores 4, 8, ..., 28 of the eight
+  4-core islands), cores 0-3 reserved for everything that is not a
+  measurement.  Families run one after another, sizes in ascending order.
+
+TIMEOUT AND LADDER
+  1200 s per run.  A run that reaches it is recorded TIMEOUT with empty time
+  columns; the other repeats of that instance and all larger sizes of the
+  family are recorded TIMEOUT_INFERRED without being run.  No run of the
+  published campaign timed out.
+
+THE BINARY
+  code/driver/asn_solver_bench as built by `make' here: MLton 20241230 with
+  -default-ann 'allowFFI true' -default-type int64 -inline 10000 -link-opt -lm,
+  C parts with gcc 11.4.0 at -O2 (CSA at -O3 -std=gnu89, csa_q variant).
+  The binary that ran had md5 aadaec393930d9ccf1eaec97b01a7532; the export it
+  was compiled from has md5 232e15a004db03c56b5233646e8bc132 (make check).
+
+INSTANCE FILES OF THE ADDED SIZES
+  The runner deleted each added-size file (low-cost/two-cost n >= 65536,
+  geometric n >= 8192) as soon as its last repeat had returned.  They are
+  regenerated from their seeds with instances/generators/ (see instances/README.txt).
+
+THE CLOCK
+  CLOCK_PROCESS_CPUTIME_ID, compiled into the solver; cpu_ms = t_done -
+  t_parsed is the verified program and nothing else; reading the file is
+  before the first stamp and writing the solution after the last.

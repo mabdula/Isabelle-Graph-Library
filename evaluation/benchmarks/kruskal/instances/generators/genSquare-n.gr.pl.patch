@@ -1,0 +1,25 @@
+--- ch9-1.1/scripts/genSquare-n.gr.pl
++++ genSquare-n.gr.pl
+@@ -1,3 +1,8 @@
++# PORTABLE COPY FOR THE REPRODUCIBILITY PACKAGE.  As run, $GENPROG and $DIR were
++#   $GENPROG = the absolute path of the challenge suite's ch9-1.1/gens/grid/spgrid.exe on the benchmark machine;
++#   $DIR     = the absolute path of the study's instances/Square-n directory there
++# (absolute paths on the benchmark machine); here they are relative so the script
++# runs inside instances/generators after `make' there.  Nothing else differs.
+ # ============================================================================
+ #  genSquare-n.gr.pl
+ # ============================================================================
+@@ -39,10 +44,10 @@
+ $END     = 21;      # please adjust this limit to fit your available mem
+ $LOWCOST = 0;       # minimum cost of an edge (hi cost = num nodes)
+ $SEED    = 971;     # seed of pseudo-random generator
+-$TRIALS  = 1;       # number of trials per data point
++$TRIALS   = 10;       # number of trials per data point
+ 
+-$GENPROG = "../gens/grid/spgrid.exe";
+-$DIR     = "../inputs/Square-n";
++$GENPROG = "./spgrid.exe";
++$DIR     = "./Square-n";
+ $FORMAT  = "$DIR/Square-n.%s.%s.gr";
+ 
+ 
