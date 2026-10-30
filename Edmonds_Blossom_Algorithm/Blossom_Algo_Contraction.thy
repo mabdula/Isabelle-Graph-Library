@@ -1189,7 +1189,25 @@ next
         then show ?thesis
           using ih by auto
       qed
-      subgoal by (metis butlast.simps(2) cons1.prems disj_pfx_are_disj_1 disjoint_iff_not_equal in_set_butlastD list.set_intros(1) option.sel snd_pfx_nempty)
+      subgoal premises prems for x2
+      proof -
+        have ih: "set (butlast pfx1) \<inter> set x2 = {}"
+          using prems(2)[of pfx1 x2 "a1' # l1'"] prems(6) by simp
+        have x2_nempty: "x2 \<noteq> []"
+          using snd_pfx_nempty[OF prems(6)[symmetric]] .
+        have a2_in_butlast: "a2 \<in> set (butlast pfx2)"
+          using prems(7) x2_nempty by simp
+        have eq: "(Some pfx1, Some pfx2) = longest_disj_pfx (a1' # l1') (a2 # l2)"
+          using prems(1) cons1.prems by simp
+        have disj1: "set pfx1 \<inter> set (butlast pfx2) = {}"
+          using disj_pfx_are_disj_1[OF eq] by simp
+        have a2_notin_pfx1: "a2 \<notin> set pfx1"
+          using disj1 a2_in_butlast disjoint_iff_not_equal by blast
+        show ?thesis
+          using a2_notin_pfx1 ih
+          by (auto simp: disjoint_iff_not_equal dest: in_set_butlastD)
+      qed
+
       done
   qed
 qed
