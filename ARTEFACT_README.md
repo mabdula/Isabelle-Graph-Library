@@ -2,11 +2,15 @@
 
 This artefact is the Isabelle/HOL formal development accompanying the paper. It contains the full library of verified graph algorithms, the code exported from it, and a machine-checked index that links every listing in the paper to its formal counterpart.
 
-For the contents of the library, the publications it builds on, and how to install Isabelle and the Archive of Formal Proofs and register this development as a component, see `README.md`. For the index, see `Paper_Index/README.md`.
+The artefact is archived at [DOI to be added]. The paths in this file are relative to the top directory of that archive. For the contents of the library, the publications it builds on, and how to install Isabelle and the Archive of Formal Proofs and register this development as a component, see `README.md` in that directory. For the index, see `Paper_Index/README.md`.
 
 ## Badges
 
-We apply for the Available, Functional, and Reusable badges. The artefact is archived at [DOI to be added].
+We apply for the Available, Functional, and Reusable badges.
+
+## Requirements and tested platforms
+
+The artefact needs no proprietary software and no particular hardware, but a build needs 64 GB of memory. It needs Isabelle2025-2 and the Archive of Formal Proofs, which are free and which `README.md` explains how to install; downloading them needs network access. Isabelle comes with everything else that it needs, including Java and the Poly/ML compiler. We tested the artefact on Ubuntu on amd64 (x86_64).
 
 ## Running the artefact
 

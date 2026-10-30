@@ -66,7 +66,7 @@ text \<open>The verified network simplex, packaged as the fallback the certifier
       Like every other program here it is defined outside all locales, and it takes the tuning
       parameters as arguments.\<close>
 
-definition ns_cleanup_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> ns_cleanup_imp ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
    \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array
      \<Rightarrow> int array \<Rightarrow> int array \<Rightarrow> verdict_flag Heap"
@@ -612,7 +612,7 @@ text \<open>\<^emph>\<open>The fallback refines.\<close>  This is the obligation
       are exactly @{const ns_start}, which is what the pipeline's rectification pass establishes, so nothing is
       left for the caller.\<close>
 
-lemma ns_cleanup_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_cleanup_imp_rule:
   assumes "ns_start fl"
   shows
    "<reduced.inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl>
@@ -681,7 +681,7 @@ text \<open>Reduce, solve, read the answer back.  The reduction rewrites the cal
       capacity and balance arrays come back holding the \<^emph>\<open>reduced\<close> instance: the reduction is
       in place, and what the caller still needs is the lower bounds and the flow.\<close>
 
-definition dimacs_solve_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> dimacs_solve_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array \<Rightarrow> int array
      \<Rightarrow> int array
    \<Rightarrow> (bool \<times> int array) Heap" where
@@ -715,7 +715,7 @@ text \<open>\<^emph>\<open>The solver is correct.\<close>  Run on the arrays of 
       \<open>eq_commute\<close> steps are there because the pipeline's own length fact is used by the simplifier to
       rewrite @{term m} away, and the DIMACS facts are stated in @{term m}.\<close>
 
-lemma dimacs_solve_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dimacs_solve_imp_correct:
   "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower
      * ua \<mapsto>\<^sub>a upper * oa \<mapsto>\<^sub>a cost_list *
     ba \<mapsto>\<^sub>a balance_list>
@@ -780,7 +780,7 @@ text \<open>\<^emph>\<open>The marker is exact.\<close>  The theorem above gives
       when the instance is feasible --- \<open>True\<close> is never returned without an optimum to show for it,
       and \<open>False\<close> is never returned when a flow exists.\<close>
 
-lemma dimacs_solve_imp_marker:
+lemma \<^marker>\<open>provenance ai_human\<close> dimacs_solve_imp_marker:
   "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower
      * ua \<mapsto>\<^sub>a upper * oa \<mapsto>\<^sub>a cost_list *
     ba \<mapsto>\<^sub>a balance_list>
@@ -811,7 +811,7 @@ text \<open>The whole thing as \<^emph>\<open>one top-level program\<close>, wit
       which is what a caller can actually run: the external solver is supplied at link time, and everything else is
       the verified code.\<close>
 
-definition dimacs_solve_prog ::
+definition \<^marker>\<open>provenance ai_human\<close> dimacs_solve_prog ::
   "(nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array \<Rightarrow> int array
     \<Rightarrow> int array \<Rightarrow> int answer_imp Heap)
    \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array
@@ -868,7 +868,7 @@ lemma dimacs_solve_prog_eq:
   apply(simp only: solve_imp_unfold')
   done
 
-lemma dimacs_solve_prog_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dimacs_solve_prog_correct:
   "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower
      * ua \<mapsto>\<^sub>a upper * oa \<mapsto>\<^sub>a cost_list *
     ba \<mapsto>\<^sub>a balance_list>
@@ -883,7 +883,7 @@ lemma dimacs_solve_prog_correct:
                            (\<forall> f. \<not> original_network.is_dimacs_flow {1..<n} f))))>"
   unfolding dimacs_solve_prog_eq by(rule dimacs_solve_imp_correct)
 
-lemma dimacs_solve_prog_marker:
+lemma \<^marker>\<open>provenance ai_human\<close> dimacs_solve_prog_marker:
   "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower
      * ua \<mapsto>\<^sub>a upper * oa \<mapsto>\<^sub>a cost_list *
     ba \<mapsto>\<^sub>a balance_list>
@@ -914,7 +914,7 @@ text \<open>An instance with no arcs is the one case the pipeline cannot be run 
       three vertex sweeps, whose conjunction pins every balance between @{term \<open>0::int\<close>} and
       @{term \<open>0::int\<close>}.\<close>
 
-lemma sweep_imp_rule0:
+lemma \<^marker>\<open>provenance ai_human\<close> sweep_imp_rule0:
   "v + k \<le> length L \<Longrightarrow>
    <bal \<mapsto>\<^sub>a L>
      sweep_imp bal c v k tot ok
@@ -953,7 +953,7 @@ lemma shift_imp_0: "shift_imp ia va bal c e 0 = Heap_Monad.return ()"
 lemma red_arcs_imp_0: "red_arcs_imp fa sa la ua oa bal i 0 sh ok = Heap_Monad.return (sh, ok)"
   by(subst red_arcs_imp.simps) simp
 
-lemma reduce_imp_rule0:
+lemma \<^marker>\<open>provenance ai_human\<close> reduce_imp_rule0:
   assumes "length bl = nn" and "0 < nn"
   shows
    "<fa \<mapsto>\<^sub>a fl * sa \<mapsto>\<^sub>a sl * la \<mapsto>\<^sub>a ll * ua \<mapsto>\<^sub>a ul
@@ -993,7 +993,7 @@ lemma dimacs_Opt_no_arcs:
   "dimacs_spec.is_dimacs_Opt efst esnd uu cc {} ll bb V f = (\<forall> v \<in> V. bb v = 0)"
   by(simp add: dimacs_spec.is_dimacs_Opt_def dimacs_flow_no_arcs cost_flow_spec.\<C>_def)
 
-lemma dimacs_solve_prog_no_arcs:
+lemma \<^marker>\<open>provenance ai_human\<close> dimacs_solve_prog_no_arcs:
   assumes "length balance_list = n" and "0 < n"
   shows
    "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower

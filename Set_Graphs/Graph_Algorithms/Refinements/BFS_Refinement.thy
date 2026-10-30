@@ -26,7 +26,7 @@ and set_all_dists_in_front_imp::"'imp_dist \<Rightarrow> 'imp_cf \<Rightarrow> n
 and parent_init_imp::"'imp_src \<Rightarrow> 'imp_par \<Rightarrow> unit Heap"
 begin
 
-partial_function (heap) BFS_par_imp::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) BFS_par_imp::
   "('imp_dist, 'imp_vis, 'imp_cf, 'imp_par) BFS_state_imp
      \<Rightarrow> ('imp_dist, 'imp_vis, 'imp_cf, 'imp_par) BFS_state_imp Heap"
   where 
@@ -157,7 +157,7 @@ proof-
     using nf(2) front(1) vis(1,2) pre(4) by (auto simp: round_inv_def)
 qed
 
-lemma next_frontier_current_parents_imp_round[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> next_frontier_current_parents_imp_round[bfs_heap_rules]:
   "round_inv cf vis par \<Longrightarrow>
     <imp_cf_assn cf imp_cf * imp_vis_assn vis imp_vis * imp_par_assn par imp_par * graph_assn G G_imp>
     next_frontier_current_parents_imp imp_cf imp_vis imp_par
@@ -176,7 +176,7 @@ definition "state_assn (s::('dist, 'vset, 'par) BFS_par_state)
     \<up> (BFS_dist_state.current_dist s = BFS_state_imp.current_dist imp_s \<and>
        round_inv (BFS_dist_state.current s) (BFS_dist_state.visited s) (BFS_par_state.parent s)))"
 
-lemma BFS_refine[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> BFS_refine[bfs_heap_rules]:
   assumes BFS_axiom
   shows
   "<graph_assn G G_imp * state_assn s s_imp >
@@ -214,7 +214,7 @@ next
     done
 qed
 
-lemma initial_refine[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> initial_refine[bfs_heap_rules]:
   assumes BFS_axiom
   shows
  "<imp_vis_assn vset_empty empty_vis* imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
@@ -234,7 +234,7 @@ proof-
     by sep_auto
 qed
 
-lemma BFS_program_behaviour[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> BFS_program_behaviour[bfs_heap_rules]:
   "BFS_axiom \<Longrightarrow>
    <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
     * imp_par_assn p imp_some_par * graph_assn G G_imp>
@@ -243,7 +243,7 @@ lemma BFS_program_behaviour[bfs_heap_rules]:
    < \<lambda> si'. state_assn (BFS_par_impl initial_par_state) si' * graph_assn G G_imp>"
   by (sep_auto heap: bfs_heap_rules simp: state_assn_def)
 
-lemma check_reachable_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> check_reachable_rule[bfs_heap_rules]:
   "\<lbrakk>BFS_axiom;
     t \<in> dVs (Graph.digraph_abs G)\<rbrakk> \<Longrightarrow>
    <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
@@ -254,7 +254,7 @@ lemma check_reachable_rule[bfs_heap_rules]:
   unfolding check_reachable_def
   by (sep_auto heap: bfs_heap_rules in_vis_rule simp: state_assn_def)
 
-lemma visited_dists_parents_imp_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> visited_dists_parents_imp_rule[bfs_heap_rules]:
   "BFS_axiom \<Longrightarrow>
    <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
    * imp_par_assn p imp_some_par * graph_assn G G_imp> 
@@ -268,7 +268,7 @@ lemma visited_dists_parents_imp_rule[bfs_heap_rules]:
 
 text \<open>The same, but the final frontier is kept as well, so that its arrays can be reused.\<close>
 
-lemma visited_dists_parents_imp_frontier_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> visited_dists_parents_imp_frontier_rule[bfs_heap_rules]:
   "BFS_axiom \<Longrightarrow>
    <imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
    * imp_par_assn p imp_some_par * graph_assn G G_imp> 
@@ -284,7 +284,7 @@ lemma visited_dists_parents_imp_frontier_rule[bfs_heap_rules]:
 text \<open>The main properties of @{thm [source] BFS_par_correct} carry over to the returned visited
       set, distances and parents.\<close>
 
-theorem visited_dists_parents_imp_correct[bfs_heap_rules]:
+theorem \<^marker>\<open>provenance ai_human\<close> visited_dists_parents_imp_correct[bfs_heap_rules]:
   assumes BFS_axiom
   shows
  "<imp_vis_assn vset_empty empty_vis * imp_src_assn srcs srcs_imp * imp_dist_assn some_dist imp_some_dist
@@ -315,7 +315,7 @@ text \<open>Given the final parents and an array with room for at least as many 
       @{term v} back to a source into the array from position @{term k} on. Reversed, it is a
       shortest path from the sources.\<close>
 
-theorem get_path_imp_correct[bfs_heap_rules]:
+theorem \<^marker>\<open>provenance ai_human\<close> get_path_imp_correct[bfs_heap_rules]:
   assumes BFS_axiom "final_state = BFS_par_impl initial_par_state"
           "v \<in> t_set (BFS_dist_state.visited final_state)"
           "k + card (dVs (Graph.digraph_abs G)) \<le> length r"
@@ -340,7 +340,7 @@ qed
 text \<open>The same from position \<open>0\<close> on: the first @{term k} cells of the array hold the path, and
       reversed they are a shortest path from the sources.\<close>
 
-corollary get_path_imp_prefix_correct[bfs_heap_rules]:
+corollary \<^marker>\<open>provenance ai_human\<close> get_path_imp_prefix_correct[bfs_heap_rules]:
   assumes BFS_axiom "final_state = BFS_par_impl initial_par_state"
           "v \<in> t_set (BFS_dist_state.visited final_state)"
           "card (dVs (Graph.digraph_abs G)) \<le> length r"
@@ -472,14 +472,14 @@ definition "is_visited_set W S visi =
 lemma only_in_univ: "is_visited_set W S visi = is_visited_set W S visi * \<up>(S \<subseteq> W)"
   unfolding is_visited_set_def by (rule ent_iffI) sep_auto+
 
-lemma vis_memb_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> vis_memb_rule[bfs_heap_rules]:
   "W \<subseteq> U \<Longrightarrow>
    <is_visited_set W S visi * \<up>(a \<in> W)> vis_isin_imp visi a
    <\<lambda>r. is_visited_set W S visi * \<up>(r \<longleftrightarrow> a \<in> S)>"
   unfolding is_visited_set_def
   by (sep_auto heap: vis_imp.fixed_univ_set_isin_rule simp: vis_imp.fixed_univ_set_isin)
 
-lemma vis_ins_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> vis_ins_rule[bfs_heap_rules]:
   "W \<subseteq> U \<Longrightarrow>
    <is_visited_set W S visi * \<up>(a \<in> W)> vis_insert_imp a visi
    <\<lambda>_. is_visited_set W (Set.insert a S) visi>"
@@ -813,14 +813,14 @@ fun imp_cf_assn where
 
 definition "imp_src_assn = imp_cf_assn"
 
-lemma imp_cf_is_empty_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> imp_cf_is_empty_rule[bfs_heap_rules]:
   "<imp_cf_assn L Fr Bf G S Si> imp_cf_is_empty Si <\<lambda>b. imp_cf_assn L Fr Bf G S Si * \<up> (b = (S = []))>"
   by(cases Si) sep_auto
 
 lemma foldl_insert[simp]:"foldl (\<lambda>S x. Set.insert x S) A xs = set xs \<union> A"
   by(induction xs arbitrary: A) auto
 
-lemma set_srcs_visited_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> set_srcs_visited_rule[bfs_heap_rules]:
   assumes "Vs G \<subseteq> U"
   shows "<imp_src_assn L Fr Bf G S Si * is_visited_set (Vs G) {} empty_vis> 
           set_srcs_visited empty_vis Si
@@ -869,7 +869,7 @@ lemma foldl_fun_upd_same[simp]: "foldl (\<lambda>d x y. if x = y then n else d y
        (\<lambda> x. if x \<in> set xs then n else d x)"
   by(induction xs arbitrary: d)  auto
 
-lemma set_all_dists_in_front_imp_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> set_all_dists_in_front_imp_rule[bfs_heap_rules]:
   "<imp_dist_assn L' Da G d di * imp_cf_assn L Fr Bf G cf cfi> set_all_dists_in_front_imp di cfi n
     <\<lambda>r. imp_dist_assn L' Da G (\<lambda>y. if y \<in> set cf then n else d y) r * imp_cf_assn L Fr Bf G cf cfi>"
   apply(cases cfi) 
@@ -1045,7 +1045,7 @@ proof-
   qed
 qed
 
-lemma next_frontier_current_parents_imp_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> next_frontier_current_parents_imp_rule[bfs_heap_rules]:
   fixes G::"nat \<Rightarrow> nat list option"
   assumes "finite (Vs G)" "next_frontier_current_parents G cf vis p = (cf', vis', p')"
           "nbs_invar G" "Vs G \<subseteq> K" "Vs G \<subseteq> par_U" "par_vis_inv p (set vis)" "set cf \<subseteq> set vis"

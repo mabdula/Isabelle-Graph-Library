@@ -16,7 +16,7 @@ text \<open>A parent map over the vertices \<open>{..<n}\<close> is a single arr
 
 subsection \<open>The Imperative Operations\<close>
 
-partial_function (heap) parent_array_get_path_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) parent_array_get_path_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
   where
   "parent_array_get_path_imp Pa Ra k s =
      do { Array.upd k s Ra;
@@ -27,7 +27,7 @@ partial_function (heap) parent_array_get_path_imp :: "nat array \<Rightarrow> na
 fun parent_array_init_imp :: "nat array \<times> nat \<Rightarrow> nat array \<Rightarrow> unit Heap" where
   "parent_array_init_imp (Ra, k) Pa = iterate_range_strict Ra 0 k (\<lambda> v _. do { Array.upd v v Pa; return () }) ()"
 
-definition parent_array_extend_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> parent_array_extend_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "parent_array_extend_imp Pa u v = do { Array.upd v u Pa; return () }"
 
 subsection \<open>The Functional Model\<close>
@@ -187,13 +187,13 @@ qed (auto dest!: pa_extend_dom simp: pa_graph_def pa_roots_def pa_extend_def spl
 
 subsection \<open>Correctness of the Imperative Operations\<close>
 
-lemma pa_nth_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pa_nth_rule:
   "\<lbrakk>\<pi> s = Some u; s < n\<rbrakk> \<Longrightarrow>
    <pa_parent_assn \<pi> Pa> Array.nth Pa s <\<lambda>r. pa_parent_assn \<pi> Pa * \<up>(r = u)>"
   unfolding pa_parent_assn_def
   by sep_auto
 
-lemma pa_get_path_imp_fuel:
+lemma \<^marker>\<open>provenance ai_human\<close> pa_get_path_imp_fuel:
   "\<lbrakk>pa_invar \<pi>; s \<in> dom \<pi>; \<pi> (last (pa_path_fuel f \<pi> s)) = Some (last (pa_path_fuel f \<pi> s));
     k + length (pa_path_fuel f \<pi> s) \<le> length r\<rbrakk> \<Longrightarrow>
    <pa_parent_assn \<pi> Pa * Ra \<mapsto>\<^sub>a r> parent_array_get_path_imp Pa Ra k s
@@ -235,7 +235,7 @@ next
   qed
 qed
 
-lemma pa_get_path_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pa_get_path_rule:
   "\<lbrakk>pa_invar \<pi>; s \<in> dVs (pa_graph \<pi>) \<union> pa_roots \<pi>;
     k + length (pa_get_path \<pi> s) \<le> length r\<rbrakk> \<Longrightarrow>
    <pa_parent_assn \<pi> Pa * Ra \<mapsto>\<^sub>a r> parent_array_get_path_imp Pa Ra k s
@@ -248,7 +248,7 @@ lemma pa_get_path_rule:
 
 text \<open>Initialisation from a prefix of length @{term k} of the array @{term Ra}.\<close>
 
-lemma pa_init_array_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pa_init_array_rule:
   assumes "set R \<subseteq> {..<n}" "k < length xs" "set (take k xs) = set R"
   shows "<Ra \<mapsto>\<^sub>a xs * pa_parent_assn \<pi> Pa> parent_array_init_imp (Ra, k) Pa
          <\<lambda>_. Ra \<mapsto>\<^sub>a xs * pa_parent_assn (pa_init R) Pa>"
@@ -274,13 +274,13 @@ proof-
       (sep_auto simp: pa_parent_assn_def acc_assn_def pa_init_def split: if_splits)+
 qed
 
-lemma pa_init_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pa_init_rule:
   assumes "set R \<subseteq> {..<n}"
   shows "<pa_parent_assn \<pi> Pa * pa_roots_assn R Ri> parent_array_init_imp Ri Pa
          <\<lambda>_. pa_parent_assn (pa_init R) Pa * pa_roots_assn R Ri>"
   by (induction Ri) (unfold pa_roots_assn_def fst_conv snd_conv, sep_auto heap: pa_init_array_rule[OF assms])
 
-lemma pa_extend_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pa_extend_rule:
   "\<lbrakk>pa_invar \<pi>; v \<in> {..<n} - dVs (pa_graph \<pi>) - pa_roots \<pi>;
     u \<in> dVs (pa_graph \<pi>) \<union> pa_roots \<pi>\<rbrakk> \<Longrightarrow>
    <pa_parent_assn \<pi> Pa> parent_array_extend_imp Pa u v <\<lambda>_. pa_parent_assn (pa_extend \<pi> u v) Pa>"

@@ -10,17 +10,17 @@ section \<open>Examples for the Certificate Checkers\<close>
 text \<open>The checkers with integer weights. They do not depend on any solver: the candidate
       solutions and the certificates below are given by hand.\<close>
 
-definition certify_arrays_int :: "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> certify_arrays_int :: "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
     nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> bool Heap" where
   "certify_arrays_int = certify_arrays"
 
-definition hall_arrays_int :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> hall_arrays_int :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
     nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "hall_arrays_int = hall_arrays"
 
 text \<open>Programs that build the arrays from lists and run the checkers.\<close>
 
-definition run_certify :: "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> run_certify :: "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow>
     nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow> bool Heap" where
   "run_certify neg perfect n fs ts ws ls rs ms ys = do {
      Fa \<leftarrow> Array.of_list fs;
@@ -32,7 +32,7 @@ definition run_certify :: "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarro
      Ya \<leftarrow> Array.of_list ys;
      certify_arrays_int neg perfect n Fa Ta Wa La Rv Ma Ya }"
 
-definition run_hall :: "nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> run_hall :: "nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow>
     nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> bool Heap" where
   "run_hall n fs ts ws ls rs S = do {
      Fa \<leftarrow> Array.of_list fs;
@@ -87,7 +87,7 @@ definition "certA_check neg perfect ms ys = check_cert neg perfect 6 fsA tsA wsA
 
 text \<open>The programs return the candidate and the certificate together with the verdict.\<close>
 
-definition exA :: "(nat list \<times> int list \<times> bool) list Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exA :: "(nat list \<times> int list \<times> bool) list Heap" where
   "exA = do {
      a \<leftarrow> certA_check False True msA_min ysA_min;
      b \<leftarrow> certA_check True True msA_max ysA_max;
@@ -98,7 +98,7 @@ definition exA :: "(nat list \<times> int list \<times> bool) list Heap" where
 text \<open>Rejected: the wrong certificates, and a maximum weight perfect matching claimed to be of
       minimum weight.\<close>
 
-definition exA_neg :: "(nat list \<times> int list \<times> bool) list Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exA_neg :: "(nat list \<times> int list \<times> bool) list Heap" where
   "exA_neg = do {
      a \<leftarrow> certA_check False True msA_min ysA_bad;
      b \<leftarrow> certA_check False True msA_dup ysA_min;
@@ -144,7 +144,7 @@ definition "hallB_bad2 = [0::nat, 4]"
 definition "hallB_check S = check_hall 6 fsB tsB wsB lsB rsB S"
 definition "certB_check neg perfect ms ys = check_cert neg perfect 6 fsB tsB wsB lsB rsB ms ys"
 
-definition exB_hall :: "(nat list \<times> bool) list Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exB_hall :: "(nat list \<times> bool) list Heap" where
   "exB_hall = do {
      a \<leftarrow> hallB_check hallB;
      b \<leftarrow> hallB_check hallB_dup;
@@ -154,7 +154,7 @@ definition exB_hall :: "(nat list \<times> bool) list Heap" where
 
 text \<open>The maximum weight matching is accepted, but not as a maximum weight perfect matching.\<close>
 
-definition exB_max :: "(nat list \<times> int list \<times> bool) list Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exB_max :: "(nat list \<times> int list \<times> bool) list Heap" where
   "exB_max = do {
      a \<leftarrow> certB_check True False msB_max ysB_max;
      b \<leftarrow> certB_check True True msB_max ysB_max;
@@ -164,7 +164,7 @@ text \<open>An unbalanced graph has no perfect matching; the empty violator suff
 
 definition "hallC = ([] :: nat list)"
 
-definition exC :: "(nat list \<times> bool) Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exC :: "(nat list \<times> bool) Heap" where
   "exC = check_hall 3 [0, 2] [1, 1] [1, 1] [0, 2] [1] hallC"
 
 ML_val \<open>@{code exB_hall} ()\<close>
@@ -173,11 +173,11 @@ ML_val \<open>@{code exC} ()\<close>
 
 subsection \<open>Extremal Weight Maximum Cardinality Matchings\<close>
 
-definition certify_mc_arrays_int :: "bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> certify_mc_arrays_int :: "bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
     nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "certify_mc_arrays_int = certify_mc_arrays"
 
-definition run_certify_mc :: "bool \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> run_certify_mc :: "bool \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow>
     nat list \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow> int \<Rightarrow> nat list \<Rightarrow> bool Heap" where
   "run_certify_mc neg n fs ts ws ls rs ms ys t S = do {
      Fa \<leftarrow> Array.of_list fs;
@@ -214,7 +214,7 @@ definition "mcB_check neg ms ys t S = check_mc neg 6 fsB tsB wsB lsB rsB ms ys t
 text \<open>Accepted: the two certificates on graph B, and on graph A (perfect) the certificates of
       the perfect matchings with @{text "t = 0"} and @{text "S = {}"}.\<close>
 
-definition exB_mc :: "(nat list \<times> int list \<times> int \<times> nat list \<times> bool) list Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exB_mc :: "(nat list \<times> int list \<times> int \<times> nat list \<times> bool) list Heap" where
   "exB_mc = do {
      a \<leftarrow> mcB_check False msB_mc_min ysB_mc_min 1 defB;
      b \<leftarrow> mcB_check True msB_mc_max ysB_mc_max (-2) defB;
@@ -226,7 +226,7 @@ text \<open>Rejected: a set @{text S} that does not certify the cardinality, the
       @{text 0} is not tight), a matching that is not of maximum cardinality, and the minimum
       claimed to be the maximum.\<close>
 
-definition exB_mc_neg :: "(nat list \<times> int list \<times> int \<times> nat list \<times> bool) list Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> exB_mc_neg :: "(nat list \<times> int list \<times> int \<times> nat list \<times> bool) list Heap" where
   "exB_mc_neg = do {
      a \<leftarrow> mcB_check False msB_mc_min ysB_mc_min 1 [0];
      b \<leftarrow> mcB_check False msB_mc_min ysB_mc_min 0 defB;

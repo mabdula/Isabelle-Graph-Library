@@ -83,7 +83,7 @@ sublocale wm: weighted_intersection_exchange_imp where n = n and smemb_imp = sme
 
 text \<open>The whole program.\<close>
 
-lemma candidate_frame:
+lemma \<^marker>\<open>provenance ai_human\<close> candidate_frame:
   "<F * pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
    <\<lambda> Gc. F * pst1 H1 * pst2 H2 * (case Gc of (Ba, Ga) \<Rightarrow>
      Ba \<mapsto>\<^sub>a map (csr_start (nbrs (cand_list pts1 pts2 n))) [0..<Suc n] *
@@ -91,7 +91,7 @@ lemma candidate_frame:
   by (rule ht_frame_ac[OF c.cand_csr_rule, where R = F])
      (simp only: star_aci, rule ent_refl, sep_auto split: prod.splits)
 
-lemma wmi_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> wmi_imp_correct:
   "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 * warr_assn n h c Co *
     len_assn n C1 * len_assn n C2> wmi_imp H1 H2 Si Co C1 C2
    <\<lambda> _. \<exists>\<^sub>A X c1 c2. sol_assn X Si * warr_assn n h c1 C1 * warr_assn n h c2 C2 *
@@ -189,7 +189,7 @@ locale weighted_matroid_intersection_imp =
   for h :: "'n :: {linordered_idom, heap} \<Rightarrow> real"
 begin
 
-lemma wmi_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> wmi_imp_correct:
   "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2 *
     warr_assn n h (\<lambda> i. if i < n then c (elt i) else 0) Co * len_assn n C1 * len_assn n C2>
      wmi_imp H1 H2 Si Co C1 C2

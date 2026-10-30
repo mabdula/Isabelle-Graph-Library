@@ -26,21 +26,21 @@ definition "cur_set_imp Cf Cu u = do { Cf := True; Cu := u }"
 
 definition "cur_clear_imp Cf = (Cf := False)"
 
-lemma cur_flag_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> cur_flag_rule:
   "<cur_assn cur Cf Cu> cur_flag_imp Cf <\<lambda>f. cur_assn cur Cf Cu * \<up>(f = (cur \<noteq> None))>"
   unfolding cur_assn_def cur_flag_imp_def
   by sep_auto
 
-lemma cur_get_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> cur_get_rule:
   "cur = Some u \<Longrightarrow> <cur_assn cur Cf Cu> cur_get_imp Cu <\<lambda>r. cur_assn cur Cf Cu * \<up>(r = u)>"
   unfolding cur_assn_def cur_get_imp_def
   by (sep_auto split: if_splits)
 
-lemma cur_set_rule: "<cur_assn cur Cf Cu> cur_set_imp Cf Cu u <\<lambda>_. cur_assn (Some u) Cf Cu>"
+lemma \<^marker>\<open>provenance ai_human\<close> cur_set_rule: "<cur_assn cur Cf Cu> cur_set_imp Cf Cu u <\<lambda>_. cur_assn (Some u) Cf Cu>"
   unfolding cur_assn_def cur_set_imp_def
   by sep_auto
 
-lemma cur_clear_rule: "<cur_assn cur Cf Cu> cur_clear_imp Cf <\<lambda>_. cur_assn None Cf Cu>"
+lemma \<^marker>\<open>provenance ai_human\<close> cur_clear_rule: "<cur_assn cur Cf Cu> cur_clear_imp Cf <\<lambda>_. cur_assn None Cf Cu>"
   unfolding cur_assn_def cur_clear_imp_def
   by sep_auto
 
@@ -66,7 +66,7 @@ end
 context push_relabel_ops_imp
 begin
 
-lemma discharge_op_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> discharge_op_imp_rule:
   assumes "invar_basic st" "u \<in> \<V>"
   shows "<state_assn st Si> discharge_op_imp gap Si u
          <\<lambda>r. state_assn st Si *

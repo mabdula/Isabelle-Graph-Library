@@ -22,7 +22,7 @@ text \<open>The capacities are rewritten in place and the lower bounds are scatt
 definition arc_cap :: "'a :: {ord, minus, zero} \<Rightarrow> 'a \<Rightarrow> 'a" where
   "arc_cap li ui = (if li \<le> ui then ui - li else 0)"
 
-partial_function (heap) red_arcs_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) red_arcs_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array
    \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool \<Rightarrow> ('n \<times> bool) Heap" where
   "red_arcs_imp fa sa la ua oa bal i k sh ok =
@@ -44,7 +44,7 @@ partial_function (heap) red_arcs_imp ::
 text \<open>The sentinel \<open>0\<close> and then the loop, as a procedure of its own: a Hoare rule only applies to a
       program the verification condition generator still sees as one term.\<close>
 
-definition reduce_tail_raw ::
+definition \<^marker>\<open>provenance ai_human\<close> reduce_tail_raw ::
   "nat array \<Rightarrow> nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array
    \<Rightarrow> nat \<Rightarrow> ('n \<times> bool) Heap" where
   "reduce_tail_raw fa sa la ua oa bal mm =
@@ -54,7 +54,7 @@ definition reduce_tail_raw ::
 
 text \<open>Reading the answer back: the lower bounds are added to the solver's flow, in place.\<close>
 
-partial_function (heap) orig_flow_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) orig_flow_imp ::
   "('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "orig_flow_imp la ga i k =
      (if k = 0 then return ()
@@ -70,7 +70,7 @@ text \<open>The incident capacity is never stored: an arc sweep shifts it onto t
       a vertex sweep reads the sign of each shifted balance, and the mirror sweep undoes the shift.
       The vertex sweep skips the sentinel, writes nothing and also totals what it reads.\<close>
 
-partial_function (heap) shift_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) shift_imp ::
   "nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> 'n \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap"
   where
   "shift_imp ia va bal c e k =
@@ -82,7 +82,7 @@ partial_function (heap) shift_imp ::
         _  \<leftarrow> Array.upd v (bv + c * uv) bal;
         shift_imp ia va bal c (Suc e) (k - 1) })"
 
-partial_function (heap) sweep_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) sweep_imp ::
   "('n :: {heap, linordered_idom}) array \<Rightarrow> 'n \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool \<Rightarrow> ('n \<times> bool) Heap" where
   "sweep_imp bal c v k tot ok =
      (if k = 0 then return (tot, ok)
@@ -94,7 +94,7 @@ text \<open>Subtracting the out-capacity makes a non-positive balance the upper 
       in-capacity makes a non-negative balance the lower test. Each test is a procedure of its own,
       so that its result is one opaque flag.\<close>
 
-definition bal_out_test ::
+definition \<^marker>\<open>provenance ai_human\<close> bal_out_test ::
   "nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "bal_out_test fa us bal mm nn =
      do {
@@ -103,7 +103,7 @@ definition bal_out_test ::
        _ \<leftarrow> shift_imp fa us bal 1 0 mm;
        return (snd t) }"
 
-definition bal_in_test ::
+definition \<^marker>\<open>provenance ai_human\<close> bal_in_test ::
   "nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "bal_in_test sa us bal mm nn =
      do {
@@ -112,14 +112,14 @@ definition bal_in_test ::
        _ \<leftarrow> shift_imp sa us bal (- 1) 0 mm;
        return (snd t) }"
 
-definition bal_sum_test ::
+definition \<^marker>\<open>provenance ai_human\<close> bal_sum_test ::
   "('n :: {heap, linordered_idom}) array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "bal_sum_test bal nn =
      do {
        t \<leftarrow> sweep_imp bal 0 (Suc 0) (nn - Suc 0) 0 True;
        return (fst t = 0) }"
 
-definition bal_tail ::
+definition \<^marker>\<open>provenance ai_human\<close> bal_tail ::
   "nat array \<Rightarrow> nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array
    \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "bal_tail fa sa us bal mm nn =
@@ -131,7 +131,7 @@ definition bal_tail ::
 
 text \<open>The whole reduction: the pass and the test. It returns the cost shift and the flag.\<close>
 
-definition reduce_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> reduce_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> ('n :: {heap, linordered_idom}) array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array
    \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> ('n \<times> bool) Heap" where
   "reduce_imp fa sa la ua oa ba mm nn =
@@ -211,7 +211,7 @@ lemma bal_range_full: "bal_range 0 m (list_update balance_list 0 0) = red_balanc
 text \<open>\<^emph>\<open>The arc loop refines.\<close> The capacity array is read and written, so only its unswept part is
       known to hold the parsed bound.\<close>
 
-lemma red_arcs_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> red_arcs_imp_rule:
   "\<lbrakk>i + k \<le> m; length xu = m; \<And> j. \<lbrakk>i \<le> j; j < m\<rbrakk> \<Longrightarrow> xu ! j = upper ! j;
     length bl = n\<rbrakk> \<Longrightarrow>
    <fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower * ua \<mapsto>\<^sub>a xu *
@@ -271,7 +271,7 @@ definition add_range :: "nat \<Rightarrow> nat \<Rightarrow> 'n list \<Rightarro
 lemma add_range_length [simp]: "length (add_range i k gs) = m"
   by (simp add: add_range_def)
 
-lemma orig_flow_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> orig_flow_imp_rule:
   "\<lbrakk>i + k \<le> m; length gs = m\<rbrakk> \<Longrightarrow>
    <la \<mapsto>\<^sub>a lower * ga \<mapsto>\<^sub>a gs>
      orig_flow_imp la ga i k
@@ -292,7 +292,7 @@ next
     by (subst orig_flow_imp.simps) (sep_auto simp: Suc.prems(2) length_lower heap: Suc.IH)
 qed
 
-lemma orig_flow_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> orig_flow_imp_correct:
   assumes "length gs = m"
   shows
    "<la \<mapsto>\<^sub>a lower * ga \<mapsto>\<^sub>a gs>
@@ -320,7 +320,7 @@ lemma cost_shift_eq: "cost_shift = sum_list (map (\<lambda> i. cost_list ! i * l
 
 text \<open>The caller's capacity and balance arrays come out holding the two outputs of the pass.\<close>
 
-lemma reduce_tail_raw_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> reduce_tail_raw_rule:
   assumes "xu = upper" "bl = balance_list"
   shows
    "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower * ua \<mapsto>\<^sub>a xu * oa \<mapsto>\<^sub>a cost_list *
@@ -370,7 +370,7 @@ lemma shift_restore:
    fold (shift_step idx (- c)) [0..<m] (fold (shift_step idx c) [0..<m] a) = a"
   by (intro nth_equalityI) (simp_all add: shift_fold_length shift_nth)
 
-lemma shift_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> shift_imp_rule:
   "\<lbrakk>e + k \<le> m; m \<le> length idx; length a = n; \<And> j. j < m \<Longrightarrow> idx ! j < n\<rbrakk> \<Longrightarrow>
    <ia \<mapsto>\<^sub>a idx * va \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a a>
      shift_imp ia va bal c e k
@@ -399,7 +399,7 @@ definition ssum :: "'n list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n
 lemma ssum_Suc: "ssum L v (Suc k) = L ! v + ssum L (Suc v) k"
   by (simp add: ssum_def upt_conv_Cons del: upt_Suc)
 
-lemma sweep_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> sweep_imp_rule:
   "v + k \<le> length L \<Longrightarrow>
    <bal \<mapsto>\<^sub>a L>
      sweep_imp bal c v k tot ok
@@ -424,7 +424,7 @@ lemma ssum_all: "ssum red_balance_raw (Suc 0) (n - Suc 0) = sum_list red_balance
 
 text \<open>\<^emph>\<open>The upper test refines.\<close> Shift the out-capacity off, read the sign, shift it back.\<close>
 
-lemma bal_out_test_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bal_out_test_rule:
   "<fa \<mapsto>\<^sub>a fst_list * us \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a red_balance_raw>
      bal_out_test fa us bal m n
    <\<lambda>r. fa \<mapsto>\<^sub>a fst_list * us \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a red_balance_raw
@@ -443,7 +443,7 @@ proof-
                  heap: shift_imp_rule sweep_imp_rule)
 qed
 
-lemma bal_in_test_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bal_in_test_rule:
   "<sa \<mapsto>\<^sub>a snd_list * us \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a red_balance_raw>
      bal_in_test sa us bal m n
    <\<lambda>r. sa \<mapsto>\<^sub>a snd_list * us \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a red_balance_raw
@@ -462,7 +462,7 @@ proof-
                  heap: shift_imp_rule sweep_imp_rule)
 qed
 
-lemma bal_sum_test_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bal_sum_test_rule:
   "<bal \<mapsto>\<^sub>a red_balance_raw>
      bal_sum_test bal n
    <\<lambda>r. bal \<mapsto>\<^sub>a red_balance_raw * \<up>(r = sum_ok)>"
@@ -470,7 +470,7 @@ lemma bal_sum_test_rule:
   using nodes_nonempty
   by (sep_auto simp: ssum_all sum_ok_def red_balance_raw_length heap: sweep_imp_rule)
 
-lemma bal_tail_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bal_tail_rule:
   "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * us \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a red_balance_raw>
      bal_tail fa sa us bal m n
    <\<lambda>ok. fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * us \<mapsto>\<^sub>a red_upper * bal \<mapsto>\<^sub>a red_balance_raw
@@ -481,7 +481,7 @@ lemma bal_tail_rule:
 text \<open>\<^emph>\<open>The reduction refines.\<close> Every array is the caller's and comes back holding the reduced
       instance.\<close>
 
-lemma reduce_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> reduce_imp_rule:
   assumes "xu = upper" "bl = balance_list"
   shows
    "<fa \<mapsto>\<^sub>a fst_list * sa \<mapsto>\<^sub>a snd_list * la \<mapsto>\<^sub>a lower * ua \<mapsto>\<^sub>a xu * oa \<mapsto>\<^sub>a cost_list *
