@@ -19,7 +19,7 @@ theory Index_Algorithms_Main_Theorems
     "Matroid_Intersection.Matroid_Intersection_Algorithm"
     "Matroid_Intersection.Matroid_Partitioning"
     "Matroid_Intersection.Matroid_Weighted_Intersection_Path_Loop"
-    "Matroids_Greedy.Best_In_Greedy"
+    "Matroids_Greedy.BestInGreedy_stablesort"
     "Mincost_Flow_Algorithms.Acyclic_Flow"
     "Mincost_Flow_Algorithms.Network_Simplex_Final"
     "Mincost_Flow_Algorithms.Scaling"
@@ -75,8 +75,9 @@ text \<open>\<^bold>\<open>Listing 59. theorem dijkstra_compute_optimal (Dijkstr
   Checked reference: @{thm dijkstra.dijkstra_compute_optimal}.\<close>
 
 text \<open>\<^bold>\<open>Listing 60. lemma BestInGreedy_matroid_iff_opt (Best_In_Greedy.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Matroids_Greedy/Best_In_Greedy.thy\<close> (line 1462, locale Best_In_Greedy).
-  Checked reference: @{thm Best_In_Greedy.BestInGreedy_matroid_iff_opt}.\<close>
+  In this snapshot: \<^file>\<open>../../Matroids_Greedy/BestInGreedy_stablesort.thy\<close> (line 629, locale BestInGreedy_stablesort).
+  Note: the lemma is called \<open>BestInGreedy_stablesort_matroid_iff_opt\<close> in this snapshot.
+  Checked reference: @{thm BestInGreedy_stablesort.BestInGreedy_stablesort_matroid_iff_opt}.\<close>
 
 text \<open>\<^bold>\<open>Listing 61. corollary kruskal_computes_max_spanning_forest (Kruskal_Greedy.thy)\<close>
   Indexed in \<^file>\<open>Index_Algorithms_Main_Theorems_Spanning_Trees.thy\<close>, together with

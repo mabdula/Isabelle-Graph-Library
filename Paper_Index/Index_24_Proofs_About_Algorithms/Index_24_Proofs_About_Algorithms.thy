@@ -5,7 +5,7 @@ theory Index_24_Proofs_About_Algorithms
     "Graph_Algorithms_Dev.DFS"
     "Hungarian_Method.Hungarian_Method_Top_Loop"
     "Matroid_Intersection.Matroid_Intersection_Path_Loop"
-    "Matroids_Greedy.Best_In_Greedy"
+    "Matroids_Greedy.BestInGreedy_base"
     "Mincost_Flow_Algorithms.Maintain_Forest"
     "Mincost_Flow_Algorithms.Scaling"
     "Mincost_Flow_Algorithms.Send_Flow"
@@ -63,8 +63,9 @@ text \<open>\<^bold>\<open>Listing 92. lemma BFS_induct (BFS_2.thy)\<close>
   Checked reference: @{thm BFS.BFS_induct}.\<close>
 
 text \<open>\<^bold>\<open>Listing 93. lemma BestInGreedy_induct (Best_In_Greedy.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Matroids_Greedy/Best_In_Greedy.thy\<close> (line 151, locale Best_In_Greedy).
-  Checked reference: @{thm Best_In_Greedy.BestInGreedy_induct}.\<close>
+  In this snapshot: \<^file>\<open>../../Matroids_Greedy/BestInGreedy_base.thy\<close> (line 181, locale BestInGreedy_base).
+  Note: the lemma is called \<open>BestInGreedy_base_induct\<close> in this snapshot.
+  Checked reference: @{thm BestInGreedy_base.BestInGreedy_base_induct}.\<close>
 
 text \<open>\<^bold>\<open>Listing 94. lemma SSP_induct (Successive_Shortest_Path.thy)\<close>
   In this snapshot: \<^file>\<open>../../Mincost_Flow_Algorithms/Successive_Shortest_Path.thy\<close> (line 258, locale SSP).
