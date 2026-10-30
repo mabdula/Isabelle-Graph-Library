@@ -19,6 +19,7 @@ Collections                          3ae2a6a7f6ca9342b7a21d3beaae9800  8h full j
 Comparison_Sort_Lower_Bound          2e5f44e4c19fd2e2c355fc17d67d5bcd  8h full jedit
 Containers                           a650fad590cfa4a649b91a6f23431aaa  8h full jedit
 DFS_Framework                        ae6605f58e704991f2280c3247ef1f8a  8h full jedit
+Datatype_Order_Generator             f6b4559787557c15fcb7293e2ad2254b  8h full jedit
 Deriving                             c8d94ade719e66ad9073adb917d4c7d9  8h full jedit
 Dijkstra_Shortest_Path               c994937aabf08b0a686e163962826969  8h full jedit
 Echelon_Form                         8a8411c3284f6585f9ceaacb1b7f0623  8h full jedit
