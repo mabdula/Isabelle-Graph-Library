@@ -494,7 +494,7 @@ lemma SSP_call_4_cond_SSP_dom:
   apply(rule forw_subst[of _ "SSP_upd4 state" SSP_dom])
   subgoal
     unfolding SSP_upd4_def SSP_call_4_cond_def Let_def
-    by (metis ereal_min option.sel)
+    by (auto simp add: ereal_min option.sel cong: if_cong)
   by simp 
 
 lemma SSP_ret_1_cond_SSP_dom:
