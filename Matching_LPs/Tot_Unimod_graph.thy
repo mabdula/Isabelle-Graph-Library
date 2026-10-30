@@ -1359,7 +1359,7 @@ proof -
       assms(1) assms(5) b face_trans by presburger
   obtain A' b'  where "F = polyhedron A' b'" "dim_row A' = dim_vec b'" "dim_col A' = n"
                       "A' \<in> \<int>\<^sub>m" "b' \<in> \<int>\<^sub>v" using face_is_int_polyhedron 
-    by (metis P_def assms(1) assms(5) assms(6) assms(7) b)
+    by (insert assms(1) b assms(5)[unfolded P_def] assms(6) assms(7), blast intro: face_is_int_polyhedron)
   
   then have "F = integer_hull F" using face_iff_int_polyh 
     using \<open>\<forall>F'. face F F' \<longrightarrow> (\<exists>x\<in>F'. x \<in> \<int>\<^sub>v)\<close> carrier_vec_dim_vec by blast
