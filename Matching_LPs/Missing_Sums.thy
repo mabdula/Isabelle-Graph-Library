@@ -512,8 +512,24 @@ qed
     by (meson Ws_c'(1) finite_list)
   then obtain c where c: "convex_lincomb_list c Wsl x" 
     using Ws_subs Ws_c' obt_convect_lincomb_list by blast
+  have set_int: "set Wsl \<subseteq> \<int>\<^sub>v"
+    using Wsl Ws_c'(2) by blast
+  have set_carr: "set Wsl \<subseteq> carrier_vec n"
+    using Wsl Ws_subs by blast
+  have "\<exists>i. i < length Wsl \<and> c i \<noteq> 0"
+  proof (rule ccontr)
+    assume "\<nexists>i. i < length Wsl \<and> c i \<noteq> 0"
+    then have all_zero: "\<forall>i < length Wsl. c i = 0"
+      by blast
+    then have all_int: "\<forall>i < length Wsl. c i \<in> \<int>"
+      by simp
+    have "x \<in> \<int>\<^sub>v"
+      using convex_lincom_int[OF c set_int set_carr all_int] .
+    then show False
+      using assms(4) by blast
+  qed
   then obtain i where i: "i < length Wsl \<and> c i \<noteq> 0" 
-    by (metis Ints_0 Ws_c'(2) Ws_subs Wsl assms(4) convex_lincom_int inf.boundedE)
+    by blast
   have Ws_swap: "Ws = set (Wsl[0:= Wsl ! i, i:=Wsl ! 0])"
   proof -
   have i_len: "i < length Wsl"
