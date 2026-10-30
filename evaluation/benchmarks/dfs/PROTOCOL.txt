@@ -76,7 +76,7 @@ TIMEOUT AND LADDER
   were recorded ERROR by the runner and shown as OOM.
 
 WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (raw rows in
-published_results/dfs_results.zip, <column>/raw/<family>.csv; the ids are the
+paper_results/dfs_results.zip, <column>/raw/<family>.csv; the ids are the
 campaign's results directories, named as provenance)
   sml_csr, sml_lists, sml_rbt, scala_*, go_*, networkx,
   lemon_linked, jgrapht_hashgraph, scipy_prebuilt   20261013_110953

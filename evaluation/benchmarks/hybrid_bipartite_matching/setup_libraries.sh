@@ -2,7 +2,7 @@
 # setup_libraries.sh -- fetches the third-party code the oracle is built from (CSA) and the
 # unmodified files the oracle's modifications are diffed against.
 # Run it once, before `make'; it needs the network.  Every download is compared
-# with the md5 of the file the published numbers were made with, and every file
+# with the md5 of the file the numbers of the paper appendix were made with, and every file
 # the script derives (an unpacked source, a patched copy) with the md5 of the
 # copy that was used for the paper; a mismatch stops the script.
 #

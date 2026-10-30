@@ -19,7 +19,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
   query         the id passed with --query (0 if none)
   source,target the pair passed on the command line, DIMACS ids 1..n
   repeat        1 (the campaign ran every repeat in its own process, so this is
-                always 1 in the published raw data; --repeats k prints k rows)
+                always 1 in the raw data of the paper appendix; --repeats k prints k rows)
   status        OPTIMAL      a path was found and its ends are (source, target)
                 UNREACHABLE  the solver finished and reported no path
                 BAD_PATH     a path came back whose ends are not (source, target)
@@ -45,6 +45,6 @@ EXAMPLE (the campaign's raw row for Square-n.10.0.gr)
   instance,nodes,arcs,query,source,target,repeat,status,reached,hops,dist,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,tag
   Square-n.10.0.gr,1024,3968,0,14,787,1,OPTIMAL,1,8,3418,0.034,0.017,0.017,0.034,0.035,4.505,0.000,0.176,Square-n;rep=1
 
-The published raw rows (published_results/dijkstra_results.zip, <column>/raw/<family>.csv) carry
+The raw rows of the paper appendix (paper_results/dijkstra_results.zip, <column>/raw/<family>.csv) carry
 two further columns appended by the campaign runner, inferred_from and core,
 which the program itself does not print.

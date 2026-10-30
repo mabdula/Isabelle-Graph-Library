@@ -1,4 +1,4 @@
-MACHINE AND SOFTWARE BEHIND THE PUBLISHED NUMBERS
+MACHINE AND SOFTWARE BEHIND THE NUMBERS OF THE PAPER APPENDIX
 =================================================
 
 HARDWARE   Lenovo ThinkSystem SR645, 2 x AMD EPYC 7343 (16 cores each, no SMT,
@@ -29,4 +29,4 @@ GENERATORS  (none of it is in the package: the setup scripts fetch each file fro
   assign.c  md5 98bba042619c8f1c1664b74631958a86   dcube.c   md5 3b1fcbbb4e1689444c20954fa7042e28
   twocost.a md5 f51724183524b2a2d7dbb19bd1b32dce   geomasn.a md5 e390c3b59ba217ce8c1e5f2112c5b1ad
   all from https://archive.dimacs.rutgers.edu/pub/netflow/generators/ (network/,
-  dcube.c under matching/), as the 1st DIMACS Challenge published them.
+  dcube.c under matching/), as the 1st DIMACS Challenge distributed them.

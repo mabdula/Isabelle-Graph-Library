@@ -27,7 +27,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                                conserved at every vertex but the two ends, and
                                the ends balance
                 OVER_CAPACITY, NOT_A_FLOW, UNBALANCED_ENDS, VALUE_MISMATCH
-                               the check failed (never seen in the published rows)
+                               the check failed (never seen in the rows of the paper appendix)
   flow_value    the maximum flow value, summed after the clock as a cross-check
   cpu_ms        THE MEASUREMENT: whole-process CPU time (user + system)
                 between the two clock readings
@@ -48,6 +48,6 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
 EXAMPLE
   rmf-long-8-64.max,4096,18368,networkx_preflow_push,1,4096,1,OK,270914,934.738,911.204,23.534,934.738,934.807,13.283,0.401,50.327,island=4-7;repeat=1;seed=1;value_only=no
 
-The published raw rows (published_results/push_relabel_results.zip,
+The raw rows of the paper appendix (paper_results/push_relabel_results.zip,
 <column>/raw/<family>.csv) are these rows cut down to the columns the tables
 use; the full rows are in the campaign directories of the study.

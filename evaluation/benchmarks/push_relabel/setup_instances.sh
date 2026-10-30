@@ -2,7 +2,7 @@
 # setup_instances.sh -- fetches the generators (and, where the study used them, the downloadable
 # instances) and puts them where instances/generators/Makefile expects them.
 # Run it once, before `make'; it needs the network.  Every download is compared
-# with the md5 of the file the published numbers were made with, and every file
+# with the md5 of the file the numbers of the paper appendix were made with, and every file
 # the script derives (an unpacked source, a patched copy) with the md5 of the
 # copy that was used for the paper; a mismatch stops the script.
 #

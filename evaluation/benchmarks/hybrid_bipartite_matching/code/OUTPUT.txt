@@ -8,7 +8,7 @@ USAGE
   to a temporary file, reads the stamps, reads cost and matching size back out
   of the solution AFTER the clock has stopped, and prints one CSV row (no
   header line; the header is given below).  --no-oracle runs the verified
-  Hungarian method alone (not a published column).
+  Hungarian method alone (not a column of the paper appendix).
 
 WHAT IS TIMED
   The clock is compiled into the solver (asn_clock.c, -DASN_TIMING):
@@ -32,7 +32,7 @@ COLUMNS (one CSV row per run)
   cost            the matching's cost (`s' line); minimisation
   oracle          what the oracle answered: optimal | infeasible | unknown | not asked
                   (`optimal' means the verified checker accepted CSA's certificate;
-                  in every published run it did)
+                  in every run of the paper's campaign it did)
   cpu_ms          THE MEASUREMENT: t_done - t_parsed, the whole verified program
   t_parsed .. t_done            the seven stamps
   screen_ms       0->1  the verified screen (every node on an arc?)
@@ -49,13 +49,13 @@ THE PAPER'S COLUMNS, in terms of this row
   Glue   = screen_ms + glue_in_ms + glue_out_ms  (= Total - Oracle - Cert. - Check),
   Total  = cpu_ms,  Total/Oracle = cpu_ms / csa_ms.
   Each table entry is the mean over the ten instances of a size of the
-  per-instance median-of-three-repeats value (published_results/hybrid_timings.zip
+  per-instance median-of-three-repeats value (paper_results/hybrid_timings.zip
   carries, per instance, the whole row of the repeat whose cpu_ms is the median).
 
 EXAMPLE (the campaign's raw row for low-cost_n2048_s1.asn)
   instance,nodes,arcs,left,right,status,matched,cost,oracle,cpu_ms,t_parsed,t_oracle_in,t_csa_start,t_csa_done,t_leave_c,t_oracle_done,t_done,screen_ms,glue_in_ms,csa_ms,cert_ms,glue_out_ms,check_cleanup_ms,wall_ms,tag
   low-cost_n2048_s1.asn,2048,22528,1024,1024,OPTIMAL,1024,7920,optimal,2.236,4.955,5.047,5.717,7.035,7.150,7.150,7.191,0.092,0.670,1.318,0.115,0.000,0.041,9.176,low-cost;rep=1;warmcore=3s
 
-The published raw rows (published_results/hybrid_timings.zip, <family>/<family>_all_runs.csv)
+The raw rows of the paper appendix (paper_results/hybrid_timings.zip, <family>/<family>_all_runs.csv)
 carry two further columns appended by the campaign runner, inferred_from and
 core, which the program itself does not print.

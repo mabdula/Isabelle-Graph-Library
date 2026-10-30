@@ -2,7 +2,7 @@
 # setup_libraries.sh -- fetches the third-party library and solver code this package's competitor
 # programs are built on and puts it where their Makefiles expect it.
 # Run it once, before `make'; it needs the network.  Every download is compared
-# with the md5 of the file the published numbers were made with, and every file
+# with the md5 of the file the numbers of the paper appendix were made with, and every file
 # the script derives (an unpacked source, a patched copy) with the md5 of the
 # copy that was used for the paper; a mismatch stops the script.
 #

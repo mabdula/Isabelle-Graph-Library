@@ -24,7 +24,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                 settle everything reachable from the source.  Every program
                 refuses a target inside [1, n].
   repeat        1 (the campaign ran every repeat in its own process, so this is
-                always 1 in the published raw data; --repeats k prints k rows)
+                always 1 in the raw data of the paper appendix; --repeats k prints k rows)
   status        OK           the search ran to exhaustion and the verdict was
                              checked: the (absent) target was not reached
                 RAN          the search ran to exhaustion; the SML lists and
@@ -56,6 +56,6 @@ EXAMPLE (Square-n.10.0.gr, the campaign's source 359)
   instance,nodes,arcs,query,source,target,repeat,status,reached,visited,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,tag
   Square-n.10.0.gr,1024,3968,0,359,0,1,RAN,-1,-1,0.147,0.147,0.000,0.147,0.140,0.409,0.000,0.000,Square-n;rep=1
 
-The published raw rows (published_results/dfs_results.zip, <column>/raw/<family>.csv)
+The raw rows of the paper appendix (paper_results/dfs_results.zip, <column>/raw/<family>.csv)
 carry two further columns appended by the campaign runner, inferred_from and
 core, which the program itself does not print.

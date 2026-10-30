@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Turns the raw rows of a run into the paper's tables, projected to the columns the run measured, next to the
-published values.
+values of the paper appendix.
 
     make_tables.py <results dir>        (run_experiments.py calls it; it can be re-run by hand)
 
 Reads <results dir>/<benchmark>/<family>/raw.csv and <results dir>/columns.json (the columns the run planned) and writes
     <results dir>/<benchmark>/<family>/table.csv         the paper's table, measured by this run (cell = seconds (ratio))
-    <results dir>/<benchmark>/<family>/table_paper.csv   the same table as published, the same columns
+    <results dir>/<benchmark>/<family>/table_paper.csv   the same table as in the paper appendix, the same columns
     <results dir>/<benchmark>/<family>/raw.csv           every run's row (written by run_experiments.py)
     <results dir>/SUMMARY.txt                            per table: cells measured, deviation from the paper
 A cell is formed as the benchmark's PROTOCOL.txt describes: per problem the median of the repeats,
@@ -15,7 +15,7 @@ rmf-long and wash-rlg-long: the mean over the three seeds; ak: the median of thr
 matroid intersection: the mean over the instances; the hybrid solver: per instance the
 repeat with the median total, then the mean of each component.  Ratios are to the SML column
 of the same size.  TO = timed out, OOM = out of memory, ERR = other error, - = not run.
-The published values come from each package's published_results zip, formed the same way.
+The values of the paper appendix come from each package's paper_results zip, formed the same way.
 """
 import csv, io, json, os, re, statistics, sys, zipfile, collections
 
@@ -158,10 +158,10 @@ def measured_cells(rows):
             for c in COLS[pkg]: cells[(pkg, c, fam, size)] = cell
     return cells
 
-# ------------------------------------------------------------------ published cells
-def published_cells(pkg):
-    """{(col, fam, rowkey): (value_ms or None, status, nodes)} from the package's published zip"""
-    z = os.path.join(BENCH, pkg, 'published_results', ZIPS[pkg])
+# ------------------------------------------------------------- cells of the paper appendix
+def paper_cells(pkg):
+    """{(col, fam, rowkey): (value_ms or None, status, nodes)} from the package's paper_results zip"""
+    z = os.path.join(BENCH, pkg, 'paper_results', ZIPS[pkg])
     out = {}
     if not os.path.exists(z): return out
     zf = zipfile.ZipFile(z)
@@ -210,7 +210,7 @@ def main():
     summary = []; allcells = []
     pubcache = {}
     for num, pkg, fam, title in TABLES:
-        pub = pubcache.setdefault(pkg, published_cells(pkg))
+        pub = pubcache.setdefault(pkg, paper_cells(pkg))
         fams = fam.split('+') if '+' in fam else [fam]
         solvers = [c for c in COLS[pkg] if pkg not in planned or c in planned[pkg] or pkg == 'hybrid_bipartite_matching']
         if pkg == 'matroid_intersections':
@@ -287,7 +287,7 @@ def main():
             out.append(line)
         if not any_cell: continue          # none of this table's problems was run
         fdir = os.path.join(resdir, pkg, fam.replace('+', '_and_')); os.makedirs(fdir, exist_ok=True)
-        # the table as the paper prints it: one cell "seconds (ratio)" per solver, and the published one beside it
+        # the table as the paper prints it: one cell "seconds (ratio)" per solver, and the one of the paper appendix beside it
         hyb = pkg == 'hybrid_bipartite_matching'
         hdr = ['n'] + [paper_name(pkg, c) for c in cols]
         def paper_cell(line, k, hyb):
@@ -300,7 +300,7 @@ def main():
             return (v + (' (%s)' % x if x else '')) if v else ''
         unit = 'milliseconds' if hyb else 'seconds (ratio to %s)' % base
         for fname, cellf, head in (('table.csv', paper_cell, '# Table %d of the paper, measured by this run: %s. Cell = %s; TO, OOM, ERR, n/a and k/m as in the paper.'),
-                                   ('table_paper.csv', pub_cell, '# Table %d as published: %s. Cell = %s.')):
+                                   ('table_paper.csv', pub_cell, '# Table %d as in the paper appendix: %s. Cell = %s.')):
             with open(os.path.join(fdir, fname), 'w', newline='') as f:
                 w = csv.writer(f)
                 w.writerow([head % (num, title, unit)])
@@ -323,9 +323,9 @@ def main():
             worst = max(devs, key=lambda t: abs(math.log(t[0])))
             summary.append('Table %2d %-62s %3d cells; median |measured/paper| %.2fx, worst %.2fx (%s at %s)' % (num, title, len(devs), math.exp(logs[len(logs) // 2]), worst[0], worst[1], worst[2]))
         else:
-            summary.append('Table %2d %-62s %3d cells measured, no published value to compare' % (num, title, measured))
+            summary.append('Table %2d %-62s %3d cells measured, no paper-appendix value to compare' % (num, title, measured))
     with open(os.path.join(resdir, 'SUMMARY.txt'), 'w') as f:
-        f.write('Measured cells against the published tables (ratio of the measured mean to the published mean; 1.00x is a perfect reproduction).\n')
+        f.write('Measured cells against the tables of the paper appendix (ratio of the measured mean to the mean of the paper appendix; 1.00x is a perfect reproduction).\n')
         f.write('On another machine the absolute times differ by a constant; the *_x columns (ratios to SML) are the ones to compare.\n\n')
         f.write('\n'.join(summary) + '\n')
         na = os.path.join(EVAL, 'NOT_AVAILABLE.txt')

@@ -8,7 +8,7 @@
 # e89f887559113b68657eca67cf3329b5), built with CMake, CMAKE_BUILD_TYPE=Release,
 # g++ 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3).  The driver was compiled with
 # g++ -O3 -march=native -DNDEBUG  and linked against libemon.a.  -march=native:
-# the published numbers are for an AMD EPYC 7343 (Zen 3); see ../../ENVIRONMENT.txt.
+# the numbers of the paper appendix are for an AMD EPYC 7343 (Zen 3); see ../../ENVIRONMENT.txt.
 #
 # LEMON_HOME may point at an existing LEMON 1.3.1 install (include/lemon and
 # lib/libemon.a) instead of the in-tree build.

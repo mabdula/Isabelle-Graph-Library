@@ -32,6 +32,6 @@ COLUMNS (one CSV row per run with --csv; without it a human-readable block)
 EXAMPLE (the campaign's raw row)
   low-cost_n2048_s1.asn,2048,22528,1024,1024,0,0.000,OPTIMAL,1024,7920,4.312,4.256,0.056,4.305,low-cost;rep=1
 
-The published raw rows (published_results/hungarian_results.zip,
+The raw rows of the paper appendix (paper_results/hungarian_results.zip,
 <column>/<family>.csv) carry two further columns appended by the campaign
 runner, inferred_from and core, which the program itself does not print.

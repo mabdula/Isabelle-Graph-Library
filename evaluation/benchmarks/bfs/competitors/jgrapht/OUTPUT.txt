@@ -57,6 +57,6 @@ EXAMPLE (Square-n.10.0.gr, the campaign's query 14 -> 787)
   instance,nodes,arcs,query,source,target,repeat,status,reached,hops,dist,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,clock_build_ms,clock_solve_ms,tag
   Square-n.10.0.gr,1024,3968,0,14,787,1,REACHED,1,8,8,0.798,0.000,0.798,10.000,0.793,3.922,0.000,0.800,0.612,0.186,Square-n;rep=1
 
-The published raw rows (published_results/bfs_results.zip, <column>/raw/<family>.csv)
+The raw rows of the paper appendix (paper_results/bfs_results.zip, <column>/raw/<family>.csv)
 carry two further columns appended by the campaign runner, inferred_from and
 core, which the program itself does not print.

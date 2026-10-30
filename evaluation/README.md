@@ -55,9 +55,9 @@ Every run writes `results/<date>_<mode>/`, with one directory per benchmark and 
 | file | content |
 |---|---|
 | `<benchmark>/<family>/table.csv` | the paper's table projected to the columns measured: one row per size, one cell per solver, `seconds (ratio to the SML column)` |
-| `<benchmark>/<family>/table_paper.csv` | the same table as published, for comparison |
+| `<benchmark>/<family>/table_paper.csv` | the same table as in the paper appendix, for comparison |
 | `<benchmark>/<family>/raw.csv` | one row per run: status, `cpu_ms`, the row the program printed |
-| `SUMMARY.txt`, `conditions.txt`, `run.log` | per table the deviation from the published cells; the conditions of the run; the log |
+| `SUMMARY.txt`, `conditions.txt`, `run.log` | per table the deviation from the cells of the paper appendix; the conditions of the run; the log |
 
 Cells: a number is seconds (the hybrid tables: milliseconds), the mean over the problems of a size of the
 per-problem median of the repeats; `TO` timeout; `OOM` out of memory; `ERR` the program stopped with an error;
@@ -73,7 +73,7 @@ the other columns are measured by the other two experiments.
 ## What the setup downloads
 
 `modes.conf` says what each mode runs; the setup fetches only what that needs, checks every file against the
-md5 of the file the published numbers were made with, and tries every file's sources in order
+md5 of the file the numbers of the paper appendix were made with, and tries every file's sources in order
 (`toolchains_dist/MANIFEST.txt`, `third_party/SOURCES.txt`, `setup/afp_entries.txt`).  A download that fails
 does not stop the setup: the file, its sources, md5 and the path to put it at are printed and recorded in
 `NOT_AVAILABLE.txt`, and the columns or rows that depend on it are left out and marked in the tables.  Put the
@@ -89,9 +89,9 @@ file there and run the setup again.
 | Isabelle, and the AFP entries the export sessions need, from the AFP's Isabelle2025-2 release branch at one pinned state | 2025-2 |
 | LEMON | 1.3.1 |
 | JGraphT with jheaps 0.14, apfloat 1.14.0, fastutil 8.5.18 | 1.5.3 |
-| DIMACS generators ch9-1.1, assign.c, dcube.c, twocost.a, geomasn.a, genrmfDimacs, washington.c | as published |
-| Andrew Goldberg's hi_pr 3.5, PRF 1.8 (the AK generator) and CSA (not redistributed, fetched at setup) | as published |
-| the USA-road-t road networks of the 9th DIMACS Challenge (NY in the smoke test, all twelve in the full experiment) | as published |
+| DIMACS generators ch9-1.1, assign.c, dcube.c, twocost.a, geomasn.a, genrmfDimacs, washington.c | as distributed |
+| Andrew Goldberg's hi_pr 3.5, PRF 1.8 (the AK generator) and CSA (not redistributed, fetched at setup) | as distributed |
+| the USA-road-t road networks of the 9th DIMACS Challenge (NY in the smoke test, all twelve in the full experiment) | as distributed |
 
 ## Layout
 
@@ -102,7 +102,7 @@ file there and run the setup again.
 | `modes.conf` | what each experiment runs: benchmarks, columns, families, sizes, repeats, order, code exports |
 | `setup/` | the setup: `setup.sh` runs `toolchains.sh`, `isabelle.sh` (which runs `afp.sh`), `exports.sh`, `thirdparty.sh`, `programs.sh`; `afp_entries.txt`, `export_files.txt` |
 | `run/` | the measurements: `run.sh` runs `run_experiments.py` (plans the runs, generates and deletes the instances, starts one single-run program per run) and `make_tables.py`; both need only the VM's `python3` |
-| `benchmarks/<name>/` | one directory per problem: the single-run programs (`code/`, `competitors/`), `columns.txt`, `instances/`, the published results, `README.txt`, `PROTOCOL.txt`, `ENVIRONMENT.txt` |
+| `benchmarks/<name>/` | one directory per problem: the single-run programs (`code/`, `competitors/`), `columns.txt`, `instances/`, the results of the paper appendix, `README.txt`, `PROTOCOL.txt`, `ENVIRONMENT.txt` |
 | `exports/` | the code exports: `campaign/` (the paper's) and `pregenerated/` (from the current library) |
 | `toolchains_dist/`, `third_party/` | the download lists with sources and md5s |
 | `work/`, `results/` | written by the setup and the runs (not tracked) |

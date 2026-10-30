@@ -59,7 +59,7 @@ TIMEOUT AND LADDER
 
 WHICH RESULTS DIRECTORY THE COLUMNS COME FROM
   All seven columns: campaign 20261015_091344, raw rows in
-  published_results/kruskal_results.zip under
+  paper_results/kruskal_results.zip under
   <column>/raw/<family>.csv, with COLUMNS.txt, README.txt and per-column
   conditions.txt (the runner's record of the conditions above).
 
@@ -73,4 +73,4 @@ THE CLOCK
 THE CROSS-CHECK
   Every row carries tree_edges and tree_weight; the weight of a minimum
   spanning forest is a property of the graph alone, and all seven columns
-  agree on it on every instance (AGREEMENT.txt in the published zip).
+  agree on it on every instance (AGREEMENT.txt in the paper_results zip).

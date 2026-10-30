@@ -58,7 +58,7 @@ TIMEOUT AND LADDER
   without being run (TO in the paper).  Out of memory likewise (OOM).
 
 WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (the raw rows of every column
-are in published_results/dijkstra_results.zip, <column>/raw/<family>.csv, and
+are in paper_results/dijkstra_results.zip, <column>/raw/<family>.csv, and
 the per-size table in <column>/<family>.csv; the ids are the campaign's
 results directories, named as provenance only)
   sml, scala, go, networkx, lemon_linked, jgrapht_hashgraph, scipy_prebuilt

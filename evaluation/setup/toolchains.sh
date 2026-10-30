@@ -53,7 +53,7 @@ if has gmp $want && [[ -f "$dl/${file[gmp]}" && ! -f "$tc/gmp/.installed" ]]; th
   cp "$tc/gmp.tmp/usr/include/$triplet/gmp.h" "$tc/gmp/include/" && cp "$tc/gmp.tmp/usr/lib/$triplet/libgmp.a" "$tc/gmp/lib/" || fail "gmp.h or libgmp.a not found in ${file[gmp]}"
   rm -rf "$tc/gmp.tmp"; touch "$tc/gmp/.installed"; say "   GMP 6.3.0 (headers and static library): unpacked"
 elif [[ -f "$tc/gmp/.installed" ]]; then say "   GMP 6.3.0: already unpacked"; fi
-# gcc and g++ 11.4.0 of Ubuntu 22.04, the compilers the published numbers were made with, relocated into work/toolchains/gcc
+# gcc and g++ 11.4.0 of Ubuntu 22.04, the compilers the numbers of the paper appendix were made with, relocated into work/toolchains/gcc
 # (with their isl, mpc and mpfr); they use the VM's binutils and C library.  Wrappers gcc, g++, cc and c++ in work/toolchains/bin
 # put them in front of the VM's compiler for every build, MLton's C compilation included.
 if ! has gcc $want; then :

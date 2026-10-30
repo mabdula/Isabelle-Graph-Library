@@ -60,7 +60,7 @@ THE GRID
 
 WHICH RESULTS DIRECTORY THE COLUMNS COME FROM
   All five columns: the single campaign 20261009_224301, raw rows in
-  published_results/solver_csvs.zip
+  paper_results/solver_csvs.zip
   (<solver>/<problem>/<family>.csv, 13 columns, 3000 rows; its
   conditions.txt is the campaign's own flags file).  Before the timed runs
   an agreement check ran the five solvers on two validation instances

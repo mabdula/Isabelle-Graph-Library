@@ -8,9 +8,9 @@ Layout
   code/oracle/          the certificate generators and (after the setup) CSA, as used by the oracle
   code/README_solver.md the solver's own README (what is proved, what is trusted); code/OUTPUT.txt the row
   instances/            generators, seeds, queries, checksums (instances/README.txt says how an instance is made)
-  published_results/    the published tables and raw rows, for comparison
+  paper_results/    the tables and raw rows of the paper appendix, for comparison
   PROTOCOL.txt          how one measured run was launched and aggregated into a cell of the paper
-  ENVIRONMENT.txt       the machine and the versions behind the published numbers
+  ENVIRONMENT.txt       the machine and the versions behind the numbers of the paper appendix
   setup_libraries.sh, setup_instances.sh   fetch the third-party code and generators (setup/thirdparty.sh runs them
                         with the columns and families of the mode); the code exports are read from
                         ../../work/exports/current/hybrid_bipartite_matching/ (setup/exports.sh)

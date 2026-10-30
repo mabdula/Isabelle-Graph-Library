@@ -35,6 +35,6 @@ EXAMPLE (the campaign's raw row, results/scipy_core.csv)
   instance,nodes,arcs,left,right,theta,theta_frac,status,matched,cost,cpu_ms,cpu_usr_ms,cpu_sys_ms,wall_ms,tag
   low-cost_n2048_s1.asn,2048,22528,1024,1024,0,0.000,OPTIMAL,1024,7920,26.625,26.625,0.000,26.619,low-cost;lsa;rep=1
 
-The published raw rows (published_results/hungarian_results.zip,
+The raw rows of the paper appendix (paper_results/hungarian_results.zip,
 <column>/<family>.csv) carry two further columns appended by the campaign
 runner, inferred_from and core, which the program itself does not print.

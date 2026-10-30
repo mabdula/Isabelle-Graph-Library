@@ -1,4 +1,4 @@
-MACHINE AND SOFTWARE BEHIND THE PUBLISHED NUMBERS
+MACHINE AND SOFTWARE BEHIND THE NUMBERS OF THE PAPER APPENDIX
 =================================================
 
 HARDWARE   Lenovo ThinkSystem SR645, 2 x AMD EPYC 7343 (16 cores each, no SMT,
@@ -32,6 +32,6 @@ THE EXPORT
   verified code as benchmarked (its last line is its own pre-append checksum
   and is skipped).  `make check' verifies it.
 
-THE PUBLISHED RESULTS
-  published_results/dfs_results.zip:
+THE RESULTS OF THE PAPER APPENDIX
+  paper_results/dfs_results.zip:
   one directory per column with the per-size tables and the raw rows.

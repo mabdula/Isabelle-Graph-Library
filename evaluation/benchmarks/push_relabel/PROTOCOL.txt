@@ -70,7 +70,7 @@ CORE WARM-UP
   To reproduce one of those rows, warm the core as above.
 
 WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (raw rows in
-published_results/push_relabel_results.zip, <column>/raw/<family>.csv)
+paper_results/push_relabel_results.zip, <column>/raw/<family>.csv)
   sml_hl, sml_fifo, sml_afp, hipr, jgrapht, networkx,
   lemon_linked, scipy_prebuilt           20261012_133154
   lemon_csr, scipy_csr                   20261014_174311

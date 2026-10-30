@@ -13,7 +13,7 @@ WHAT IS TIMED
   cumulative sum, no sort.  (The campaign's conditions file says
   coo_matrix(...).tocsr(); the driver that ran, this one, was changed to the
   direct build before the campaign started -- see scipy/conditions_NOTE.txt in
-  the published zip.)  Then minimum_spanning_tree(graph), SciPy's Kruskal in
+  the paper_results zip.)  Then minimum_spanning_tree(graph), SciPy's Kruskal in
   Cython.  Outside: reading the file (parse_ms), the parallel-edge collapse
   (dedup_ms) and shifting every weight up by one as float64 (build_ms): SciPy
   drops a stored zero from the returned tree, and the instances carry
@@ -28,7 +28,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                 pair {u, v} to its cheapest arc (the grids keep half their
                 arcs, the dense files about 94 %)
   repeat        1 (the campaign ran every repeat in its own process, so this is
-                always 1 in the published raw data; --repeats k prints k rows)
+                always 1 in the raw data of the paper appendix; --repeats k prints k rows)
   status        SOLVED     a spanning forest came back and passed the check
                            (no returned edge closes a cycle; the count is n
                            minus the number of connected components)
@@ -57,7 +57,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
 EXAMPLE
   Square-n.10.0.gr,1024,3968,1984,1,SOLVED,1023,160439,<cpu_ms>,<usr>,<sys>,<proc>,<wall>,<parse_ms>,<dedup_ms>,<build_ms>,<clock_build_ms>,<clock_solve_ms>,Square-n
 
-The published raw rows (published_results/kruskal_results.zip, <column>/raw/
+The raw rows of the paper appendix (paper_results/kruskal_results.zip, <column>/raw/
 <family>.csv) are stripped to the clocked period (cpu_ms and its parts) and
 carry the runner-appended columns inferred_from and core; the full rows with
 proc_ms, wall_ms, parse_ms, dedup_ms and build_ms stayed in the campaign

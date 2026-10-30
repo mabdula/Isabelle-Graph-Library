@@ -27,7 +27,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                                conserved at every vertex but the two ends, and
                                the ends balance
                 OVER_CAPACITY, NOT_A_FLOW, UNBALANCED_ENDS, VALUE_MISMATCH
-                               the check failed (never seen in the published rows)
+                               the check failed (never seen in the rows of the paper appendix)
   flow_value    the maximum flow value, summed after the clock as a cross-check
   cpu_ms        THE MEASUREMENT: whole-process CPU time (user + system)
                 between the two clock readings
@@ -47,6 +47,6 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
 EXAMPLE
   ak-4102.max,4102,6151,hi_pr,1,2,1,OK,2051,13.286,13.286,0.000,13.286,13.288,2.677,0.000,0.000,island=4-7;repeat=1;seed=1
 
-The published raw rows (published_results/push_relabel_results.zip,
+The raw rows of the paper appendix (paper_results/push_relabel_results.zip,
 <column>/raw/<family>.csv) are these rows cut down to the columns the tables
 use; the full rows are in the campaign directories of the study.

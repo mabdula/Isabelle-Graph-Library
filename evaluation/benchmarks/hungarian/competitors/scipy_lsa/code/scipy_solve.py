@@ -35,7 +35,7 @@ the p line, and a cell can be set as each arc line is read -- so its fill
 stays outside.  The CSR matrix is of the second kind: csr_matrix((w, (rows,
 cols))) is a sort-and-pack pass over the complete arrays, so for --solver
 sparse the clock opens on the parsed arrays and covers the CSR build and the
-solver call, nothing else.  The scipy_mwfbm_prebuilt column of the published
+solver call, nothing else.  The scipy_mwfbm_prebuilt column of the paper
 results built the CSR before the clock.
 """
 

@@ -46,9 +46,9 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
   tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
   (no clock_build_ms/clock_solve_ms columns: nothing is built inside the clock)
 
-EXAMPLE (the published raw row for the same instance)
+EXAMPLE (the raw row of the paper appendix for the same instance)
   Square-n.10.0.gr,1024,3968,0,14,787,1,REACHED,1,8,8,0.238,0.238,0.000,0.238,0.231,2.739,0.000,0.584,Square-n;rep=1;earlystop=no
 
-The published raw rows (published_results/bfs_results.zip, <column>/raw/<family>.csv)
+The raw rows of the paper appendix (paper_results/bfs_results.zip, <column>/raw/<family>.csv)
 carry two further columns appended by the campaign runner, inferred_from and
 core, which the program itself does not print.

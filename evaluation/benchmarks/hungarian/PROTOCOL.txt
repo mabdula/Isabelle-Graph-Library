@@ -5,7 +5,7 @@ Every number in Tables 22 to 24 of the paper is derived from runs launched
 as follows.  The benchmark programs in this package print the raw row of
 one such run; everything around the program is described here so that a
 single run can be repeated under the same conditions.  The raw rows the
-tables were computed from are in published_results/hungarian_results.zip
+tables were computed from are in paper_results/hungarian_results.zip
 (one directory per column, one CSV per family, plus README.txt and
 COLUMNS.txt).
 
