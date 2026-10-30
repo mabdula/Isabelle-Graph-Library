@@ -3139,7 +3139,39 @@ proof rule
         then have 6:"\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = 
                     (- (unit_vec n i) :: 'a vec) $ (pick J j)" 
           using 5 
-          by (smt (verit, best) Matrix.row_def 22 index_vec row_carrier vec_carrier_vec)
+          proof (intro allI impI)
+            fix j
+            assume j: "j < dim_col B"
+            have dimrow: "dim_row B - 1 < dim_row B"
+              using \<open>dim_row B - 1 < dim_row B\<close> .
+            have row_eq: "B $$ (dim_row B - 1, j) = row B (dim_row B - 1) $ j"
+              using index_row(1)[OF dimrow j] by simp
+            have card_eq: "card {ia. ia < dim_vec (- (unit_vec n i) :: 'a vec) \<and> ia \<in> J} = dim_col B"
+            proof -
+              have "dim_vec (vec_of_list (nths (list_of_vec (- (unit_vec n i) :: 'a vec)) J)) =
+                    card {ia. ia < dim_vec (- (unit_vec n i) :: 'a vec) \<and> ia \<in> J}"
+                using 5 by simp
+              moreover have "dim_vec (vec_of_list (nths (list_of_vec (- (unit_vec n i) :: 'a vec)) J)) =
+                    dim_vec (row B (dim_row B - 1))"
+                using 22 by simp
+              moreover have "dim_vec (row B (dim_row B - 1)) = dim_col B"
+                using index_row(2) by simp
+              ultimately show ?thesis by simp
+            qed
+            have j_lt: "j < card {ia. ia < dim_vec (- (unit_vec n i) :: 'a vec) \<and> ia \<in> J}"
+              using card_eq j by simp
+            have "row B (dim_row B - 1) $ j = vec_of_list (nths (list_of_vec (- (unit_vec n i) :: 'a vec)) J) $ j"
+              using 22 by simp
+            also have "\<dots> = vec (card {ia. ia < dim_vec (- (unit_vec n i) :: 'a vec) \<and> ia \<in> J})
+                       (\<lambda> ia. (- (unit_vec n i) :: 'a vec) $ (pick J ia)) $ j"
+              using 5 by simp
+            also have "\<dots> = (- (unit_vec n i) :: 'a vec) $ (pick J j)"
+              using index_vec[of j "card {ia. ia < dim_vec (- (unit_vec n i) :: 'a vec) \<and> ia \<in> J}"
+                                 "\<lambda> ia. (- (unit_vec n i) :: 'a vec) $ (pick J ia)"] j_lt
+              by simp
+            finally show "B $$ (dim_row B - 1, j) = (- (unit_vec n i) :: 'a vec) $ (pick J j)"
+              using row_eq by simp
+          qed
         show ?thesis
         proof(cases "i < n")
           case True
