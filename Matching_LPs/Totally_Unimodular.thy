@@ -3078,7 +3078,13 @@ proof rule
               submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) 
                         (?f ` (I - {0..<nr}) \<inter> {0..<1}) J"
           using submatrix_inter_rows' 3 
-          by metis
+        proof -
+          have "submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J =
+                  submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec])
+                            ((?f ` (I - {0..<nr})) \<inter> {0..<dim_row (mat_of_rows n [- (unit_vec n i) :: 'a vec])}) J"
+            by (rule submatrix_inter_rows')
+          then show ?thesis using 3 by simp
+        qed
         have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}" 
           apply safe 
             apply simp+
