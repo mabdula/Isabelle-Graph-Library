@@ -7204,7 +7204,7 @@ qed
         by auto
       ultimately obtain quotM'_large where quotM'_large: "matching quotM'_large" "card quotM'_large > card (quotG M')" "quotM'_large \<subseteq> quotG E"
         using Berge_2
-        by (metis (no_types, lifting))
+        by meson
       have finite_quotG_M: "finite (quotG M)"
         using finite_quot matching(3) by blast
       have quotM_sub_quotG: "quotG M \<subseteq> quotG E"
