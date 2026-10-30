@@ -6607,12 +6607,16 @@ proof(induction "length p" arbitrary: p M rule: less_induct)
               by auto
           qed
         qed
-        moreover have "insert {a', a''} ((M \<oplus> set (edges_of_path p)) - {{a', a''}}) = ((M \<oplus> set (edges_of_path p)))"
+        note D_facts = calculation this
+        have disj: "{a', a''} \<inter> Vs ((M \<oplus> set (edges_of_path p)) - {{a', a''}}) = {}"
+          using D_facts by auto
+        have match_ins: "matching (insert {a', a''} ((M \<oplus> set (edges_of_path p)) - {{a', a''}}))"
+          using disj D_facts(1) by (rule matching_insert)
+        have eq_ins: "insert {a', a''} ((M \<oplus> set (edges_of_path p)) - {{a', a''}}) = (M \<oplus> set (edges_of_path p))"
           using less.prems(3) Vs_def
-          by(auto simp: symmetric_diff_def)
-        ultimately show ?thesis
-          using matching_insert
-          by (metis Diff_disjoint Diff_insert_absorb insert_disjoint(1))
+          by (auto simp: symmetric_diff_def)
+        show ?thesis
+          using match_ins eq_ins by simp
       qed
     qed
   qed
