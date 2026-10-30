@@ -1873,8 +1873,10 @@ next
   show ?case
   proof ((rule impI)+)
     assume "Suc n = card X" "X \<subseteq> E"
-    then have "\<exists>X' y. y \<notin> X' \<and> X = (insert y X')"
-      by (metis card_Suc_eq)
+    then have "card X = Suc n" by simp
+    then obtain b B where "X = insert b B" "b \<notin> B" "card B = n"
+      using card_Suc_eq[THEN iffD1, of X n] by blast
+    then have "\<exists>X' y. y \<notin> X' \<and> X = (insert y X')" by blast
     then obtain X' y where "y \<notin> X'" "X = (insert y X')" by blast
 
     from \<open>X \<subseteq> E\<close> \<open>X = (insert y X')\<close> have "X' \<subseteq> E" by blast
