@@ -19,4 +19,5 @@ This artifact includes material from:
     CADE_artefact_Stevens_Ghidini/Union_Find/Union_Find_Size_Int_Quotient.thy
 
   The following files are adapted from the above:
+    CADE_artefact_Stevens_Ghidini/Union_Find/ROOT
     CADE_artefact_Stevens_Ghidini/Union_Find_Partial/Union_Find_Size_Int_Imp_Partial.thy
