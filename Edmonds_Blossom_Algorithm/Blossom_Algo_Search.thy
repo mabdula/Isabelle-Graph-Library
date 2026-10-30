@@ -3577,7 +3577,16 @@ qed
                 ultimately have "if1_cond flabel ex"
                   unfolding if1_cond_def
                   using v2 \<open>flabel v2 = None\<close>
-                  by metis
+                proof -
+                  obtain rb where flabel_vb: "flabel vb = Some (rb, Even)"
+                    using even by blast
+                  have va_eq: "va = v2"
+                    using v2 by simp
+                  have flabel_va: "flabel va = None"
+                    using va_eq \<open>flabel v2 = None\<close> by simp
+                  have mem_M: "{va, v1} \<in> M"
+                    using va_eq \<open>{v2, v1} \<in> M\<close> by simp
+                qed blast
                 then show ?thesis
                   using noL1
                   by simp
