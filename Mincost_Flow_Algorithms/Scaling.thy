@@ -1019,7 +1019,36 @@ proof-
            by (auto intro: augpathI )
          then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
-           by (metis dual_order.refl prepath_drop_cycles augpath_def prepath_def)
+          proof -
+            have pp: "prepath p" using p_prop(1) by (simp add: augpath_def)
+            show ?thesis
+            proof (cases "distinct p")
+              case True
+              show ?thesis
+              proof (rule that[of p])
+                show "prepath p" using pp by simp
+                show "set p \<subseteq> set p" by simp
+                show "fstv (hd p) = s" using p_prop(3) by simp
+                show "sndv (last p) = t" using p_prop(4) by simp
+                show "distinct p" by (fact True)
+                show "p \<noteq> []" using pp by (simp add: prepath_def)
+              qed
+            next
+              case False
+              then obtain q where q_props: "prepath q" "distinct q" "set q \<subseteq> set p"
+                "fstv (hd p) = fstv (hd q)" "sndv (last p) = sndv (last q)" "q \<noteq> []"
+                using pp by (blast elim: prepath_drop_cycles)
+              show ?thesis
+              proof (rule that[of q])
+                show "prepath q" by fact
+                show "set q \<subseteq> set p" by fact
+                show "fstv (hd q) = s" "sndv (last q) = t"
+                  using q_props(4,5) p_prop(3,4) by auto
+                show "distinct q" by fact
+                show "q \<noteq> []" by fact
+              qed
+            qed
+          qed
          hence "augpath \<f> p'"
            using p_prop(1) unfolding augpath_def augpath_def Rcap_def 
            by auto
