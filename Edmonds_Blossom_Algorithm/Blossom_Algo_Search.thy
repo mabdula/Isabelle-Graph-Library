@@ -3654,7 +3654,7 @@ qed
           by simp
         then show ?thesis
           using i
-          by metis
+          by blast
       next
         case mult_match_unex
         then obtain e M' where M': "e \<in> M - ex" "M - ex = insert e M'" "e \<notin> M'"
