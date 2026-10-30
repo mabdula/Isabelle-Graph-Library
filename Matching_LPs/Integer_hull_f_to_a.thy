@@ -919,7 +919,33 @@ proof
       using that by blast
   qed
     then show ?thesis 
-      by (smt (verit, best) Cd_non_empty Collect_empty_eq i index_mult_mat_vec j j')
+    proof (intro ballI impI)
+      fix x
+      assume xcarr: "(x :: 'a vec) \<in> carrier_vec n"
+      assume xd: "C *\<^sub>v x = d"
+      have j'C: "j' < dim_row C" using j' by blast
+      have rCj': "row C j' = u" using j' by blast
+      have rA'j: "row A' j = u" using j by blast
+      have rAi: "row A i = row A' j" using i by blast
+      have b_ij: "b $ i = b' $ j" using i by blast
+      have dj': "d $ j' = b $ i"
+      proof -
+        obtain y where y1: "y \<in> carrier_vec n" and y2: "C *\<^sub>v y = d"
+          and y3: "row A' j \<bullet> y = b' $ j"
+          using Cd_non_empty by auto
+        have "d $ j' = (C *\<^sub>v y) $ j'" using y2 by simp
+        also have "\<dots> = row C j' \<bullet> y" by (rule index_mult_mat_vec[OF j'C])
+        also have "\<dots> = row A' j \<bullet> y" using rCj' rA'j by simp
+        also have "\<dots> = b' $ j" by (rule y3)
+        also have "\<dots> = b $ i" using b_ij by simp
+        finally show ?thesis .
+      qed
+      have "row A i \<bullet> x = row C j' \<bullet> x" using rAi rA'j rCj' by simp
+      also have "\<dots> = (C *\<^sub>v x) $ j'" by (rule index_mult_mat_vec[OF j'C, symmetric])
+      also have "\<dots> = d $ j'" using xd by simp
+      also have "\<dots> = b $ i" by (rule dj')
+      finally show "row A i \<bullet> x = b $ i" .
+    qed
   next
     case False
     have "set (rows C) \<subseteq> carrier_vec n"
