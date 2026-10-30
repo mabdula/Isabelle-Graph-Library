@@ -3395,7 +3395,8 @@ qed
     apply(rule cost_flow_network.augcycle_from_non_distinct_cycle[OF  agpath])
     using "1"(1) awalk_f c_non_empt awalk_fst_last[OF _ awalk_f]
           awalk_fst_last[OF _ path_with_props(1)]  cc_in_E  "1"(1) cc_def path_with_props(2)
-    by (auto, metis list.map_comp same_edges)
+    by (auto simp add: list.map_comp same_edges cc_def comp_def hd_map last_map
+                    to_edge_get_edge_and_costs_backward)
   then show ?case 
     using assms(1) invar_isOptflow_def cost_flow_network.min_cost_flow_no_augcycle by blast
 qed
