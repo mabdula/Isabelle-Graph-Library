@@ -3528,8 +3528,8 @@ qed
           by fast
         have 31: "submatrix (mat_of_rows n [(- unit_vec n i):: 'a vec]) (?f ` (I - {0..<nr})) J =
             submatrix (mat_of_rows n [(- unit_vec n i):: 'a vec]) (?f ` (I - {0..<nr})\<inter>{0..<1}) J"
-          using submatrix_inter_rows' 3 
-          by metis
+          by (rule submatrix_inter_rows'[of "mat_of_rows n [(- unit_vec n i):: 'a vec]"
+                 "?f ` (I - {0..<nr})" J, unfolded 3])
         have 30: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {}" 
           apply safe 
           apply simp+
