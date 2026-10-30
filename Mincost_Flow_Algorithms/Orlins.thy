@@ -2074,7 +2074,30 @@ proof-
       using connected_compt_subs by simp
   qed
   thus ?thesis 
-    by (metis Suc_eq_plus1 le_Suc_eq)
+    proof -
+      show ?thesis
+      proof(rule ccontr)
+        assume contr: "\<not> ?thesis"
+        have not_notyetterm: "\<And>k. k \<le> \<l> \<Longrightarrow> return (compow k orlins_one_step_check state) = notyetterm"
+          using contr by auto
+        have not_superset: "\<And>k. k \<le> \<l> \<Longrightarrow> 
+              \<not> connected_component (to_graph (\<FF> (compow k orlins_one_step_check state))) z \<supset>
+                connected_component (to_graph (\<FF> state)) z"
+          using contr by auto
+        have not_superset_all: "\<And>k. k \<le> \<l> + 1 \<Longrightarrow>
+              \<not> connected_component (to_graph (\<FF> (compow k orlins_one_step_check state))) z \<supset>
+                connected_component (to_graph (\<FF> state)) z"
+          using contr by blast
+        have not_superset_Suc: "\<not> connected_component (to_graph (\<FF> (compow (Suc \<l>) orlins_one_step_check state))) z \<supset>
+                                   connected_component (to_graph (\<FF> state)) z"
+          using not_superset_all[of "Suc \<l>"] by simp
+        have "connected_component (to_graph (\<FF> (compow (Suc \<l>) orlins_one_step_check state))) z \<supset>
+              connected_component (to_graph (\<FF> state)) z"
+          using not_notyetterm not_superset last_chance_merge by blast
+        thus False
+          using not_superset_Suc by simp
+      qed
+    qed
 qed
 
 lemma if_important_then_merge_or_termination:
