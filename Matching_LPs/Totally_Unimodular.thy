@@ -1384,7 +1384,23 @@ proof
                   B $$ (i, insert_index j k)"
       using 16 18 by presburger
     obtain i' where i':"row A i' = row (submatrix A I UNIV) i \<and> i' < dim_row A \<and> i' = pick I i"
-      by (metis (full_types) asmi dim_submatrix(1) pick_le row_submatrix_UNIV)
+    proof -
+      have eq1: "dim_row (submatrix A I (J - {pick J j})) = card {k. k < dim_row A \<and> k \<in> I}"
+        using dim_submatrix(1) by blast
+      have eq2: "dim_row (submatrix A I UNIV) = card {k. k < dim_row A \<and> k \<in> I}"
+        using dim_submatrix(1) by blast
+      have i_lt: "i < card {k. k < dim_row A \<and> k \<in> I}"
+        using asmi eq1 eq2 by simp
+      have row_eq: "row (submatrix A I UNIV) i = row A (pick I i)"
+        using i_lt by (rule row_submatrix_UNIV)
+      have pick_lt: "pick I i < dim_row A"
+        using i_lt by (rule pick_le)
+      have wit: "row A (pick I i) = row (submatrix A I UNIV) i
+        \<and> pick I i < dim_row A \<and> pick I i = pick I i"
+        using row_eq pick_lt by simp
+      show ?thesis
+        using wit by (rule that)
+    qed
     have 19:"insert_index j k < dim_col B" 
     proof (cases "k < j")
       case True
