@@ -19,6 +19,7 @@
 !/evaluation/experiments_smoke.sh
 !/evaluation/experiments_8h.sh
 !/evaluation/experiments_full.sh
+!/NOTICES.txt
 
 # non-theory files the build needs
 !/etc/components

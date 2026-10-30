@@ -1,0 +1,22 @@
+This artifact includes material from:
+
+  Authors: Lukas Stevens and Rebecca Ghidini
+
+  Paper: "Simplified and Verified: A Second Look at a Proof-Producing
+          Union-Find Algorithm"
+  https://arxiv.org/abs/2504.10246
+
+  Artifact: "Formalisation of the Union-Find-Explain Data Structure in Isabelle/HOL"
+  https://doi.org/10.5281/zenodo.15557955
+
+  Licensed under Creative Commons Attribution 4.0 International
+  https://creativecommons.org/licenses/by/4.0/
+
+  The following files are copied verbatim from the above:
+    CADE_artefact_Stevens_Ghidini/Union_Find/Union_Find.thy
+    CADE_artefact_Stevens_Ghidini/Union_Find/Union_Find_Size.thy
+    CADE_artefact_Stevens_Ghidini/Union_Find/Union_Find_Size_Int.thy
+    CADE_artefact_Stevens_Ghidini/Union_Find/Union_Find_Size_Int_Quotient.thy
+
+  The following files are adapted from the above:
+    CADE_artefact_Stevens_Ghidini/Union_Find_Partial/Union_Find_Size_Int_Imp_Partial.thy
