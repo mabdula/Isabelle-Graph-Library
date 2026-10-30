@@ -7,9 +7,9 @@ USAGE
 WHAT IS TIMED
   Draining a BreadthFirstIterator from s (the whole reachable region), on a
   DirectedPseudograph (an object per arc, hash maps around it) that was filled
-  arc by arc OUTSIDE the clock (build_ms), as the first campaign of 2026-10-11
-  did for every library; ../jgrapht is the second campaign's driver, on jgrapht-opt's CSR graph
-  built inside the clock.  Before the clock the same iterator is run on a
+  arc by arc OUTSIDE the clock (build_ms); ../jgrapht
+  measures the same library on jgrapht-opt's CSR graph built inside the clock
+  (column jgrapht_csr).  Before the clock the same iterator is run on a
   synthetic graph (a seeded random digraph, m = 4n) until the JIT is quiet.
   Clock: the solver THREAD's CPU time (ThreadMXBean), NOT including the
   garbage collector's pause time; proc_ms is the whole process (10 ms ticks).
@@ -49,7 +49,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
   tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
   (no clock_build_ms/clock_solve_ms columns: nothing is built inside the clock)
 
-EXAMPLE (the first campaign's raw row for the same instance)
+EXAMPLE (the published raw row for the same instance)
   Square-n.10.0.gr,1024,3968,0,14,787,1,REACHED,1,8,8,0.699,0.000,0.699,0.000,0.688,4.475,0.000,14.363,Square-n;rep=1
 
 The published raw rows (published_results/bfs_results.zip, <column>/raw/<family>.csv)

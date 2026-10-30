@@ -22,7 +22,7 @@ else
 fi
 
 arch="$(uname -m)"
-case "$arch" in    # x86_64 is the TACAS VM and the tested target; the aarch64 files are listed but untested
+case "$arch" in    # x86_64 is the tested target; the aarch64 files are listed but untested
   x86_64)  triplet=x86_64-linux-gnu ;;
   aarch64) triplet=aarch64-linux-gnu ;;
   *) fail "unsupported architecture $arch (x86_64, or aarch64)" ;;

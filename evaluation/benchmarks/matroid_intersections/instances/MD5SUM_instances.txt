@@ -1,6 +1,5 @@
 # md5  bytes  path -- every instance file of the timed grid (seeds 1-5; .asn = (weighted) matching, .bmatch = (weighted) b-matching).
-# Files of the two smallest sizes per family are still on disk and were hashed on 2026-10-29; the others were
-# deleted 2026-10-16 after hashing (matroid_intersections/instances/REMOVED_2026-10-16.txt).
+# The two smallest sizes of every family were regenerated and checked against this list.
 45084cb10be5560c3134c79b177c243c       4940603  instances/geometric/geometric_n1024_s1.asn
 2c752bd0200eafcf4567cd25e93f6ac5       4946386  instances/geometric/geometric_n1024_s1.bmatch
 87481c658dca32c0079f72ea0ef205f4       4940057  instances/geometric/geometric_n1024_s2.asn

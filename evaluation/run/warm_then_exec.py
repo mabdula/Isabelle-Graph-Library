@@ -6,8 +6,7 @@
 WHY.  The box runs schedutil on acpi-cpufreq and parks an idle core at
 1.49 GHz.  A solver that starts on an idle core and finishes within about
 1.5 s runs at that frequency throughout: LEMON on ak-131078 read 1600 ms
-from an idle core and 735 ms right after a 5 s busy spin on the same core
-(probe of 2026-10-14, see results/20261014_174311/CONTAMINATED_ROWS_REMOVED.txt).
+from an idle core and 735 ms right after a 5 s busy spin on the same core.
 Runs of several seconds ramp the core themselves and are not affected.
 
 HOW.  This process inherits the island affinity the runner set with

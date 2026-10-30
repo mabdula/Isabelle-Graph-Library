@@ -15,7 +15,7 @@ give the same spread of queries per table cell.
 """
 import csv, gzip, hashlib, os, random, sys
 
-ROOT = ".."   # as run: the absolute path of the study directory on the benchmark machine (the only change in this copy)
+ROOT = ".."   # the instances/ directory
 INST = os.path.join(ROOT, "instances")
 OUT = os.path.join(INST, "queries.csv")
 MASTER = 20261011          # recorded in the header line of the output

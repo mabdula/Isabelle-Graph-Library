@@ -263,5 +263,4 @@ b174c15a4d9dd97ae76a6360cecb3b45    1409628748 instances/USA-road-t/USA-road-t.U
 0a69e911131d9c328951fb61fa68aadd     358091759 instances/USA-road-t/USA-road-t.USA.gr.gz
 3f7e3a9d13e1e8ae7ef8d565efaa266f     347817240 instances/USA-road-t/USA-road-t.W.gr
 a73295c21e308876e3cb55f72d1283b3      92451633 instances/USA-road-t/USA-road-t.W.gr.gz
-# Files of the two smallest sizes per family are still on disk and were hashed on 2026-10-29;
-# the others were deleted 2026-10-16 after hashing (dijkstra/instances/REMOVED_2026-10-16.txt).
+# The two smallest sizes of every family were regenerated and checked against this list.

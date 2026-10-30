@@ -1,7 +1,7 @@
 # JGraphT 1.5.3 MaximumWeightBipartiteMatching on jgrapht-core's
 # SimpleWeightedGraph (an object per edge, hash maps around it) built OUTSIDE
 # the clock, on the bare thread clock: the paper's "JGraphT MWBM hash" column
-# (jgrapht_mwbm_hashgraph; the driver of the sweep of 2026-10-08).
+# (jgrapht_mwbm_hashgraph).
 #
 #   make            compiles the driver and writes the launcher bench_jgrapht_mwbm_hashgraph_hashgraph here
 #   make clean

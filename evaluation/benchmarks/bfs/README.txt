@@ -31,7 +31,8 @@ Columns of the paper, their names in columns.txt and the program behind each
   NetworkX             networkx                       competitors/networkx/bench_networkx
 
 competitors/lemon_linked, competitors/jgrapht_hashgraph and
-competitors/scipy_prebuilt are the drivers of the first campaign
-(2026-10-11), kept as they ran; the others are the drivers of the campaign
-of 2026-10-14.
-PROTOCOL.txt says which campaign each column was read from.
+competitors/scipy_prebuilt measure the libraries on a structure built outside
+the clock (a linked arc list, an object-per-arc graph, a prebuilt CSR matrix);
+competitors/lemon, competitors/jgrapht and competitors/scipy measure them on
+CSR built inside the clock.  PROTOCOL.txt says which results directory each
+column was read from.

@@ -11,8 +11,8 @@ WHAT IS TIMED
   Dijkstra has no target: it settles the whole reachable graph, so every row
   carries earlystop=no in its tag.  Outside: reading the file (parse_ms),
   collapsing parallel arcs to the cheapest (dedup_ms) and the CSR build
-  (build_ms).  Clock: process CPU time (getrusage).  This is the first
-  campaign's driver (2026-10-11); ../scipy is the second campaign's driver, with the build inside.
+  (build_ms).  Clock: process CPU time (getrusage).  ../scipy measures the same library with the matrix built inside the clock
+  (column scipy_csr).
 
 COLUMNS (one CSV row per run; --header prints the header line alone)
 

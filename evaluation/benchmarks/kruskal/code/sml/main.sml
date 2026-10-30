@@ -44,7 +44,7 @@
  * spanning tree is a problem on an undirected graph, so each arc line
  * (u, v, w) is one edge {u, v} of weight w.  The grid files carry both
  * directions of every pair with different weights and the dense files carry
- * some arcs twice; on Thomas Ammer's instruction of 2026-10-15 the parser
+ * some arcs twice; the parser
  * keeps the cheapest edge of every unordered pair (GrParser.collapse), so
  * the solver is handed a simple graph.  That is parsing work, outside the
  * clock, reported in dedup_ms; the `edges' column is the count after it,

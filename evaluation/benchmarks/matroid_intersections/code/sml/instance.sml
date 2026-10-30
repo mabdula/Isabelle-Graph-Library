@@ -1,6 +1,6 @@
 (* The instance reader, shared by the four problems.
  *
- * It reads the format of ../../bench/asn_reader.py and applies the same
+ * It reads the format of asn_reader.py (competitors/*/code/) and applies the same
  * checks, so that every solver in the study rejects the same files and builds
  * the same arrays from the ones it accepts. Nothing here is on the clock: the
  * clock covers the call into the generated code alone.

@@ -1,7 +1,7 @@
 rmf-long: genrmf, 15 rungs, three instances per rung, one per seed.
 The repeat column of the raw rows IS the seed: repeat k is the instance built
 with seed k (k = 1, 2, 3); the paper's cell is the mean of the three.  Files
-were named rmf-long-A-B.max and deleted after use; no checksum was recorded.
+were named rmf-long-A-B.max; no checksum was recorded.
 Command (output on stdout, redirected to the file):
 
 rmf-long-8-64          n=4096      m=18368      seed=1  genrmf -a 8 -b 64 -c1 1 -c2 10000 -seed 1 > rmf-long-8-64.max

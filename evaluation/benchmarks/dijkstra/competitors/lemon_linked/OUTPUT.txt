@@ -9,9 +9,8 @@ WHAT IS TIMED
   was filled arc by arc OUTSIDE the clock (build_ms), together with its length
   map; a fresh Dijkstra object per repeat, so the algorithm's own setup
   (init of the distance, predecessor and heap maps) is inside.  run(s, t)
-  stops when t is settled.  Clock: process CPU time (getrusage).  This is the
-  first campaign's driver (2026-10-11), kept as its own column; see the CSR
-  version in ../lemon for the second campaign.
+  stops when t is settled.  Clock: process CPU time (getrusage).  ../lemon measures the same library on StaticDigraph (CSR) built inside the
+  clock (column lemon_csr).
 
 COLUMNS (one CSV row per run; --header prints the header line alone)
 

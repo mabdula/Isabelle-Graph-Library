@@ -61,20 +61,20 @@ TIMEOUT AND LADDER
   every larger size of that (solver, family) are recorded TIMEOUT_INFERRED
   without being run (TO in the paper).  Out of memory likewise (OOM).
 
-WHICH CAMPAIGN EACH COLUMN COMES FROM (raw rows in
-published_results/bfs_results.zip, <column>/raw/<family>.csv; the campaign
-ids are the study's results directories, named here as provenance)
+WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (raw rows in
+published_results/bfs_results.zip, <column>/raw/<family>.csv; the ids are the
+campaign's results directories, named as provenance)
   sml_csr, sml_rbt, scala_csr, scala_rbt, go_csr, go_rbt, networkx,
   lemon_linked, jgrapht_hashgraph, scipy_prebuilt
-                                     campaign 20261011_131341  (2026-10-11)
-  lemon_csr, jgrapht_csr, scipy_csr  campaign 20261014_161905  (2026-10-14)
-  sml_csr on USA-road-t.NY           campaign rerun_ny_20261012_101143,
+                                     20261011_131341
+  lemon_csr, jgrapht_csr, scipy_csr  20261014_161905
+  sml_csr on USA-road-t.NY           rerun_ny_20261012_101143,
                                      measured with nothing else running on
                                      the machine (mean 39.455 ms).
-  The second campaign measured the three libraries with their CSR
-  structure built inside the clock; the first campaign's library rows are
-  shown as the *_linked / *_hashgraph / *_prebuilt columns.  Both driver
-  versions are in competitors/.
+  lemon_csr, jgrapht_csr and scipy_csr measure the three libraries with their
+  CSR structure built inside the clock; the *_linked / *_hashgraph /
+  *_prebuilt columns measure them on a structure built outside the clock.
+  Both driver versions are in competitors/.
 
 THE CLOCK
   CPU time (user + system) read immediately before and after the solver call.

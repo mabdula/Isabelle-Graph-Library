@@ -1,7 +1,4 @@
 #!/bin/bash
-# PACKAGE COPY: identical to the script that generated the instances except for
-# the path lines marked "package:", which pointed into the study tree
-# (<study>/generators/build/..., <study>/generators/*.a, <study>/instances).
 # Run it from this directory after `make' has built the generators.
 # Generate the DIMACS Network Flows 2.0 core assignment benchmarks.
 #
@@ -30,9 +27,9 @@ set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$here")"
-gen="$here/assign"        # package: was $root/generators/build/assign
-twocost="$here/twocost.a"   # package: was $root/generators/twocost.a
-out="$here/out"             # package: was $root/instances
+gen="$here/assign"
+twocost="$here/twocost.a"
+out="$here/out"
 
 [[ -x "$gen" ]] || { echo "missing generator: $gen (run make -C $root/generators)"; exit 1; }
 

@@ -1,7 +1,7 @@
 # geometric: dcube (generators/build/dcube) fed on stdin with
 #   nodes N / dimension 2 / maxloc 1000000 / seed K
 # piped through  awk -f geomasn.a  and the arc letter e rewritten to a (sed, see gen_geometric.sh).
-# One line per instance.  256..4096 are the study grid; 8192 and 16384 were added 2026-10-16 (files deleted after their last run).
+# One line per instance.  256..4096 are the study grid; 8192 and 16384 were added for this solver (no checksum recorded).
 geometric_n256_s1.asn  nodes 256  dimension 2  maxloc 1000000  seed 1  | awk -f geomasn.a
 geometric_n256_s2.asn  nodes 256  dimension 2  maxloc 1000000  seed 2  | awk -f geomasn.a
 geometric_n256_s3.asn  nodes 256  dimension 2  maxloc 1000000  seed 3  | awk -f geomasn.a

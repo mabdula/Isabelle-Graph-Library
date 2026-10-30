@@ -26,7 +26,7 @@ build_ms.
 
 PARALLEL EDGES ARE COLLAPSED BY THE PARSER, as in every driver of the study
 (collapse_min in gr_read.py, dedup_ms): every unordered pair keeps its
-cheapest arc, on Thomas Ammer's instruction of 2026-10-15, so the Graph
+cheapest arc, so the Graph
 gets each edge once.
 
 The clock is CPU time (user + system) over the whole process, getrusage, the

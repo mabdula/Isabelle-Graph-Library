@@ -1,9 +1,5 @@
-# REPRODUCIBILITY PACKAGE: this is the script as run, except that the two
-# absolute paths below were
-#   $GENPROG = "<bfs study>/reference/ch9-1.1/gens/rand/sprand.exe";
-#   $DIR     = "<bfs study>/instances/Dense-n";
-# and are now relative, so the script runs inside instances/generators
-# after `make' there.  Nothing else differs from what generated the files.
+# The study's own script, with its two path lines ($GENPROG, $DIR) made
+# relative, so that it runs inside instances/generators after `make' there.
 # ============================================================================
 #  genDense-n.gr.pl
 # ============================================================================

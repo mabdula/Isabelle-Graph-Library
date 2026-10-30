@@ -1,8 +1,7 @@
 wash-rlg-long: washington, 15 rungs, three instances per rung, one per seed.
 The repeat column of the raw rows IS the seed: repeat k is the instance built
 with seed k (k = 1, 2, 3); the paper's cell is the mean of the three.  Files
-were named wash-rlg-long-128-D2.max and deleted after use; no checksum was
-recorded.  Arguments: fct=2 (random level graph, long), dim1=128, dim2=D2,
+were named wash-rlg-long-128-D2.max; no checksum was recorded.  Arguments: fct=2 (random level graph, long), dim1=128, dim2=D2,
 capacity range 10000, seed.  Command (output on stdout):
 
 wash-rlg-long-128-32       n=4098      m=12160      seed=1  washington 2 128 32 10000 1 > wash-rlg-long-128-32.max

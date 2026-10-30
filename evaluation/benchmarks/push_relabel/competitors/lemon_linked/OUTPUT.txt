@@ -9,9 +9,8 @@ WHAT IS TIMED
   Preflow's construction (its own setup) and run() to a maximum flow, on a
   SmartDigraph (LEMON's linked arc-list digraph) and its capacity map that
   were filled arc by arc OUTSIDE the clock (build_ms).  Clock: process CPU
-  time (getrusage).  This is the first campaign's driver (2026-10-12), kept as
-  its own column; ../lemon is the second campaign's driver, on StaticDigraph (CSR) built inside
-  the clock.  After the clock the returned arc flows are checked (capacity,
+  time (getrusage).  ../lemon measures the same library on StaticDigraph (CSR) built inside the
+  clock (column lemon_csr).  After the clock the returned arc flows are checked (capacity,
   conservation, balanced ends) and the flow value summed.
 
 COLUMNS (one CSV row per run; --header prints the header line alone)
@@ -45,12 +44,11 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                 "island=<cores>;repeat=<k>;seed=<s>" and some programs append
                 their own notes (see each OUTPUT.txt)
 
-EXAMPLE (the first campaign's raw row for the same instance)
+EXAMPLE (the published raw row for the same instance)
   instance,nodes,arcs,variant,source,target,repeat,status,flow_value,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,tag
   rmf-long-8-64.max,4096,18368,lemon_preflow,1,4096,1,OK,270914,8.624,8.417,0.207,8.624,8.627,5.578,0.000,1.157,island=4-7;repeat=1;seed=1
 
 The published raw rows (published_results/push_relabel_results.zip,
 <column>/raw/<family>.csv) are these rows cut down to the columns the tables
 use; the raw rows' extra bookkeeping columns are not part of the package.
-The second campaign's version of this driver, on StaticDigraph built inside the clock
-(column "LEMON CSR"), is ../lemon.
+The driver on StaticDigraph built inside the clock (column "LEMON CSR") is ../lemon.

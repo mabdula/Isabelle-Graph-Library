@@ -10,8 +10,8 @@ THE PROBLEM
   One DIMACS .max file, generated on the fly by one of the three generators
   (instances/seeds/<family>.txt gives the exact command line of every
   instance), solved from the file's own source and sink (`n <id> s`,
-  `n <id> t`).  Instances were deleted after use; the generators are
-  deterministic, so the command line is the instance.
+  `n <id> t`).  No instance file is kept; the generators are deterministic,
+  so the command line is the instance.
 
 THE COMMAND
   prlimit --cpu=1200 [--as=48318382080] taskset -c <island> <program> --tag "island=<island>;repeat=<k>;seed=<s>" <instance.max>
@@ -33,9 +33,8 @@ THE COMMAND
       competitors/jgrapht/bench_jgrapht  column jgrapht       "JGraphT"
       competitors/scipy/bench_scipy      column scipy_csr     "SciPy Dinic CSR"
       competitors/networkx/bench_networkx column networkx     "NetworkX"
-    and, from the first campaign's driver versions (competitors/lemon_linked,
-    competitors/scipy_prebuilt), the columns
-    lemon_linked "LEMON linked" and scipy_prebuilt "SciPy Dinic prebuilt".
+    and, from competitors/lemon_linked and competitors/scipy_prebuilt, the
+    columns lemon_linked "LEMON linked" and scipy_prebuilt "SciPy Dinic prebuilt".
 
 REPEATS, INSTANCES AND AGGREGATION
   rmf-long and wash-rlg-long: THREE INSTANCES per rung, seeds 1, 2, 3; the
@@ -58,7 +57,7 @@ ORDER AND PINNING
   overflows (OVF in the paper; ERROR in the raw rows).
 
 CORE WARM-UP
-  The campaigns of 2026-10-12 and 2026-10-14 ran the program with no
+  The rows of 20261012_133154 and 20261014_174311 were measured with no
   preceding spin.  The lemon_csr rows of ak-4102 .. ak-131078 and the
   scipy_csr rows of ak-4102 .. ak-16390 (campaign 20261015_warm_ak, three
   repeats each) were measured with a 5 s busy spin on the target core
@@ -70,17 +69,17 @@ CORE WARM-UP
       prlimit ... taskset -c <island> python3 ../run/warm_then_exec.py 5 -- <program> ... <instance.max>
   To reproduce one of those rows, warm the core as above.
 
-WHICH CAMPAIGN EACH COLUMN COMES FROM (raw rows in
+WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (raw rows in
 published_results/push_relabel_results.zip, <column>/raw/<family>.csv)
   sml_hl, sml_fifo, sml_afp, hipr, jgrapht, networkx,
-  lemon_linked, scipy_prebuilt           campaign 20261012_133154 (2026-10-12)
-  lemon_csr, scipy_csr                   campaign 20261014_174311 (2026-10-14)
+  lemon_linked, scipy_prebuilt           20261012_133154
+  lemon_csr, scipy_csr                   20261014_174311
                                          with the nine short ak rungs from
-                                         campaign 20261015_warm_ak (2026-10-15)
-  The 2026-10-14 campaign measured LEMON on StaticDigraph (CSR) and SciPy
-  with the CSR matrix built inside the clock; the first campaign's LEMON
-  (SmartDigraph, built outside) and SciPy (matrix prebuilt) rows are the
-  *_linked and *_prebuilt columns.
+                                         20261015_warm_ak
+  lemon_csr measures LEMON on StaticDigraph (CSR) and scipy_csr SciPy with the
+  CSR matrix built inside the clock; lemon_linked (SmartDigraph, built
+  outside) and scipy_prebuilt (matrix prebuilt) measure them on a structure
+  built outside the clock.
 
 THE CLOCK
   Whole-process CPU time (user + system) read immediately before and after

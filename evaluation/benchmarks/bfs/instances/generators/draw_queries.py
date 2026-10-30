@@ -21,9 +21,8 @@ give the same spread of queries per table cell.
 """
 import csv, gzip, hashlib, os, random, sys
 
-# AS RUN: ROOT was the study directory and INST its instances/ directory; for
-# this package the families are read from the directory of this script
-# (where the generator scripts write them) and the output lands beside it.
+# The families are read from the directory of this script (where the
+# generator scripts write them) and the output lands beside it.
 ROOT = os.path.dirname(os.path.abspath(__file__))
 INST = ROOT
 OUT = os.path.join(INST, "queries.csv")
@@ -32,7 +31,7 @@ MASTER = 20261011          # recorded in the header line of the output
 # Dense-n is this study's own: the 9th DIMACS Challenge on shortest paths
 # shipped no dense family -- all six of its synthetic families sit at four
 # arcs per node -- so it was built here with the challenge's own sprand
-# generator at m = n^2/16.  See bench/gen/genDense-n.gr.pl.
+# generator at m = n^2/16.  See genDense-n.gr.pl.
 SYNTH = ["Square-n", "Long-n", "Dense-n"]
 ROAD_QUERIES = 10
 

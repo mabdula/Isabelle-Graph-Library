@@ -53,8 +53,8 @@
 // The rounds spin rather than sleep while the compiler settles, because an
 // idle core on this box is clocked down.
 //
-// EVERY ARC IS AN UNDIRECTED EDGE, AND PARALLEL EDGES ARE COLLAPSED: on
-// Thomas Ammer's instruction of 2026-10-15 the parser keeps the cheapest
+// EVERY ARC IS AN UNDIRECTED EDGE, AND PARALLEL EDGES ARE COLLAPSED:
+// the parser keeps the cheapest
 // edge of every unordered pair (collapse() below), so the solver is handed a
 // simple graph.  Parsing work, outside the clock, reported in dedup_ms; the
 // `edges' column is the count after it, `arcs' the file's.  Every driver in

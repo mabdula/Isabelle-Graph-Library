@@ -6,8 +6,8 @@
 
 THIS STUDY IS KRUSKAL'S MINIMUM SPANNING TREE, and every arc line is one
 undirected edge of the given weight.  The files are the shortest-path
-challenge's directed ones, and PARALLEL EDGES ARE COLLAPSED on the way in,
-on Thomas Ammer's instruction of 2026-10-15: every unordered pair {u, v}
+challenge's directed ones, and PARALLEL EDGES ARE COLLAPSED on the way in:
+every unordered pair {u, v}
 keeps its cheapest arc (collapse_min), so every solver is handed the same
 simple graph.  Parsing work, outside the clock, reported in dedup_ms.
 

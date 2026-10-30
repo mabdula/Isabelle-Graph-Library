@@ -1,6 +1,6 @@
 """Shared solver code of the Sage matroid intersection scripts for bipartite (b-)matching.
 
-Instances are read by the study's own reader, bench/asn_reader.py, which also documents the
+Instances are read by the study's own reader, asn_reader.py, which also documents the
 format; nothing here parses.
 
 The instance is the intersection of two partition matroids on the edges: the blocks of the
@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # package: asn_reader.py beside run_sage.py (the study had it in bench/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # asn_reader.py is beside run_sage.py
 from asn_reader import InstanceError, read_instance  # the study's reader; never on the clock
 
 try:  # initialise Sage before importing submodules: full Sage, or modular passagemath-modules

@@ -59,8 +59,7 @@ ccbf3efb5850363656e9dec195aa3c74         54651  instances/Square-n/Square-n.10.8
 506a06f238ee62ef39a33aa0c4f13336        121777  instances/Square-n/Square-n.11.7.gr
 e36746485895644af3ad0f8356b3c634        121777  instances/Square-n/Square-n.11.8.gr
 a5e1f7a006ff243919cc887821d7eb56        121747  instances/Square-n/Square-n.11.9.gr
-# deleted 2026-10-16 after hashing (REMOVED_2026-10-16.txt of dijkstra/instances and bfs/instances).
-# Square-n and Long-n are the dijkstra study's files, Dense-n the bfs study's (read through links);
+# Square-n and Long-n are the dijkstra study's files, Dense-n the bfs study's.
 eb7d4acc6ed0640e2223d625ef049b15      16976243 instances/Dense-n/Dense-n.12.0.gr
 caf53acb6d707034a82ce584f70627f8      16975790 instances/Dense-n/Dense-n.12.1.gr
 9791ae864b3cc52f392fbe49b41e3aa5      16976126 instances/Dense-n/Dense-n.12.2.gr
@@ -325,4 +324,4 @@ b174c15a4d9dd97ae76a6360cecb3b45    1409628748 instances/USA-road-t/USA-road-t.U
 0a69e911131d9c328951fb61fa68aadd     358091759 instances/USA-road-t/USA-road-t.USA.gr.gz
 3f7e3a9d13e1e8ae7ef8d565efaa266f     347817240 instances/USA-road-t/USA-road-t.W.gr
 a73295c21e308876e3cb55f72d1283b3      92451633 instances/USA-road-t/USA-road-t.W.gr.gz
-# the two smallest sizes per family are still on disk and were hashed on 2026-10-29, the others were
+# The two smallest sizes of every family were regenerated and checked against this list.

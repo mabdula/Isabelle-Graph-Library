@@ -10,8 +10,8 @@ WHAT IS TIMED
   repeat, so the algorithm's own setup (its reached, distance and predecessor
   maps) is inside.  The search settles everything reachable from s; the
   target is only looked up afterwards.  Clock: process CPU time (getrusage).
-  This is the first campaign's driver (2026-10-11), kept as its own column;
-  ../lemon is the second campaign's driver, on StaticDigraph (CSR) built inside the clock.
+  ../lemon measures the same library on StaticDigraph (CSR) built inside the
+  clock (column lemon_csr).
 
 COLUMNS (one CSV row per run; --header prints the header line alone)
 
@@ -47,7 +47,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
   tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
   (no clock_build_ms/clock_solve_ms columns: nothing is built inside the clock)
 
-EXAMPLE (the first campaign's raw row for the same instance)
+EXAMPLE (the published raw row for the same instance)
   instance,nodes,arcs,query,source,target,repeat,status,reached,hops,dist,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,tag
   Square-n.10.0.gr,1024,3968,0,14,787,1,REACHED,1,8,8,0.043,0.000,0.043,0.043,0.043,4.452,0.000,0.077,Square-n;rep=1
 

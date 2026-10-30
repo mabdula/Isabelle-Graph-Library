@@ -6,8 +6,7 @@
 # https://coral.ise.lehigh.edu//wp-content/uploads/flows20/csa-flows20.tar.gz;
 # fetched to this directory by ../../setup_libraries.sh),
 # with the three changes below applied here, on a copy, and recorded in
-# build/PATCHES.txt.  This is the study's bench/build_csa.sh with its paths made
-# relative to this directory and only the measured variant built.
+# build/PATCHES.txt.  Only the measured variant is built.
 #
 #   1. -DMIN_COST.  The shipped Makefile does not define it, and parse.c negates
 #      every arc cost when it is undefined, so stock CSA solves the MAXIMUM-cost
@@ -111,7 +110,7 @@ anchor = "if (arc_count != m)" + NL + "  parse_error(BADCOUNT);" + NL
 if s.count(anchor) != 1:
     sys.exit("parse.c patch: expected exactly one %r, found %d" % (anchor, s.count(anchor)))
 block = anchor + """
-/* Hungarian study, campaign of 2026-10-14: THE CLOCK OPENS HERE.  Everything
+/* Hungarian study: THE CLOCK OPENS HERE.  Everything
    from this line to the end of parse() packs the arc list into CSA's own
    per-node arc arrays -- a counting sort over the complete list, which needs
    every arc read before it can place the first one, and so is a structure

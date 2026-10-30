@@ -9,8 +9,8 @@ WHAT IS TIMED
   alone, on a csr_matrix built once before the clock opened (build_ms); the
   whole reachable region is visited (tag wholegraph=yes).  Outside: reading
   the file (parse_ms) and the CSR build.  Clock: process CPU time (getrusage).
-  This is the first campaign's driver (2026-10-13); ../scipy is the second campaign's driver
-  with the build inside the clock.
+  ../scipy measures the same library with the matrix built inside the clock
+  (column scipy_csr).
 
 COLUMNS (one CSV row per run; --header prints the header line alone)
 
@@ -53,7 +53,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
   tag           --tag text, then ";wholegraph=yes"
   (no clock_build_ms/clock_solve_ms columns: nothing is built inside the clock)
 
-EXAMPLE (the first campaign's raw row for the same instance)
+EXAMPLE (the published raw row for the same instance)
   Square-n.10.0.gr,1024,3968,0,359,0,1,OK,0,1024,0.124,0.085,0.039,0.124,0.121,1.341,0.000,0.294,Square-n;rep=1;wholegraph=yes
 
 The published raw rows (published_results/dfs_results.zip, <column>/raw/<family>.csv)

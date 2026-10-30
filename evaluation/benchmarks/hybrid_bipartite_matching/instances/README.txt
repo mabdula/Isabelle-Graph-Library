@@ -19,7 +19,7 @@ HOW TO OBTAIN
 
   low-cost    assign.c: nodes N, sources N/2, degree round(2 log2 N),
               maxcost 100, seed K.  N = 2048 .. 32768 (study grid) and
-              65536 .. 1048576 (added 2026-10-16).  m = N log2 N.
+              65536 .. 1048576 (added for this solver).  m = N log2 N.
   two-cost    the same assign output piped through twocost.a (the arc costs
               become two values); same N and seeds.
   geometric   dcube.c: nodes N, dimension 2, maxloc 1000000, seed K, piped
@@ -44,9 +44,8 @@ HOW TO REGENERATE
 
 CHECKING
   MD5SUM_instances.txt: md5, size and path of the 150 study-grid files
-  (seeds 1-10) that are still on disk.  The files of the added sizes were
-  deleted after their last run and no checksum of them was recorded, so for
-  those sizes only the seed and the generator identify the instance.
+  (seeds 1-10).  No checksum was recorded for the added sizes, so for those
+  sizes only the seed and the generator identify the instance.
 
 FORMAT (assignment_format of the challenge)
   p asn <nodes> <arcs>;  n <id> for every left node;  a <l> <r> <cost>.

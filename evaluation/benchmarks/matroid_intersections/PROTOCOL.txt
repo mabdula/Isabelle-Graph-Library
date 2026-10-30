@@ -58,9 +58,9 @@ THE GRID
   All four problems, all five solvers, 3000 runs at most.  Every solver runs
   the whole ladder, small rungs included.
 
-WHICH CAMPAIGN THE COLUMNS COME FROM
-  All five columns: the single campaign of 2026-10-09 23:05 to 2026-10-10
-  (campaign id 20261009_224301), raw rows in published_results/solver_csvs.zip
+WHICH RESULTS DIRECTORY THE COLUMNS COME FROM
+  All five columns: the single campaign 20261009_224301, raw rows in
+  published_results/solver_csvs.zip
   (<solver>/<problem>/<family>.csv, 13 columns, 3000 rows; its
   conditions.txt is the campaign's own flags file).  Before the timed runs
   an agreement check ran the five solvers on two validation instances

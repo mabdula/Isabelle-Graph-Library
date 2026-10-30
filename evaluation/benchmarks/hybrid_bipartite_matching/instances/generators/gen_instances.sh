@@ -23,13 +23,10 @@
 # usage: gen_instances.sh [--nodes <list>] [--seeds <list>] [outdir]
 
 set -uo pipefail
-# PACKAGED COPY.  Identical to the script that generated the benchmark files except
-# for the three path lines below, which pointed into the study tree
-# (gen="$root/generators/build/...", the awk file under "$root/generators", out="$root/instances");
-# here they are relative to this directory and the default output is ../files.
+# The three path lines below are relative to this directory; the default output is ../files.
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="$(dirname "$here")"   # unused in the packaged copy
+root="$(dirname "$here")"
 gen="$here/build/assign"
 twocost="$here/twocost.a"
 out="$here/../files"

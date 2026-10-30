@@ -9,8 +9,8 @@
  
 -$GENPROG = "../gens/grid/spgrid.exe";
 -$DIR     = "../inputs/Long-n";
-+$GENPROG = "./spgrid.exe";      # AS RUN: an absolute path to the same binary (built from ch9-1.1.tar.gz, see Makefile)
-+$DIR     = "./Long-n";          # AS RUN: an absolute path into the study's instances directory; the only two edits for this package
++$GENPROG = "./spgrid.exe";      # relative here (an absolute path as run)
++$DIR     = "./Long-n";          # relative here (an absolute path as run)
  $FORMAT  = "$DIR/Long-n.%s.%s.gr";
  
  

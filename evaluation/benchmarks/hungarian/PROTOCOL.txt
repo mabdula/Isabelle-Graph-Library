@@ -44,12 +44,12 @@ REPEATS AND AGGREGATION
 
 PINNING
   One run per L3 cache island; island 0-3 reserved for everything that is not
-  a measurement.  Exports and the 2026-10-10 reference run: seven workers on
-  cores 4, 8, 12, 16, 20, 24, 28.  The 2026-10-14 campaign: six workers on
-  cores 8..28.  The 2026-10-08 sweeps behind scipy_lsa (results/scipy_core.csv)
-  and jgrapht_mwbm_hashgraph (results/jgrapht_20261008_203157.csv) ran eight
-  workers on cores 0, 4, ..., 28 and without a ladder; their conditions files
-  in the zip record this.
+  a measurement.  Exports and the reference run 20261010_165412: seven workers
+  on cores 4, 8, 12, 16, 20, 24, 28.  Campaign 20261014_190404: six workers on
+  cores 8..28.  The sweeps behind scipy_lsa (scipy_core.csv) and
+  jgrapht_mwbm_hashgraph (jgrapht_20261008_203157.csv) ran eight workers on
+  cores 0, 4, ..., 28 and without a ladder; their conditions files in the zip
+  record this.
 
 CORE WARM-UP
   None in this study: no spin preceded the program.  JVM warm-up inside
@@ -63,14 +63,14 @@ TIMEOUT AND LADDER
   that (solver, family) are TIMEOUT_INFERRED without being run (TO in the
   paper).  Sizes climb in order within each (solver, family).
 
-WHICH CAMPAIGN EACH COLUMN COMES FROM (ids as in COLUMNS.txt of the zip)
-  sml, scala, go                 20261010_115840  (2026-10-10)
-  ortools                        20261010_165412  (2026-10-10)
-  scipy_lsa                      scipy_core.csv   (2026-10-08 sweep, 8 workers)
-  jgrapht_mwbm_hashgraph         jgrapht_20261008_203157.csv (2026-10-08 sweep)
+WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (ids as in COLUMNS.txt of the zip)
+  sml, scala, go                 20261010_115840
+  ortools                        20261010_165412
+  scipy_lsa                      scipy_core.csv   (sweep, 8 workers, no ladder)
+  jgrapht_mwbm_hashgraph         jgrapht_20261008_203157.csv (sweep, no ladder)
   csa_q_csr, scipy_mwfbm_csr, jgrapht_kuhnmunkres_threadgc, jgrapht_mwbm_csr
-                                 20261014_190404  (2026-10-14, with the
-                                 structure build inside the clock)
+                                 20261014_190404  (with the structure build
+                                 inside the clock)
   The zip also carries csa_q_prebuilt, scipy_mwfbm_prebuilt and
   jgrapht_kuhnmunkres_thread, which the paper's tables do not use.
 

@@ -1,5 +1,5 @@
 # LEMON 1.3.1 Preflow (highest label) on SmartDigraph (a linked arc list) filled
-# OUTSIDE the clock: the lemon_linked column (first campaign, 2026-10-12).
+# OUTSIDE the clock: the lemon_linked column.
 #
 #   make            builds bench_lemon_linked here
 #   make clean

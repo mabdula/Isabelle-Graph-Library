@@ -1,6 +1,6 @@
 # JGraphT 1.5.3 BreadthFirstIterator, drained, on jgrapht-core's DirectedPseudograph
 # (an object per arc) built OUTSIDE the clock, on the bare thread clock: the
-# jgrapht_hashgraph column (first campaign, 2026-10-11).
+# jgrapht_hashgraph column.
 #
 #   make            compiles the driver and writes the launcher bench_jgrapht_hashgraph here
 #   make clean

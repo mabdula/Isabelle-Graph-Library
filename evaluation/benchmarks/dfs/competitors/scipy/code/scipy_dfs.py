@@ -36,10 +36,8 @@ so every arc is a 1.  Parallel arcs then sum to 2 or 3, which is still
 non-zero and still exactly one edge; nothing needs collapsing, and dedup_ms
 is an honest 0.000.
 
-THE CSR BUILD IS INSIDE THE CLOCK, since the re-run of 2026-10-14.  The
-first campaign left it outside, on the grounds that a library reads a file
-straight into its own structure, so its build fuses with parsing.  That does
-not hold for a CSR matrix: tocsr() takes the COMPLETE arc arrays, sorts them
+THE CSR BUILD IS INSIDE THE CLOCK.  A structure that can be filled while the
+file is read may be built outside the clock; a CSR matrix cannot be: tocsr() takes the COMPLETE arc arrays, sorts them
 by row and packs them -- a separate pass over every arc, exactly the pass our
 exported code makes inside its entry point.  So the clock opens on the parsed
 arrays and covers coo_matrix(...).tocsr() and the solve, and the matrix is
@@ -47,8 +45,8 @@ rebuilt on every repeat.  The same rule is applied to LEMON's StaticDigraph
 and JGraphT's sparse graph in this study.  What stays outside is the file
 read (parse_ms) and turning the parsed arrays into the arrays the constructor
 takes (build_ms) -- marshalling into the library's input format, not the
-building of its structure.  The first campaign's rows, with the build
-outside, are labelled INVALID in their results directory.
+building of its structure.  The scipy_prebuilt column measures the same call
+with the matrix built before the clock.
 
 The clock is CPU time (user + system) over the whole process, getrusage, the
 same quantity the other drivers read.  Wall time is recorded but nothing is

@@ -1,6 +1,6 @@
 #!/bin/bash
-# setup.sh MODE [--old-generated-code] -- prepares everything run/run.sh MODE needs, on a fresh TACAS 2027
-# VM (Ubuntu with build-essential, curl, patch, perl and python3), without root, with network access:
+# setup.sh MODE [--old-generated-code] -- prepares everything run/run.sh MODE needs, on a fresh Ubuntu
+# VM (with build-essential, curl, patch, perl and python3), without root, with network access:
 #   1. the toolchains (setup/toolchains.sh): MLton with GMP and the paper's gcc 11.4; CMake, the JDK and CPython
 #      when the mode's library columns need them; Isabelle2025-2 when the mode builds the code exports
 #   2. for built exports: the AFP entries the sessions need, and the Isabelle build of the export sessions

@@ -1,6 +1,5 @@
 # Builds the three DIMACS maximum-flow generators that produced every instance
-# of the study, exactly as the study built them (push_relabel/bench/build_all.sh:
-# gcc -O2 -w for ak and washington; genrmf through its own makefile with
+# of the study, exactly as the study built them (gcc -O2 -w for ak and washington; genrmf through its own makefile with
 # CFLAGS="-O2 -w").  gcc 11.4.0.  All three are deterministic given their
 # arguments; ../seeds/<family>.txt gives every command line that was run.
 #

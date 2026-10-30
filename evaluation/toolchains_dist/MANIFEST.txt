@@ -1,4 +1,4 @@
-# Toolchains setup/toolchains.sh downloads for the machine (x86_64, the TACAS VM; aarch64 is listed but untested), with the md5 of the file the published numbers were made with
+# Toolchains setup/toolchains.sh downloads for the machine (x86_64, the tested target; aarch64 is listed but untested), with the md5 of the file the published numbers were made with
 # (Isabelle: the release file; gcc: the Ubuntu 22.04 packages of the compiler the campaign used, several files).  A file already present under work/downloads/ with that md5 is used as is.
 #   <arch>  <name>  <file>  <md5>  <source> [<further sources, tried in order>]
 x86_64   mlton    mlton-20241230-1.amd64-linux.ubuntu-24.04_static.tgz  078075ddc7d4fe0adeab16e965de448b  https://github.com/MLton/mlton/releases/download/on-20241230-release/mlton-20241230-1.amd64-linux.ubuntu-24.04_static.tgz https://sourceforge.net/projects/mlton/files/mlton/20241230/mlton-20241230-1.amd64-linux.ubuntu-24.04_static.tgz/download

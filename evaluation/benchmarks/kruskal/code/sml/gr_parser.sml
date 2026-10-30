@@ -11,7 +11,7 @@
  * The arcs are returned as three parallel arrays in file order.  This study
  * is Kruskal's minimum spanning tree, so the weight array is read: every arc
  * line is one undirected edge of that weight.  PARALLEL EDGES ARE THEN
- * COLLAPSED by `collapse' below, on Thomas Ammer's instruction of 2026-10-15:
+ * COLLAPSED by `collapse' below:
  * every unordered pair {u, v} keeps its cheapest arc, so the solver is handed
  * a simple graph.  The grid files carry both directions of every pair, the
  * dense files repeat some arcs; after the collapse each pair is one edge.

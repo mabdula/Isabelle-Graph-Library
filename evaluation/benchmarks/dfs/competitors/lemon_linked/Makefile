@@ -1,4 +1,4 @@
-# LEMON 1.3.1 Dfs<SmartDigraph> (a linked arc list) built OUTSIDE the clock: the lemon_linked column (first campaign, 2026-10-13).
+# LEMON 1.3.1 Dfs<SmartDigraph> (a linked arc list) built OUTSIDE the clock: the lemon_linked column.
 #
 #   make            builds bench_lemon_linked here
 #   make clean
@@ -6,7 +6,7 @@
 # VERSIONS USED: LEMON 1.3.1 (lemon-1.3.1.tar.gz, put here by ../../setup_libraries.sh, md5
 # e89f887559113b68657eca67cf3329b5), built with CMake, CMAKE_BUILD_TYPE=Release,
 # the system g++ 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3).  The driver was
-# compiled with  g++ -O2 -DNDEBUG  (the first campaign: -O2, no -march=native)  and linked against
+# compiled with  g++ -O2 -DNDEBUG  (-O2, no -march=native)  and linked against
 # libemon.a.  -march=native: the published numbers are for an AMD EPYC 7343
 # (Zen 3); see ../../ENVIRONMENT.txt.
 #

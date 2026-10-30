@@ -44,11 +44,11 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                 "island=<cores>;repeat=<k>;seed=<s>" and some programs append
                 their own notes (see each OUTPUT.txt)
 
-EXAMPLE (the second campaign, 2026-10-14, campaign 20261014_174311)
+EXAMPLE (the published raw row, campaign 20261014_174311)
   rmf-long-8-64.max,4096,18368,lemon_preflow,1,4096,1,OK,270914,6.738,6.738,0.000,6.738,6.740,6.729,0.000,0.101,island=4-7;repeat=1;seed=1
 
 The published raw rows (published_results/push_relabel_results.zip,
 <column>/raw/<family>.csv) are these rows cut down to the columns the tables
 use; the raw rows' extra bookkeeping columns are not part of the package.
-The column "LEMON linked" (lemon_linked) came from an earlier version of this
-driver on SmartDigraph built outside the clock; it is ../lemon_linked.
+The column "LEMON linked" (lemon_linked) is ../lemon_linked: the same library on
+SmartDigraph built outside the clock.

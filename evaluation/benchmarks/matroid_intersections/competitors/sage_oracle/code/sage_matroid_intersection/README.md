@@ -2,7 +2,7 @@
 
 Solves bipartite matching problems with SageMath's matroid intersection. The two partition
 matroids answer Sage's queries with Python transcriptions of the verified oracles of our
-Isabelle instances. Instances are read by the study's reader, `../../bench/asn_reader.py`, which also
+Isabelle instances. Instances are read by the study's reader, `../asn_reader.py`, which also
 documents the format.
 
 ## Requirements

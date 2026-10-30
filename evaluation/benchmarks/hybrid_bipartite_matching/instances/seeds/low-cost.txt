@@ -1,7 +1,7 @@
 # low-cost: assign (generators/build/assign) fed on stdin with the five lines
 #   nodes N / sources N/2 / degree round(2*log2 N) / maxcost 100 / seed K
 # exactly as gen_instances.sh does.  One line per instance: file, N, sources, degree, seed.
-# The first five sizes are the study grid; 65536 and above were added 2026-10-16 (files deleted after their last run).
+# The first five sizes are the study grid; 65536 and above were added for this solver (no checksum recorded).
 low-cost_n2048_s1.asn  nodes 2048  sources 1024  degree 22  maxcost 100  seed 1
 low-cost_n2048_s2.asn  nodes 2048  sources 1024  degree 22  maxcost 100  seed 2
 low-cost_n2048_s3.asn  nodes 2048  sources 1024  degree 22  maxcost 100  seed 3

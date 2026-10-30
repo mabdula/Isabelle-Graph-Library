@@ -2,8 +2,8 @@
 
 This directory reproduces the running-time comparison of the paper's body (Fig. 2 and 3; the tables behind
 them are Tables 5, 7 to 9, 11 to 24 and 26 to 28 of the appendix): the verified code exports of the library,
-in Standard ML, against the libraries they were compared with.  It is meant to be run on a fresh TACAS 2027
-VM (Ubuntu, x86_64, with `build-essential`, `curl`, `patch`, `perl` and `python3`), without root,
+in Standard ML, against the libraries they were compared with.  It is meant to be run on a fresh Ubuntu VM
+(x86_64, with `build-essential`, `curl`, `patch`, `perl` and `python3`), without root,
 with network access during the setup.  Everything it needs is downloaded by the setup and kept under
 `evaluation/work/`; nothing is installed outside the repository.
 
@@ -44,8 +44,8 @@ paper's machine, the runs of the full experiment took about 217 hours in total, 
 hours (18 days) plus the setup; the 8-hour experiment's runs took about 3 hours, so with the setup it fills its
 8 hours; the smoke test's runs take a few minutes.  The largest instances need up to about 48 GB of RAM (`PROTOCOL.txt`
 of each benchmark); the generated instances are deleted as soon as no run needs them, so at most about 10 GB
-of them (the largest rmf-long instance) are on disk at a time.  The TACAS 2027 VM as distributed has 2 processors, 8 GB
-of RAM and 25 GB of free disk: enough disk for every experiment, and enough RAM for the smoke test and the 8-hour
+of them (the largest rmf-long instance) are on disk at a time.  A VM with 2 processors, 8 GB of RAM and 25 GB of free
+disk has enough disk for every experiment, and enough RAM for the smoke test and the 8-hour
 experiment (whose runs stop at the sizes that no longer fit, marked `OOM`); for the full experiment give it the RAM above.
 
 ## Results

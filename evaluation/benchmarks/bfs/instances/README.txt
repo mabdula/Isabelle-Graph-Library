@@ -28,7 +28,7 @@ HOW TO OBTAIN
    Challenge's spgrid generator (generators/ch9-1.1.tar.gz,
    gens/grid/spgrid.c; `make' in generators/ builds it) driven by the
    challenge's own scripts genSquare-n.gr.pl and genLong-n.gr.pl, kept in
-   generators/ as run except for two paths made relative (marked AS RUN in
+   generators/ as run except for two paths made relative (marked in
    the scripts; the challenge's copies in scripts/ of the tarball differ
    further only in $TRIALS = 10 instead of 1).  Weights (ignored by BFS) are
    uniform in [0, n].

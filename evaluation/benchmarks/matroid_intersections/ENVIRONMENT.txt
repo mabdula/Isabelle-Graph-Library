@@ -25,12 +25,12 @@ TOOLCHAINS
 
 THE EXPORT
   generated_code_used_for_benchmarking/MD5SUM.txt pins every file of the
-  verified code as benchmarked (upload of 2026-10-09).  `make check'
+  verified code as benchmarked.  `make check'
   verifies it.
 
 THE BASELINES
-  competitors/*/code/sage_*/ are the uploaded baseline scripts of 2026-10-09
-  with their instance parser removed in favour of the study's one reader
+  competitors/*/code/sage_*/ are the baseline scripts as run, with their
+  instance parser removed in favour of the study's one reader
   (asn_reader.py); md5 of the files as run:
   2a341889d81be846d08dba72b85da00f  sage_bipartite_common.py   (oracle)
   d46c63714838fe2b10ce35e9df2de210  sage_natural_common.py     (plain)

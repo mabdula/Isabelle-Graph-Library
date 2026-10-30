@@ -151,9 +151,8 @@ def dedupe_min(n, frm, to, w):
     Neither of the Python libraries can hold parallel arcs.  SciPy's CSR
     build ADDS the weights of arcs that share a pair, and NetworkX's add_edge
     OVERWRITES, keeping whichever it saw last; both are wrong answers, not
-    slow ones.  The road networks have them -- USA-road-t.NY alone has 3724
-    pairs carrying two or three arcs -- and four of its ten queries came back
-    with inflated distances before this was put in.
+    slow ones.  The road networks have them (USA-road-t.NY alone has 3724
+    pairs carrying two or three arcs).
 
     For a shortest-path problem a bundle of parallel arcs is exactly its
     cheapest member, so collapsing them changes no answer.  It is input

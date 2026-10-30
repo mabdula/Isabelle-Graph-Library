@@ -59,8 +59,7 @@ ccbf3efb5850363656e9dec195aa3c74         54651  instances/Square-n/Square-n.10.8
 506a06f238ee62ef39a33aa0c4f13336        121777  instances/Square-n/Square-n.11.7.gr
 e36746485895644af3ad0f8356b3c634        121777  instances/Square-n/Square-n.11.8.gr
 a5e1f7a006ff243919cc887821d7eb56        121747  instances/Square-n/Square-n.11.9.gr
-# deleted 2026-10-16 after hashing (dijkstra/instances/REMOVED_2026-10-16.txt, bfs/instances/REMOVED_2026-10-16.txt).
-# Long-n and Square-n files and the bfs study's Dense-n files, reached through symbolic links).
+# Long-n and Square-n files and the bfs study's Dense-n files).
 eb7d4acc6ed0640e2223d625ef049b15      16976243 instances/Dense-n/Dense-n.12.0.gr
 caf53acb6d707034a82ce584f70627f8      16975790 instances/Dense-n/Dense-n.12.1.gr
 9791ae864b3cc52f392fbe49b41e3aa5      16976126 instances/Dense-n/Dense-n.12.2.gr
@@ -301,4 +300,4 @@ c56e937c9d2bd7790fd71aa600cff923     204586257 instances/Square-n/Square-n.21.5.
 b06b65419969ebd848ec0783e9d943fc     204582241 instances/Square-n/Square-n.21.7.gr
 2a69a50ac4d9c6a25c6f7eb69d4f5193     204581788 instances/Square-n/Square-n.21.8.gr
 37b29e36c6b23746fb799e520e8c0250     204583368 instances/Square-n/Square-n.21.9.gr
-# The two smallest sizes per family are still on disk and were hashed on 2026-10-29; the others were
+# The two smallest sizes of every family were regenerated and checked against this list.

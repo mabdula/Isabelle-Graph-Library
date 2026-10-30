@@ -26,7 +26,7 @@ Two SciPy entry points are offered:
 Both are shortest-augmenting-path methods with dual potentials, the family
 the Hungarian method belongs to.
 
-WHAT IS CLOCKED, since the re-run of 2026-10-14.  The rule of this study: a
+WHAT IS CLOCKED.  The rule of this study: a
 solver gets its faster structure; a structure that can be filled arc by arc
 while the file is read may be built outside the clock; one that needs the
 complete arc list first is built after parsing, and that build is the first
@@ -35,8 +35,8 @@ the p line, and a cell can be set as each arc line is read -- so its fill
 stays outside.  The CSR matrix is of the second kind: csr_matrix((w, (rows,
 cols))) is a sort-and-pack pass over the complete arrays, so for --solver
 sparse the clock opens on the parsed arrays and covers the CSR build and the
-solver call, nothing else.  The first sweep (results/scipy_core.csv) built the
-CSR before the clock; its mwfbm rows are labelled and replaced.
+solver call, nothing else.  The scipy_mwfbm_prebuilt column of the published
+results built the CSR before the clock.
 """
 
 import os

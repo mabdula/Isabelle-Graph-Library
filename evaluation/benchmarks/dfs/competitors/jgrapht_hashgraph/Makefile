@@ -1,7 +1,7 @@
 # JGraphT 1.5.3 DepthFirstIterator (setCrossComponentTraversal(false)) on
 # jgrapht-core's DirectedPseudograph (an object per arc) built OUTSIDE the clock,
 # on the bare thread clock with a synthetic warm-up: the jgrapht_hashgraph
-# column (first campaign, 2026-10-13).
+# column.
 #
 #   make            compiles the driver and writes the launcher bench_jgrapht_hashgraph_hashgraph here
 #   make clean

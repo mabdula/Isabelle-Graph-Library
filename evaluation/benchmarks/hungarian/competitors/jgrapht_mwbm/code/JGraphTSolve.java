@@ -38,10 +38,6 @@
  * JGraphT's other weighted matcher, KolmogorovWeightedPerfectMatching (blossom
  * V), is deliberately not benchmarked.
  *
- * THE RE-RUN OF 2026-10-14.  The rows of the first sweep
- * (results/jgrapht_20261008_203157.csv) are labelled and replaced, for three
- * reasons.
- *
  * THE STRUCTURES.  The rule of this study: a solver gets its faster structure;
  * a structure that can be filled arc by arc while the file is read may be
  * built outside the clock; one that needs the complete arc list first is
@@ -51,10 +47,10 @@
  *   mwbm now runs on SparseIntUndirectedWeightedGraph from jgrapht-opt, a CSR
  *   graph, and that graph is BUILT INSIDE THE CLOCK: it is immutable and takes
  *   the complete edge list at construction, so it cannot consume arcs as the
- *   lines come off the file.  The first sweep gave it a SimpleWeightedGraph --
- *   an object per edge, a hash map from vertex to its edge set -- built before
- *   the clock, against an export that builds its CSR inside; that compared two
- *   layouts, not two implementations of the algorithm.  Repacking the parsed
+ *   lines come off the file.  The jgrapht_mwbm_hashgraph column gives it a
+ *   SimpleWeightedGraph -- an object per edge, a hash map from vertex to its
+ *   edge set -- built before the clock, against an export that builds its CSR
+ *   inside; that compares two layouts, not two implementations of the algorithm.  Repacking the parsed
  *   arrays into the List<Triple<Integer,Integer,Double>> the constructor
  *   demands is marshalling into the library's input format and stays outside.
  *   The matcher's own entry checks (requireUndirected, isSimple, which on a
@@ -68,7 +64,7 @@
  *   arc by arc as the file is read, so its build may precede the clock; the
  *   dense padding of the sparse families is the arc list it is filled from.
  *   The constructor, getMatching(), and the O(V^2) matrix build inside it are
- *   the measurement, as before.
+ *   the measurement.
  *
  * THE CLOCK IS THE THREAD CPU CLOCK PLUS THE COLLECTOR'S TIME.  cpu_ms is the
  * solver thread's CPU time (ThreadMXBean, CLOCK_THREAD_CPUTIME_ID, nanosecond
@@ -78,7 +74,7 @@
  * collector on one processor, so a collection is the VM thread working while
  * the measured thread stands still; a thread clock alone drops that work, and
  * these matchers allocate heavily (BigDecimal everywhere, |X|^2 edge objects
- * for kuhnmunkres).  The process clock was tried and rejected: it counts the
+ * for kuhnmunkres).  The process clock is not the measurement: it counts the
  * JIT compiler threads, which keep compiling inside the window after any
  * warm-up this study can afford, and it arrives in 10 ms ticks.  It is still
  * printed in --human mode as a diagnostic, with the compiler's own counter.

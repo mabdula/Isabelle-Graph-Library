@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One run of the certifying hybrid solver (asn_solver.zip), one CSV row.
 
-    bench/asn_solve.py [--binary PATH] [--no-oracle] [--csv] [--tag T] instance.asn
+    asn_solve.py [--binary PATH] [--no-oracle] [--csv] [--tag T] instance.asn
 
 The solver is the bench build (`make bench`), which carries the phase clock
 compiled in and prints seven CPU-time stamps on stderr.  All seven are kept

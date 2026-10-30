@@ -55,7 +55,4 @@ FORMAT  DIMACS assignment format (the Flow Challenge 2.0's
 CHECKING  MD5SUM_instances.txt: md5, size and path of all 300 files of the
   timed grid (150 .asn and 150 .bmatch).  generators/Makefile says how to
   regenerate them; the two smallest sizes of every family were regenerated
-  on 2026-10-29 with this package and matched byte for byte.  The study's
-  instance tree also held seeds 6-10 and n = 50000 (inherited from the
-  Hungarian study) and a validation set val_n<N>_s<K>; none of those are
-  in the tables.
+  with this package and matched byte for byte.

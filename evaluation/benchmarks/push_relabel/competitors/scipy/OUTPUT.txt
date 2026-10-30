@@ -47,7 +47,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
                 their own notes (see each OUTPUT.txt)
                 The tag ends in ";algorithm=dinic".
 
-EXAMPLE (the second campaign, 2026-10-14)
+EXAMPLE (the published raw row)
   rmf-long-8-64.max,4096,18368,scipy_dinic,1,4096,1,OK,270914,87.568,86.657,0.911,87.568,87.575,14.162,0.000,0.017,island=4-7;repeat=1;seed=1;algorithm=dinic
 
 The published raw rows (published_results/push_relabel_results.zip,

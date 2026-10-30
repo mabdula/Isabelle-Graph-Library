@@ -8,7 +8,7 @@ mkdir -p "$WORK/downloads"
 
 say()  { echo "$*" | tee -a "$LOG"; }
 fail() { say "ERROR: $*"; say "see $LOG"; exit 1; }
-need() { command -v "$1" >/dev/null 2>&1 || fail "'$1' is not installed; on the TACAS VM: sudo apt-get install $2"; }
+need() { command -v "$1" >/dev/null 2>&1 || fail "'$1' is not installed; on Ubuntu: sudo apt-get install $2"; }
 sum()  { md5sum "$1" | cut -c1-32; }
 
 # conf KEY            the values of KEY in modes.conf (empty when the key is absent)

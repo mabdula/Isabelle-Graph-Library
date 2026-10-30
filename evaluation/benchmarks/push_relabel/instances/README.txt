@@ -2,8 +2,7 @@ INSTANCES OF THE PUSH-RELABEL STUDY -- where every network came from
 ====================================================================
 
 Three families (Tables 19, 20, 21 of the paper), all produced on the fly by
-DIMACS generators and deleted after use; no instance file is distributed and
-none was checksummed.  ../setup_instances.sh fetches the three generators' sources
+DIMACS generators; no instance file is distributed and none was checksummed.  ../setup_instances.sh fetches the three generators' sources
 (the script says from where) and `make' in generators/ builds them exactly as
 the study did; seeds/<family>.txt lists, for every instance that
 was measured, the generator command line that produces it.

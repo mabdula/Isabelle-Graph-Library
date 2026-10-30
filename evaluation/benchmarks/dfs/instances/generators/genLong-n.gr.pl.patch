@@ -1,16 +1,12 @@
 --- ch9-1.1/scripts/genLong-n.gr.pl
 +++ genLong-n.gr.pl
-@@ -1,3 +1,9 @@
-+# REPRODUCIBILITY PACKAGE: this is the script as run, except that the two
-+# absolute paths below were
-+#   $GENPROG = "<dijkstra study>/reference/ch9-1.1/gens/grid/spgrid.exe";
-+#   $DIR     = "<dijkstra study>/instances/Long-n";
-+# and are now relative, so the script runs inside instances/generators
-+# after `make' there.  Nothing else differs from what generated the files.
+@@ -1,3 +1,5 @@
++# The challenge's script as run, with $TRIALS = 10 and the two path lines
++# below made relative, so that it runs inside instances/generators after `make' there.
  # ============================================================================
  #  genLong-n.gr.pl
  # ============================================================================
-@@ -33,10 +39,10 @@
+@@ -33,10 +35,10 @@
  $END     = 21;      # please adjust this limit to fit your available mem
  $LOWCOST = 0;       # minimum cost of an edge (hi cost = num nodes)
  $SEED    = 971;     # seed of pseudo-random generator

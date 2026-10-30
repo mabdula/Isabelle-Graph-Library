@@ -1,7 +1,6 @@
-# md5  bytes  path -- the instance files of the hybrid campaign that are still on disk (the study's
-# sizes, seeds 1-10), hashed 2026-10-29.  The added sizes (low-cost/two-cost n >= 65536, geometric
-# n >= 8192) were deleted by the runner after their last repeat and no checksum of them was
-# recorded; regenerate them from seeds/ with the generators here.
+# md5  bytes  path -- the instance files of the study's sizes (seeds 1-10).  The added sizes
+# (low-cost/two-cost n >= 65536, geometric n >= 8192) have no recorded checksum; regenerate them
+# from seeds/ with the generators here.
 45084cb10be5560c3134c79b177c243c       4940603  instances/geometric/geometric_n1024_s1.asn
 c4c8eec2fe2ded4ff72faab72947dd4f       4939510  instances/geometric/geometric_n1024_s10.asn
 87481c658dca32c0079f72ea0ef205f4       4940057  instances/geometric/geometric_n1024_s2.asn

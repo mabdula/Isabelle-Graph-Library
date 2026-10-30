@@ -5,7 +5,7 @@ two matroids are built with Sage's own constructors, and every query of the inte
 routines (closure, circuit, independence) is answered by Sage's generic implementations on
 top of the rank function of the matroid.
 
-Instances are read by the study's own reader, bench/asn_reader.py, which also documents the
+Instances are read by the study's own reader, asn_reader.py, which also documents the
 format; nothing here parses.
 
 The ground set is the set of edges, numbered in input order. The instance is the intersection
@@ -33,7 +33,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # package: asn_reader.py beside run_sage.py (the study had it in bench/)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # asn_reader.py is beside run_sage.py
 from asn_reader import InstanceError, read_instance  # the study's reader; never on the clock
 
 try:  # initialise Sage before importing submodules: full Sage, or modular passagemath-modules

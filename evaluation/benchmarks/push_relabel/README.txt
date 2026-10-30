@@ -32,8 +32,7 @@ Columns of the paper, their names in columns.txt and the program behind each
   SciPy prebuilt       scipy_prebuilt                 competitors/scipy_prebuilt/bench_scipy_prebuilt
   NetworkX             networkx                       competitors/networkx/bench_networkx
 
-The "LEMON linked" and "SciPy Dinic prebuilt" columns are the first campaign's
-driver versions (LEMON on SmartDigraph built outside the clock; SciPy with
-the matrix built before the clock), kept as they ran in that campaign; they
-are competitors/lemon_linked and competitors/scipy_prebuilt.
-PROTOCOL.txt says which campaign each column was read from.
+The "LEMON linked" and "SciPy Dinic prebuilt" columns measure LEMON on
+SmartDigraph built outside the clock and SciPy with the matrix built before
+the clock; they are competitors/lemon_linked and competitors/scipy_prebuilt.
+PROTOCOL.txt says which results directory each column was read from.

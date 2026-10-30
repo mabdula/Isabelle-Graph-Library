@@ -8,7 +8,7 @@
 # distribution of the Sage library: passagemath-modules and passagemath-graphs
 # with their dependencies; requirements.txt is the `pip freeze' of the venv
 # the campaign ran in).  PYTHON names the interpreter used to create the
-# environment.  The solver code in code/sage_matroid_intersection/ is the uploaded baseline,
+# environment.  The solver code in code/sage_matroid_intersection/ is the baseline as run,
 # unchanged; code/run_sage.py is the launcher the campaign used and
 # code/asn_reader.py the study's one instance reader (never on the clock).
 

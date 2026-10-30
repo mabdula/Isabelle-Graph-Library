@@ -7,9 +7,9 @@ USAGE
 WHAT IS TIMED
   getPath(s, t) alone (it stops when t is settled; the algorithm's own setup
   is inside the call).  The DirectedWeightedPseudograph (an object per arc,
-  hash maps around it) is filled arc by arc OUTSIDE the clock (build_ms), as
-  the first campaign of 2026-10-11 did for every library; the second campaign's CSR
-  driver is in ../jgrapht.  Before the clock the same entry point is run on a
+  hash maps around it) is filled arc by arc OUTSIDE the clock (build_ms); ../jgrapht
+  measures the same library on jgrapht-opt's CSR graph built inside the clock
+  (column jgrapht_csr).  Before the clock the same entry point is run on a
   synthetic graph (a seeded random digraph, m = 4n) until the JIT is quiet.
   Clock: the solver THREAD's CPU time (ThreadMXBean), NOT including the
   garbage collector's pause time; proc_ms is the whole process (10 ms ticks).

@@ -1,4 +1,4 @@
-# SciPy 1.15.3 scipy.sparse.csgraph.depth_first_order on a csr_matrix built BEFORE the clock: the scipy_prebuilt column (first campaign, 2026-10-13).
+# SciPy 1.15.3 scipy.sparse.csgraph.depth_first_order on a csr_matrix built BEFORE the clock: the scipy_prebuilt column.
 #
 #   make            creates a virtual environment with the pinned packages and
 #                   writes the launcher bench_scipy_prebuilt here

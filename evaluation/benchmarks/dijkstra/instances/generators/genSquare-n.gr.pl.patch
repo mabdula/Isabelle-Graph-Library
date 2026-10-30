@@ -4,9 +4,9 @@
  # ============================================================================
  
  # param setup:
-+# REPRODUCIBILITY PACKAGE NOTE: this file is the script as run on 2026-10-11 except for
-+# the two path lines marked "as run" below, which held absolute paths on the
-+# benchmark machine.  Run it from this directory after `make` built spgrid.exe.
++# The challenge's script as run, with $TRIALS = 10 and the two path lines
++# marked "as run" below made relative.  Run it from this directory after
++# `make` built spgrid.exe.
  
  $START   = 10;      # raw num nodes goes from 2^$START to 2^$END
  $END     = 21;      # please adjust this limit to fit your available mem
@@ -17,8 +17,8 @@
  
 -$GENPROG = "../gens/grid/spgrid.exe";
 -$DIR     = "../inputs/Square-n";
-+$GENPROG = "./spgrid.exe";         # as run: an absolute path to the same binary, built from ch9-1.1.tar.gz
-+$DIR     = "../Square-n";               # as run: an absolute path (the study's instances/Square-n directory)
++$GENPROG = "./spgrid.exe";         # as run: an absolute path to the same binary
++$DIR     = "../Square-n";               # as run: an absolute path
  $FORMAT  = "$DIR/Square-n.%s.%s.gr";
  
  

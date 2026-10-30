@@ -61,7 +61,7 @@ PINNING
   were measured one group at a time (the three sml; then lemon, jgrapht,
   scipy, networkx; then scala_csr, go_csr; scala_lists, go_lists; scala_rbt,
   go_rbt), each group finishing every family, size and repeat before the
-  next started; the second campaign's three libraries were one group.
+  next started; lemon_csr, jgrapht_csr and scipy_csr were one group.
 
 CORE WARM-UP
   None in this study: no spin preceded the program.  JVM warm-up inside the
@@ -75,17 +75,17 @@ TIMEOUT AND LADDER
   and MEMORY_INFERRED (OOM).  33 runs killed by the kernel's OOM killer
   were recorded ERROR by the runner and shown as OOM.
 
-WHICH CAMPAIGN EACH COLUMN COMES FROM (raw rows in
-published_results/dfs_results.zip, <column>/raw/<family>.csv; the campaign
-ids are the study's results directories, named as provenance)
+WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (raw rows in
+published_results/dfs_results.zip, <column>/raw/<family>.csv; the ids are the
+campaign's results directories, named as provenance)
   sml_csr, sml_lists, sml_rbt, scala_*, go_*, networkx,
-  lemon_linked, jgrapht_hashgraph, scipy_prebuilt   campaign 20261013_110953 (2026-10-13)
-  lemon_csr, jgrapht_csr, scipy_csr                 campaign 20261014_114618 (2026-10-14)
-  The second campaign measured the three libraries with their CSR
-  structure built inside the clock and one extra clock reading after the
+  lemon_linked, jgrapht_hashgraph, scipy_prebuilt   20261013_110953
+  lemon_csr, jgrapht_csr, scipy_csr                 20261014_114618
+  lemon_csr, jgrapht_csr and scipy_csr measure the three libraries with their
+  CSR structure built inside the clock and one extra clock reading after the
   build (clock_build_ms, clock_solve_ms), the JGraphT warm-up running on the
-  instance itself.  The first campaign's library rows are shown as the
-  *_linked / *_hashgraph / *_prebuilt columns.  Both driver versions are in
+  instance itself; the *_linked / *_hashgraph / *_prebuilt columns measure
+  them on a structure built outside the clock.  Both driver versions are in
   competitors/.
 
 THE CLOCK

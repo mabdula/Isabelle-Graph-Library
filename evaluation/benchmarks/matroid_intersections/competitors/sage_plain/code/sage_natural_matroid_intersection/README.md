@@ -4,7 +4,7 @@ Solves bipartite matching problems with SageMath's matroid intersection the way 
 would, without our verified oracles: the two partition matroids are built with Sage's own
 constructors, and all queries of the intersection routines are answered by Sage's generic
 code on top of the rank function. Instances are read by the study's reader,
-`../../bench/asn_reader.py`, which also documents the format.
+`../asn_reader.py`, which also documents the format.
 
 | Problem | Matroids | Rank oracle runs as |
 |---|---|---|

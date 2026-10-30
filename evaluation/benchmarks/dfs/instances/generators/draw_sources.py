@@ -31,10 +31,8 @@ give the same spread of searches per table cell.
 """
 import csv, gzip, hashlib, os, random, sys
 
-# REPRODUCIBILITY PACKAGE: as run, except that ROOT was the absolute path of the study directory
-# (the study directory); here it is the package's instances/ directory, so
-# the script runs from instances/generators after the families have been
-# generated into instances/<family>/.  Nothing else differs.
+# ROOT is the instances/ directory: the script runs from instances/generators
+# after the families have been generated into instances/<family>/.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INST = ROOT
 OUT = os.path.join(INST, "queries.csv")

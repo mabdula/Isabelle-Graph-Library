@@ -33,5 +33,5 @@ THE EXPORT
   and is skipped).  `make check' verifies it.
 
 THE PUBLISHED RESULTS
-  published_results/dfs_results.zip (md5 e5ca35a13c4615707183f979e5e39cde):
+  published_results/dfs_results.zip:
   one directory per column with the per-size tables and the raw rows.

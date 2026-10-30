@@ -1,4 +1,4 @@
-# md5  bytes  path -- every instance file behind Tables 22 to 24 (sizes 2048..32768 and 256..4096, seeds 1..10), hashed 2026-10-29 from the study's instances/ directory.
+# md5  bytes  path -- every instance file behind Tables 22 to 24 (sizes 2048..32768 and 256..4096, seeds 1..10).
 3ff54195b3017fc75fdf39efd4ddf78e        432670  instances/low-cost/low-cost_n2048_s1.asn
 707a68c5ca9dcc2105deda391e7992c8        432709  instances/low-cost/low-cost_n2048_s2.asn
 9a602843bbe434df0e839708b74d231d        432677  instances/low-cost/low-cost_n2048_s3.asn

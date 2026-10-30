@@ -42,8 +42,8 @@ $LOWCOST = 0;       # minimum cost of an edge (hi cost = num nodes)
 $SEED    = 971;     # seed of pseudo-random generator -- the challenge's own
 $TRIALS  = 10;      # number of trials per data point
 
-$GENPROG = "./sprand.exe";      # AS RUN: an absolute path to the same binary (built from ch9-1.1.tar.gz, see Makefile)
-$DIR     = "./Dense-n";         # AS RUN: an absolute path into the study's instances directory; the only two edits for this package
+$GENPROG = "./sprand.exe";      # relative here (an absolute path as run)
+$DIR     = "./Dense-n";         # relative here (an absolute path as run)
 $FORMAT  = "$DIR/Dense-n.%s.%s.gr";
 
 

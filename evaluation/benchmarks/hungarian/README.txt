@@ -31,5 +31,5 @@ Columns of the paper, their names in columns.txt and the program behind each
   JGraphT MWBM CSR     jgrapht_mwbm_csr               competitors/jgrapht_mwbm/bench_jgrapht_mwbm
   JGraphT MWBM hash    jgrapht_mwbm_hashgraph         competitors/jgrapht_mwbm_hashgraph/bench_jgrapht_mwbm_hashgraph
 
-PROTOCOL.txt says which campaign each column was read from and how the
+PROTOCOL.txt says which results directory each column was read from and how the
 cells (mean over ten instances of the median of three repeats) were formed.

@@ -9,8 +9,8 @@ WHAT IS TIMED
   filled arc by arc OUTSIDE the clock (build_ms); a fresh Dfs object per
   repeat, so the algorithm's own setup is inside.  The search runs until its
   stack is empty (the target is 0, never a vertex).  Clock: process CPU time
-  (getrusage).  This is the first campaign's driver (2026-10-13), kept as its
-  own column; ../lemon is the second campaign's driver, on StaticDigraph (CSR) built inside the clock.
+  (getrusage).  ../lemon measures the same library on StaticDigraph (CSR) built inside the
+  clock (column lemon_csr).
 
 COLUMNS (one CSV row per run; --header prints the header line alone)
 
@@ -53,7 +53,7 @@ COLUMNS (one CSV row per run; --header prints the header line alone)
   tag           free text copied from --tag (the campaign put "<family>;rep=<k>" there)
   (no clock_build_ms/clock_solve_ms columns: nothing is built inside the clock)
 
-EXAMPLE (the first campaign's raw row for the same instance)
+EXAMPLE (the published raw row for the same instance)
   instance,nodes,arcs,query,source,target,repeat,status,reached,visited,cpu_ms,cpu_usr_ms,cpu_sys_ms,proc_ms,wall_ms,parse_ms,dedup_ms,build_ms,tag
   Square-n.10.0.gr,1024,3968,0,359,0,1,OK,0,1024,0.054,0.000,0.054,0.054,0.054,3.578,0.000,0.059,Square-n;rep=1
 

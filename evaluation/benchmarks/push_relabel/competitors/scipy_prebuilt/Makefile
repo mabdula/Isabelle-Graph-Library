@@ -1,4 +1,4 @@
-# SciPy 1.15.3 scipy.sparse.csgraph.maximum_flow(method='dinic') on a csr_matrix built BEFORE the clock: the scipy_prebuilt column ("SciPy Dinic prebuilt", first campaign, 2026-10-12).
+# SciPy 1.15.3 scipy.sparse.csgraph.maximum_flow(method='dinic') on a csr_matrix built BEFORE the clock: the scipy_prebuilt column ("SciPy Dinic prebuilt").
 #
 #   make            creates a virtual environment with the pinned packages and
 #                   writes the launcher bench_scipy_prebuilt here

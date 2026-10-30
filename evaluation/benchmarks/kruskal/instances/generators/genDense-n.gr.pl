@@ -1,8 +1,5 @@
-# PORTABLE COPY FOR THE REPRODUCIBILITY PACKAGE.  As run, $GENPROG and $DIR were
-#   $GENPROG = the absolute path of the challenge suite's ch9-1.1/gens/rand/sprand.exe on the benchmark machine;
-#   $DIR     = the absolute path of the study's instances/Dense-n directory there
-# (absolute paths on the benchmark machine); here they are relative so the script
-# runs inside instances/generators after `make' there.  Nothing else differs.
+# The study's own script, with its two path lines ($GENPROG, $DIR) made
+# relative, so that it runs inside instances/generators after `make' there.
 # ============================================================================
 #  genDense-n.gr.pl
 # ============================================================================

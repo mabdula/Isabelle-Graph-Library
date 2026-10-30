@@ -57,17 +57,17 @@ TIMEOUT AND LADDER
   every larger size of that (solver, family) are recorded TIMEOUT_INFERRED
   without being run (TO in the paper).  Out of memory likewise (OOM).
 
-WHICH CAMPAIGN EACH COLUMN COMES FROM (the raw rows of every column are in
-published_results/dijkstra_results.zip, <column>/raw/<family>.csv, and the
-per-size table in <column>/<family>.csv; the campaign ids are the study's own
-result directories, named here as provenance only)
+WHICH RESULTS DIRECTORY EACH COLUMN COMES FROM (the raw rows of every column
+are in published_results/dijkstra_results.zip, <column>/raw/<family>.csv, and
+the per-size table in <column>/<family>.csv; the ids are the campaign's
+results directories, named as provenance only)
   sml, scala, go, networkx, lemon_linked, jgrapht_hashgraph, scipy_prebuilt
-                                     results/20261011_011214  (2026-10-11)
-  lemon_csr, jgrapht_csr, scipy_csr  results/20261014_170554  (2026-10-14)
-  The second campaign measured the three libraries with their CSR
-  structure built inside the clock; the first campaign's library rows are
-  shown as the *_linked / *_hashgraph / *_prebuilt columns.  Both driver
-  versions are in competitors/.
+                                     results/20261011_011214
+  lemon_csr, jgrapht_csr, scipy_csr  results/20261014_170554
+  lemon_csr, jgrapht_csr and scipy_csr measure the three libraries with their
+  CSR structure built inside the clock; the *_linked / *_hashgraph /
+  *_prebuilt columns measure them on a structure built outside the clock.
+  Both driver versions are in competitors/.
 
 THE CLOCK
   CPU time (user + system) read immediately before and after the solver call.

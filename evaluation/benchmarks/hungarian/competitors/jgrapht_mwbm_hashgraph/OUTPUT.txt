@@ -7,8 +7,9 @@ USAGE
 WHAT IS TIMED
   The matcher's constructor and getMatching() on a SimpleWeightedGraph (an
   object per edge, hash maps around it) that was filled edge by edge OUTSIDE
-  the clock, as the sweep of 2026-10-08 did; ../jgrapht_mwbm is the second campaign's driver on
-  jgrapht-opt's CSR graph built inside the clock.  The matcher MAXIMISES, so
+  the clock; ../jgrapht_mwbm measures the
+  same library on jgrapht-opt's CSR graph built inside the clock (column
+  jgrapht_mwbm_csr).  The matcher MAXIMISES, so
   arcs enter at |X|*cmax + 1 - cost, and the reported cost is converted back.
   Before the clock a small synthetic instance is solved with the same matcher
   so the JIT has compiled it.  Clock: the solver THREAD's CPU time

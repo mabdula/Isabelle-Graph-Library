@@ -1,7 +1,4 @@
 #!/bin/bash
-# PACKAGE COPY: identical to the script that generated the instances except for
-# the path lines marked "package:", which pointed into the study tree
-# (<study>/generators/build/..., <study>/generators/*.a, <study>/instances).
 # Run it from this directory after `make' has built the generators.
 # Generate the DIMACS Network Flows 2.0 geometric assignment benchmarks.
 #
@@ -46,9 +43,9 @@ set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$here")"
-gen="$here/dcube"           # package: was $root/generators/build/dcube
-geomasn="$here/geomasn.a"   # package: was $root/generators/geomasn.a
-out="$here/out"             # package: was $root/instances
+gen="$here/dcube"
+geomasn="$here/geomasn.a"
+out="$here/out"
 
 [[ -x "$gen" ]] || { echo "missing generator: $gen"; exit 1; }
 [[ -s "$geomasn" ]] || { echo "missing converter: $geomasn"; exit 1; }

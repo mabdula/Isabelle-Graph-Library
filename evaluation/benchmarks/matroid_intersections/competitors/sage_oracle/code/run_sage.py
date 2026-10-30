@@ -4,8 +4,8 @@
 Usage:  run_sage.py sage_oracle PROBLEM INSTANCE
         PROBLEM is matching, b_matching, weighted_matching or weighted_b_matching
 
-This is the study's bench/run_sage.py, cut down to the one solver that lives in
-this directory; it is harness code, not solver code.  It imports solve() from
+This is harness code, not solver code, cut down to the one solver that lives in
+this directory.  It imports solve() from
 the baseline (unchanged, in sage_matroid_intersection/) and prints one line:
 
     cpu_ms=<int> card=<int> weight=<int>

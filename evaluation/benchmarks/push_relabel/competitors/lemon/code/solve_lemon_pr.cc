@@ -10,22 +10,19 @@
  *   5. read the clock again
  *   6. check the flow and read its value                    (after the clock)
  *
- * STEPS 3 TO 5 ARE THE MEASUREMENT, AND THE GRAPH BUILD IS INSIDE IT.  That
- * is a deliberate change from the earlier campaign, which built a SmartDigraph
- * outside the clock on the grounds that an unverified library reads a file
- * straight into its own graph, so its build fuses with parsing.  Two things
- * were wrong with that.  SmartDigraph is a linked arc-list structure, so the
- * earlier campaign compared our CSR export against a different layout rather
- * than against LEMON's implementation of the same algorithm; the right graph
- * is StaticDigraph, LEMON's own CSR.  And StaticDigraph cannot be built while
- * the file is read: build() takes a COMPLETE arc list, sorted by tail, and
+ * STEPS 3 TO 5 ARE THE MEASUREMENT, AND THE GRAPH BUILD IS INSIDE IT.  The
+ * lemon_linked column measures LEMON on SmartDigraph, a linked arc-list
+ * structure built outside the clock; that compares our CSR export against a
+ * different layout rather than against LEMON's implementation of the same
+ * algorithm on the same layout, which is StaticDigraph, LEMON's own CSR.
+ * StaticDigraph cannot be built while the file is read: build() takes a COMPLETE arc list, sorted by tail, and
  * walks it once -- a separate pass over every arc, exactly as our exported
  * code makes.  Nothing fuses with parsing, so nothing is left outside.  The
  * clock therefore opens on the filled arc list and covers the sort by tail (a
  * counting sort, linear in n + m, keeping the file's order within each node),
  * the CSR build, the algorithm's own setup and the solve.  (The JGraphT push-relabel
- * driver is NOT rewritten this way: it was already copying the graph into
- * its own arrays inside the clock, so its build was never outside.)
+ * driver copies the graph into its own arrays inside the clock, so its build
+ * is inside the clock by construction.)
  *
  * What stays outside is the file read (parse_ms) and repacking the parsed
  * arrays into the std::vector<std::pair<int,int>> that build() takes

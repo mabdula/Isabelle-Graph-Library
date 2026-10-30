@@ -12,10 +12,9 @@
 //   6. read the clock again
 //   7. report the difference, plus the answer for checking
 //
-// THE GRAPH BUILD IS INSIDE THE CLOCK, AND THAT IS A DELIBERATE CHANGE.  The
-// earlier campaign left it outside, on the grounds that an unverified library
-// reads a file straight into its own graph and so its build fuses with
-// parsing.  That reasoning does not hold for a CSR graph: SparseIntDirectedGraph
+// THE GRAPH BUILD IS INSIDE THE CLOCK.  A structure that can be filled arc by
+// arc while the file is read may be built outside the clock; a CSR graph
+// cannot be: SparseIntDirectedGraph
 // is immutable and is handed a COMPLETE list of arcs at construction, so it
 // cannot consume arcs as the lines come off the file.  The build is a separate
 // pass over the whole arc list, exactly as it is for our exported code, and it
@@ -32,12 +31,11 @@
 // takes parallel arcs as they come.
 //
 // THE GRAPH TYPE.  SparseIntDirectedGraph, from jgrapht-opt, whose backing is
-// a CSR boolean matrix -- the same layout our export builds, and the reason
-// this driver was rewritten.  The earlier campaign used DirectedPseudograph,
-// which is the most permissive member of jgrapht-core's one and only graph
+// a CSR boolean matrix -- the same layout our export builds.  The jgrapht_hashgraph column uses
+// DirectedPseudograph instead, the most permissive member of jgrapht-core's one and only graph
 // family: an object per arc, a hash map from vertex to its edge set and another
-// from edge to its endpoints.  Comparing that against a CSR export measured the
-// difference between two layouts, not between two implementations of DFS.
+// from edge to its endpoints.  Comparing that against a CSR export measures the
+// difference between two layouts, not between two implementations of BFS.
 //
 // Parallel arcs survive.  The road networks have them -- USA-road-t.NY alone
 // has 3724 node pairs carrying two or three arcs -- and a sparse graph holds
@@ -83,7 +81,7 @@
 // next measurement rather than inside it.
 //
 // THE CLOCK IS THE THREAD CPU CLOCK PLUS THE COLLECTOR'S TIME.  The thread
-// clock alone -- what the earlier campaign read -- leaves out the garbage
+// clock alone leaves out the garbage
 // collector, which under the serial collector runs on the VM thread while the
 // measured thread stands still, and with the graph build now inside the
 // window the run allocates enough for that to matter: it was found to
@@ -94,7 +92,7 @@
 // and only while it waits, so the sum is exactly that thread's work plus the
 // collecting done on its behalf, and nothing else.
 //
-// The process clock was tried instead and rejected, with measurements.  It
+// The process clock is not the measurement.  It
 // counts every thread, and the JIT compiler threads go on compiling well into
 // the measured window even after a warm-up that has run to silence: on a
 // 65536-node graph a 184 ms search read 320 ms on the process clock, 142 ms
@@ -109,7 +107,7 @@
 // nanoseconds.  cpu_ms is their sum and is the measurement.  cpu_usr_ms is
 // the thread's user time plus the collector's time, cpu_sys_ms the thread's
 // system time, so the two still add up to cpu_ms.  proc_ms is the whole
-// process from /proc/self/stat in 10 ms ticks, as in every earlier campaign:
+// process from /proc/self/stat in 10 ms ticks, as in the other JVM drivers:
 // a diagnostic that shows the JIT's share, not a measurement.
 //
 // THE WARM-UP.  Before the first measured call the same entry point is run on
@@ -342,24 +340,13 @@ public final class JGraphTBfs {
 
     /** Warm up ON THE INSTANCE ITSELF, from the measured source.
      *
-     *  A synthetic warm-up graph (a random digraph at m = 4n, 65536 nodes)
-     *  was used before this and did not warm the right thing: HotSpot
-     *  compiles against branch and type profiles, the profile of a different
-     *  graph is a different profile, and the measured call still provoked
-     *  fresh compilation after the warm-up, inflating the smallest cells.
-     *  (In the dfs study the same warm-up also failed to settle within its
-     *  cap, because that library's depth-first iterator is quadratic on a
-     *  deep random graph; the breadth-first iterator is not, and here the
-     *  old warm-up took some eight seconds, most of it waiting for a
-     *  compiler counter that creeps by a millisecond a round.)
-     *
-     *  So the warm-up runs the measured call on the measured input.  The code
+     *  The warm-up runs the measured call on the measured input.  The code
      *  the clock then sees is compiled against exactly the profile it runs
      *  with, which is the steady state a JIT benchmark is meant to report.
      *  HotSpot specialises on frequencies, not on values; nothing of the
      *  answer survives a round.
      *
-     *  Bounded, so that the warm-up can never take longer than it did before:
+     *  Bounded:
      *  an instance over WARM_ARCS arcs is warmed on its own induced subgraph
      *  on the first n' nodes, n' the largest power of two for which that
      *  subgraph fits the budget, searched from node 0.  Beyond the budget the

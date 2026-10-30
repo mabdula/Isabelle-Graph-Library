@@ -6,13 +6,12 @@ reference solver the 13th DIMACS Implementation Challenge (Network Flows 2.0)
 names on its "Assignment Problem Reference Solvers" page.  It is a standalone C
 program that reads the instance from standard input, so the timing cannot be
 taken from out here -- the clock lives inside the program, added by
-bench/build_csa.sh.  Since the re-run of 2026-10-14 it starts inside parse(),
+build_csa.sh.  It starts inside parse(),
 immediately before CSA packs the arc list it has read into its own per-node
 arc arrays (a counting sort over the complete list: a structure built after
 parsing, whose build is the first part of the clocked period in this study),
 and stops immediately after the scaling loop; reading the arc lines and
-computing the objective are outside.  The first campaign started it after the
-pack; those rows are labelled.  This wrapper only feeds the program the
+computing the objective are outside.  This wrapper only feeds the program the
 instance and reformats what it prints.
 
 The row has the same columns, in the same order, as scipy_solve.py,
@@ -63,7 +62,7 @@ def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     binary = args.binary or os.path.join(root, "reference", "csa", "build", "csa_s")
     if not os.path.exists(binary):
-        sys.exit("missing CSA binary: %s (run bench/build_csa.sh)" % binary)
+        sys.exit("missing CSA binary: %s (run build_csa.sh)" % binary)
 
     n_nodes, n_arcs, n_left, n_right = header(args.path)
 

@@ -2,7 +2,7 @@ HOW ONE MEASURED RUN WAS LAUNCHED -- hybrid bipartite matching solver
 ====================================================================
 
 Every number in Tables 35 to 37 of the paper derives from runs launched as
-follows (campaign 20261016_003216 of 2026-10-16, 810 runs, all OPTIMAL with
+follows (campaign 20261016_003216, 810 runs, all OPTIMAL with
 the oracle's certificate accepted; its raw rows and its conditions file are in
 published_results/hybrid_timings.zip).
 
@@ -54,9 +54,9 @@ THE BINARY
   was compiled from has md5 232e15a004db03c56b5233646e8bc132 (make check).
 
 INSTANCE FILES OF THE ADDED SIZES
-  The runner deleted each added-size file (low-cost/two-cost n >= 65536,
-  geometric n >= 8192) as soon as its last repeat had returned.  They are
-  regenerated from their seeds with instances/generators/ (see instances/README.txt).
+  No checksum was recorded for the files of the added sizes (low-cost/two-cost
+  n >= 65536, geometric n >= 8192); they are regenerated from their seeds with
+  instances/generators/ (see instances/README.txt).
 
 THE CLOCK
   CLOCK_PROCESS_CPUTIME_ID, compiled into the solver; cpu_ms = t_done -

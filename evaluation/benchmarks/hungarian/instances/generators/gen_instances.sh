@@ -25,10 +25,7 @@
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# NOTE: the study ran this script from hungarian/bench with
-# root=<study dir>, gen=$root/generators/build/<name>, the awk
-# filter in $root/generators and out=$root/instances.  Here everything is
-# relative to this directory; nothing else differs from the script as run.
+# The three path variables below are relative to this directory.
 root="$here"
 gen="$root/build/assign"
 twocost="$root/twocost.a"
