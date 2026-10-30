@@ -4280,8 +4280,20 @@ proof rule+
       have 5: "\<forall>x \<in> (polyhedron ?fullA ?fullb). \<forall> i < n. x $ i \<ge> 0" 
         using pos_polyh_is_polyh
         unfolding pos_polyhedron_def polyhedron_def 
-        by (metis (no_types, lifting) \<open>b \<in> carrier_vec nr\<close> assms(1) index_zero_vec(1) 
-            lesseq_vecD mem_Collect_eq)
+      proof (intro ballI)
+        fix x assume x: "x \<in> {x \<in> carrier_vec n. (A @\<^sub>r - 1\<^sub>m n) *\<^sub>v x \<le> b @\<^sub>v 0\<^sub>v n}"
+        have xc: "x \<in> carrier_vec n" using x by simp
+        have "{x \<in> carrier_vec n. A *\<^sub>v x \<le> b \<and> 0\<^sub>v n \<le> x} =
+              {x \<in> carrier_vec n. (A @\<^sub>r - 1\<^sub>m n) *\<^sub>v x \<le> b @\<^sub>v 0\<^sub>v n}"
+          using pos_polyh_is_polyh \<open>b \<in> carrier_vec nr\<close> assms(1)
+          unfolding pos_polyhedron_def polyhedron_def by simp
+        then have le: "0\<^sub>v n \<le> x" using x by blast
+        show "\<forall>i<n. 0 \<le> x $v i"
+        proof (intro allI impI)
+          fix i assume i: "i < n"
+          show "0 \<le> x $v i" using lesseq_vecD[OF xc le i] i by simp
+        qed
+      qed
       then have 6: "(\<forall>x\<in>local.polyhedron (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n). \<forall>i<n. x $v i \<le> 0) \<or>
                     (\<forall>x\<in>local.polyhedron (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n). \<forall>i<n. 0 \<le> x $v i)" 
         by blast
