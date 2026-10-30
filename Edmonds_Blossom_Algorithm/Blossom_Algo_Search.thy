@@ -368,8 +368,22 @@ proof(induction "compute_alt_path_meas ex" arbitrary: ex par flabel rule: nat_le
         using 1(2)
         by auto
       ultimately have "compute_alt_path_meas (insert e ex') < compute_alt_path_meas ex" for e
-        apply(simp add: compute_alt_path_meas_def ex'_def)
-        by (metis Diff_insert card_Diff1_le dual_order.strict_trans1 linorder_not_le)
+        proof -
+          have "finite (G - ex')"
+            using finite_E by simp
+          have "card (G - insert e ex') \<le> card (G - ex')"
+          proof (rule card_mono)
+            show "finite (G - ex')"
+              using finite_E by simp
+            show "G - insert e ex' \<subseteq> G - ex'"
+              by auto
+          qed
+          then have "compute_alt_path_meas (insert e ex') \<le> compute_alt_path_meas ex'"
+            by (simp add: compute_alt_path_meas_def)
+          then show ?thesis
+            using \<open>compute_alt_path_meas ex' < compute_alt_path_meas ex\<close>
+            by (rule le_less_trans)
+        qed
       moreover have "finite (insert e ex')" for e
         by (simp add: \<open>finite ex'\<close>)
       moreover have "{v2, v3} \<in> G"
