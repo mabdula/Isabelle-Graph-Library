@@ -4270,7 +4270,27 @@ proof rule+
                                            (C, d) = sub_system ?fullA ?fullb I}"
           using min_face_min_subsyst[OF 1 2] 
           using \<open>min_face (local.polyhedron (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n)) F\<close> 
-          by (smt (z3) Collect_cong)
+          proof -
+            have set_eq:
+              "{dim_vec d| C d I. F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
+                                  (C, d) = sub_system ?fullA ?fullb I} =
+               {dim_vec d| C d I. (C, d) = sub_system ?fullA ?fullb I \<and>
+                                  F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}"
+              by blast
+            from min_face_min_subsyst[OF 1 2] asm
+            obtain A'' b'' I'' where
+              "(A'', b'') = sub_system ?fullA ?fullb I''"
+              "F = {x. x \<in> carrier_vec n \<and> A'' *\<^sub>v x = b''}"
+              "dim_vec b'' = Min {dim_vec d| C d I. (C, d) = sub_system ?fullA ?fullb I \<and>
+                                               F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}"
+              by blast
+            then have "dim_vec b'' = Min {dim_vec d| C d I. F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
+                                               (C, d) = sub_system ?fullA ?fullb I}"
+              using set_eq by simp
+            then show thesis
+              using that \<open>(A'', b'') = sub_system ?fullA ?fullb I''\<close>
+                \<open>F = {x. x \<in> carrier_vec n \<and> A'' *\<^sub>v x = b''}\<close> by blast
+          qed
         have "\<exists> x \<in> F. abs(det A') \<cdot>\<^sub>v x \<in>  \<int>\<^sub>v" 
           using min_face_has_int[OF 1 2 3 4 False 6 asm] A'b'
           by blast
