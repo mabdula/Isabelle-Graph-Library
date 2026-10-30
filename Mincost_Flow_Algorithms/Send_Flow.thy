@@ -2157,8 +2157,15 @@ proof(all \<open>rule send_flow_call2_condE[OF assms(1)]\<close>, goal_cases)
   have tP: "abstract_bal_map b t < - (1-\<epsilon>) * \<gamma>"  "t \<in> \<V>" 
     using  "1"(2,3,5,6) if_send_flow_call2_cond_basic[OF assms(1,4)] 
     by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+  proof (rule notI)
+    assume eq: "s = t"
+    have lt: "\<epsilon> * \<gamma> < - (1 - \<epsilon>) * \<gamma>"
+      using sP(1) tP(1)[simplified eq[symmetric]] by linarith
+    then have "\<epsilon> < - (1 - \<epsilon>)"
+      using gamma_0 by (auto simp: mult_less_cancel_right_pos)
+    then show False by linarith
+  qed
   have flow_dom_is: "flow_domain (current_flow state) = \<E>" "flow_invar (current_flow state)"
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
