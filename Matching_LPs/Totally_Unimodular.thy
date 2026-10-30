@@ -2925,8 +2925,33 @@ proof -
             using False by fastforce
           then have "\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = 0" 
             using 6
-            by (metis (no_types, lifting) "5" Collect_cong 22 \<open>unit_vec n i = 0\<^sub>v n\<close> carrier_vecD
-                index_row(2) index_unit_vec(3) index_zero_vec(1) pick_le vec_carrier)
+          proof -
+  { fix j
+    assume j: "j < dim_col B"
+    have dim_row_eq: "dim_vec (row B (dim_row B - 1)) = dim_col B"
+      by (simp add: index_row(2))
+    have dim_unit: "dim_vec (unit_vec n i) = n"
+      using index_unit_vec(3) by blast
+    have vec_dim: "dim_vec (vec_of_list (nths (list_of_vec (unit_vec n i)) J)) =
+                   card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}"
+      by (simp add: length_nths)
+    have row_card: "dim_vec (row B (dim_row B - 1)) = card {ia. ia < n \<and> ia \<in> J}"
+      using 22 vec_dim dim_unit by (simp add: length_nths)
+    have dim_col_eq: "dim_col B = card {ia. ia < n \<and> ia \<in> J}"
+      using row_card[symmetric] by simp
+    have j_less: "j < card {ia. ia < n \<and> ia \<in> J}"
+      using j dim_col_eq by simp
+    have pick_lt: "pick J j < n"
+      using j_less pick_le by blast
+    have unit_zero: "unit_vec n i $ pick J j = 0"
+      by (simp add: \<open>unit_vec n i = 0\<^sub>v n\<close> pick_lt)
+    have "B $$ (dim_row B - 1, j) = unit_vec n i $ pick J j"
+      using 6 j by blast
+    hence "B $$ (dim_row B - 1, j) = 0"
+      using unit_zero by simp
+  }
+  thus ?thesis by blast
+qed
           then show ?thesis using 4 
             by (simp add: \<open>dim_row B = dim_col B\<close>)
         qed
