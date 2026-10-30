@@ -76,7 +76,9 @@ text \<open>\<^bold>\<open>Listing 59. theorem dijkstra_compute_optimal (Dijkstr
 
 text \<open>\<^bold>\<open>Listing 60. lemma BestInGreedy_matroid_iff_opt (Best_In_Greedy.thy)\<close>
   In this snapshot: \<^file>\<open>../../Matroids_Greedy/BestInGreedy_stablesort.thy\<close> (line 629, locale BestInGreedy_stablesort).
-  Note: the lemma is called \<open>BestInGreedy_stablesort_matroid_iff_opt\<close> in this snapshot.
+  Note: paper: BestInGreedy_matroid_iff_opt in Best_In_Greedy.thy; in this snapshot the lemma is
+  called \<open>BestInGreedy_stablesort_matroid_iff_opt\<close>, and the loop \<open>BestInGreedy\<close> of the
+  listing is called \<open>BestInGreedy_base\<close>.
   Checked reference: @{thm BestInGreedy_stablesort.BestInGreedy_stablesort_matroid_iff_opt}.\<close>
 
 text \<open>\<^bold>\<open>Listing 61. corollary kruskal_computes_max_spanning_forest (Kruskal_Greedy.thy)\<close>

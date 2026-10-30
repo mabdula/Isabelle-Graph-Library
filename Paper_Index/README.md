@@ -55,8 +55,8 @@ in the session of that appendix.
 ## Differences between the paper and this snapshot
 
 Some listings cite theory files or names as they appear on development branches,
-for example `Acyclic_Flow.thy` for the edge iterators and `Kruskal_Functional.thy`
-for the Kruskal interpretation. Where the location or the name in this snapshot
+for example `Acyclic_Flow.thy` for the edge iterators and `Kruskal_Greedy.thy` for
+the correctness of Kruskal's algorithm. Where the location or the name in this snapshot
 differs, the entry points at the actual location in the snapshot and records the
 difference in a `Note` line.
 
@@ -72,6 +72,6 @@ whose locale asks the entries of each range, not the whole list of edges, to be
 distinct, 3. Listing 45, whose assumptions are those of two parent locales, 4.
 Listing 57, whose last two conclusions are about a relation of parents, 5. Listing
 73, which is stated for the implementation, 6. Listing 86, which has one more
-conclusion, 7. Listing 107, whose locale is called `Best_In_Greedy'`, and 8.
-Listings 80 and 108, in which a field of the state is called `solution` instead of
-`sol`.
+conclusion, 7. Listings 60 and 93, in which the loop `BestInGreedy` is called
+`BestInGreedy_base`, and 8. Listings 80 and 108, in which a field of the state is
+called `solution` instead of `sol`.
