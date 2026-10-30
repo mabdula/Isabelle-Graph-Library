@@ -15,7 +15,7 @@ size across the benchmarks (the first size of every benchmark, then the second, 
 started after budget_hours since the setup began (work/started_<mode>), and the runs that were not started are
 recorded NOT_RUN.
 """
-import csv, datetime, hashlib, json, os, re, shutil, subprocess, sys, time
+import csv, datetime, hashlib, json, os, re, shutil, signal, subprocess, sys, time
 
 EVAL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN = os.path.join(EVAL, 'run'); BENCH = os.path.join(EVAL, 'benchmarks'); WORK = os.path.join(EVAL, 'work')
@@ -380,11 +380,19 @@ class Runner:
         warm = [sys.executable, WARM, str(j['warm']), '--'] if j.get('warm') else []
         env = dict(os.environ); env.update(j.get('env', {}))
         t0 = time.time()
+        # its own process group, so that the wall cap stops the wrapper, the launcher and the solver together
+        p = subprocess.Popen(pre + warm + j['cmd'], cwd=j['cwd'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env, start_new_session=True)
         try:
-            r = subprocess.run(pre + warm + j['cmd'], cwd=j['cwd'], capture_output=True, text=True, env=env, timeout=wall_cap)
-            rc, out, err, cap_hit = r.returncode, r.stdout, r.stderr, False
-        except subprocess.TimeoutExpired as e:
-            rc, out, err, cap_hit = 124, (e.stdout or b'').decode(errors='replace') if isinstance(e.stdout, bytes) else (e.stdout or ''), 'WALL TIMEOUT', True
+            out, err = p.communicate(timeout=wall_cap)
+            rc, cap_hit = p.returncode, False
+        except subprocess.TimeoutExpired:
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                try: os.killpg(p.pid, sig)
+                except ProcessLookupError: pass
+                try: out, err = p.communicate(timeout=10); break
+                except subprocess.TimeoutExpired: continue
+            else: out, err = p.communicate()
+            rc, err, cap_hit = 124, 'WALL TIMEOUT', True
             if budget_cut: self.record(j, 'NOT_RUN', '', time.time() - t0, rc, '', 'stopped by the time budget'); return 'NOT_RUN'
         wall = time.time() - t0
         row, raw = parse_row(out, j['cmd'][0])
