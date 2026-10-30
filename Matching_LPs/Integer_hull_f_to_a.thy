@@ -3441,7 +3441,7 @@ proof
   qed
   show  "P = integer_hull P \<Longrightarrow> \<forall>F. min_face P F \<longrightarrow> (\<exists>x\<in>F. x \<in> \<int>\<^sub>v)" 
     using carr_P
-    by (metis P_int_then_face_int gram_schmidt.min_face_elim(1))
+    by (insert carr_P P_int_then_face_int[of P] min_face_elim(1), auto)
 qed
 
 lemma face_iff_int_polyh:
