@@ -20,6 +20,13 @@
 !/evaluation/experiments_8h.sh
 !/evaluation/experiments_full.sh
 
+# non-theory files the build needs
+!/etc/components
+!/AI_Provenance/etc/settings
+!/AI_Provenance/etc/build.props
+!/AI_Provenance/src/ai_provenance.scala
+!/Imperative/Separation_Logic_Imperative_HOL_Partial/Tools/named_simpsets.ML
+
 # editor backups and autosaves
 *~
 \#*#
