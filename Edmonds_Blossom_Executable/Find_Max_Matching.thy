@@ -34,14 +34,17 @@ locale Find_Max_Matching = Graph_Matching_Specs where lookup = lookup and mate_e
   fixes G :: 'adjmap and vs :: "'v list"
     and aug_path_search :: "'mate \<Rightarrow> 'v list option"
   assumes aug_path_search:
-    "\<And>M p. \<lbrakk>graph_input G vs; matching_invar G M; aug_path_search M = Some p\<rbrakk>
+    "\<And>M p. \<lbrakk>graph_input G vs; set vs \<subset> K; matching_invar G M; aug_path_search M = Some p\<rbrakk>
        \<Longrightarrow> graph_augmenting_path (ugraph_abs G) (matching_abs M) p"
-    "\<And>M. \<lbrakk>graph_input G vs; matching_invar G M;
+    "\<And>M. \<lbrakk>graph_input G vs; set vs \<subset> K; matching_invar G M;
            \<exists>p. graph_augmenting_path (ugraph_abs G) (matching_abs M) p\<rbrakk>
        \<Longrightarrow> aug_path_search M \<noteq> None"
 begin
 
-definition "Find_Max_Matching_axiom = graph_input G vs"
+text \<open>The search procedure contracts blossoms to vertices of the universe that are not vertices
+  of the graph, so the vertices of the input must be a strict subset of the universe.\<close>
+
+definition "Find_Max_Matching_axiom \<longleftrightarrow> graph_input G vs \<and> set vs \<subset> K"
 
 function \<^marker>\<open>provenance ai_human\<close> (domintros) Find_Max_Matching ::
   "'mate Find_Max_Matching_state \<Rightarrow> 'mate Find_Max_Matching_state" where
@@ -165,8 +168,9 @@ locale Find_Max_Matching_thms = Find_Max_Matching +
 begin
 
 lemma graph_input_G[simp]: "graph_input G vs"
+  and vs_strict[simp]: "set vs \<subset> K"
   using Find_Max_Matching_axiom
-  by (simp add: Find_Max_Matching_axiom_def)
+  by (simp_all add: Find_Max_Matching_axiom_def)
 
 lemma ugraph_abs_G[simp]: "graph_invar (ugraph_abs G)"
   by (rule ugraph_abs_graph_invar[OF graph_input_G])
@@ -175,7 +179,7 @@ lemma finite_ugraph_abs_G[simp]: "finite (ugraph_abs G)"
   using ugraph_abs_G
   by (simp add: finite_Vs_then_finite)
 
-lemmas aug_path_search_props = aug_path_search[OF graph_input_G]
+lemmas aug_path_search_props = aug_path_search[OF graph_input_G vs_strict]
 
 subsection \<open>The invariant\<close>
 
