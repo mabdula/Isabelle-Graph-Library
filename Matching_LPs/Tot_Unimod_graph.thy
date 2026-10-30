@@ -1242,7 +1242,14 @@ proof -
         by (metis \<open>dim_vec (b @\<^sub>v 0\<^sub>v n) = nr + n\<close> asmi carrier_matD(1) sub_system_snd)
       
       have 6: "(vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr})) $v i = (b @\<^sub>v 0\<^sub>v n) $ k"
-        by (metis k sub_system_snd)     
+      proof -
+        have "vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}) $ i =
+              snd (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) {0..<nr}) $ i"
+          by (simp add: sub_system_snd)
+        also have "\<dots> = (b @\<^sub>v 0\<^sub>v n) $ k"
+          using k by simp
+        finally show ?thesis .
+      qed
       have "pick {0..<nr} i = i"  
         using pick_from_range_less 5 asmi by presburger
       then have "(b @\<^sub>v 0\<^sub>v n) $ k = (b @\<^sub>v 0\<^sub>v n) $ i" 
