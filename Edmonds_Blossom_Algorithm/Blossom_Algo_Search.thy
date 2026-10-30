@@ -2505,15 +2505,42 @@ lemma examined_have_odd_verts_invar_pres:
     ass: "if1 flabel ex v1 v2 v3 r"
   shows "examined_have_odd_verts_invar (insert {v2, v3} (insert {v1, v2} ex)) (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even)))"
 proof-
-  have "flabel v2 = None"
+  have flabel_v2: "flabel v2 = None"
     using if1_props(3)[OF ass].
-  moreover have "flabel v3 = None"
+  have flabel_v3: "flabel v3 = None"
     by(rule if1_props[OF ass] flabel_invar_props(1)[OF invars(1)])+
-  ultimately show ?thesis
-    using invars(2) v1_neq_v2_neq_v3(2)[OF ass]
-    apply (clarsimp simp: examined_have_odd_verts_invar_def)
-    using option.distinct(1)
-    by metis
+  have v2_neq_v3: "v2 \<noteq> v3"
+    using v1_neq_v2_neq_v3(2)[OF ass].
+  show ?thesis
+    unfolding examined_have_odd_verts_invar_def
+  proof (intro ballI)
+    fix e
+    assume e_mem: "e \<in> insert {v2, v3} (insert {v1, v2} ex)"
+    show "\<exists>v\<in>e. \<exists>ra. (flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even))) v = Some (ra, Odd)"
+    proof (cases "e = {v2, v3} \<or> e = {v1, v2}")
+      case True
+      then show ?thesis
+        using v2_neq_v3
+        by auto
+    next
+      case False
+      then have "e \<in> ex"
+        using e_mem
+        by auto
+      then obtain v ra where v_mem: "v \<in> e" and v_odd: "flabel v = Some (ra, Odd)"
+        using invars(2)
+        unfolding examined_have_odd_verts_invar_def
+        by blast
+      have "v \<noteq> v2" "v \<noteq> v3"
+        using v_odd flabel_v2 flabel_v3
+        by auto
+      then have "(flabel(v2 \<mapsto> (r, Odd), v3 \<mapsto> (r', Even))) v = Some (ra, Odd)"
+        using v_odd
+        by simp
+      with v_mem show ?thesis
+        by blast
+    qed
+  qed
 qed
 
 lemma examined_have_odd_verts_invar_props:
