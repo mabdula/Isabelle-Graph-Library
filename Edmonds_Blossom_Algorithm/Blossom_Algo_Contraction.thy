@@ -720,11 +720,51 @@ next
       using cons1
       by (auto simp add: Let_def)
   next
-    case (Cons a1' l1')
+    case cons2: (Cons a1' l1')
+    from cons1 cons2 have prem:
+      "(Some pfx1, l2_pfx) = longest_disj_pfx (a1' # l1') (a2 # l2)"
+      by simp
     then show ?thesis
-      using cons1
-      apply (auto simp add: Let_def split: if_splits prod.splits option.splits)
-      by (metis option.simps(3))+
+    proof (cases "last (find_pfx ((=) a2) (a1' # l1')) = a2")
+      case True
+      then have "longest_disj_pfx (a1' # l1') (a2 # l2) =
+                   (Some (find_pfx ((=) a2) (a1' # l1')), Some [a2])"
+        by (simp add: Let_def del: find_pfx.simps(2))
+      with prem have "l2_pfx = Some [a2]"
+        by simp
+      then show ?thesis by simp
+    next
+      case False
+      obtain l1_pfx' l2_pfx' where split_eq:
+        "longest_disj_pfx (a1' # l1') l2 = (l1_pfx', l2_pfx')"
+        by (cases "longest_disj_pfx (a1' # l1') l2") auto
+      have unfold_eq: "longest_disj_pfx (a1' # l1') (a2 # l2) =
+                          (case l2_pfx' of
+                             Some pfx2 \<Rightarrow> (l1_pfx', Some (a2 # pfx2))
+                           | None \<Rightarrow> (l1_pfx', l2_pfx'))"
+        using False split_eq
+        by (simp add: Let_def)
+      show ?thesis
+      proof (cases l2_pfx')
+        case (Some pfx2)
+        then have "longest_disj_pfx (a1' # l1') (a2 # l2) = (l1_pfx', Some (a2 # pfx2))"
+          using unfold_eq by simp
+        with prem have "l2_pfx = Some (a2 # pfx2)"
+          by simp
+        then show ?thesis by simp
+      next
+        case None
+        then have "longest_disj_pfx (a1' # l1') (a2 # l2) = (l1_pfx', None)"
+          using unfold_eq by simp
+        with prem have pfx1_eq: "Some pfx1 = l1_pfx' \<and> l2_pfx = None"
+          by simp
+        have final_eq: "(Some pfx1, None) = longest_disj_pfx (a1' # l1') l2"
+          using split_eq pfx1_eq None by simp
+        have "\<exists>pfx2. (None :: 'a list option) = Some pfx2"
+          using cons1 final_eq by blast
+        then show ?thesis by simp
+      qed
+    qed
   qed
 qed
 
