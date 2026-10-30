@@ -1464,7 +1464,12 @@ proof
       using assms(3) submatrix_split2 by blast
     have "B $$ (i, insert_index j k) = A $$ (pick I i, pick J (insert_index j k))"
       apply(simp only: assms(3))
-      by (metis (no_types, lifting) 19 asmi assms(3) dim_submatrix(1-2) submatrix_index)
+      proof (rule submatrix_index)
+        show "i < card {k. k < dim_row A \<and> k \<in> I}"
+          using asmi by (simp add: dim_submatrix(1))
+        show "insert_index j k < card {k. k < dim_col A \<and> k \<in> J}"
+          using 19 12 by simp
+      qed
     then have 29:"B $$ (i, insert_index j k) = A $$ (i', k1)" 
       using i' k1 by blast
     have 30:"submatrix A I (J - {pick J j}) $$ (i, k) = A $$ (i', k2)"
