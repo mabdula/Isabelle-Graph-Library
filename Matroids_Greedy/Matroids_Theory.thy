@@ -2368,7 +2368,18 @@ proof-
         by blast
       with rank_leq_card \<open>?indep X\<close> \<open>?indep Y\<close>
       have "\<forall>x \<in> X - Y. r (insert x Y) < card (insert x Y)"
-        by (metis DiffD1 in_mono insert_subsetI order_less_le)
+        proof (intro ballI)
+  fix x
+  assume "x \<in> X - Y"
+  then have "x \<in> X" by blast
+  with \<open>?indep X\<close> have "x \<in> E" by blast
+  from \<open>?indep Y\<close> have "Y \<subseteq> E" by blast
+  with \<open>x \<in> E\<close> have "insert x Y \<subseteq> E" by blast
+  with rank_leq_card have le: "r (insert x Y) \<le> card (insert x Y)" by blast
+  from \<open>x \<in> X - Y\<close> \<open>\<forall>x \<in> X - Y. \<not> (r (insert x Y) = card (insert x Y))\<close>
+  have neq: "r (insert x Y) \<noteq> card (insert x Y)" by blast
+  from le neq show "r (insert x Y) < card (insert x Y)" by simp
+qed
       then have "\<forall>x \<in> X - Y. r (insert x Y) < card Y + 1"
         proof (intro ballI)
           fix x
