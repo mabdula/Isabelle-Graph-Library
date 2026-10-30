@@ -5,6 +5,9 @@ theory Dijkstra
           Data_Structures.Fixed_Univ_Map_Specs Data_Structures.Fixed_Univ_Set_Specs
 begin
 
+provenance ai
+
+
 section \<open>Dijkstra's Shortest-Path Algorithm\<close>
 
 section \<open>The Program State\<close>
@@ -45,7 +48,7 @@ text \<open>The algorithm is parameterised over: the graph as an outgoing-edge i
       edge predicate @{term allowed}, the early-stopping flag @{term early_stop}, and the initial
       (empty) distance and parent arrays (all distances \<open>-1\<close>, all parents @{term None}).\<close>
 
-locale dijkstra =
+locale \<^marker>\<open>provenance ai_human\<close> dijkstra =
   multigraph where fst = fst +
   outgoing_edge_iterator where fst = fst
       and out_invar = out_invar and out_abstract = out_abstract
@@ -182,7 +185,7 @@ text \<open>Each step advances by one element: relax one outgoing edge of the ve
       minimum and settle it. The loop ends when the queue is empty (whole reachable tree computed) or
       -- with @{term early_stop} -- when the popped vertex is a target.\<close>
 
-function (domintros) dijkstra ::
+function \<^marker>\<open>provenance ai_human\<close> (domintros) dijkstra ::
   "('v,'g,'darr,'sset,'parr,'queue,'src) dij_state \<Rightarrow> ('v,'g,'darr,'sset,'parr,'queue,'src) dij_state" where
   "dijkstra st =
      (case dij_curr st of
@@ -1639,7 +1642,7 @@ text \<open>The main correctness theorem: for every \<^emph>\<open>settled\<clos
       shortest-path distance from the source set. Combined with @{thm dijkstra_compute_upper_bound}
       (soundness) this fully characterises the settled distances.\<close>
 
-lemma dijkstra_compute_optimal:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_compute_optimal:
   "v \<in> seen_abstract (dij_seen dijkstra_compute) \<Longrightarrow>
      ereal (dist_lookup (dij_dist dijkstra_compute) v) = ag.distance_set w (src_abstract srcs) v"
   using invar_opt_compute invar_8_compute dijkstra_compute_upper_bound
@@ -1985,7 +1988,7 @@ text \<open>The parent array @{term dij_parent} stores, for each reached vertex 
       terminates because the parent relation @{term par_rel} is well-founded (the acyclicity invariant
       @{term invar_wf}).\<close>
 
-partial_function (tailrec) build_path where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) build_path where
   "build_path st v acc = (case parent_lookup (dij_parent st) v of None \<Rightarrow> acc | Some e \<Rightarrow> build_path st (fst e) (e # acc))"
 
 definition "reconstruct_path st v = build_path st v []"
@@ -2052,7 +2055,7 @@ end
 
 subsection \<open>Executable version\<close>
 
-partial_function (tailrec) dijkstra_impl where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) dijkstra_impl where
   "dijkstra_impl st =
      (case dij_curr st of
         Some u \<Rightarrow>

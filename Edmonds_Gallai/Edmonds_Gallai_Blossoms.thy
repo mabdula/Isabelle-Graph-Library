@@ -2,6 +2,8 @@ theory Edmonds_Gallai_Blossoms
   imports Edmonds_Gallai_Preps
 begin
 
+provenance human
+
 subsection \<open>Properties of the Edmonds-Gallai Decomposition and Blossom Contraction\<close>
 
 

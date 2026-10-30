@@ -2,6 +2,9 @@ theory Hopcroft_Karp_Top_Loop_Imperative
   imports Hopcroft_Karp.Hopcroft_Karp_Top_Loop Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
+provenance ai
+
+
 section \<open>Imperative Refinement of the Top Loop\<close>
 
 text \<open>The imperative top loop mirrors @{const Hopcroft_Karp_Loop.Hopcroft_Karp_Loop_impl}. As the

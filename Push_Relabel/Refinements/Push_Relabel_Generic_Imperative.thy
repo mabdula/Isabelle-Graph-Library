@@ -6,6 +6,9 @@ theory Push_Relabel_Generic_Imperative
     Data_Structures.Real_Embedding
 begin
 
+provenance ai
+
+
 section \<open>Imperative Refinement of the Generic Push-Relabel Algorithm\<close>
 
 text \<open>The operations of @{locale push_relabel_ops} are implemented once more, now on imperative

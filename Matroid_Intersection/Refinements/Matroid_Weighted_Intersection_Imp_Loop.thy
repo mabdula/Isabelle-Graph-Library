@@ -3,6 +3,9 @@ theory Matroid_Weighted_Intersection_Imp_Loop
     Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
+provenance ai
+
+
 section \<open>The Weighted Loop in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of @{locale weighted_intersection_path_loop}, as

@@ -2,6 +2,9 @@ theory DFS_by_Iterator
   imports DFS Data_Structures.Iterable_Set_Specs Data_Structures.Fixed_Univ_Set_Specs
 begin
 
+provenance ai
+
+
 section \<open>Depth-First Search by Neighbourhood Iterators\<close>
 
 text \<open>The neighbourhoods are additionally presented by an @{locale indexed_iterable_set} over the
@@ -10,7 +13,7 @@ text \<open>The neighbourhoods are additionally presented by an @{locale indexed
 
 record ('ver, 'sset, 'nbs) DFS_it_state = "('ver, 'sset) DFS_state" + its:: "'nbs"
 
-locale DFS_by_Iterator =
+locale \<^marker>\<open>provenance ai_human\<close> DFS_by_Iterator =
   DFS where lookup = lookup +
   nbs: indexed_iterable_set where
       idx_invar     = nbs_invar and
@@ -51,7 +54,7 @@ subsection \<open>Using the function package to model while-loops\<close>
 text \<open>The iterator at the top vertex is moved past already seen neighbours. The first unseen
       neighbour is pushed.\<close>
 
-function (domintros) DFS_it::"('v, 'sset, 'nbs) DFS_it_state \<Rightarrow> ('v, 'sset, 'nbs) DFS_it_state" where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) DFS_it::"('v, 'sset, 'nbs) DFS_it_state \<Rightarrow> ('v, 'sset, 'nbs) DFS_it_state" where
   "DFS_it dfs_state = 
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if v = t then 
@@ -255,7 +258,7 @@ definition "state_rel_it dfs_state dfs_it_state =
 
 end
 
-locale DFS_by_Iterator_thms = DFS_by_Iterator + DFS_thms where lookup = lookup +
+locale \<^marker>\<open>provenance ai_human\<close> DFS_by_Iterator_thms = DFS_by_Iterator + DFS_thms where lookup = lookup +
   assumes vertices_in_U: "dVs (Graph.digraph_abs G) \<subseteq> U"
     and vertices_in_K: "dVs (Graph.digraph_abs G) \<subseteq> K"
     and nbs_init_invar: "nbs_invar nbs_init"

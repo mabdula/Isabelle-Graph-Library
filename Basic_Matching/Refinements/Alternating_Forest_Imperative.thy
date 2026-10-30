@@ -5,6 +5,9 @@ theory Alternating_Forest_Imperative
     Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
+provenance ai
+
+
 section \<open>Imperative Implementation of Alternating Forests\<close>
 
 text \<open>This is the imperative counterpart of @{locale forest_manipulation}. It is generic in the

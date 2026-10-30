@@ -3,6 +3,9 @@ theory Mincost_Oracle_Certificates_Pluggable_Refinement
           Use_Network_Simplex.Mincost_Oracle_Certificates_Pluggable
 begin
 
+provenance ai
+
+
 section \<open>Imperative refinement of the pluggable checker\<close>
 
 text \<open>The imperative counterpart of \<open>Mincost_Oracle_Certificates_Pluggable\<close>: \<open>decide_imp\<close> calls

@@ -4,6 +4,9 @@ theory Push_Relabel_FIFO
     Data_Structures.Bounded_Queue_Specs
 begin
 
+provenance ai
+
+
 section \<open>FIFO Push-Relabel with the Gap Heuristic\<close>
 
 text \<open>The context of the strategy is a queue of active vertices and the vertex currently being
@@ -15,7 +18,7 @@ text \<open>The context of the strategy is a queue of active vertices and the ve
       @{term queue_vertex_fold} has the same specification as @{term vertex_fold}, but a different
       accumulator type.\<close>
 
-locale push_relabel_fifo_spec =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_fifo_spec =
   push_relabel_ops where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar +
   queue: bounded_queue qcap queue_invar queue_abstract queue_empty queue_push queue_pop queue_is_empty
@@ -70,7 +73,7 @@ definition "fifo_ctx_invar st =
 
 end
 
-locale push_relabel_fifo =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_fifo =
   push_relabel_fifo_spec where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar +
   push_relabel_ops_correct where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd

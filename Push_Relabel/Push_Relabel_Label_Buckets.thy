@@ -2,7 +2,11 @@ theory Push_Relabel_Label_Buckets
   imports
     Data_Structures.Fixed_Univ_Map_Specs
     Data_Structures.Fixed_Univ_Buckets_Specs
+    AI_Provenance.Provenance
 begin
+
+provenance ai
+
 
 section \<open>Label Maps with Buckets for the Gap Heuristic\<close>
 
@@ -14,7 +18,7 @@ text \<open>A label map over the vertices @{term V} that also keeps every vertex
       \<open>k + 1, ..., d\<close>, which is the gap enumeration of the generic push-relabel algorithm.
       Everything is generic in the underlying label array and buckets.\<close>
 
-locale label_buckets =
+locale \<^marker>\<open>provenance ai_human\<close> label_buckets =
   label_array: fixed_univ_map V lm_invar lm_upd lm_get +
   bucket: fixed_univ_buckets V "{..<N}" buckets_invar buckets_abstract buckets_empty
       buckets_insert buckets_remove buckets_pick buckets_move
@@ -32,7 +36,7 @@ begin
 
 text \<open>Lowering the bound while its bucket is empty.\<close>
 
-fun lower where
+fun \<^marker>\<open>provenance ai_human\<close> lower where
   "lower B 0 = 0"
 | "lower B (Suc d) = (case buckets_pick B (Suc d) of None \<Rightarrow> lower B d | Some _ \<Rightarrow> Suc d)"
 
@@ -51,7 +55,7 @@ text \<open>Taking the elements of bucket \<open>j\<close> one by one; the fuel 
       buckets without the drained ones are returned as well: the walk continues on them, as the
       walk in place does.\<close>
 
-fun drain where
+fun \<^marker>\<open>provenance ai_human\<close> drain where
   "drain B j 0 g acc = (B, acc)"
 | "drain B j (Suc n) g acc =
      (case buckets_pick B j of None \<Rightarrow> (B, acc)
@@ -59,7 +63,7 @@ fun drain where
 
 text \<open>Draining the buckets \<open>j, ..., j + m - 1\<close>.\<close>
 
-fun gap_walk where
+fun \<^marker>\<open>provenance ai_human\<close> gap_walk where
   "gap_walk B j 0 g acc = acc"
 | "gap_walk B j (Suc m) g acc = (case drain B j N g acc of (B', acc') \<Rightarrow> gap_walk B' (Suc j) m g acc')"
 
@@ -72,7 +76,7 @@ definition "lb_invar = (\<lambda> (L, B, d).
 
 end
 
-locale label_buckets_correct =
+locale \<^marker>\<open>provenance ai_human\<close> label_buckets_correct =
   label_buckets +
   assumes V_finite: "finite V"
   and N: "N = card V"

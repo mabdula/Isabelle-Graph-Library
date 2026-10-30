@@ -4,6 +4,9 @@ theory Assignment_Solver
     Matching_Certificate_Arrays
 begin
 
+provenance ai
+
+
 section \<open>A Certifying Solver for the Assignment Problem\<close>
 
 text \<open>The top level of a solver for minimum weight perfect matchings in bipartite graphs (the

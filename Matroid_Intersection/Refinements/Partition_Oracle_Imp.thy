@@ -2,6 +2,9 @@ theory Partition_Oracle_Imp
   imports Partition_Oracle Exchange_Oracles_Imp Directed_Set_Graphs.CSR_Buildup_Imperative
 begin
 
+provenance ai
+
+
 section \<open>The Unit Partition Oracle in Imperative HOL\<close>
 
 text \<open>Elements are the nats below \<open>n\<close>, blocks the nats below \<open>nb\<close>, and the block of each

@@ -3,6 +3,9 @@ theory Mincost_Oracle_Certificates_Refinement
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 
+provenance ai
+
+
 named_theorems certificate_heap_rules "Heap rules for the min-cost-flow certificate pipeline"
 
 section \<open>Imperative refinement of the certificate checkers and the oracle call\<close>

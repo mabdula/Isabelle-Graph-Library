@@ -2,6 +2,9 @@ theory DFS_Skeleton
   imports Directed_Set_Graphs.Pair_Graph_Specs Data_Structures.Set2_Addons
 begin
 
+provenance ai
+
+
 text \<open>A generic DFS skeleton: the search spine (stack/seen) is fixed; per-algorithm semantics
 are supplied as the callbacks found/on_found/on_empty/on_backtrack, which may only write the
 extensible-record slot 'more.\<close>
@@ -17,7 +20,7 @@ named_theorems invar_holds_intros
 named_theorems state_rel_intros
 named_theorems state_rel_holds_intros
 
-locale DFS_skel =
+locale \<^marker>\<open>provenance ai_human\<close> DFS_skel =
   Graph: Pair_Graph_Specs where lookup = lookup +
  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
@@ -31,7 +34,7 @@ begin
 abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
-function (domintros) DFS_skel::"('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) DFS_skel::"('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" where
   "DFS_skel dfs_state =
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then on_found dfs_state
@@ -45,7 +48,7 @@ function (domintros) DFS_skel::"('v,'vset,'more) DFS_skel_state_scheme \<Rightar
      | _ \<Rightarrow> on_empty dfs_state)"
   by pat_completeness auto
 
-partial_function (tailrec) DFS_skel_impl::"('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) DFS_skel_impl::"('v,'vset,'more) DFS_skel_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skel_state_scheme" where
   "DFS_skel_impl dfs_state =
      (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
        (if found dfs_state then on_found dfs_state
@@ -206,7 +209,7 @@ end
 text \<open>The reasoning layer: the callbacks must not disturb the search spine (stack/seen), and the
 graph is well-formed. Under these the structural invariants and termination hold generically.\<close>
 
-locale DFS_skel_thms = DFS_skel +
+locale \<^marker>\<open>provenance ai_human\<close> DFS_skel_thms = DFS_skel +
   assumes DFS_skel_axioms: DFS_skel_axioms
     and on_found_stack[simp]:     "stack (on_found st) = stack st"
     and on_found_seen[simp]:      "seen (on_found st) = seen st"

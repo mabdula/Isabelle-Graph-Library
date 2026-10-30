@@ -5,6 +5,9 @@ theory Hungarian_Method_Top_Loop_Imperative
     Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
+provenance ai
+
+
 section \<open>Imperative Refinement of the Top Loop\<close>
 
 text \<open>The top loop of the Hungarian method, @{locale hungarian_loop}, is parametric in the path

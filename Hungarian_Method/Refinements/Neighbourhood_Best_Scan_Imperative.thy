@@ -6,6 +6,9 @@ theory Neighbourhood_Best_Scan_Imperative
     Data_Structures.Real_Embedding
 begin
 
+provenance ai
+
+
 section \<open>Imperative Scan for the Best Two Neighbours\<close>
 
 text \<open>The imperative counterpart of @{const nb_best_scan_spec.best_two}. The key and the preference

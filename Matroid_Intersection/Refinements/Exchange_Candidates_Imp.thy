@@ -2,6 +2,9 @@ theory Exchange_Candidates_Imp
   imports Exchange_Oracles_Imp Directed_Set_Graphs.CSR_Neighbour_Lists Data_Structures.More_Lists
 begin
 
+provenance ai
+
+
 section \<open>The Candidate Graph from Exchange Partners\<close>
 
 text \<open>The constant candidate graph of the exchange graph search, built once from the partner

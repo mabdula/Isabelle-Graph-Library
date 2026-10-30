@@ -3,6 +3,9 @@ theory Network_Simplex_Initial_Basis_Selector
   imports Network_Simplex_Initial_Basis_Arb
 begin
 
+provenance ai
+
+
 section \<open>A concrete entering-edge selector: candidate-list block search\<close>
 
 text \<open>We implement the @{locale edge_selector} ADT concretely, following the improved block-search
@@ -23,7 +26,7 @@ text \<open>We implement the @{locale edge_selector} ADT concretely, following t
       selector returns @{term None} --- discharging the ADT's @{term None} contract, from which the outer loop
       later derives optimality.\<close>
 
-locale initial_basis_selector =
+locale \<^marker>\<open>provenance ai_human\<close> initial_basis_selector =
   initial_basis_correct where capacity_list = capacity_list and h = h
   for capacity_list :: "('n :: linordered_idom) list" and h :: "'n \<Rightarrow> real" +
   assumes block_size_pos:     "0 < block_size"
