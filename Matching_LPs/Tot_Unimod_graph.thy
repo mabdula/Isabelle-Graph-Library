@@ -1229,7 +1229,7 @@ proof -
           by (simp add: card_atLeastLessThan)
         finally show ?thesis .
       qed      then show 4:"dim_vec b = dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}))"
-        by (metis assms(2) carrier_vecD)
+        by (simp add: assms(2) carrier_vecD)
       fix i
       assume asmi: "i < dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}))"
       then have asmi': "i < dim_vec b" 
