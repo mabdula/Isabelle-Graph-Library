@@ -3970,7 +3970,59 @@ qed
                   by auto
                 then have "if1_cond flabel ex"
                   unfolding if1_cond_def
-                  by (smt \<open>e \<in> M\<close> \<open>e' = {va, vb}\<close> \<open>flabel va = None \<and> e = {v, va} \<or> flabel vb = None \<and> e = {v, vb}\<close> empty_iff even_unlab insertE insert_commute option.distinct(1) that)
+                proof -
+                  have if1_cond_va: "if1_cond flabel ex" if va_none: "flabel va = None" and e_def: "e = {v, va}"
+                  proof -
+                    obtain vw where vw1: "vw \<in> {va, vb}" and vw2: "\<exists>r. flabel vw = Some (r, Even)"
+                      using even_unlab
+                      by auto
+                    have "vw = vb"
+                      using vw1 vw2 va_none
+                      by auto
+                    then obtain r where "flabel vb = Some (r, Even)"
+                      using vw2
+                      by auto
+                    moreover have "{vb, va} \<in> G - ex"
+                      using \<open>e' \<in> G - ex\<close> \<open>e' = {va, vb}\<close>
+                      by (simp add: insert_commute)
+                    moreover have "{va, v} \<in> M"
+                      using \<open>e \<in> M\<close> e_def
+                      by (simp add: insert_commute)
+                    ultimately show ?thesis
+                      unfolding if1_cond_def
+                      using va_none
+                      by blast
+                  qed
+                  have if1_cond_vb: "if1_cond flabel ex" if vb_none: "flabel vb = None" and e_def: "e = {v, vb}"
+                  proof -
+                    obtain vw where vw1: "vw \<in> {va, vb}" and vw2: "\<exists>r. flabel vw = Some (r, Even)"
+                      using even_unlab
+                      by auto
+                    have "vw = va"
+                      using vw1 vw2 vb_none
+                      by auto
+                    then obtain r where "flabel va = Some (r, Even)"
+                      using vw2
+                      by auto
+                    moreover have "{va, vb} \<in> G - ex"
+                      using \<open>e' \<in> G - ex\<close> \<open>e' = {va, vb}\<close>
+                      by simp
+                    moreover have "{vb, v} \<in> M"
+                      using \<open>e \<in> M\<close> e_def
+                      by (simp add: insert_commute)
+                    ultimately show ?thesis
+                      unfolding if1_cond_def
+                      using vb_none
+                      by blast
+                  qed
+                  show "flabel v = None \<Longrightarrow> \<exists>v1 v2.
+                    {v1, v2} \<in> G - ex \<and>
+                    (\<exists>r. flabel v1 = Some (r, Even)) \<and>
+                    flabel v2 = None \<and> (\<exists>v3. {v2, v3} \<in> M)"
+                    using if1_cond_va if1_cond_vb noL1
+                      \<open>flabel va = None \<and> e = {v, va} \<or> flabel vb = None \<and> e = {v, vb}\<close>
+                    by fastforce
+                qed
                 hence False
                   using \<open>\<not> if1_cond flabel ex\<close>
                   by simp
