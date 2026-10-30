@@ -2946,7 +2946,15 @@ qed
   have "dim_row A' = n"
     using bounded_min_faces_square_mat[OF 2 3 1 9 conjunct1[OF F_def] 10 A'_b'(1) A'_b'(2)] .
   then have "A' \<in> carrier_mat n n" 
-    by (metis "2" A'_b'(2) carrier_matD(2) carrier_matI dim_col_subsyst_mat fst_conv)
+  proof -
+    assume dim_row_A': "dim_row A' = n"
+    have dim_col_eq: "dim_col A' = dim_col (A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n)"
+      using arg_cong[OF A'_b'(2), of fst] dim_col_subsyst_mat by simp
+    then have dim_col_n: "dim_col A' = n"
+      using "2" by (simp add: carrier_matD(2))
+    then show "A' \<in> carrier_mat n n"
+      using dim_row_A' carrier_matI by auto
+  qed
   have 7:"A' *\<^sub>v z = b' \<longleftrightarrow> z = vec n (\<lambda> k. det (replace_col A' b' k) / det A')" 
     using cramer1[of A' n  b' z] `det A' \<noteq> 0` `A' \<in> carrier_mat n n` 
     using A'_b'(1) \<open>z \<in> F\<close> carrier_dim_vec dim_mult_mat_vec by blast
