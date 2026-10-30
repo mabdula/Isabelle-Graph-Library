@@ -2547,9 +2547,17 @@ qed
     with \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close>
     have "\<forall>x \<in> X - Y. (r (insert x Y) \<noteq> card (insert x Y))"
       by blast
-    with rank_leq_card \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close>
     have "\<forall>x \<in> X - Y. (r (insert x Y) < card (insert x Y))"
-      by (metis Diff_iff dual_order.trans insert_subsetI order_less_le)
+    proof (rule ballI)
+      fix x
+      assume x_mem: "x \<in> X - Y"
+      have "insert x Y \<subseteq> X" using x_mem \<open>Y \<subseteq> X\<close> by blast
+      with \<open>X \<subseteq> E\<close> have "insert x Y \<subseteq> E" by blast
+      with rank_leq_card have le: "r (insert x Y) \<le> card (insert x Y)" by blast
+      from \<open>\<forall>x \<in> X - Y. (r (insert x Y) \<noteq> card (insert x Y))\<close> x_mem
+      have neq: "r (insert x Y) \<noteq> card (insert x Y)" by blast
+      from le neq show "r (insert x Y) < card (insert x Y)" by (simp add: order_less_le)
+    qed
     then have "\<forall>x \<in> X - Y. (r (insert x Y) < card Y + 1)"
       using \<open>Y \<subseteq> E\<close> assms(1) finite_subset by fastforce
     then have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> card Y)" by force
