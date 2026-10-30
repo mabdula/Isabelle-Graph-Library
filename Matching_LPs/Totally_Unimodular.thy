@@ -4297,7 +4297,13 @@ proof rule+
         have "det A' \<noteq> 0" 
           using bounded_min_faces_det_non_zero[OF 1 2 False 6 asm] A'b' by blast
         have 7:" \<exists> I J. submatrix ?fullA I J = A'" using A'b'(1)
-          by (metis prod.sel(1) sub_system_fst)
+        proof -
+          have "A' = fst (A', b')" by simp
+          also have "\<dots> = fst (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) I')" using A'b'(1) by simp
+          also have "\<dots> = submatrix (A @\<^sub>r - 1\<^sub>m n) I' UNIV" by (rule sub_system_fst)
+          finally have "submatrix (A @\<^sub>r - 1\<^sub>m n) I' UNIV = A'" by (rule sym)
+          then show ?thesis by blast
+        qed
         have "tot_unimodular ?fullA"
           using assms tot_unimod_append_minus_one by blast
         then have "det A' \<in> {-1, 0, 1}" unfolding tot_unimodular_def using 7 
