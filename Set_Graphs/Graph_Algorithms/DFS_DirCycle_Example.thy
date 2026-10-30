@@ -2,6 +2,9 @@ theory DFS_DirCycle_Example
   imports DFS_DirCycle Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
+provenance ai
+
+
 global_interpretation dircycle: DFS_dircycle where insert = vset_insert and
  sel = sel and vset_empty = vset_empty and diff = vset_diff and
  lookup = lookup and empty = map_empty and delete = delete and isin = isin and t_set = t_set

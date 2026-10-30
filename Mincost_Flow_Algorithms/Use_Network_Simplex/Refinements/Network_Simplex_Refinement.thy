@@ -3,6 +3,9 @@ theory Network_Simplex_Refinement
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 
+provenance ai
+
+
 section \<open>Imperative refinement of the network simplex loop\<close>
 
 text \<open>This theory mirrors the functional specification locale @{locale network_simplex_spec}, but

@@ -3,6 +3,9 @@ theory Matroid_Weighted_Intersection_Exchange_Graph_Imp
     Matroid_Intersection_Exchange_Graph_Imp
 begin
 
+provenance ai
+
+
 section \<open>The Weighted Exchange Graph Search in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of the context of

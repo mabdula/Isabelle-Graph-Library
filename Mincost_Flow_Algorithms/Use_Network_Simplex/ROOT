@@ -3,6 +3,7 @@ session Use_Network_Simplex = "HOL-Library" +
 
 sessions
   Mincost_Flow_Algorithms
+  AI_Provenance
   
 directories 
   Rooted_Arborescense

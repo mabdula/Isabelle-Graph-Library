@@ -5,6 +5,9 @@ theory DIMACS_Solver
     Code_Target_Nat_Machine
 begin
 
+provenance ai
+
+
 section \<open>The DIMACS solver, assembled\<close>
 
 text \<open>The three theories before this one each solve one part of the problem and stop there.

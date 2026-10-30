@@ -8,6 +8,9 @@ theory Network_Simplex_Instantiation_Refinement
           Use_Network_Simplex.Rooted_Arborescense_Refinement
 begin
 
+provenance ai
+
+
 section \<open>Imperative refinement of the orchestrator @{const initial_basis_code_spec.solve}\<close>
 
 text \<open>This theory assembles the imperative counterpart of the top-level functional orchestrator

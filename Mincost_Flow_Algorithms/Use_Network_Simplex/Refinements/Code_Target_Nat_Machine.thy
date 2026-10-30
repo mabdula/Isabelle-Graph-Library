@@ -1,8 +1,11 @@
 section \<open>Serialising \<open>nat\<close> to a 64-bit machine integer\<close>
 
 theory Code_Target_Nat_Machine
-  imports "HOL-Library.Code_Target_Nat" "HOL-Imperative_HOL.Array"
+  imports "HOL-Library.Code_Target_Nat" "HOL-Imperative_HOL.Array" AI_Provenance.Provenance
 begin
+
+provenance ai
+
 
 text \<open>
   By default \<open>nat\<close> becomes SML's \<open>IntInf.int\<close>, so every array index is

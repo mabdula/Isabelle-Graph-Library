@@ -2,6 +2,9 @@ theory Multigraph_Potentials
   imports Multigraph_Weighted_Paths
 begin
 
+provenance ai
+
+
 section \<open>Potentials on Weighted Multigraphs\<close>
 
 text \<open>A real weight function on a finite directed multigraph is \<open>conservative\<close> when no closed

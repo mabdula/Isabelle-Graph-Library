@@ -5,6 +5,9 @@ theory Push_Relabel_Generic
     Directed_Set_Graphs.Edge_Iterators
 begin
 
+provenance ai
+
+
 named_theorems call_cond_elims
 named_theorems ret_holds_intros
 named_theorems invar_props_intros
@@ -45,7 +48,7 @@ record ('emap, 'exc, 'lab, 'cnt, 'g, 'ctx) pr_state =
   pr_in :: 'g
   pr_ctx :: 'ctx
 
-locale push_relabel_ops =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_ops =
   flow_network_spec where fst = fst +
   edge_map: fixed_univ_map \<E> emap_invar emap_upd emap_get +
   ex_map: fixed_univ_map \<V> ex_invar ex_upd ex_get +
@@ -94,7 +97,7 @@ locale push_relabel_ops =
 text \<open>The strategy is a separate parameter, so that strategies can be defined on top of the
       operations and invariants without referring to themselves.\<close>
 
-locale push_relabel_spec =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_spec =
   push_relabel_ops where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar
   for fst :: "'e \<Rightarrow> 'v"
@@ -145,7 +148,7 @@ text \<open>Advancing passes the current residual edge of a vertex and then all 
       edges that are not admissible, so that the next operation on the vertex is a push or a
       relabelling. Both directions are skipped by instances of the same function.\<close>
 
-partial_function (tailrec) skip_scan ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) skip_scan ::
   "('g \<Rightarrow> 'v \<Rightarrow> bool) \<Rightarrow> ('g \<Rightarrow> 'v \<Rightarrow> 'e) \<Rightarrow> ('g \<Rightarrow> 'v \<Rightarrow> 'g) \<Rightarrow> ('e \<Rightarrow> bool) \<Rightarrow> 'v \<Rightarrow> 'g \<Rightarrow> 'g"
   where
   "skip_scan has cur move adm u C =
@@ -183,7 +186,7 @@ text \<open>The new label of a vertex is the minimum label over the residual edg
       one, the outgoing iterator stays exhausted and the ingoing one is set to that edge;
       otherwise the outgoing iterator is set to the edge and the ingoing one is reset.\<close>
 
-partial_function (tailrec) min_scan ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) min_scan ::
   "('g \<Rightarrow> 'v \<Rightarrow> bool) \<Rightarrow> ('g \<Rightarrow> 'v \<Rightarrow> 'e) \<Rightarrow> ('g \<Rightarrow> 'v \<Rightarrow> 'g) \<Rightarrow> 'emap \<Rightarrow> ('e \<Rightarrow> 'v) \<Rightarrow> 'lab
    \<Rightarrow> 'v \<Rightarrow> 'g \<Rightarrow> (nat \<times> 'e) option \<Rightarrow> 'g \<times> (nat \<times> 'e) option" where
   "min_scan has cur move r endp l u C mb =
@@ -230,7 +233,7 @@ definition "relabel_gap_impl u st =
   (let k = label_get (pr_labels st) u; st' = relabel_impl u st in
    if k < num_verts \<and> count_get (pr_counts st') k = 0 then gap_impl k st' else st')"
 
-fun apply_op where
+fun \<^marker>\<open>provenance ai_human\<close> apply_op where
   "apply_op (Push_Fwd d) st = push_fwd_impl d st"
 | "apply_op (Push_Bwd d) st = push_bwd_impl d st"
 | "apply_op (Advance u) st = advance_impl u st"
@@ -264,14 +267,14 @@ definition "select_of st =
   select (pr_ctx st) (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_counts st) (pr_out st)
     (pr_in st)"
 
-function (domintros) push_relabel_loop where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) push_relabel_loop where
   "push_relabel_loop st =
      (case select_of st of (op, c) \<Rightarrow>
         if op = Done then st\<lparr>pr_ctx := c\<rparr>
         else push_relabel_loop (apply_op op (st\<lparr>pr_ctx := c\<rparr>)))"
   by pat_completeness auto
 
-partial_function (tailrec) push_relabel_loop_impl where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) push_relabel_loop_impl where
   "push_relabel_loop_impl st =
      (case select_of st of (op, c) \<Rightarrow>
         if op = Done then st\<lparr>pr_ctx := c\<rparr>
@@ -439,7 +442,7 @@ subsection \<open>Locale for Proofs\<close>
 
 text \<open>The facts about the operations do not depend on the strategy.\<close>
 
-locale push_relabel_ops_correct =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_ops_correct =
   push_relabel_ops where fst = fst +
   flow_network where fst = fst
   for fst :: "'e \<Rightarrow> 'v" +
@@ -463,7 +466,7 @@ locale push_relabel_ops_correct =
 
 text \<open>The contract of the strategy, with an invariant @{term ctx_invar} of its own.\<close>
 
-locale push_relabel =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel =
   push_relabel_spec where fst = fst +
   push_relabel_ops_correct where fst = fst
   for fst :: "'e \<Rightarrow> 'v" +
@@ -1965,7 +1968,7 @@ qed
 
 subsubsection \<open>Correctness\<close>
 
-lemma push_relabel_correct: "is_max_flow s t (emap_get push_relabel)"
+lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_correct: "is_max_flow s t (emap_get push_relabel)"
   using init_state_props
   by (simp add: push_relabel_def push_relabel_loop_max_flow push_relabel_loop_impl_same)
 

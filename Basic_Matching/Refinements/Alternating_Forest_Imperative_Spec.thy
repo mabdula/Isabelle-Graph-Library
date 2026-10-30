@@ -4,6 +4,9 @@ theory Alternating_Forest_Imperative_Spec
     Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
+provenance ai
+
+
 section \<open>Imperative Alternating Forests\<close>
 
 text \<open>The functional specification of alternating forests with ordinary extensions,

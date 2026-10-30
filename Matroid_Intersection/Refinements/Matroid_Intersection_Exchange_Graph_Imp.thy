@@ -3,6 +3,9 @@ theory Matroid_Intersection_Exchange_Graph_Imp
           Data_Structures.More_Lists
 begin
 
+provenance ai
+
+
 section \<open>The Exchange Graph Search in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of the path search of

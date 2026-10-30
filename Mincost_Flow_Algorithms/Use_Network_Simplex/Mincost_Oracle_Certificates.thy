@@ -17,6 +17,9 @@ theory Mincost_Oracle_Certificates
           Flow_Theory.Optimality_Certification Data_Structures.Real_Embedding
 begin
 
+provenance ai
+
+
 subsection \<open>The instance handed to the oracle\<close>
 
 text \<open>The instance in the shape the reduction produces: the arcs are @{term \<open>{0..<fi_m}\<close>} and carry
@@ -78,7 +81,7 @@ text \<open>Assumption-free: it fixes the instance data and the oracle and holds
       material. The embedding @{term h} into the reals is a proof device and not a parameter here,
       exactly as in \<open>initial_basis_code_spec\<close>.\<close>
 
-locale mcf_oracle_spec =
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle_spec =
   fixes fst_list      :: "nat list"
     and snd_list      :: "nat list"
     and capacity_list :: "('n :: linordered_idom) list"
@@ -170,7 +173,7 @@ text \<open>\<^emph>\<open>Optimality.\<close> One sweep decides @{const arc_ok_
       as they decide primal feasibility alone. The loop ends by comparing the accumulator with the
       balance array, which covers the sentinel slot too.\<close>
 
-fun opt_loop :: "'n list \<Rightarrow> 'n list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n list \<Rightarrow> bool" where
+fun \<^marker>\<open>provenance ai_human\<close> opt_loop :: "'n list \<Rightarrow> 'n list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n list \<Rightarrow> bool" where
   "opt_loop fl pot e 0 net = (net = balance_list)"
 | "opt_loop fl pot e (Suc k) net =
      (let f = fl ! e; c = capacity_list ! e
@@ -202,7 +205,7 @@ definition arc_ok_eps :: "'n \<Rightarrow> 'n list \<Rightarrow> 'n list \<Right
       (uncapacitated e \<or> fl ! e < capacity_list ! e \<longrightarrow> - 1 \<le> scaled_rc_of Mn pot e) \<and>
       (0 < fl ! e \<longrightarrow> scaled_rc_of Mn pot e \<le> 1))"
 
-fun opt_loop_eps :: "'n \<Rightarrow> 'n list \<Rightarrow> 'n list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n list \<Rightarrow> bool" where
+fun \<^marker>\<open>provenance ai_human\<close> opt_loop_eps :: "'n \<Rightarrow> 'n list \<Rightarrow> 'n list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n list \<Rightarrow> bool" where
   "opt_loop_eps Mn fl pot e 0 net = (net = balance_list)"
 | "opt_loop_eps Mn fl pot e (Suc k) net =
      (let f = fl ! e; c = capacity_list ! e
@@ -243,7 +246,7 @@ text \<open>One traversal decides all of them. The loop carries the head of the 
       the tail of the first, so linkage is one comparison and closure is the same comparison after
       the last step. The cycle is the one certificate read sequentially, by pattern matching.\<close>
 
-fun cyc_loop :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool" where
+fun \<^marker>\<open>provenance ai_human\<close> cyc_loop :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool" where
   "cyc_loop [] prev s tot = (prev = s \<and> tot < 0)"
 | "cyc_loop (e # es) prev s tot =
      (e < m \<and> capacity_list ! e = - 1 \<and> prev = fst_list ! e
@@ -271,12 +274,12 @@ definition cut_capacity :: "nat list \<Rightarrow> 'n" where
 text \<open>The demand is swept first and handed to the arc loop as a scalar; the arc loop either rejects
       an uncapacitated arc leaving the cut or adds its capacity.\<close>
 
-fun demand_loop :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n" where
+fun \<^marker>\<open>provenance ai_human\<close> demand_loop :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n" where
   "demand_loop S v 0 acc = acc"
 | "demand_loop S v (Suc k) acc =
      demand_loop S (Suc v) k (if S ! v \<noteq> 0 then acc + balance_list ! v else acc)"
 
-fun cut_loop :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n \<Rightarrow> bool" where
+fun \<^marker>\<open>provenance ai_human\<close> cut_loop :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n \<Rightarrow> bool" where
   "cut_loop S e 0 cap dem = (cap < dem)"
 | "cut_loop S e (Suc k) cap dem =
      (if S ! (fst_list ! e) \<noteq> 0 \<and> S ! (snd_list ! e) = 0
@@ -365,7 +368,7 @@ text \<open>The instance format, and nothing else: exactly the properties the re
       balance condition of \<open>check_optimum\<close> is a list equality over \<^emph>\<open>all\<close> slots. There is
       deliberately no assumption on @{term oracle_solve}.\<close>
 
-locale mcf_oracle =
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle =
   mcf_oracle_spec where capacity_list = capacity_list +
   real_embedding where h = "h :: 'n \<Rightarrow> real"
   for capacity_list :: "('n :: linordered_idom) list" and h +
@@ -839,7 +842,7 @@ text \<open>\<^emph>\<open>{\isasymepsilon}-optimality is sound given integer co
       automatic in the concrete pipeline (\<open>'n = int\<close>, \<open>h = of_int\<close>) but not for an
       arbitrary embedding, so it is the assumption of a separate locale.\<close>
 
-locale mcf_oracle_eps = mcf_oracle where capacity_list = capacity_list and h = h
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle_eps = mcf_oracle where capacity_list = capacity_list and h = h
   for capacity_list :: "('n :: linordered_idom) list" and h +
   assumes cost_integer: "\<And>e. e < m \<Longrightarrow> h (cost_list ! e) \<in> \<int>"
 begin
@@ -934,7 +937,7 @@ qed
 
 end
 
-locale mcf_oracle_cleanup_spec =
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle_cleanup_spec =
   mcf_oracle_spec where capacity_list = capacity_list
   for capacity_list :: "('n :: linordered_idom) list" +
   fixes cleanup :: "'n flow_instance \<Rightarrow> 'n list \<Rightarrow> 'n solver_verdict"
@@ -953,7 +956,7 @@ text \<open>The proof locale assumes only that the cleanup's verdict is true of 
       it is given is a warm start, a performance argument, never a correctness one. Still nothing
       is assumed about @{term oracle_solve}.\<close>
 
-locale mcf_oracle_cleanup = mcf_oracle + mcf_oracle_cleanup_spec +
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle_cleanup = mcf_oracle + mcf_oracle_cleanup_spec +
   assumes cleanup_correct: "\<And> g. verdict_ok (cleanup orc_input g)"
 begin
 

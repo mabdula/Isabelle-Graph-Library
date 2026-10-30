@@ -6,6 +6,9 @@ theory Path_Search_Shortcut_Imperative
     Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
+provenance ai
+
+
 section \<open>The Imperative Shortcut\<close>
 
 text \<open>The imperative counterpart of @{const path_search_shortcut_spec.sc_loop}. The free left

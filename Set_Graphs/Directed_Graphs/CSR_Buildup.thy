@@ -2,6 +2,9 @@ theory CSR_Buildup
   imports Main Data_Structures.More_Lists
 begin
 
+provenance ai
+
+
 section \<open>Building a CSR Representation of a Multigraph\<close>
 
 text \<open>
@@ -22,7 +25,7 @@ text \<open>
   An iterator state \<open>s\<close> is abstracted to the list \<open>it_seq s\<close> of elements still to be produced.
 \<close>
 
-locale iterator =
+locale \<^marker>\<open>provenance ai_human\<close> iterator =
   fixes it_next :: "'s \<Rightarrow> ('e \<times> 's) option"
     and it_seq :: "'s \<Rightarrow> 'e list"
     and it_invar :: "'s \<Rightarrow> bool"
@@ -31,7 +34,7 @@ locale iterator =
                           \<Longrightarrow> it_invar s' \<and> it_seq s = e # it_seq s'"
 begin
 
-partial_function (tailrec) it_fold :: "('e \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 's \<Rightarrow> 'a \<Rightarrow> 'a" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) it_fold :: "('e \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 's \<Rightarrow> 'a \<Rightarrow> 'a" where
   "it_fold f s acc =
      (case it_next s of None \<Rightarrow> acc
                       | Some (e, s') \<Rightarrow> it_fold f s' (f e acc))"
@@ -64,7 +67,7 @@ interpretation range_it: iterator "range_next hi" "range_seq hi" "\<lambda>_. Tr
 
 text \<open>An explicit sequence of edges.\<close>
 
-fun list_next :: "'e list \<Rightarrow> ('e \<times> 'e list) option" where
+fun \<^marker>\<open>provenance ai_human\<close> list_next :: "'e list \<Rightarrow> ('e \<times> 'e list) option" where
   "list_next [] = None"
 | "list_next (x # xs) = Some (x, xs)"
 
@@ -78,7 +81,7 @@ text \<open>
   which will be the index of the source vertex.
 \<close>
 
-locale csr_buildup = iterator it_next it_seq it_invar
+locale \<^marker>\<open>provenance ai_human\<close> csr_buildup = iterator it_next it_seq it_invar
   for it_next :: "'s \<Rightarrow> ('e \<times> 's) option"
     and it_seq :: "'s \<Rightarrow> 'e list"
     and it_invar :: "'s \<Rightarrow> bool" +
@@ -360,7 +363,7 @@ text \<open>
   arbitrary edge and vertex types are future work.
 \<close>
 
-locale csr_multigraph = iterator it_next it_seq it_invar
+locale \<^marker>\<open>provenance ai_human\<close> csr_multigraph = iterator it_next it_seq it_invar
   for it_next :: "'s \<Rightarrow> ('e \<times> 's) option"
     and it_seq :: "'s \<Rightarrow> 'e list"
     and it_invar :: "'s \<Rightarrow> bool" +

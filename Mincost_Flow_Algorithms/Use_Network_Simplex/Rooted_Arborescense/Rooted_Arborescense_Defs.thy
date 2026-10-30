@@ -2,6 +2,9 @@ theory Rooted_Arborescense_Defs
   imports Graph_Algorithms_Dev.Parent_Map
 begin
 
+provenance ai
+
+
 section \<open>Rooted-arborescence invariant\<close>
 
 definition "children T v = {u | u. v \<in> set (follow T u)}"
@@ -97,7 +100,7 @@ text \<open>The stem loop: walk the path nodes from @{term i} (@{text stm}) up t
       parents and re-threading.  @{text pstm} is the new parent of the current stem node,
       @{text lsx} its last successor, @{text aft} the thread node after that block, @{text drt}
       the list of nodes whose reverse-thread must be refreshed afterwards.\<close>
-partial_function (tailrec) stem_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) stem_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a list
     \<Rightarrow> 'a
      \<Rightarrow> ('a ndtree \<times> 'a \<times> 'a \<times> 'a option \<times> 'a list)" where
@@ -127,7 +130,7 @@ definition dirty_pass :: "'a ndtree \<Rightarrow> 'a list \<Rightarrow> 'a ndtre
 
 text \<open>Recompute @{const snum} and @{const lsuc} for the stem nodes, walking the (now reversed)
       parents from @{term p} down to @{term i}.  @{text sn0} is the pre-surgery @{const snum}.\<close>
-partial_function (tailrec) stem_num_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) stem_num_loop ::
   "'a ndtree \<Rightarrow> ('a \<Rightarrow> nat) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a
     \<Rightarrow> 'a ndtree" where
   "stem_num_loop S sn0 u iv acc tls =
@@ -139,7 +142,7 @@ partial_function (tailrec) stem_num_loop ::
                  in stem_num_loop S' sn0 par iv acc' tls)))"
 
 text \<open>Extend @{const lsuc} from @{term j} towards the root while it still equals @{term j}.\<close>
-partial_function (tailrec) last_vin_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) last_vin_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a ndtree" where
   "last_vin_loop S u jv lso =
      (if lsuc S u \<noteq> jv then S
@@ -148,7 +151,7 @@ partial_function (tailrec) last_vin_loop ::
 
 text \<open>Reset @{const lsuc} from @{term v_out} towards the root (stopping at @{text stp}) while it
       still equals the old last successor.\<close>
-partial_function (tailrec) last_vout_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) last_vout_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a ndtree" where
   "last_vout_loop S u stp gv sv =
      (if Some u = stp \<or> lsuc S u \<noteq> gv then S
@@ -156,7 +159,7 @@ partial_function (tailrec) last_vout_loop ::
             in (case prnt S' u of None \<Rightarrow> S' | Some par \<Rightarrow> last_vout_loop S' par stp gv sv)))"
 
 text \<open>Add the detached size to @{const snum} from @{term j} up to the join.\<close>
-partial_function (tailrec) succ_vin_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) succ_vin_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a ndtree" where
   "succ_vin_loop S u jn d =
      (if u = jn then S
@@ -164,7 +167,7 @@ partial_function (tailrec) succ_vin_loop ::
             in (case prnt S' u of None \<Rightarrow> S' | Some par \<Rightarrow> succ_vin_loop S' par jn d)))"
 
 text \<open>Subtract the detached size from @{const snum} from @{term v_out} up to the join.\<close>
-partial_function (tailrec) succ_vout_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) succ_vout_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> 'a ndtree" where
   "succ_vout_loop S u jn d =
      (if u = jn then S
@@ -176,7 +179,7 @@ text \<open>Fused @{term j}-side pass: a single walk of the parent chain from @{
       and the @{const succ_vin_loop} work on @{const snum} (guard @{term "sa"}: while @{term "u \<noteq> jn"}).
       Each side latches off independently once its guard first fails, so the walk covers the longer of
       the two prefixes.  See for the equivalence to the two loops.\<close>
-partial_function (tailrec) fused_vin_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) fused_vin_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> nat \<Rightarrow> bool
     \<Rightarrow> bool \<Rightarrow> 'a ndtree" where
   "fused_vin_loop S u jv jn lso d la sa =
@@ -192,7 +195,7 @@ text \<open>Fused @{term v_out}-side pass: one walk from @{term v_out} doing the
       on @{const lsuc} (guard @{term la}: while @{term "Some u \<noteq> stp \<and> lsuc S u = gv"}) and the
       @{const succ_vout_loop} work on @{const snum} (guard @{term sa}: while @{term "u \<noteq> jn"}).  Passing
       @{term "la = False"} runs only the @{const snum} side (the degenerate @{term "S3 = S2"} case).\<close>
-partial_function (tailrec) fused_vout_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) fused_vout_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a option \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow>
     nat \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> 'a ndtree" where
   "fused_vout_loop S u stp gv sv jn d la sa =
@@ -273,7 +276,7 @@ text \<open>Fold @{term f} over the subtree of a node by walking the thread from
       last successor: in a threaded tree the subtree of a node is exactly the contiguous thread
       block that starts at the node and ends at its last successor @{const lsuc}.  This is a plain
       recursion on @{const thrd}, stopping once @{const lsuc} of the start node has been processed.\<close>
-partial_function (tailrec) subtree_fold ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) subtree_fold ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'acc \<Rightarrow> 'acc) \<Rightarrow>
     'acc \<Rightarrow> 'acc" where
   "subtree_fold S stop u f acc =
@@ -296,7 +299,7 @@ text \<open>Find the join (lowest common ancestor) of @{term u} and @{term v} by
       @{const snum} strictly increases towards the root --- to its parent, until the two pointers meet.
       The nodes lifted on the @{term u}-side and the @{term v}-side, recorded bottom-up and then
       reversed, are the two branch paths from @{term u} and @{term v} up to (but excluding) the join.\<close>
-partial_function (tailrec) join_paths_loop ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) join_paths_loop ::
   "'a ndtree \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> ('a list
     \<times> 'a list)" where
   "join_paths_loop S u v acc1 acc2 =

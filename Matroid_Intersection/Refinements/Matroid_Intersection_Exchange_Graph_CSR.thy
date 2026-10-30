@@ -3,6 +3,9 @@ theory Matroid_Intersection_Exchange_Graph_CSR
     Directed_Set_Graphs.CSR_Neighbour_Lists
 begin
 
+provenance ai
+
+
 section \<open>The Exchange Graph Search on the CSR BFS\<close>
 
 text \<open>Glue only. The graph is given by @{term nbrs_map}, the neighbour map of the grouped CSR of

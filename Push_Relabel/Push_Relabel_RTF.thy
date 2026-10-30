@@ -4,6 +4,9 @@ theory Push_Relabel_RTF
     Data_Structures.Fixed_Univ_List_Specs
 begin
 
+provenance ai
+
+
 section \<open>Relabel-to-Front Push-Relabel\<close>
 
 text \<open>The context of the strategy is a list of all vertices except source and target, and a
@@ -68,7 +71,7 @@ end
 
 subsection \<open>The Strategy\<close>
 
-locale push_relabel_rtf_spec =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_rtf_spec =
   push_relabel_ops where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar +
   vlist: fixed_univ_list \<V> list_invar list_abstract list_empty list_push_front list_move_to_front
@@ -88,7 +91,7 @@ begin
 text \<open>The first active vertex at or after \<open>u\<close>, looking at no more than \<open>n\<close>
       vertices.\<close>
 
-fun rtf_scan where
+fun \<^marker>\<open>provenance ai_human\<close> rtf_scan where
   "rtf_scan L x 0 u = None"
 | "rtf_scan L x (Suc n) u =
      (if 0 < ex_get x u then Some u
@@ -148,7 +151,7 @@ definition "rtf_ctx_invar st =
 
 end
 
-locale push_relabel_rtf =
+locale \<^marker>\<open>provenance ai_human\<close> push_relabel_rtf =
   push_relabel_rtf_spec where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar +
   push_relabel_ops_correct where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd

@@ -3,6 +3,8 @@ theory Edmonds_Gallai_Preps
 
 begin
 
+provenance human
+
 section \<open>Preparations for the Edmonds-Gallai Decomposition\<close>
 
 subsection \<open>General Even Vertices and Blossoms\<close>

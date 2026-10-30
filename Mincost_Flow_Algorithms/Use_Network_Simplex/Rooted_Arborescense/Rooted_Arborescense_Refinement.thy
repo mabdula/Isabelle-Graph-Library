@@ -4,6 +4,9 @@ Separation_Logic_Imperative_HOL_Partial.Array_Blit
     Separation_Logic_Imperative_HOL_Partial.Imperative_HOL_Addons
 begin
 
+provenance ai
+
+
 record  ndtree_impl =
   prnt_impl :: "nat array"   \<comment> \<open>tree parent map\<close>
   thrd_impl :: "nat array"   \<comment> \<open>thread successor (preorder next)\<close>

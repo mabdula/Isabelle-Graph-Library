@@ -4,6 +4,9 @@ theory Assignment_Solver_Code_Export
     Imperative.Code_Target_Machine_Int
 begin
 
+provenance ai
+
+
 section \<open>Code Export of the Assignment Solver\<close>
 
 text \<open>The program @{const asn_solve_int} of \<open>Assignment_Solver.thy\<close>, with integers and natural

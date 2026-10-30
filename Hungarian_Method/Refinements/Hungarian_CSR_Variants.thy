@@ -6,6 +6,9 @@ theory Hungarian_CSR_Variants
 
 begin
 
+provenance ai
+
+
 section \<open>Variants of Weighted Bipartite Matching on Arrays\<close>
 
 text \<open>The variants of  \<open>WBP_Matching_Exec.thy\<close> on top of @{const hungarian_csr_run}: from

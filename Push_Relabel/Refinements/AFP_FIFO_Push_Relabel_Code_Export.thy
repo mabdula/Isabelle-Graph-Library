@@ -2,7 +2,11 @@ theory AFP_FIFO_Push_Relabel_Code_Export
   imports
     Prpu_Maxflow.Fifo_Push_Relabel_Impl
     Imperative.Code_Target_Machine_Int
+    AI_Provenance.Provenance
 begin
+
+provenance ai
+
 
 section \<open>Code Export of the FIFO Push-Relabel Algorithm of the AFP\<close>
 

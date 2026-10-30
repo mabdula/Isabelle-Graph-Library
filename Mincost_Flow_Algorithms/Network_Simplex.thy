@@ -6,6 +6,9 @@ theory Network_Simplex
       Data_Structures.Real_Embedding
 begin
 
+provenance ai
+
+
 text \<open>Tagged variant. Instead of the two edge sets @{term L} and @{term U} being stored as two
       separate @{locale fixed_univ_set} values, this development keeps a single
       @{locale fixed_univ_map} @{term edge_state} that maps every edge to a \<^emph>\<open>tag\<close> recording its
@@ -16,7 +19,7 @@ text \<open>Tagged variant. Instead of the two edge sets @{term L} and @{term U}
 
 datatype edge_tag = InTree | InL | InU
 
-locale arborescense_adt =
+locale \<^marker>\<open>provenance ai_human\<close> arborescense_adt =
   fixes V::"'a set"
    and r::"'a"
    and arborescense_invar::"'arbor \<Rightarrow> bool"
@@ -83,7 +86,7 @@ text \<open>The entering-edge (pivot) rule is abstracted as a small stateful ADT
       updated selector. The behavioural specification (invariant preservation and eligibility of the
       returned edge) is added in the proof locale.\<close>
 
-locale edge_selector =
+locale \<^marker>\<open>provenance ai_human\<close> edge_selector =
   fixes sel_invar :: "'selector \<Rightarrow> bool"
     and sel_select ::
       "'selector \<Rightarrow> 'parr \<Rightarrow> 'earr
@@ -117,7 +120,7 @@ text \<open>The specification locale conjoins the cost-flow network (@{locale co
       the repackaged rules \<open>sel_select_SomeD\<close> / \<open>sel_select_NoneD\<close> in the body are the interface the
       loop uses.\<close>
 
-locale network_simplex_spec =
+locale \<^marker>\<open>provenance ai_human\<close> network_simplex_spec =
   fixes r :: "'a"
     and sel_select :: "'selector \<Rightarrow> 'parr \<Rightarrow> 'earr \<Rightarrow> ('edge \<times> bool \<times> 'r \<times> 'selector) option"
     and shift_pot :: "'arbor \<Rightarrow> 'a \<Rightarrow> 'parr \<Rightarrow> 'r \<Rightarrow> bool \<Rightarrow> 'parr"
@@ -330,7 +333,7 @@ text \<open>Re-parenting after a swap. When the entering edge @{term e} replaces
       LEMON, which walks only the stem @{text \<open>u_out \<dots> u_in\<close>}. The @{term prev} argument carries the
       previous spine vertex (whose \emph{old} orientation, read from @{term s}, is inherited), so
       there is no read-after-write.\<close>
-fun reparent_walk where
+fun \<^marker>\<open>provenance ai_human\<close> reparent_walk where
   "reparent_walk s e v first pe pup [] pd = pd"
 | "reparent_walk s e v first pe pup (w # ws) pd =
      (case pd of (parr, darr) \<Rightarrow>
@@ -373,7 +376,7 @@ text \<open>One iteration: select an entering edge; if there is none the structu
       when the entering edge is the bottleneck (@{term \<open>leaving = None\<close>}), a full swap otherwise ---
       and recurse. Termination is not proven here (@{command function}~@{text \<open>(domintros)\<close>}); the
       executable @{command partial_function} twin will be added later.\<close>
-function (domintros) ns_loop where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) ns_loop where
 "ns_loop s =
   (case ns_select s of None \<Rightarrow> ns_optimal s
      | Some (e, in_U, \<gamma>, sel') \<Rightarrow>
@@ -388,7 +391,7 @@ text \<open>The executable twin: the same body with the recursive calls redirect
       @{command partial_function}~@{text \<open>(tailrec)\<close>} so that code equations are produced. It agrees
       with @{const ns_loop} on the domain (see the agreement lemma below).\<close>
 
-partial_function (tailrec) ns_loop_impl where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) ns_loop_impl where
 "ns_loop_impl s =
   (case ns_select s of None \<Rightarrow> ns_optimal s
      | Some (e, in_U, \<gamma>, sel') \<Rightarrow>
@@ -450,7 +453,7 @@ text \<open>The proof locale extends the executable specification @{locale netwo
       contracts as genuine assumptions, together with the capacity encoding, the selector
       behaviour and the potential-descriptor arithmetic. All correctness reasoning lives here.\<close>
 
-locale network_simplex =
+locale \<^marker>\<open>provenance ai_human\<close> network_simplex =
   cost_flow_network where fst = "fst :: 'edge \<Rightarrow> 'a"  and snd = snd+
   real_embedding where h = "h :: 'n \<Rightarrow> real" +
   network_simplex_spec where sel_select = sel_select and flow_upd = flow_upd

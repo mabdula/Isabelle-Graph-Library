@@ -3,6 +3,8 @@ theory Pre_Edmonds_Gallai
     Edmonds_Gallai_Decomposition.Edmonds_Gallai_Blossoms
 begin
 
+provenance human
+
 section \<open>A Reduced Version of the Edmonds-Gallai Decomposition\<close>
 
 text \<open>This is specifically tailored to the weighted matching algorithm 
