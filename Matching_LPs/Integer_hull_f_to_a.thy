@@ -2621,7 +2621,25 @@ proof -
     then have "\<forall>y' \<in> set\<^sub>v y'. y' = 0" 
       by auto
     then have "y' = 0\<^sub>v n" unfolding zero_vec_def 
-      by (metis M.zero_closed \<open>y' \<noteq> 0\<^sub>v n\<close> carrier_vecD eq_vecI index_zero_vec(1) vec_setI y')
+      proof -
+        show "y' = vec n (\<lambda>_. 0)"
+        proof (rule eq_vecI)
+          show "dim_vec y' = dim_vec (vec n (\<lambda>_. 0))"
+            using y' by auto
+        next
+          fix i
+          assume "i < dim_vec (vec n (\<lambda>_. 0))"
+          then have i_n: "i < n" by simp
+          then have i_dim: "i < dim_vec y'"
+            using y' by auto
+          then have "y' $ i \<in> set\<^sub>v y'"
+            using i_dim unfolding vec_set_def by auto
+          then have "y' $ i = 0"
+            using \<open>\<forall>y' \<in> set\<^sub>v y'. y' = 0\<close> by auto
+          then show "y' $ i = vec n (\<lambda>_. 0) $ i"
+            using i_n by simp
+        qed
+      qed
     then show False 
       using \<open>y' \<noteq> 0\<^sub>v n\<close> by auto
   qed
