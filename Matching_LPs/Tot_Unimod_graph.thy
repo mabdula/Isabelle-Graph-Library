@@ -1391,7 +1391,16 @@ proof -
       using assms(1) is_bipartite_tot_unimod dim_col_incidence_mat
             gram_schmidt_floor.tot_unimod_append_minus_one 
             totally_unimod_mat_int 
-      by (metis assms(2) carrier_mat_triv)
+  proof -
+    have c: "incidence_mat \<in> carrier_mat (dim_row incidence_mat) (card E)"
+      unfolding dim_col_incidence_mat[symmetric] by (rule carrier_mat_triv)
+    have tu: "tot_unimodular incidence_mat"
+      using is_bipartite_tot_unimod[OF assms(1) assms(2)] by blast
+    have "tot_unimodular (incidence_mat @\<^sub>r - 1\<^sub>m (card E))"
+      using gram_schmidt_floor.tot_unimod_append_minus_one[OF c tu] by blast
+    then show ?thesis
+      using totally_unimod_mat_int by blast
+  qed
 
     have 2: "(1\<^sub>v (card (Vs E))) @\<^sub>v 0\<^sub>v (card E) \<in> \<int>\<^sub>v" 
       by (simp add: append_int_vec_is_int carrier_dim_vec gram_schmidt.one_vec_int gram_schmidt.zero_vec_is_int)
