@@ -4,9 +4,6 @@ Separation_Logic_Imperative_HOL_Partial.Array_Blit
     Separation_Logic_Imperative_HOL_Partial.Imperative_HOL_Addons
 begin
 
-provenance ai
-
-
 record  ndtree_impl =
   prnt_impl :: "nat array"   \<comment> \<open>tree parent map\<close>
   thrd_impl :: "nat array"   \<comment> \<open>thread successor (preorder next)\<close>
@@ -20,7 +17,7 @@ subsection \<open>Imperative implementations over @{typ ndtree_impl}\<close>
 text \<open>Arrays encode @{term None} as zero; vertices are nonzero.
   The auxiliary array and its fill pointer hold the deferred reverse-thread updates.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) stem_loop_imp ::
+partial_function (heap) stem_loop_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
     nat \<Rightarrow> (nat \<times> nat \<times> nat \<times> nat) Heap" where
   "stem_loop_imp Ti stm pstm lsx aft sp p =
@@ -44,7 +41,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) stem_loop_i
 
 text \<open>Apply deferred reverse-thread updates in insertion order.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) dirty_pass_imp ::
+partial_function (heap) dirty_pass_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dirty_pass_imp Ti k sp =
      (if sp \<le> k then return ()
@@ -57,7 +54,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) dirty_pass_
 
 text \<open>The number pass reads each original size before overwriting it.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) stem_num_loop_imp ::
+partial_function (heap) stem_num_loop_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "stem_num_loop_imp Ti u iv acc tls =
      (if u = iv then return ()
@@ -75,7 +72,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) stem_num_lo
 
 text \<open>The fused passes update last descendants and subtree sizes in one parent walk.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fused_vin_loop_imp ::
+partial_function (heap) fused_vin_loop_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
     bool \<Rightarrow> bool \<Rightarrow> unit Heap" where
   "fused_vin_loop_imp Ti u jv jn lso d la sa =
@@ -95,7 +92,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fused_vin_l
          })
       }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fused_vout_loop_imp ::
+partial_function (heap) fused_vout_loop_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
     nat \<Rightarrow> bool \<Rightarrow> bool \<Rightarrow> unit Heap" where
   "fused_vout_loop_imp Ti u stp gv sv jn d la sa =
@@ -116,7 +113,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fused_vout_
          })
       }"
 
-definition \<^marker>\<open>provenance ai_human\<close> update_tree_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
+definition update_tree_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
   \<Rightarrow> unit Heap" where
   "update_tree_imp Ti i j p jn =
      do {
@@ -330,31 +327,31 @@ lemma ndtree_rel_upd_lsuc:
     "\<lbrakk>ndtree_rel V S pl thl rl ll sl al; w \<in> V; u \<in> V\<rbrakk>
        \<Longrightarrow> ndtree_rel V (S\<lparr>prnt := (prnt S)(w \<mapsto> u)\<rparr>) (pl[w := u]) thl rl ll sl al"
   by (auto simp: ndtree_rel_def nth_list_update ran_def subset_iff split: if_splits)
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_nth_prnt[sep_heap_rules]:
+lemma ndtree_nth_prnt[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.nth (prnt_impl Ti) u
      <\<lambda>r. ndtree_assn V S Ti * \<up> (r = nat_of_opt (prnt S u))>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_prnt ndtree_rel_prnt_nat_of_opt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_nth_lsuc[sep_heap_rules]:
+lemma ndtree_nth_lsuc[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.nth (lsuc_impl Ti) u
      <\<lambda>r. ndtree_assn V S Ti * \<up> (r = lsuc S u)>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_lsuc ndtree_rel_lsuc)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_nth_snum[sep_heap_rules]:
+lemma ndtree_nth_snum[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.nth (snum_impl Ti) u
      <\<lambda>r. ndtree_assn V S Ti * \<up> (r = snum S u)>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_snum ndtree_rel_snum)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_lsuc[sep_heap_rules]:
+lemma ndtree_upd_lsuc[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> x \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd u x (lsuc_impl Ti)
      <\<lambda>_. ndtree_assn V (S\<lparr>lsuc := (lsuc S)(u := x)\<rparr>) Ti>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_lsuc ndtree_rel_upd_lsuc)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_snum[sep_heap_rules]:
+lemma ndtree_upd_snum[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd u x (snum_impl Ti)
      <\<lambda>_. ndtree_assn V (S\<lparr>snum := (snum S)(u := x)\<rparr>) Ti>"
   unfolding ndtree_assn_unfold
@@ -362,13 +359,13 @@ lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_snum[sep_heap_rule
 
 text \<open>Conditional updates keep the refinement assertion folded across the fused-loop branches.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_cond_upd_lsuc[sep_heap_rules]:
+lemma ndtree_cond_upd_lsuc[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> x \<in> V \<Longrightarrow>
    <ndtree_assn V S Ti> (if c then Array.upd u x (lsuc_impl Ti) \<bind> (\<lambda>_. return ()) else return ())
    <\<lambda>_. ndtree_assn V (S\<lparr>lsuc := (if c then (lsuc S)(u := x) else lsuc S)\<rparr>) Ti>"
   by (cases c) (sep_auto simp: fun_upd_idem)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_cond_upd_snum[sep_heap_rules]:
+lemma ndtree_cond_upd_snum[sep_heap_rules]:
   "u \<in> V \<Longrightarrow>
    <ndtree_assn V S Ti> (if c then Array.nth (snum_impl Ti) u \<bind> (\<lambda>snu. Array.upd u (snu + d) (snum_impl
      Ti) \<bind> (\<lambda>_. return ())) else return ())
@@ -377,55 +374,55 @@ lemma \<^marker>\<open>provenance ai_human\<close> ndtree_cond_upd_snum[sep_heap
 
 subsection \<open>Primitive operations on the dirty-list assertion @{const ndtree_drt_assn}\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_nth_aux[sep_heap_rules]:
+lemma ndtree_drt_nth_aux[sep_heap_rules]:
   "k < length drt \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.nth (aux_impl Ti) k
      <\<lambda>r. ndtree_drt_assn V S Ti sp drt * \<up>(r = drt ! k)>"
   unfolding ndtree_drt_assn_def
   by (sep_auto dest: take_nth_eq)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_nth_thrd[sep_heap_rules]:
+lemma ndtree_drt_nth_thrd[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.nth (thrd_impl Ti) u
      <\<lambda>r. ndtree_drt_assn V S Ti sp drt * \<up>(r = nat_of_opt (thrd S u))>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_thrd ndtree_rel_thrd_nat_of_opt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_upd_rvth[sep_heap_rules]:
+lemma ndtree_drt_upd_rvth[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.upd w u (rvth_impl Ti)
      <\<lambda>_. ndtree_drt_assn V (S\<lparr>rvth := (rvth S)(w \<mapsto> u)\<rparr>) Ti sp drt>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_rvth ndtree_rel_upd_rvth)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_nth_prnt[sep_heap_rules]:
+lemma ndtree_drt_nth_prnt[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.nth (prnt_impl Ti) u
      <\<lambda>r. ndtree_drt_assn V S Ti sp drt * \<up>(r = nat_of_opt (prnt S u))>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_prnt ndtree_rel_prnt_nat_of_opt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_nth_rvth[sep_heap_rules]:
+lemma ndtree_drt_nth_rvth[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.nth (rvth_impl Ti) u
      <\<lambda>r. ndtree_drt_assn V S Ti sp drt * \<up>(r = nat_of_opt (rvth S u))>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_rvth ndtree_rel_rvth_nat_of_opt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_nth_lsuc[sep_heap_rules]:
+lemma ndtree_drt_nth_lsuc[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.nth (lsuc_impl Ti) u
      <\<lambda>r. ndtree_drt_assn V S Ti sp drt * \<up>(r = lsuc S u)>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_lsuc ndtree_rel_lsuc)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_upd_thrd_Some[sep_heap_rules]:
+lemma ndtree_drt_upd_thrd_Some[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.upd w u (thrd_impl Ti)
      <\<lambda>_. ndtree_drt_assn V (S\<lparr>thrd := (thrd S)(w \<mapsto> u)\<rparr>) Ti sp drt>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_thrd ndtree_rel_upd_thrd_Some)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_upd_thrd_None[sep_heap_rules]:
+lemma ndtree_drt_upd_thrd_None[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.upd w 0 (thrd_impl Ti)
      <\<lambda>_. ndtree_drt_assn V (S\<lparr>thrd := (thrd S)(w := None)\<rparr>) Ti sp drt>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_thrd ndtree_rel_upd_thrd_None)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_upd_prnt_Some[sep_heap_rules]:
+lemma ndtree_drt_upd_prnt_Some[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> u \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.upd w u (prnt_impl Ti)
      <\<lambda>_. ndtree_drt_assn V (S\<lparr>prnt := (prnt S)(w \<mapsto> u)\<rparr>) Ti sp drt>"
   unfolding ndtree_drt_assn_def
@@ -435,7 +432,7 @@ lemma ndtree_rel_upd_aux[simp]:
   "ndtree_rel V S pl thl rl ll sl (al[i := x]) = ndtree_rel V S pl thl rl ll sl al"
   by (simp add: ndtree_rel_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dp_base:
+lemma dp_base:
   "<ndtree_drt_assn V S Ti (length pre) pre> dirty_pass_imp Ti (length pre) (length pre) <\<lambda>_. ndtree_assn V S
     Ti>"
   apply(subst dirty_pass_imp.simps)
@@ -444,7 +441,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> dp_base:
   apply sep_auto
   done
 
-lemma \<^marker>\<open>provenance ai_human\<close> dirty_pass_imp_aux:
+lemma dirty_pass_imp_aux:
   assumes "0 \<notin> V" and "set drt \<subseteq> V"
   shows "ran (thrd S) \<subseteq> V \<Longrightarrow> k \<le> length drt \<Longrightarrow>
     <ndtree_drt_assn V S Ti (length drt) drt> dirty_pass_imp Ti k (length drt)
@@ -494,7 +491,7 @@ subsection \<open>Refinement correspondences (Hoare triples)\<close>
 
 text \<open>Agreement with a well-founded reference map suffices for the number pass.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> stem_num_loop_imp_wf:
+lemma stem_num_loop_imp_wf:
   assumes "parent_spec P" and "ran P \<subseteq> V" and "0 \<notin> V"
   shows "(\<forall>w \<in> set (follow P u). w \<noteq> iv \<longrightarrow> prnt S w = P w) \<and> u \<in> V \<and>
     tls \<in> V
@@ -515,7 +512,7 @@ qed
 
 subsection \<open>Stem-loop, dirty-pass and stem-number-loop refinement\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> dirty_pass_imp_rule:
+lemma dirty_pass_imp_rule:
   "\<lbrakk>0 \<notin> V; set drt \<subseteq> V; ran (thrd S) \<subseteq> V\<rbrakk> \<Longrightarrow>
     <ndtree_drt_assn V S Ti (length drt) drt> dirty_pass_imp Ti 0 (length drt)
          <\<lambda>_. ndtree_assn V (dirty_pass S drt) Ti>"
@@ -523,37 +520,37 @@ lemma \<^marker>\<open>provenance ai_human\<close> dirty_pass_imp_rule:
 
 subsection \<open>Primitives for the top-level composition\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_nth_rvth[sep_heap_rules]:
+lemma ndtree_nth_rvth[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.nth (rvth_impl Ti) u
      <\<lambda>r. ndtree_assn V S Ti * \<up> (r = nat_of_opt (rvth S u))>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_rvth ndtree_rel_rvth_nat_of_opt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_nth_thrd[sep_heap_rules]:
+lemma ndtree_nth_thrd[sep_heap_rules]:
   "u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.nth (thrd_impl Ti) u
      <\<lambda>r. ndtree_assn V S Ti * \<up> (r = nat_of_opt (thrd S u))>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_thrd ndtree_rel_thrd_nat_of_opt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_prnt_Some[sep_heap_rules]:
+lemma ndtree_upd_prnt_Some[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd w u (prnt_impl Ti)
      <\<lambda>_. ndtree_assn V (S\<lparr>prnt := (prnt S)(w \<mapsto> u)\<rparr>) Ti>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_prnt ndtree_rel_upd_prnt_Some)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_thrd_Some[sep_heap_rules]:
+lemma ndtree_upd_thrd_Some[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd w u (thrd_impl Ti)
      <\<lambda>_. ndtree_assn V (S\<lparr>thrd := (thrd S)(w \<mapsto> u)\<rparr>) Ti>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_thrd ndtree_rel_upd_thrd_Some)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_thrd_None[sep_heap_rules]:
+lemma ndtree_upd_thrd_None[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd w 0 (thrd_impl Ti)
      <\<lambda>_. ndtree_assn V (S\<lparr>thrd := (thrd S)(w := None)\<rparr>) Ti>"
   unfolding ndtree_assn_unfold
   by (sep_auto simp: ndtree_rel_len_thrd ndtree_rel_upd_thrd_None)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_rvth[sep_heap_rules]:
+lemma ndtree_upd_rvth[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> u \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd w u (rvth_impl Ti)
      <\<lambda>_. ndtree_assn V (S\<lparr>rvth := (rvth S)(w \<mapsto> u)\<rparr>) Ti>"
   unfolding ndtree_assn_unfold
@@ -561,18 +558,18 @@ lemma \<^marker>\<open>provenance ai_human\<close> ndtree_upd_rvth[sep_heap_rule
 
 text \<open>The first auxiliary-array write starts the dirty list; the unused zero index supplies its capacity.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_assn_to_drt:
+lemma ndtree_assn_to_drt:
   "j \<in> V \<Longrightarrow> <ndtree_assn V S Ti> Array.upd 0 j (aux_impl Ti) <\<lambda>_. ndtree_drt_assn V S Ti 1
     [j]>"
   by (sep_auto simp: take_Suc_conv_app_nth ndtree_assn_unfold ndtree_drt_assn_def dest: ndtree_rel_aux_bound)
 
-lemma \<^marker>\<open>provenance ai_human\<close> zero_not_in_V_ndtree_assn_extract:
+lemma zero_not_in_V_ndtree_assn_extract:
   "<ndtree_assn V S0 Ti> program <Q> = (0 \<notin> V \<longrightarrow> <ndtree_assn V S0 Ti> program <Q>)"
   by (sep_auto simp: ndtree_assn_def)
 
 text \<open>Fixpoint induction gives partial correctness of both fused passes without join geometry.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> fused_vin_loop_imp_uncond:
+lemma fused_vin_loop_imp_uncond:
   assumes "0 \<notin> V"
   shows "u \<in> V \<and> lso \<in> V \<and> ran (prnt S) \<subseteq> V \<longrightarrow>
     <ndtree_assn V S Ti> fused_vin_loop_imp Ti u jv jn lso d la sa
@@ -589,7 +586,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> fused_vin_loop_imp_uncond:
     done
   done
 
-lemma \<^marker>\<open>provenance ai_human\<close> fused_vout_loop_imp_uncond:
+lemma fused_vout_loop_imp_uncond:
   assumes "0 \<notin> V"
   shows "u \<in> V \<and> sv \<in> V \<and> ran (prnt S) \<subseteq> V \<longrightarrow>
     <ndtree_assn V S Ti> fused_vout_loop_imp Ti u stp gv sv jn d la sa
@@ -607,11 +604,11 @@ lemma \<^marker>\<open>provenance ai_human\<close> fused_vout_loop_imp_uncond:
     done
   done
 
-lemma \<^marker>\<open>provenance ai_human\<close> ran_prnt_ndtree_assn_extract:
+lemma ran_prnt_ndtree_assn_extract:
   "<ndtree_assn V S Ti> program <Q> = (ran (prnt S) \<subseteq> V \<longrightarrow> <ndtree_assn V S Ti> program <Q>)"
   by (cases "ran (prnt S) \<subseteq> V") (auto simp: ndtree_assn_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> lsuc_ndtree_assn_extract:
+lemma lsuc_ndtree_assn_extract:
   "\<lbrakk>p \<in> V\<rbrakk> \<Longrightarrow>
     <ndtree_assn V S Ti> program <Q> = (lsuc S p \<in> V \<longrightarrow> <ndtree_assn V S Ti> program <Q>)"
   by (sep_auto simp: ndtree_assn_def)
@@ -667,7 +664,7 @@ qed
 
 text \<open>The same thread and reverse-thread splice rule serves both pivot branches.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> aftT:
+lemma aftT:
   "\<lbrakk>0 \<notin> V; bef \<in> V; \<And>a. aft_opt = Some a \<Longrightarrow> a \<in> V\<rbrakk> \<Longrightarrow>
     <ndtree_assn V St Ti>
      (if nat_of_opt aft_opt = 0 then Array.upd bef 0 (thrd_impl Ti) \<bind> (\<lambda>_. return ())
@@ -679,13 +676,13 @@ lemma \<^marker>\<open>provenance ai_human\<close> aftT:
   by (cases aft_opt; simp only: option.case nat_of_opt_simps if_True)
      (sep_auto simp: nat_of_opt_def heap: ndtree_upd_thrd_None)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_upd_lsuc[sep_heap_rules]:
+lemma ndtree_drt_upd_lsuc[sep_heap_rules]:
   "w \<in> V \<Longrightarrow> x \<in> V \<Longrightarrow> <ndtree_drt_assn V S Ti sp drt> Array.upd w x (lsuc_impl Ti)
      <\<lambda>_. ndtree_drt_assn V (S\<lparr>lsuc := (lsuc S)(w := x)\<rparr>) Ti sp drt>"
   unfolding ndtree_drt_assn_def
   by (sep_auto simp: ndtree_rel_len_lsuc ndtree_rel_upd_lsuc)
 
-lemma \<^marker>\<open>provenance ai_human\<close> aftT_drt:
+lemma aftT_drt:
   "\<lbrakk>0 \<notin> V; bef \<in> V; \<And>a. aft_opt = Some a \<Longrightarrow> a \<in> V\<rbrakk> \<Longrightarrow>
     <ndtree_drt_assn V St Ti sp drt>
      (if nat_of_opt aft_opt = 0 then Array.upd bef 0 (thrd_impl Ti) \<bind> (\<lambda>_. return ())
@@ -699,7 +696,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> aftT_drt:
 
 text \<open>A simple subtree move changes its parent and splices its thread block after @{term j}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> UT_simple:
+lemma UT_simple:
   fixes S0 :: "nat ndtree"
   assumes "i \<in> V" and "j \<in> V" and "p \<in> V"
       and "old_rev \<in> V" and "old_last \<in> V"
@@ -792,7 +789,7 @@ qed
 
 text \<open>The reversal branch and its functional counterpart are exposed for compositional refinement.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> ut_reversal_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
+definition ut_reversal_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
   \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "ut_reversal_imp Ti i j p old_rev old_num old_last =
      do {
@@ -850,7 +847,7 @@ lemma ndtree_rel_drt_cap_cnt:
     length xs < length al"
   by (auto intro: drt_push_cap_cnt)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ndtree_drt_push_aux_cnt:
+lemma ndtree_drt_push_aux_cnt:
   "\<lbrakk>finite V; V \<noteq> {}; length drt \<le> card V\<rbrakk> \<Longrightarrow>
     <ndtree_drt_assn V S Ti (length drt) drt> Array.upd (length drt) lsx (aux_impl Ti)
          <\<lambda>_. ndtree_drt_assn V S Ti (Suc (length drt)) (drt @ [lsx])>"
@@ -878,7 +875,7 @@ definition stem_loop_pre where
     (\<forall>v \<in> set (follow P stm). p \<in> set (follow P v) \<and> v \<noteq> p \<longrightarrow> rvth S v
       \<noteq> None)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> stem_loop_imp_wf:
+lemma stem_loop_imp_wf:
   assumes "parent_spec P" and "ran P \<subseteq> V"
   shows "stem_loop_pre P V S stm pstm lsx aft p \<and>
          length drt + length (follow P stm) \<le> Suc (card V)
@@ -1141,7 +1138,7 @@ proof-
     by (auto simp: arb_invar_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> UT_reversal:
+lemma UT_reversal:
   fixes S0 :: "nat ndtree"
   assumes "arb_invar r V S0" and "i \<in> V" and "j \<in> V"
       and "p \<in> set (follow (prnt S0) i)"
@@ -1296,7 +1293,7 @@ qed
 text \<open>The refinement needs no join geometry: the stem and fused-pass rules establish partial
   correctness directly. Join geometry is required only for preservation of @{const arb_invar}.\<close>
 
-theorem \<^marker>\<open>provenance ai_human\<close> update_tree_imp_rule:
+theorem update_tree_imp_rule:
   assumes "arb_invar r V S" and "i \<in> V" and "j \<in> V"
       and "p \<in> set (follow (prnt S) i)"
       and "jn \<in> V"
@@ -1348,7 +1345,7 @@ subsection \<open>Refinement of the join / path-pair search @{const get_path_pai
 
 text \<open>The join search writes its two paths into the caller's arrays and returns their lengths.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) join_paths_loop_imp ::
+partial_function (heap) join_paths_loop_imp ::
   "ndtree_impl \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
     \<Rightarrow> nat \<Rightarrow> (nat \<times> nat) Heap" where
   "join_paths_loop_imp Ti a1 a2 u v q1 q2 =
@@ -1369,7 +1366,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) join_paths_
          })
       })"
 
-definition \<^marker>\<open>provenance ai_human\<close> get_path_pair_imp :: "ndtree_impl \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat
+definition get_path_pair_imp :: "ndtree_impl \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat
   \<Rightarrow> nat \<Rightarrow> (nat \<times> nat) Heap" where
   "get_path_pair_imp Ti a1 a2 u v = join_paths_loop_imp Ti a1 a2 u v 0 0"
 
@@ -1458,7 +1455,7 @@ qed
 
 text \<open>Arrays of length at least @{term "card V - 1"} suffice for the two branch paths.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> get_path_pair_imp_rule:
+lemma get_path_pair_imp_rule:
   assumes "arb_invar r V S" and "u \<in> V" and "v \<in> V"
       and "card V \<le> Suc (length xs1)" and "card V \<le> Suc (length xs2)"
       and "get_path_pair_impl S u v = (p1, p2)"
@@ -1507,7 +1504,7 @@ qed
 
 subsection \<open>Refinement of the subtree iteration @{const iterate_root_opposed_impl}\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) subtree_fold_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat
+partial_function (heap) subtree_fold_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat
   \<Rightarrow> 'ai \<Rightarrow> unit Heap) \<Rightarrow> 'ai \<Rightarrow> unit Heap" where
   "subtree_fold_imp Ti stop u fi ai =
      do {
@@ -1521,7 +1518,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) subtree_fol
 
 text \<open>The subtree iteration includes both @{term v} and its last descendant @{term "lsuc S v"}.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> iterate_root_opposed_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 'ai
+definition iterate_root_opposed_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 'ai
   \<Rightarrow> unit Heap) \<Rightarrow> 'ai \<Rightarrow> unit Heap" where
   "iterate_root_opposed_imp Ti v fi ai =
      do { ls \<leftarrow> Array.nth (lsuc_impl Ti) v; subtree_fold_imp Ti ls v fi ai }"
@@ -1534,7 +1531,7 @@ lemma follow_thrd_subset_V:
 
 text \<open>@{term "R ai a"} relates the imperative accumulator to its functional value.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> subtree_fold_imp_rule:
+lemma subtree_fold_imp_rule:
   assumes "parent_spec (thrd S)"
       and "\<And>x a. x \<in> V \<Longrightarrow> <R ai a> fi x ai <\<lambda>_. R ai (f x a)>"
   shows "follow (thrd S) u = bl @ stp # rest \<Longrightarrow> stp \<notin> set bl \<Longrightarrow> set (follow (thrd
@@ -1556,7 +1553,7 @@ next
        (sep_auto simp: Let_def heap: assms(2) Cons.hyps)+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> iterate_root_opposed_imp_rule:
+lemma iterate_root_opposed_imp_rule:
   assumes "arb_invar r V S" and "v \<in> V"
       and "\<And>x a. x \<in> V \<Longrightarrow> <R ai a> fi x ai <\<lambda>_. R ai (f x a)>"
   shows "<ndtree_assn V S Ti * R ai acc>

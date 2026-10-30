@@ -3,9 +3,6 @@ theory Mincost_Oracle_Certificates_Refinement
           Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 
-provenance ai
-
-
 named_theorems certificate_heap_rules "Heap rules for the min-cost-flow certificate pipeline"
 
 section \<open>Imperative refinement of the certificate checkers and the oracle call\<close>
@@ -35,7 +32,7 @@ definition inst_assn ::
 
 text \<open>Comparing the first @{term k} cells of two arrays; it stops at the first difference.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) arr_eq_imp :: "'n array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> bool Heap" where
+partial_function (heap) arr_eq_imp :: "'n array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "arr_eq_imp a b k =
      (if k = 0 then return True
       else let j = k - 1
@@ -44,7 +41,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) arr_eq_imp 
              y \<leftarrow> Array.nth b j;
              if x = y then arr_eq_imp a b j else return False })"
 
-lemma \<^marker>\<open>provenance ai_human\<close> arr_eq_imp_rule:
+lemma arr_eq_imp_rule:
   "\<lbrakk>k \<le> length xs; k \<le> length ys\<rbrakk> \<Longrightarrow>
    <a \<mapsto>\<^sub>a xs * b \<mapsto>\<^sub>a ys> arr_eq_imp a b k
    <\<lambda>r. a \<mapsto>\<^sub>a xs * b \<mapsto>\<^sub>a ys * \<up>(r = (\<forall> i < k. xs ! i = ys ! i))>"
@@ -55,7 +52,7 @@ subsection \<open>Unboundedness\<close>
 text \<open>The cycle is a buffer and the number of arcs written into it. The guards are in the functional
       order, so an arc that fails the range test never indexes anything.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) cyc_loop_imp ::
+partial_function (heap) cyc_loop_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow>
    nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool Heap" where
   "cyc_loop_imp fa sa ca oa cyca i k prev s tot =
@@ -74,7 +71,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) cyc_loop_im
               ce \<leftarrow> Array.nth oa e;
               cyc_loop_imp fa sa ca oa cyca (Suc i) (k - 1) v s (tot + ce) } } } })"
 
-lemma \<^marker>\<open>provenance ai_human\<close> cyc_loop_imp_rule[certificate_heap_rules]:
+lemma cyc_loop_imp_rule[certificate_heap_rules]:
   "\<lbrakk>length fst_list = m; length snd_list = m; length capacity_list = m; length cost_list = m;
     i + k \<le> length xs\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * cyca \<mapsto>\<^sub>a xs>
@@ -85,7 +82,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> cyc_loop_imp_rule[certificate
   by (induction k arbitrary: i prev tot; subst cyc_loop_imp.simps)
     (sep_auto simp: uncapacitated_def Cons_nth_drop_Suc[symmetric])+
 
-definition \<^marker>\<open>provenance ai_human\<close> check_unbounded_imp ::
+definition check_unbounded_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "check_unbounded_imp fa sa ca oa cyca k =
      (if k = 0 then return False
@@ -96,7 +93,7 @@ definition \<^marker>\<open>provenance ai_human\<close> check_unbounded_imp ::
           s \<leftarrow> Array.nth fa e0;
           cyc_loop_imp fa sa ca oa cyca 0 k s s 0 } })"
 
-lemma \<^marker>\<open>provenance ai_human\<close> check_unbounded_imp_rule[certificate_heap_rules]:
+lemma check_unbounded_imp_rule[certificate_heap_rules]:
   "\<lbrakk>length fst_list = m; length snd_list = m; length capacity_list = m; length cost_list = m;
     k \<le> length xs\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * cyca \<mapsto>\<^sub>a xs>
@@ -109,7 +106,7 @@ subsection \<open>Infeasibility\<close>
 
 text \<open>The vertex sweep and the arc sweep, in the functional order.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) demand_loop_imp ::
+partial_function (heap) demand_loop_imp ::
   "'n array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n Heap" where
   "demand_loop_imp ba sca v k acc =
      (if k = 0 then return acc
@@ -118,7 +115,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) demand_loop
         if s \<noteq> 0 then do { b \<leftarrow> Array.nth ba v; demand_loop_imp ba sca (Suc v) (k - 1) (acc + b) }
         else demand_loop_imp ba sca (Suc v) (k - 1) acc })"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) cut_loop_imp ::
+partial_function (heap) cut_loop_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n \<Rightarrow> bool Heap" where
   "cut_loop_imp fa sa ca sca e k cap dem =
      (if k = 0 then return (cap < dem)
@@ -135,7 +132,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) cut_loop_im
             if c = - 1 then return False
             else cut_loop_imp fa sa ca sca (Suc e) (k - 1) (cap + c) dem } } })"
 
-definition \<^marker>\<open>provenance ai_human\<close> check_infeasible_imp ::
+definition check_infeasible_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "check_infeasible_imp fa sa ca ba sca =
      do {
@@ -148,7 +145,7 @@ text \<open>The fused sweep: the primal test, then the dual test, then the two w
       arc's flow into the accumulator. The accumulator is allocated by the check and compared with
       the balance array at the end.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) opt_loop_imp ::
+partial_function (heap) opt_loop_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow>
    nat \<Rightarrow> nat \<Rightarrow> 'n array \<Rightarrow> bool Heap" where
   "opt_loop_imp fa sa ca oa ba fla pota e k neta =
@@ -173,7 +170,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) opt_loop_im
             _ \<leftarrow> Array.upd u (nu + f) neta;
             opt_loop_imp fa sa ca oa ba fla pota (Suc e) (k - 1) neta } } })"
 
-definition \<^marker>\<open>provenance ai_human\<close> check_optimum_imp ::
+definition check_optimum_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> bool Heap" where
   "check_optimum_imp fa sa ca oa ba fla pota =
      do {
@@ -183,7 +180,7 @@ definition \<^marker>\<open>provenance ai_human\<close> check_optimum_imp ::
 text \<open>The same sweep with the scale \<open>Mn\<close> as a by-value argument and the dual test of
       \<open>arc_ok_eps\<close>.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) opt_loop_eps_imp ::
+partial_function (heap) opt_loop_eps_imp ::
   "'n \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow>
    nat \<Rightarrow> nat \<Rightarrow> 'n array \<Rightarrow> bool Heap" where
   "opt_loop_eps_imp Mn fa sa ca oa ba fla pota e k neta =
@@ -210,7 +207,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) opt_loop_ep
 
 text \<open>\<open>n < M\<close> is tested before the accumulator is allocated.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> check_optimum_eps_imp ::
+definition check_optimum_eps_imp ::
   "'n \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> bool Heap" where
   "check_optimum_eps_imp Mn fa sa ca oa ba fla pota =
      (if of_nat n < Mn then do {
@@ -220,7 +217,7 @@ definition \<^marker>\<open>provenance ai_human\<close> check_optimum_eps_imp ::
 
 text \<open>The imperative \<open>check_optimum_dispatch\<close>.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> check_optimum_dispatch_imp ::
+definition check_optimum_dispatch_imp ::
   "checker_mode \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array
    \<Rightarrow> 'n \<Rightarrow> bool Heap" where
   "check_optimum_dispatch_imp cm fa sa ca oa ba fla pota certm =
@@ -249,7 +246,7 @@ lemma arc_in_range:
   using tail_is_vertex[of e] head_is_vertex[of e]
   by (auto simp: length_fst_list length_snd_list length_capacity length_cost_list)
 
-lemma \<^marker>\<open>provenance ai_human\<close> demand_loop_imp_rule[certificate_heap_rules]:
+lemma demand_loop_imp_rule[certificate_heap_rules]:
   "\<lbrakk>v + k \<le> Suc n; length S = Suc n\<rbrakk> \<Longrightarrow>
    <ba \<mapsto>\<^sub>a balance_list * sca \<mapsto>\<^sub>a S>
      demand_loop_imp ba sca v k acc
@@ -257,7 +254,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> demand_loop_imp_rule[certific
   by (induction k arbitrary: v acc; subst demand_loop_imp.simps)
     (sep_auto simp: length_balance)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> cut_loop_imp_rule[certificate_heap_rules]:
+lemma cut_loop_imp_rule[certificate_heap_rules]:
   "\<lbrakk>e + k \<le> m; length S = Suc n\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * sca \<mapsto>\<^sub>a S>
      cut_loop_imp fa sa ca sca e k cap dem
@@ -266,7 +263,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> cut_loop_imp_rule[certificate
   by (induction k arbitrary: e cap; subst cut_loop_imp.simps)
     (sep_auto simp: arc_in_range)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> check_infeasible_imp_rule[certificate_heap_rules]:
+lemma check_infeasible_imp_rule[certificate_heap_rules]:
   "length S = Suc n \<Longrightarrow>
    <inst_assn fa sa ca oa ba * sca \<mapsto>\<^sub>a S>
      check_infeasible_imp fa sa ca ba sca
@@ -277,14 +274,14 @@ lemma \<^marker>\<open>provenance ai_human\<close> check_infeasible_imp_rule[cer
 
 text \<open>The optimality loops write the accumulator, so their postconditions frame it existentially.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> arr_eq_balance_rule[certificate_heap_rules]:
+lemma arr_eq_balance_rule[certificate_heap_rules]:
   "length net = Suc n \<Longrightarrow>
    <neta \<mapsto>\<^sub>a net * ba \<mapsto>\<^sub>a balance_list> arr_eq_imp neta ba (Suc n)
    <\<lambda>r. neta \<mapsto>\<^sub>a net * ba \<mapsto>\<^sub>a balance_list * \<up>(r = (net = balance_list))>"
   using arr_eq_imp_rule[of "Suc n" net balance_list neta ba]
   by (simp add: length_balance list_eq_iff_nth_eq)
 
-lemma \<^marker>\<open>provenance ai_human\<close> opt_loop_imp_rule[certificate_heap_rules]:
+lemma opt_loop_imp_rule[certificate_heap_rules]:
   "\<lbrakk>length fl = m; length pot = Suc n; length net = Suc n; e + k \<le> m\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl * pota \<mapsto>\<^sub>a pot * neta \<mapsto>\<^sub>a net>
      opt_loop_imp fa sa ca oa ba fla pota e k neta
@@ -294,7 +291,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> opt_loop_imp_rule[certificate
   by (induction k arbitrary: e net; subst opt_loop_imp.simps)
     (sep_auto simp: arc_in_range Let_def heap: certificate_heap_rules)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> check_optimum_imp_rule[certificate_heap_rules]:
+lemma check_optimum_imp_rule[certificate_heap_rules]:
   "length fl = m \<and> length pot = Suc n \<Longrightarrow>
    <inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl * pota \<mapsto>\<^sub>a pot>
      check_optimum_imp fa sa ca oa ba fla pota
@@ -303,7 +300,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> check_optimum_imp_rule[certif
   unfolding check_optimum_imp_def
   by (sep_auto simp: check_optimum_def heap: certificate_heap_rules)
 
-lemma \<^marker>\<open>provenance ai_human\<close> opt_loop_eps_imp_rule[certificate_heap_rules]:
+lemma opt_loop_eps_imp_rule[certificate_heap_rules]:
   "\<lbrakk>length fl = m; length pot = Suc n; length net = Suc n; e + k \<le> m\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl * pota \<mapsto>\<^sub>a pot * neta \<mapsto>\<^sub>a net>
      opt_loop_eps_imp Mn fa sa ca oa ba fla pota e k neta
@@ -313,7 +310,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> opt_loop_eps_imp_rule[certifi
   by (induction k arbitrary: e net; subst opt_loop_eps_imp.simps)
     (sep_auto simp: arc_in_range Let_def heap: certificate_heap_rules)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> check_optimum_eps_imp_rule[certificate_heap_rules]:
+lemma check_optimum_eps_imp_rule[certificate_heap_rules]:
   "length fl = m \<and> length pot = Suc n \<Longrightarrow>
    <inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl * pota \<mapsto>\<^sub>a pot>
      check_optimum_eps_imp Mn fa sa ca oa ba fla pota
@@ -322,7 +319,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> check_optimum_eps_imp_rule[ce
   unfolding check_optimum_eps_imp_def
   by (sep_auto simp: check_optimum_eps_def heap: certificate_heap_rules)
 
-lemma \<^marker>\<open>provenance ai_human\<close> check_optimum_dispatch_imp_rule[certificate_heap_rules]:
+lemma check_optimum_dispatch_imp_rule[certificate_heap_rules]:
   assumes "length fl = m \<and> length pot = Suc n"
   shows "<inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl * pota \<mapsto>\<^sub>a pot>
            check_optimum_dispatch_imp cm fa sa ca oa ba fla pota certm
@@ -398,7 +395,7 @@ fun flag_of :: "'n answer_imp \<Rightarrow> verdict_flag" where
 | "flag_of (InfeasibleI _) = VInfeasibleF"
 | "flag_of (UnboundedI _ _) = VUnboundedF"
 
-definition \<^marker>\<open>provenance ai_human\<close> check_answer_imp ::
+definition check_answer_imp ::
   "checker_mode \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n answer_imp \<Rightarrow> bool Heap"
   where
@@ -410,7 +407,7 @@ definition \<^marker>\<open>provenance ai_human\<close> check_answer_imp ::
 text \<open>Rectifying the untrusted flow in place: a negative cell becomes \<open>0\<close>, a cell over a finite
       capacity becomes the capacity.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) rectify_imp ::
+partial_function (heap) rectify_imp ::
   "'n array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "rectify_imp ca fla e k =
      (if k = 0 then return ()
@@ -420,7 +417,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) rectify_imp
         _ \<leftarrow> Array.upd e (if f < 0 then 0 else if c \<noteq> - 1 \<and> c < f then c else f) fla;
         rectify_imp ca fla (Suc e) (k - 1) })"
 
-definition \<^marker>\<open>provenance ai_human\<close> decide_imp ::
+definition decide_imp ::
   "checker_mode \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n answer_imp
    \<Rightarrow> verdict_flag Heap" where
@@ -432,7 +429,7 @@ definition \<^marker>\<open>provenance ai_human\<close> decide_imp ::
          _ \<leftarrow> rectify_imp ca fla 0 m;
          cleanup_imp fa sa ca oa ba fla } }"
 
-definition \<^marker>\<open>provenance ai_human\<close> solve_imp ::
+definition solve_imp ::
   "checker_mode \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> verdict_flag Heap" where
   "solve_imp cm M fa sa ca oa ba fla =
@@ -450,7 +447,7 @@ locale mcf_oracle_heap_pipeline =
   for capacity_list :: "('n :: {heap, linordered_idom}) list" and h
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> check_answer_imp_rule[certificate_heap_rules]:
+lemma check_answer_imp_rule[certificate_heap_rules]:
   assumes "answer_wf a" "0 < M"
   shows "<inst_assn fa sa ca oa ba * answer_assn fla a ai>
            check_answer_imp cm M fa sa ca oa ba fla ai
@@ -498,7 +495,7 @@ fun rectify :: "'n list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n lis
   "rectify fl e 0 = fl"
 | "rectify fl e (Suc k) = rectify (list_update fl e (clamp1 (capacity_list ! e) (fl ! e))) (Suc e) k"
 
-lemma \<^marker>\<open>provenance ai_human\<close> rectify_imp_rule[certificate_heap_rules]:
+lemma rectify_imp_rule[certificate_heap_rules]:
   "\<lbrakk>e + k \<le> length fl; e + k \<le> m\<rbrakk> \<Longrightarrow>
    <ca \<mapsto>\<^sub>a capacity_list * fla \<mapsto>\<^sub>a fl>
      rectify_imp ca fla e k
@@ -559,7 +556,7 @@ subsection \<open>The pipeline is correct\<close>
 text \<open>An accepted certificate is true by \<open>verdict_of_dispatch_sound\<close>; otherwise the rectified flow
       meets the premises of \<open>cleanup_imp_rule\<close>, and an exact verdict meets every bar.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> decide_imp_correct[certificate_heap_rules]:
+lemma decide_imp_correct[certificate_heap_rules]:
   assumes "answer_wf a" "0 < M"
   shows "<inst_assn fa sa ca oa ba * answer_assn fla a ai>
            decide_imp cm M fa sa ca oa ba fla ai
@@ -575,7 +572,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> decide_imp_correct[certificat
 text \<open>Whatever the untrusted oracle returns, the flag and the flow left in the array are a true
       verdict at the bar \<open>cm\<close> sets.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> solve_imp_correct[certificate_heap_rules]:
+lemma solve_imp_correct[certificate_heap_rules]:
   "\<lbrakk>length fl = m; answer_wf orc_answer; 0 < M\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl>
      solve_imp cm M fa sa ca oa ba fla

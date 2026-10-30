@@ -21,8 +21,6 @@ Matroid_Intersection
 Dinic
 Push_Relabel
 Imperative
-CADE_artefact_Stevens_Ghidini/Union_Find
-CADE_artefact_Stevens_Ghidini/Union_Find_Partial
 Data_Structures
 Hungarian_Method
 Micali_Vazirani
@@ -30,4 +28,3 @@ Hopcroft_Karp
 Laminar_Family
 Edmonds_Weighted_Blossom
 Edmonds_Gallai
-Paper_Index

@@ -1,10 +1,8 @@
 section \<open>Laminar Families\<close>
 
 theory Laminar_Family
-  imports Main "HOL-Eisbach.Eisbach" AI_Provenance.Provenance
+  imports Main "HOL-Eisbach.Eisbach" 
 begin
-
-provenance human
 
 lemma card_one_iff: "card X = 1 \<longleftrightarrow> (\<exists> x. X = {x})"
   by (simp add: card_1_singleton_iff) 

@@ -4,9 +4,6 @@ theory Hungarian_Code_Export
     Imperative.Code_Target_Machine_Int
 begin
 
-provenance ai
-
-
 section \<open>Code Export of the Weighted Bipartite Matching Programs\<close>
 
 text \<open>The four variants on arrays of \<open>Hungarian_CSR_Variants.thy\<close>, with

@@ -2,8 +2,6 @@ theory Alt_BFS_Bipartite
   imports Micali_Vazirani.Top_Loop "Basic_Matching.Berge"
 begin
 
-provenance ai_human
-
 section \<open>Walks of the Alternating BFS Copies Graph in Bipartite Graphs\<close>
 
 text \<open>In a bipartite graph, the walks of the alternating BFS copies graph from a free odd

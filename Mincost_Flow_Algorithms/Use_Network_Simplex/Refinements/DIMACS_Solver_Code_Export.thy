@@ -2,9 +2,6 @@ theory DIMACS_Solver_Code_Export
   imports DIMACS_Solver
 begin
 
-provenance ai
-
-
 export_code dimacs_solve_prog reduce_imp orig_flow_imp ns_cleanup_imp isqrt
   integer_of_nat integer_of_int OptimumI InfeasibleI UnboundedI
   in SML module_name DIMACS_Solver_Code

@@ -2,9 +2,6 @@ theory Network_Simplex_Int
   imports Network_Simplex_Initial_Basis_Selector
 begin
 
-provenance ai
-
-
 section \<open>The integer instance\<close>
 
 text \<open>The executable pipeline is generic over a linearly ordered integral domain @{typ 'n} that embeds into
@@ -19,7 +16,7 @@ interpretation int_embedding: real_embedding "of_int :: int \<Rightarrow> real"
 text \<open>The integer solver locale. Every assumption is a condition on the input lists alone: the obligations
       of @{locale real_embedding} are discharged once and for all by @{const of_int}.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> int_selector =
+locale int_selector =
   initial_basis_code_spec where capacity_list = capacity_list
   for capacity_list :: "int list" +
   assumes length_edges: "length capacity_list = m"

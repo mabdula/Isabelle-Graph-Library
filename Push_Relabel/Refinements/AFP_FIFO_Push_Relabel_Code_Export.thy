@@ -2,11 +2,7 @@ theory AFP_FIFO_Push_Relabel_Code_Export
   imports
     Prpu_Maxflow.Fifo_Push_Relabel_Impl
     Imperative.Code_Target_Machine_Int
-    AI_Provenance.Provenance
 begin
-
-provenance ai
-
 
 section \<open>Code Export of the FIFO Push-Relabel Algorithm of the AFP\<close>
 
@@ -63,7 +59,7 @@ text \<open>The test computes the capacity function and the adjacency lists from
   first network is the one of \<open>Push_Relabel_Code_Export.thy\<close>, with maximum flow value
   \<open>5\<close>, the second the one of the AFP's test, with maximum flow value \<open>42\<close>.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> afp_fifo_test :: "(nat \<times> nat \<times> int) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> int Heap" where
+definition afp_fifo_test :: "(nat \<times> nat \<times> int) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> int Heap" where
   "afp_fifo_test el N s t = do {
      let c = (\<lambda>e. case map_of (map (\<lambda>(u, v, w). ((u, v), w)) el) e of None \<Rightarrow> 0 | Some w \<Rightarrow> w);
      let am = (\<lambda>u. remdups ([v. (x, v, w) \<leftarrow> el, x = u] @ [v. (v, x, w) \<leftarrow> el, x = u]));

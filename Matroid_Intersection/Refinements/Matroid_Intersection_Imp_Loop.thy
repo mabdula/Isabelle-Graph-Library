@@ -2,9 +2,6 @@ theory Matroid_Intersection_Imp_Loop
   imports Matroid_Intersection_Path_Loop Data_Structures.More_Arith "Data_Structures.Imp_Bool_Set"
 begin
 
-provenance ai
-
-
 section \<open>The Augmentation Loop in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of @{locale unweighted_intersection_path_loop}. Elements are the
@@ -29,7 +26,7 @@ definition path_assn :: "nat \<Rightarrow> nat list option \<Rightarrow> nat opt
     | Some p \<Rightarrow> (\<exists>\<^sub>A k ps. Ra \<mapsto>\<^sub>a ps *
                    \<up>(length ps = n \<and> ko = Some k \<and> k \<le> n \<and> rev (take k ps) = p)))"
 
-lemma \<^marker>\<open>provenance ai_human\<close> parr_frame:
+lemma parr_frame:
   assumes "<P * parr_assn n Ra * F> c <Q>" "length ps = n"
   shows "<P * Ra \<mapsto>\<^sub>a ps * F> c <Q>"
   by (rule ht_cons_pre[OF _ assms(1)]) (unfold parr_assn_def, sep_auto simp: assms(2))
@@ -44,7 +41,7 @@ begin
 text \<open>Augmentation along the path in the first \<open>k\<close> cells of the array, read from the end, i.e.
   from the start of the path. Mirrors @{const intersection_augment_spec.augment}.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) aug_imp :: "'si \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function (heap) aug_imp :: "'si \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "aug_imp Si Ra k =
      (if k = 0 then return ()
       else if k = 1 then do { x \<leftarrow> Array.nth Ra 0; sins_imp x Si }
@@ -72,7 +69,7 @@ lemma aug_imp_step:
         sdel_imp y Si; sins_imp x Si; aug_imp Si Ra j }"
   by (subst aug_imp.simps) simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> aug_imp_rule:
+lemma aug_imp_rule:
   "\<lbrakk>k \<le> length ps; set (rev (take k ps)) \<subseteq> {..<n}\<rbrakk> \<Longrightarrow>
    <sol_assn X Si * Ra \<mapsto>\<^sub>a ps> aug_imp Si Ra k
    <\<lambda> _. sol_assn (augment X (rev (take k ps))) Si * Ra \<mapsto>\<^sub>a ps>"
@@ -121,7 +118,7 @@ locale unweighted_intersection_imp_loop_spec =
   fixes aug_path_imp :: "'si \<Rightarrow> nat array \<Rightarrow> nat option Heap"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) mi_loop_imp :: "'si \<Rightarrow> nat array \<Rightarrow> unit Heap" where
+partial_function (heap) mi_loop_imp :: "'si \<Rightarrow> nat array \<Rightarrow> unit Heap" where
   "mi_loop_imp Si Ra = do {
      r \<leftarrow> aug_path_imp Si Ra;
      (case r of None \<Rightarrow> return ()
@@ -154,7 +151,7 @@ context
   assumes X: "finite X" "X \<subseteq> carrier" "indep1 X" "indep2 X"
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> aug_path_imp_None:
+lemma aug_path_imp_None:
   assumes "augmenting_path X = None"
   shows "<sol_assn X Si * parr_assn n Ra * st> aug_path_imp Si Ra
          <\<lambda> res. sol_assn X Si * parr_assn n Ra * st * \<up>(res = None)>"
@@ -174,7 +171,7 @@ proof-
     by auto blast
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> aug_path_imp_Some:
+lemma aug_path_imp_Some:
   assumes "augmenting_path X = Some p"
   shows "<sol_assn X Si * parr_assn n Ra * st> aug_path_imp Si Ra
          <\<lambda> res. \<exists>\<^sub>A k ps. sol_assn X Si * Ra \<mapsto>\<^sub>a ps * st *
@@ -190,7 +187,7 @@ lemma path_bound:
 
 end
 
-lemma \<^marker>\<open>provenance ai_human\<close> mi_loop_imp_rule:
+lemma mi_loop_imp_rule:
   assumes "matroid_intersection_dom state" "indep_invar state" "finite (solution state)"
           "solution state \<subseteq> carrier"
   shows "<sol_assn (solution state) Si * parr_assn n Ra * st> mi_loop_imp Si Ra
@@ -230,7 +227,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> mi_loop_imp_correct:
+lemma mi_loop_imp_correct:
   "<sol_assn {} Si * parr_assn n Ra * st> mi_loop_imp Si Ra
    <\<lambda> _. \<exists>\<^sub>A X. sol_assn X Si * parr_assn n Ra * st * \<up>(is_max X)>"
 proof-

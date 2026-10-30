@@ -6,9 +6,6 @@ theory Neighbourhood_Best_Scan_Imperative
     Data_Structures.Real_Embedding
 begin
 
-provenance ai
-
-
 section \<open>Imperative Scan for the Best Two Neighbours\<close>
 
 text \<open>The imperative counterpart of @{const nb_best_scan_spec.best_two}. The key and the preference
@@ -33,7 +30,7 @@ definition "best2_upd_imp bs c =
      (case b of None \<Rightarrow> (Some c, b)
       | Some p \<Rightarrow> if better_imp c p then (Some c, b) else (b, best_upd_imp s c)))"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_best_imp ::
+partial_function (heap) scan_best_imp ::
   "('ci \<Rightarrow> 'v \<Rightarrow> ('n::linorder \<times> 'v \<times> bool) Heap) \<Rightarrow> 'ci \<Rightarrow> 'v \<Rightarrow>
    ('n \<times> 'v \<times> bool) option \<times> ('n \<times> 'v \<times> bool) option \<Rightarrow>
    (('n \<times> 'v \<times> bool) option \<times> ('n \<times> 'v \<times> bool) option) Heap" where
@@ -119,7 +116,7 @@ lemma best_scan_reset_props:
 text \<open>The candidate program @{term cur} may rely on the current neighbour being in a set
       @{term A} that contains the neighbourhood.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> scan_best_imp_rule:
+lemma scan_best_imp_rule:
   assumes "\<And>C. \<lbrakk>rnb_invar C; rnb_remaining C u \<noteq> {}; rnb_current C u \<in> A\<rbrakk> \<Longrightarrow>
                   <nb_assn C Ci * Ctx> cur Ci u
                   <\<lambda>(k, r, f). nb_assn C Ci * Ctx *
@@ -150,7 +147,7 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C bs bsi rule: less_induct
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> best_two_imp_rule:
+lemma best_two_imp_rule:
   assumes "\<And>C. \<lbrakk>rnb_invar C; rnb_remaining C u \<noteq> {}; rnb_current C u \<in> A\<rbrakk> \<Longrightarrow>
                   <nb_assn C Ci * Ctx> cur Ci u
                   <\<lambda>(k, r, f). nb_assn C Ci * Ctx *

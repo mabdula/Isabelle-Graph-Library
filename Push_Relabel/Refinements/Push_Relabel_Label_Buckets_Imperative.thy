@@ -6,9 +6,6 @@ theory Push_Relabel_Label_Buckets_Imperative
     Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
-provenance ai
-
-
 section \<open>Imperative Label Maps with Buckets\<close>
 
 text \<open>The label map with buckets of theory \<open>Push_Relabel_Label_Buckets\<close>, now on an imperative
@@ -27,7 +24,7 @@ locale label_buckets_imp_code =
     and buckets_pick_imp :: "'bi \<Rightarrow> nat \<Rightarrow> 'v option Heap"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) lower_imp :: "'bi \<Rightarrow> nat \<Rightarrow> nat Heap" where
+partial_function (heap) lower_imp :: "'bi \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "lower_imp Bi d =
      (if d = 0 then return 0
       else do {
@@ -45,12 +42,12 @@ definition "lb_upd_imp = (\<lambda> (Lai, Bi, Dr) v k'. do {
    Dr := d';
    lm_upd_imp Lai v k' })"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) drain_imp :: "'bi \<Rightarrow> nat \<Rightarrow> ('v \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
+partial_function (heap) drain_imp :: "'bi \<Rightarrow> nat \<Rightarrow> ('v \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
   "drain_imp Bi j g_imp = do {
      p \<leftarrow> buckets_pick_imp Bi j;
      case p of None \<Rightarrow> return () | Some v \<Rightarrow> do { g_imp v; drain_imp Bi j g_imp } }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) gap_walk_imp :: "'bi \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> ('v \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
+partial_function (heap) gap_walk_imp :: "'bi \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> ('v \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
   "gap_walk_imp Bi j m g_imp =
      (if m = 0 then return ()
       else do { drain_imp Bi j g_imp; gap_walk_imp Bi (Suc j) (m - 1) g_imp })"
@@ -90,7 +87,7 @@ definition "lb_assn = (\<lambda> (L, B, d) (Lai, Bi, Dr). lm_assn L Lai * bucket
 lemma lb_assn_tuple: "lb_assn (L, B, d) (Lai, Bi, Dr) = lm_assn L Lai * buckets_assn B Bi * Dr \<mapsto>\<^sub>r d"
   by (simp add: lb_assn_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> lower_imp_rule:
+lemma lower_imp_rule:
   assumes "buckets_invar B" "d < N"
   shows "<buckets_assn B Bi> lower_imp Bi d <\<lambda>r. buckets_assn B Bi * \<up>(r = lower B d)>"
   using assms(2)
@@ -105,14 +102,14 @@ next
     by (subst lower_imp.simps) (sep_auto heap: Suc.IH[OF Suc_lessD[OF Suc.prems]] split: option.splits)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> lb_get_imp_rule:
+lemma lb_get_imp_rule:
   assumes "lb_invar A" "v \<in> V"
   shows "<lb_assn A Ai> lb_get_imp Ai v <\<lambda>x. lb_assn A Ai * \<up>(id x = lb_get A v)>"
   using assms
   unfolding lb_get_imp_def lb_get_def
   by (cases A rule: prod_cases3, cases Ai rule: prod_cases3) (sep_auto simp: lb_assn_tuple lb_invar_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> lb_upd_imp_rule:
+lemma lb_upd_imp_rule:
   assumes "lb_invar A" "v \<in> V"
   shows "<lb_assn A Ai> lb_upd_imp Ai v k' <\<lambda>_. lb_assn (lb_upd A v (id k')) Ai>"
 proof-
@@ -158,14 +155,14 @@ lemma lb_fixed_univ_map_imp:
 
 subsection \<open>The Gap Enumeration\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> pick_lb_rule:
+lemma pick_lb_rule:
   assumes "Li = (Lai, Bi, Dr)" "buckets_invar B" "j < N"
   shows "<lb_assn (L, B, d) Li> buckets_pick_imp Bi j
          <\<lambda>p. lb_assn (L, B, d) Li * \<up>(p = buckets_pick B j)>"
   using assms(2,3) unfolding assms(1) lb_assn_tuple
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> bound_lb_rule:
+lemma bound_lb_rule:
   assumes "Li = (Lai, Bi, Dr)"
   shows "<lb_assn (L, B, d) Li> !Dr <\<lambda>x. lb_assn (L, B, d) Li * \<up>(x = d)>"
   unfolding assms(1) lb_assn_tuple
@@ -197,7 +194,7 @@ proof-
     by (auto simp: lb_invar_def split: if_splits)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> drain_imp_rule:
+lemma drain_imp_rule:
   assumes g: "\<And> acc v. \<lbrakk>lb_invar (fst acc); v \<in> V; k < lb_get (fst acc) v;
                          lb_get (fst acc) v < card V\<rbrakk> \<Longrightarrow>
           (\<exists> k'. card V \<le> k' \<and> fst (g acc v) = lb_upd (fst acc) v k') \<and>
@@ -255,7 +252,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> gap_walk_imp_rule:
+lemma gap_walk_imp_rule:
   assumes g: "\<And> acc v. \<lbrakk>lb_invar (fst acc); v \<in> V; k < lb_get (fst acc) v;
                          lb_get (fst acc) v < card V\<rbrakk> \<Longrightarrow>
           (\<exists> k'. card V \<le> k' \<and> fst (g acc v) = lb_upd (fst acc) v k') \<and>
@@ -303,7 +300,7 @@ qed
 
 text \<open>The rule required from the gap enumeration of the label map by the generic algorithm.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> lb_gap_fold_imp_rule:
+lemma lb_gap_fold_imp_rule:
   assumes "lb_invar l"
       and g: "\<And> acc v. \<lbrakk>lb_invar (fst acc); v \<in> V; k < lb_get (fst acc) v;
                          lb_get (fst acc) v < card V\<rbrakk> \<Longrightarrow>
@@ -331,7 +328,7 @@ subsection \<open>Initialisation\<close>
 text \<open>The initialisation is given an imperative vertex fold implementing
       @{term bucket_vertex_fold}, whose own data are described by @{term M}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> lb_init_imp_rule:
+lemma lb_init_imp_rule:
   assumes "set_fold_imp_rule V M bucket_vertex_fold vfold_imp"
   shows "<M * (lm_assn lm_init Lai * buckets_assn buckets_empty Bi * Dr \<mapsto>\<^sub>r d0)>
            lb_init_imp vfold_imp (Lai, Bi, Dr)

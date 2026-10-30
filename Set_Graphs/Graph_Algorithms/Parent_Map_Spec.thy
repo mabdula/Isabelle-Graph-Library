@@ -2,10 +2,7 @@ theory Parent_Map_Spec
   imports Undirected_Set_Graphs.Paths Directed_Set_Graphs.Awalk
 begin
 
-provenance ai
-
-
-locale \<^marker>\<open>provenance ai_human\<close> Parent_Map_Spec_static =
+locale Parent_Map_Spec_static =
   fixes U ::"'v set"
   and to_dir_graph::"'pmap \<Rightarrow> ('v \<times> 'v) set"
   and get_path::"'pmap \<Rightarrow> 'v \<Rightarrow> 'v list"
@@ -20,7 +17,7 @@ and get_path:
               (s = t \<and> get_path \<pi> s = [s])) \<and>
              t \<in> roots \<pi>"
 
-locale \<^marker>\<open>provenance ai_human\<close> Parent_Map_Spec_init =
+locale Parent_Map_Spec_init =
   fixes U ::"'v set"
   and to_dir_graph::"'pmap \<Rightarrow> ('v \<times> 'v) set"
   and invar::"'pmap \<Rightarrow> bool"
@@ -38,7 +35,7 @@ assumes init:
 
 
 
-locale \<^marker>\<open>provenance ai_human\<close> Parent_Map_Spec_extend =
+locale Parent_Map_Spec_extend =
   fixes U ::"'v set"
   and to_dir_graph::"'pmap \<Rightarrow> ('v \<times> 'v) set"
   and extend::"'pmap \<Rightarrow> 'v \<Rightarrow> 'v \<Rightarrow> 'pmap"

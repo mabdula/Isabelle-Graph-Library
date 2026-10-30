@@ -6,9 +6,6 @@ theory Network_Simplex_Initial_Basis_Code
           Data_Structures.List_Cursor
 begin
 
-provenance ai
-
-
 text \<open>This is the single \<^emph>\<open>code\<close> theory of the initial-basis construction: it
       collects every executable definition (the CSR builds, Pass A, the free-edge DFS builder, the
       augmented-network arrays, the arborescence swap, and the whole M-free entering-edge selector) into one
@@ -56,7 +53,7 @@ text \<open>Design notes {\isasymsection}2: a potential / reduced-cost value is 
 
 datatype mtag = M_m2 | M_m1 | M_0 | M_p1 | M_p2
 
-primrec \<^marker>\<open>provenance ai_human\<close> of_mtag :: "mtag \<Rightarrow> int" where
+primrec of_mtag :: "mtag \<Rightarrow> int" where
   "of_mtag M_m2 = - 2" | "of_mtag M_m1 = - 1" | "of_mtag M_0 = 0"
 | "of_mtag M_p1 = 1"   | "of_mtag M_p2 = 2"
 
@@ -105,14 +102,14 @@ text \<open>The potential shift is realised by its \<^emph>\<open>own\<close> ta
       fresh implementations, not the generic @{const iterate_root_opposed_impl}; each is proved equivalent to
       a @{const subtree_fold} below, which is all the correctness argument needs.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) shift_pot_up_loop ::
+partial_function (tailrec) shift_pot_up_loop ::
   "nat ndtree \<Rightarrow> nat \<Rightarrow> mtag \<times> ('n::linordered_idom) \<Rightarrow> nat \<Rightarrow> (mtag \<times> 'n) list \<Rightarrow> (mtag \<times> 'n) list"
   where
   "shift_pot_up_loop S stop g u pa =
      (let pa' = pa[u := pval_plus (pa ! u) g]
       in (if u = stop then pa' else shift_pot_up_loop S stop g (the (thrd S u)) pa'))"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) shift_pot_down_loop ::
+partial_function (tailrec) shift_pot_down_loop ::
   "nat ndtree \<Rightarrow> nat \<Rightarrow> mtag \<times> ('n::linordered_idom) \<Rightarrow> nat \<Rightarrow> (mtag \<times> 'n) list \<Rightarrow> (mtag \<times> 'n) list"
   where
   "shift_pot_down_loop S stop g u pa =
@@ -266,7 +263,7 @@ datatype 'n ns_outcome =
   | Neg_inf_cycle
 
 
-locale \<^marker>\<open>provenance ai_human\<close> initial_basis_code_spec =
+locale initial_basis_code_spec =
   fixes capacity_list :: "('n::linordered_idom) list"
     and cost_list     :: "'n list"
     and fst_list      :: "nat list"
@@ -549,7 +546,7 @@ text \<open>The recursion takes the two free ranges of Pass A --- @{term fo} / @
       the ranges as arguments --- they are fixed for the entire traversal --- runs @{const passA} once, in
       \<open>build_dfs\<close> just below, and shares it across the whole descent.\<close>
 
-function \<^marker>\<open>provenance ai_human\<close> (domintros) build_dfs_a ::
+function (domintros) build_dfs_a ::
   "nat list \<times> nat list \<Rightarrow> nat list \<times> nat list \<Rightarrow> 'n dfs_state \<Rightarrow> 'n dfs_state" where
   "build_dfs_a fo fi s =
      (case ds_stk s of
@@ -878,7 +875,7 @@ definition evaluate :: "edge_tag list \<Rightarrow>
                   g = pval_plus (cost_pval e) (pval_minus (\<pi> ! a) (\<pi> ! d))
               in ((case t of InTree \<Rightarrow> False | InL \<Rightarrow> pval_neg g | InU \<Rightarrow> pval_pos g), t = InU, g))"
 
-fun \<^marker>\<open>provenance ai_human\<close> better :: "'n best_cand \<Rightarrow> nat \<times> bool \<times>  (mtag \<times> 'n) 
+fun better :: "'n best_cand \<Rightarrow> nat \<times> bool \<times>  (mtag \<times> 'n) 
        \<Rightarrow> 'n best_cand" where
   "better (found, be, bu, bg) (e', u', g') =
      (if \<not> found \<or> viol_gt g' bg then (True, e', u', g') else (found, be, bu, bg))"
@@ -888,7 +885,7 @@ definition bok :: "edge_tag list \<Rightarrow>  (mtag \<times> 'n) list \<Righta
      (case best of (f,e,u,g) \<Rightarrow>
         f \<longrightarrow> (eligible es pt e \<and> u = ent_in_U es e \<and> g = red_cost pt e \<and> e \<in> set (take len a)))"
 
-function \<^marker>\<open>provenance ai_human\<close> scan_cache ::
+function scan_cache ::
     "edge_tag list \<Rightarrow>  (mtag \<times> 'n) list \<Rightarrow> nat 
 \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> 'n best_cand
        \<Rightarrow> nat list \<times> nat \<times> 'n best_cand" where
@@ -904,7 +901,7 @@ function \<^marker>\<open>provenance ai_human\<close> scan_cache ::
 termination
   by (relation "measure (\<lambda>(es, \<pi>, i, a, len, best). len - i)") auto
 
-function \<^marker>\<open>provenance ai_human\<close> scan ::
+function scan ::
     "edge_tag list \<Rightarrow>  (mtag \<times> 'n) list \<Rightarrow> nat 
 \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> 'n best_cand
        \<Rightarrow> nat \<times> nat list \<times> nat \<times> 'n best_cand" where

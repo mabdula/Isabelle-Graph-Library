@@ -2,8 +2,6 @@ theory DFS_Avoid
   imports Graph_Algorithms_Dev.DFS_Skeleton
 begin
 
-provenance human
-
 text \<open>A reachability DFS that avoids a given vertex set, as an instance of the DFS skeleton.
 It is resumable: the search starts from a given stack (\<^term>\<open>stack0\<close>) and a set of previously
 visited vertices (\<^term>\<open>vis0\<close>), searches for a vertex satisfying the predicate \<^term>\<open>Pv\<close>,

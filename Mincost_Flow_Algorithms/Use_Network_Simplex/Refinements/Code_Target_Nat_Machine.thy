@@ -1,11 +1,8 @@
 section \<open>Serialising \<open>nat\<close> to a 64-bit machine integer\<close>
 
 theory Code_Target_Nat_Machine
-  imports "HOL-Library.Code_Target_Nat" "HOL-Imperative_HOL.Array" AI_Provenance.Provenance
+  imports "HOL-Library.Code_Target_Nat" "HOL-Imperative_HOL.Array"
 begin
-
-provenance ai
-
 
 text \<open>
   By default \<open>nat\<close> becomes SML's \<open>IntInf.int\<close>, so every array index is
@@ -98,19 +95,19 @@ text \<open>\<^const>\<open>Array.nth\<close> and its siblings are generated thr
       round-trip every index through \<open>IntInf\<close>. These wrappers take the \<open>nat\<close>, now
       the SML array index type, and are definitionally the original operations.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> nth_machine :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a Heap" where
+definition nth_machine :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a Heap" where
   [simp]: "nth_machine = Array.nth"
 
-definition \<^marker>\<open>provenance ai_human\<close> upd_machine :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a array Heap" where
+definition upd_machine :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> 'a array Heap" where
   [simp]: "upd_machine a i x = Array.upd i x a"
 
-definition \<^marker>\<open>provenance ai_human\<close> new_machine :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array Heap" where
+definition new_machine :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array Heap" where
   [simp]: "new_machine = Array.new"
 
-definition \<^marker>\<open>provenance ai_human\<close> len_machine :: "'a::heap array \<Rightarrow> nat Heap" where
+definition len_machine :: "'a::heap array \<Rightarrow> nat Heap" where
   [simp]: "len_machine = Array.len"
 
-definition \<^marker>\<open>provenance ai_human\<close> make_machine :: "nat \<Rightarrow> (nat \<Rightarrow> 'a::heap) \<Rightarrow> 'a array Heap" where
+definition make_machine :: "nat \<Rightarrow> (nat \<Rightarrow> 'a::heap) \<Rightarrow> 'a array Heap" where
   [simp]: "make_machine = Array.make"
 
 lemma machine_code [code]:

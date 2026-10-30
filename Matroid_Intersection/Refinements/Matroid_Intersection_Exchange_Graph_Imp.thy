@@ -3,9 +3,6 @@ theory Matroid_Intersection_Exchange_Graph_Imp
           Data_Structures.More_Lists
 begin
 
-provenance ai
-
-
 section \<open>The Exchange Graph Search in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of the path search of
@@ -28,15 +25,15 @@ text \<open>The BFS of the library (@{locale bfs_iterator_arrays}) on the graph 
   Here, the path is read in the form of @{const path_assn}, and the work arrays are kept with
   arbitrary contents.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> len_fill_rule: "<len_assn n a> fill_range_imp f n a <\<lambda> r. a \<mapsto>\<^sub>a map f [0..<n] * \<up>(r =
+lemma len_fill_rule: "<len_assn n a> fill_range_imp f n a <\<lambda> r. a \<mapsto>\<^sub>a map f [0..<n] * \<up>(r =
     a)>"
   unfolding len_assn_def
   by (rule ht_ex_pre) (sep_auto heap: fill_range_imp_rule)
 
-lemma \<^marker>\<open>provenance ai_human\<close> clear_len: "<len_assn n Vi> bool_array_set_clear_imp n Vi <\<lambda> _. bool_array_set_assn n {} Vi>"
+lemma clear_len: "<len_assn n Vi> bool_array_set_clear_imp n Vi <\<lambda> _. bool_array_set_assn n {} Vi>"
   by (rule ht_cons_post[OF bool_array_set_clear_rule]) sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> fill_len: "<len_assn n a> fill_range_imp f n a <\<lambda> _. a \<mapsto>\<^sub>a map f [0..<n]>"
+lemma fill_len: "<len_assn n a> fill_range_imp f n a <\<lambda> _. a \<mapsto>\<^sub>a map f [0..<n]>"
   by (rule ht_cons_post[OF len_fill_rule]) sep_auto
 
 lemma parr_len: "parr_assn n Ra = len_assn n Ra"
@@ -68,7 +65,7 @@ context
   assumes b: "bfs_sources ss"
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> path_rule:
+lemma path_rule:
   assumes "find (\<lambda> y. y \<in> set (BFS_dist_state.visited (fin ss))) ts = Some t" "length rl = n"
   shows "<parent_array.pa_parent_assn n (BFS_par_state.parent (fin ss)) Pa * Ra \<mapsto>\<^sub>a rl>
            bfs_path Pa Ra t
@@ -86,7 +83,7 @@ proof-
        (use len assms(2) in sep_auto)+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> bfs_len_rule:
+lemma bfs_len_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss"
   shows "<len_assn (Suc n) Bf * (bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Da \<mapsto>\<^sub>a map id
     [0..<n] *
@@ -103,7 +100,7 @@ proof(rule pull_len, goal_cases)
        (simp only: star_aci, rule ent_refl, unfold ent_pure_pre_iff, rule impI, rule ent_refl)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> path_len_rule:
+lemma path_len_rule:
   assumes "find (\<lambda> y. y \<in> set (BFS_dist_state.visited (fin ss))) ts = Some t"
   shows "<parr_assn n Ra * parent_array.pa_parent_assn n (BFS_par_state.parent (fin ss)) Pa>
            bfs_path Pa Ra t
@@ -157,7 +154,7 @@ definition "filt_imp P Si u fi = (\<lambda> v a. do { ok \<leftarrow> P Si u v; 
 
 text \<open>The iterator over the exchange neighbours, on the solution handle and the CSR.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> xnbs :: "'si \<times> (nat array \<times> nat array) \<Rightarrow> nat \<Rightarrow>
+definition xnbs :: "'si \<times> (nat array \<times> nat array) \<Rightarrow> nat \<Rightarrow>
                      (nat \<Rightarrow> 'acc \<Rightarrow> 'acc Heap) \<Rightarrow> 'acc \<Rightarrow> 'acc Heap" where
   "xnbs Gh u fi acc = (case Gh of (Si, Gc) \<Rightarrow>
      if u < n then do {
@@ -347,21 +344,21 @@ definition "gxs X Si Gc = sol_assn X Si * ost1 * ost2 *
 
 text \<open>(A triple must not start with \<open><sol_assn\<close> here, which is read as another token.)\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> nb1_rule:
+lemma nb1_rule:
   "\<lbrakk>u < n; v < n\<rbrakk> \<Longrightarrow>
    <ost1 * ost2 * sol_assn X Si * Q> nb1_imp Si u v
    <\<lambda> r. ost1 * ost2 * sol_assn X Si * Q * \<up>(r = allowed1 X u v)>"
   unfolding nb1_imp_def allowed1_def
   by (sep_auto heap: smemb_rule o1.ins_imp o1.exch_imp)
 
-lemma \<^marker>\<open>provenance ai_human\<close> nb2_rule:
+lemma nb2_rule:
   "\<lbrakk>u < n; v < n\<rbrakk> \<Longrightarrow>
    <ost1 * ost2 * sol_assn X Si * Q> nb2_imp Si u v
    <\<lambda> r. ost1 * ost2 * sol_assn X Si * Q * \<up>(r = allowed2 X u v)>"
   unfolding nb2_imp_def allowed2_def
   by (sep_auto heap: smemb_rule o2.exch_imp)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_nbs_filt_rule:
+lemma csr_nbs_filt_rule:
   assumes "u < n"
     and "\<And> v Q. v < n \<Longrightarrow> <ost1 * ost2 * sol_assn X Si * Q> P Si u v
                                    <\<lambda> r. ost1 * ost2 * sol_assn X Si * Q * \<up>(r = p v)>"
@@ -414,7 +411,7 @@ proof-
     by (rule ht_cons[rotated 2]) sep_auto+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> xnbs_rule:
+lemma xnbs_rule:
   assumes "finite X" "X \<subseteq> {0..<n}" "indep1 X" "indep2 X"
     and "\<And> acc acci x. x \<in> set (nbrs (EE X) u) \<Longrightarrow>
                <A acc acci * F> fi x acci <\<lambda> r. A (f x acc) r * F>"
@@ -549,31 +546,31 @@ lemma nb_char:
 
 subsubsection \<open>The Steps of a Search\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> s_imp_rule:
+lemma s_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> s_imp Si y <\<lambda> r. gxs X Si Gc * \<up>(r = (y \<notin> X \<and> y \<in>
     S0 X))>"
   unfolding s_imp_def gxs_def S0_def
   by (sep_auto heap: smemb_rule o1.ins_imp)
 
-lemma \<^marker>\<open>provenance ai_human\<close> t_imp_rule:
+lemma t_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> t_imp Si y <\<lambda> r. gxs X Si Gc * \<up>(r = (y \<notin> X \<and> y \<in>
     T0 X))>"
   unfolding t_imp_def gxs_def T0_def
   by (sep_auto heap: smemb_rule o2.ins_imp)
 
-lemma \<^marker>\<open>provenance ai_human\<close> st_imp_rule:
+lemma st_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> st_imp Si y
    <\<lambda> r. gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> S0 X) \<and> y \<in> T0 X))>"
   unfolding st_imp_def s_imp_def gxs_def S0_def T0_def
   by (sep_auto heap: smemb_rule o1.ins_imp o2.ins_imp)
 
-lemma \<^marker>\<open>provenance ai_human\<close> find_st_rule:
+lemma find_st_rule:
   "<gxs X Si Gc> find_range_imp (st_imp Si) 0 n
    <\<lambda> r. gxs X Si Gc * \<up>(r = find (csr.in_T (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X)))>"
   unfolding eq_find[symmetric]
   by (rule find_range_imp_rule, rule st_imp_rule, assumption)
 
-lemma \<^marker>\<open>provenance ai_human\<close> has_nb_rule:
+lemma has_nb_rule:
   assumes "y < n"
   shows "<gxs X Si Gc> has_nb_imp Gc Si y <\<lambda> r. gxs X Si Gc * \<up>(r = (nbrs (EE X) y \<noteq> []))>"
 proof-
@@ -586,7 +583,7 @@ proof-
     by (rule ht_cons[rotated 2]) (sep_auto simp: foldl_True)+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> is_src_imp_rule:
+lemma is_src_imp_rule:
   "y < n \<Longrightarrow> <gxs X Si Gc> is_src_imp Gc Si y
    <\<lambda> r. gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> S0 X) \<and>
             (y \<notin> T0 X \<and> find (\<lambda> x. x \<in> X \<and> exch_orcl2 (orcl_prep2 X) x y) [0..<n]
@@ -594,7 +591,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> is_src_imp_rule:
   unfolding is_src_imp_def
   by (sep_auto heap: s_imp_rule has_nb_rule simp: nb_char)
 
-lemma \<^marker>\<open>provenance ai_human\<close> collect_src_rule:
+lemma collect_src_rule:
   assumes "n \<le> length fl"
   shows "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
          <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc *
@@ -604,21 +601,21 @@ lemma \<^marker>\<open>provenance ai_human\<close> collect_src_rule:
   unfolding eq_srcs[symmetric]
   by (rule collect_range_imp_rule[OF is_src_imp_rule assms])
 
-lemma \<^marker>\<open>provenance ai_human\<close> is_tgt_imp_rule:
+lemma is_tgt_imp_rule:
   "y < n \<Longrightarrow> <bool_array_set_assn n V Vi * gxs X Si Gc> is_tgt_imp Si Vi y
    <\<lambda> r. bool_array_set_assn n V Vi * gxs X Si Gc * \<up>(r = ((y \<notin> X \<and> y \<in> T0 X) \<and> y
      \<in> V))>"
   unfolding is_tgt_imp_def t_imp_def gxs_def T0_def
   by (sep_auto heap: bool_array_set_memb_rule smemb_rule o2.ins_imp)
 
-lemma \<^marker>\<open>provenance ai_human\<close> find_tgt_rule:
+lemma find_tgt_rule:
   "<bool_array_set_assn n V Vi * gxs X Si Gc> find_range_imp (is_tgt_imp Si Vi) 0 n
    <\<lambda> r. bool_array_set_assn n V Vi * gxs X Si Gc * \<up>(r = find (\<lambda> y. y \<in> V) (csr.tgts
      (csr.exch_ctx X)))>"
   unfolding eq_tgts[symmetric] find_filter
   by (rule find_range_imp_rule, rule is_tgt_imp_rule, assumption)
 
-lemma \<^marker>\<open>provenance ai_human\<close> single_path_rule:
+lemma single_path_rule:
   assumes "s < n"
   shows "<parr_assn n Ra> Array.upd 0 s Ra <\<lambda> _. path_assn n (Some [s]) (Some 1) Ra>"
 proof-
@@ -651,7 +648,7 @@ lemma target_path_eq:
   unfolding csr.target_path_def unfolding Let_def fin_eq length_upt diff_zero
   by (rule refl)
 
-lemma \<^marker>\<open>provenance ai_human\<close> tail_rule:
+lemma tail_rule:
   "<bool_array_set_assn n (set (BFS_dist_state.visited (fb.fin ss))) Vi * gxs X Si Gc * parr_assn n Ra *
     (BFS_subprocedures_lists.imp_dist_assn n Da (nbrs_map (EE X)) (BFS_dist_state.dists (fb.fin ss)) di *
      parent_array.pa_parent_assn n (BFS_par_state.parent (fb.fin ss)) Pa)>
@@ -697,7 +694,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> round_rule:
+lemma round_rule:
   assumes "length fl = Suc n" "take (length ss) fl = ss"
   shows "<Fr \<mapsto>\<^sub>a fl * gxs X Si Gc * parr_assn n Ra * len_assn n Vi * len_assn (Suc n) Bf *
           len_assn n Da * len_assn n Pa>
@@ -739,7 +736,7 @@ end
 
 subsubsection \<open>A Search\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> collect_src_len:
+lemma collect_src_len:
   "<len_assn (Suc n) Fr * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
    <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gxs X Si Gc *
          \<up>(length fl' = Suc n \<and>
@@ -752,13 +749,13 @@ proof(rule pull_len, goal_cases)
     by simp
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> collect_src_none:
+lemma collect_src_none:
   "<len_assn (Suc n) Fr * gxs X Si Gc> collect_range_imp (is_src_imp Gc Si) n Fr
    <\<lambda> k. len_assn (Suc n) Fr * gxs X Si Gc *
          \<up>(k = length (filter (csr.has_nb (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))))>"
   by (rule ht_cons_post[OF collect_src_len]) (unfold len_assn_def, sep_auto)
 
-lemma \<^marker>\<open>provenance ai_human\<close> aug_path_imp_rule:
+lemma aug_path_imp_rule:
   "<parr_assn n Ra * gxs X Si Gc * work_assn n Vi Fr Bf Da Pa> aug_path_imp Gc Vi Fr Bf Da Pa Si Ra
    <\<lambda> res. path_assn n (csr.augmenting_path X) res Ra * gxs X Si Gc * work_assn n Vi Fr Bf Da Pa>"
 proof(cases "find (csr.in_T (csr.exch_ctx X)) (csr.srcs (csr.exch_ctx X))")
@@ -855,7 +852,7 @@ qed
 
 text \<open>The loop on preallocated arrays.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> loop_correct:
+lemma loop_correct:
   "<(sol_assn {} Si) * parr_assn n Ra * mst Gc Vi Fr Bf Da Pa>
      unweighted_intersection_imp_loop_spec.mi_loop_imp sins_imp sdel_imp
        (aug_path_imp Gc Vi Fr Bf Da Pa) Si Ra

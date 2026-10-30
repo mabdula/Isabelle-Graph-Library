@@ -2,9 +2,6 @@ theory Network_Simplex_Initial_Basis_Correct
   imports Network_Simplex_Initial_Basis
 begin
 
-provenance ai
-
-
 section \<open>Correctness of the initial-basis construction\<close>
 
 text \<open>We prove the construction correct in a context that adds the only genuine hypothesis on the frozen
@@ -17,7 +14,7 @@ text \<open>We prove the construction correct in a context that adds the only ge
       acyclicity of @{term flow_list} (needed for the free edges to form a forest, L1), will be added as the
       tree-shaped obligations demand it.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> initial_basis_correct =
+locale initial_basis_correct =
   initial_basis_lists where capacity_list = capacity_list and h = h
   for capacity_list :: "('n :: linordered_idom) list" and h :: "'n \<Rightarrow> real" +
   assumes flow_nonneg: "\<And>e. e < m \<Longrightarrow> 0 \<le> flow_list ! e"
@@ -1253,7 +1250,7 @@ text \<open>The explicit DFS stack is, read top-to-bottom, exactly a @{const ds_
       \<^emph>\<open>traversal\<close> invariant (it constrains intermediate states, not the finished tree
       directly).\<close>
 
-fun \<^marker>\<open>provenance ai_human\<close> vchain :: "nat list \<Rightarrow> nat list \<Rightarrow> bool" where
+fun vchain :: "nat list \<Rightarrow> nat list \<Rightarrow> bool" where
   "vchain P [] = True"
 | "vchain P [v] = (P ! v = vcount)"
 | "vchain P (v # u # rest) = (P ! v = u \<and> vchain P (u # rest))"
@@ -1539,7 +1536,7 @@ lemma desc_fresh_empty:
   "\<lbrakk>tree_seen_inv s; w < vcount; \<not> ds_seen s ! w\<rbrakk> \<Longrightarrow> desc s w = {}"
   by (auto simp: desc_def dest: pstep_to_w[OF pstep_no_in, rotated 3])
 
-fun \<^marker>\<open>provenance ai_human\<close> snchk :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool" where
+fun snchk :: "'n dfs_state \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool" where
   "snchk s acc [] = True"
 | "snchk s acc (v # rest) = (dcard s v = ds_snum s ! v + acc \<and> snchk s (dcard s v) rest)"
 

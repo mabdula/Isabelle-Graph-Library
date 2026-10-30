@@ -3,9 +3,6 @@ theory Matroid_Weighted_Intersection_Exchange_Graph_Imp
     Matroid_Intersection_Exchange_Graph_Imp
 begin
 
-provenance ai
-
-
 section \<open>The Weighted Exchange Graph Search in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of the context of
@@ -33,7 +30,7 @@ text \<open>The tight exchange neighbours: the exchange iterator, skipping the n
 
 definition "teq_imp C cu = (\<lambda> _ _ v. do { cv \<leftarrow> Array.nth C v; return (cu = cv) })"
 
-definition \<^marker>\<open>provenance ai_human\<close> tnbs :: "'si \<times> (nat array \<times> nat array) \<times> 'n::heap array \<times> 'n array
+definition tnbs :: "'si \<times> (nat array \<times> nat array) \<times> 'n::heap array \<times> 'n array
     \<Rightarrow> nat \<Rightarrow>
                      (nat \<Rightarrow> 'acc \<Rightarrow> 'acc Heap) \<Rightarrow> 'acc \<Rightarrow> 'acc Heap" where
   "tnbs Gh u fi acc = (case Gh of (Si, Gc, C1, C2) \<Rightarrow>
@@ -249,7 +246,7 @@ lemmas wtight_ctx_fields_n = csr.wtight_ctx_fields[unfolded length_upt diff_zero
 
 subsubsection \<open>The Tight Iterator\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> warr_nth: "i < n \<Longrightarrow> <warr_assn n h c C> Array.nth C i <\<lambda> r. warr_assn n h c C * \<up>(h r
+lemma warr_nth: "i < n \<Longrightarrow> <warr_assn n h c C> Array.nth C i <\<lambda> r. warr_assn n h c C * \<up>(h r
     = c i)>"
   by (unfold warr_assn_def) sep_auto
 
@@ -271,7 +268,7 @@ lemma foldr_shift:
      (\<lambda> x. if x < k \<and> x \<in> V then c x + e else c x)"
   by (induction k arbitrary: c) (auto simp: fun_eq_iff less_Suc_eq)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wshift_set_rule:
+lemma wshift_set_rule:
   "<bool_array_set_assn n V Vi * warr_assn n h c C> wshift_imp Vi e C
    <\<lambda> _. bool_array_set_assn n V Vi * warr_assn n h (\<lambda> x. if x \<in> V then c x + h e else c x) C>"
 proof(cases "V \<subseteq> {..<n}")
@@ -309,7 +306,7 @@ lemma nbrs_filter: "nbrs (filter P es) u = filter (\<lambda> v. P (u, v)) (nbrs 
 
 text \<open>Copying and clearing weight arrays.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> ccopy_rule:
+lemma ccopy_rule:
   "<warr_assn n h c C' * warr_assn n h d C> ccopy_imp C' C <\<lambda> _. warr_assn n h c C' * warr_assn n h c C>"
 proof-
   have c: "<C \<mapsto>\<^sub>a l * C' \<mapsto>\<^sub>a l' * \<up>(length l = n)> ccopy_imp C' C
@@ -322,7 +319,7 @@ proof-
     by (sep_auto heap: c)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> czero_rule: "<warr_assn n h d C> czero_imp C <\<lambda> _. warr_assn n h (\<lambda> _. 0) C>"
+lemma czero_rule: "<warr_assn n h d C> czero_imp C <\<lambda> _. warr_assn n h (\<lambda> _. 0) C>"
   by (unfold czero_imp_def warr_assn_def) (sep_auto heap: fill_range_imp_rule)
 
 text \<open>The weight arrays as immutable fixed-universe maps with copying and clearing.\<close>
@@ -387,18 +384,18 @@ lemma nbrs_tight_out: "\<not> u < n \<Longrightarrow> nbrs (wctx_es (csr.wtight_
 
 end
 
-lemma \<^marker>\<open>provenance ai_human\<close> read_frame:
+lemma read_frame:
   assumes "<A> c <\<lambda> r. A * \<up>(P r)>"
   shows "<A * F> c <\<lambda> r. A * F * \<up>(P r)>"
   by (rule ht_frame_ac[OF assms, where R = F]) sep_auto+
 
-lemma \<^marker>\<open>provenance ai_human\<close> teq_rule:
+lemma teq_rule:
   assumes "h cu = c u" "<W> Array.nth C v <\<lambda> r. W * \<up>(h r = c v)>"
   shows "<W> teq_imp C cu Si u v <\<lambda> ok. W * \<up>(ok = (c u = c v))>"
   unfolding teq_imp_def
   by (sep_auto heap: assms(2) simp: h_eq_iff[symmetric] assms(1))
 
-lemma \<^marker>\<open>provenance ai_human\<close> teq_filt_rule:
+lemma teq_filt_rule:
   assumes "h cu = c u" "<W> Array.nth C v <\<lambda> r. W * \<up>(h r = c v)>"
     "c u = c v \<Longrightarrow> <A acc acci * F> fi v acci <\<lambda> r. A (f v acc) r * F>"
   shows "<A acc acci * (F * W)> filt_imp (teq_imp C cu) Si u fi v acci
@@ -418,13 +415,13 @@ begin
 
 text \<open>The tight iterator walks the neighbours in the tight graph.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> gtx_memb:
+lemma gtx_memb:
   "u < n \<Longrightarrow> <gtx X c1 c2 (Si, Gc, C1, C2)> smemb_imp u Si
    <\<lambda> b. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(b = (u \<in> X))>"
   unfolding gtx_def gxs_def prod.case
   by (sep_auto heap: smemb_rule)
 
-lemma \<^marker>\<open>provenance ai_human\<close> tnbs_rule:
+lemma tnbs_rule:
   assumes "\<And> acc acci x. x \<in> set (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) u) \<Longrightarrow>
                <A acc acci * F> fi x acci <\<lambda> r. A (f x acc) r * F>"
   shows "<gtx X c1 c2 Gh * A acc acci * F> tnbs Gh u fi acci
@@ -558,7 +555,7 @@ lemma tgt_max:
   using assms tgt_ne[of y]
   by blast
 
-lemma \<^marker>\<open>provenance ai_human\<close> gtx_frame:
+lemma gtx_frame:
   assumes "<B * gxs X Si Gc> c <\<lambda> r. B * gxs X Si Gc * \<up>(P r)>"
   shows "<B * gtx X c1 c2 (Si, Gc, C1, C2)> c
          <\<lambda> r. B * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(P r)>"
@@ -566,22 +563,22 @@ lemma \<^marker>\<open>provenance ai_human\<close> gtx_frame:
   by (rule ht_frame_ac[OF assms, where R = "warr_assn n h c1 C1 * warr_assn n h c2 C2"])
      (simp only: star_aci, rule ent_refl)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> gtx_lift:
+lemma gtx_lift:
   assumes "<gxs X Si Gc> c <\<lambda> r. gxs X Si Gc * \<up>(P r)>"
   shows "<gtx X c1 c2 (Si, Gc, C1, C2)> c <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(P r)>"
   by (rule gtx_frame[where B = emp, unfolded mult_1_left]) (rule assms)
 
-lemma \<^marker>\<open>provenance ai_human\<close> rd_c1: "y < n \<Longrightarrow> <gtx X c1 c2 (Si, Gc, C1, C2)> Array.nth C1 y
+lemma rd_c1: "y < n \<Longrightarrow> <gtx X c1 c2 (Si, Gc, C1, C2)> Array.nth C1 y
    <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(h r = c1 y)>"
   by (unfold gtx_def prod.case) (sep_auto heap: warr_nth)
 
-lemma \<^marker>\<open>provenance ai_human\<close> rd_c2: "y < n \<Longrightarrow> <gtx X c1 c2 (Si, Gc, C1, C2)> Array.nth C2 y
+lemma rd_c2: "y < n \<Longrightarrow> <gtx X c1 c2 (Si, Gc, C1, C2)> Array.nth C2 y
    <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(h r = c2 y)>"
   by (unfold gtx_def prod.case) (sep_auto heap: warr_nth)
 
 text \<open>A read compared with a value in the reals.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> rd_eq:
+lemma rd_eq:
   assumes "<G> Array.nth C y <\<lambda> r. G * \<up>(h r = b)>" "h m = a"
   shows "<G> Array.nth C y <\<lambda> r. G * \<up>((r = m) = (b = a))>"
   by (rule ht_cons_post[OF assms(1)])
@@ -594,7 +591,7 @@ lemma foldr_max:
   unfolding set_filter[symmetric]
   by (induction xs) (auto simp add: Max_insert max.commute simp del: set_filter split: if_splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> max_imp_rule:
+lemma max_imp_rule:
   assumes "\<And> y. y < n \<Longrightarrow> <G> P y <\<lambda> r. G * \<up>(r = p y)>"
     and "\<And> y. y < n \<Longrightarrow> <G> Array.nth C y <\<lambda> r. G * \<up>(h r = g y)>"
   shows "<G> max_imp P C <\<lambda> r. G * \<up>(map_option h r =
@@ -612,21 +609,21 @@ proof-
     by (rule ht_cons_post[OF ht_cons_pre[OF _ r]]) (sep_auto simp: foldr_max)+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> mS_rule:
+lemma mS_rule:
   "<gtx X c1 c2 (Si, Gc, C1, C2)> max_imp (s_imp Si) C1
    <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow>
           h (case r of None \<Rightarrow> 0 | Some x \<Rightarrow> x) = wctx_mS (csr.wtight_ctx X c1 c2))>"
   by (rule ht_cons_post[OF max_imp_rule[OF gtx_lift[OF s_imp_rule[OF X]] rd_c1]])
      (sep_auto simp: ctx_fields_n list_max set_srcs[symmetric] split: option.splits if_splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> mT_rule:
+lemma mT_rule:
   "<gtx X c1 c2 (Si, Gc, C1, C2)> max_imp (t_imp Si) C2
    <\<lambda> r. gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow>
           h (case r of None \<Rightarrow> 0 | Some x \<Rightarrow> x) = wctx_mT (csr.wtight_ctx X c1 c2))>"
   by (rule ht_cons_post[OF max_imp_rule[OF gtx_lift[OF t_imp_rule[OF X]] rd_c2]])
      (sep_auto simp: ctx_fields_n list_max set_tgts[symmetric] split: option.splits if_splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wst_imp_rule:
+lemma wst_imp_rule:
   assumes "y < n" and "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X
     c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
@@ -639,7 +636,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> wst_imp_rule:
         rd_eq[OF rd_c1[OF assms(1)] src_max[OF assms(1) _ assms(2)]]
         rd_eq[OF rd_c2[OF assms(1)] tgt_max[OF assms(1) _ assms(3)]])
 
-lemma \<^marker>\<open>provenance ai_human\<close> thas_nb_rule:
+lemma thas_nb_rule:
   "<gtx X c1 c2 Gh> thas_nb_imp Gh y
    <\<lambda> r. gtx X c1 c2 Gh * \<up>(r = (nbrs (wctx_es (csr.wtight_ctx X c1 c2)) y \<noteq> []))>"
   unfolding thas_nb_imp_def
@@ -662,7 +659,7 @@ proof-
     by (rule csr.has_tight_nb[OF X])
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> wsrc_imp_rule:
+lemma wsrc_imp_rule:
   assumes "y < n" and "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X
     c1 c2)"
   shows "<gtx X c1 c2 (Si, Gc, C1, C2)> wsrc_imp (Si, Gc, C1, C2) mS y
@@ -672,7 +669,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> wsrc_imp_rule:
   by (sep_auto heap: gtx_lift[OF s_imp_rule[OF X assms(1)]] thas_nb_rule
         rd_eq[OF rd_c1[OF assms(1)] src_max[OF assms(1) _ assms(2)]] simp: htn_eq[OF assms(1)])
 
-lemma \<^marker>\<open>provenance ai_human\<close> wtgt_imp_rule:
+lemma wtgt_imp_rule:
   assumes "y < n" and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X
     c1 c2)"
   shows "<bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> wtgt_imp Si Vi C2 mT y
@@ -686,7 +683,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> wtgt_imp_rule:
 lemma foldr_ins: "foldr (\<lambda> y W. if P y then Set.insert y W else W) xs V = V \<union> {y \<in> set xs. P y}"
   by (induction xs) auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> drop_imp_rule:
+lemma drop_imp_rule:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
   shows "<bool_array_set_assn n V Vi * gtx X c1 c2 (Si, Gc, C1, C2)> drop_imp (Si, Gc, C1, C2) mS Vi
          <\<lambda> _. bool_array_set_assn n (V \<union> {y. y < n \<and> (((y \<notin> X \<and> y \<in> S0 X) \<and>
@@ -794,7 +791,7 @@ lemma tfin_eq:
   unfolding csr.bfs_final_def
   by (simp only: tb.fin_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wsearch_single:
+lemma wsearch_single:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
   shows "<gtx X c1 c2 (Si, Gc, C1, C2) * F> find_range_imp (wst_imp Si C1 C2 mS mT) 0 n
@@ -804,7 +801,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> wsearch_single:
                   c1 c2))) [0..<n])>"
   by (rule find_range_imp_rule, rule read_frame, rule wst_imp_rule[OF _ assms]) assumption
 
-lemma \<^marker>\<open>provenance ai_human\<close> wsearch_collect:
+lemma wsearch_collect:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
   shows "<len_assn (Suc n) Fr * gtx X c1 c2 (Si, Gc, C1, C2)> collect_range_imp (wsrc_imp (Si, Gc, C1, C2) mS) n Fr
          <\<lambda> k. \<exists>\<^sub>A fl'. Fr \<mapsto>\<^sub>a fl' * gtx X c1 c2 (Si, Gc, C1, C2) * \<up>(length
@@ -822,7 +819,7 @@ proof(rule pull_len, goal_cases)
     by (rule collect_range_imp_rule[OF wsrc_imp_rule[OF _ assms]]) (simp_all add: 1)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> wsearch_bfs:
+lemma wsearch_bfs:
   assumes "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
     and "tb.bfs_sources ss"
     and "length fl = Suc n" "take (length ss) fl = ss"
@@ -983,7 +980,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> wsearch_rule:
+lemma wsearch_rule:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
   shows "<gtx X c1 c2 (Si, Gc, C1, C2) * work_assn n Vi Fr Bf Da Pa> wsearch_imp Gc Vi Fr Bf Da Pa Si C1 C2 mS mT
@@ -1023,7 +1020,7 @@ lemma wctx_intro:
   by (rule ent_ex_postI[where x = M], rule ent_ex_postI[where x = L])
      (use assms[unfolded ctx_fields] in sep_auto)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wtight_ctx_tail_raw:
+lemma wtight_ctx_tail_raw:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
     and "length lm = 2" "length lt = 2"
@@ -1036,7 +1033,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> wtight_ctx_tail_raw:
                Mi \<mapsto>\<^sub>a list_update (list_update lm 0 mS) 1 mT>"
   by (sep_auto heap: wsearch_rule[OF assms(1) assms(2)] simp: assms(3,4))
 
-lemma \<^marker>\<open>provenance ai_human\<close> wtight_ctx_tail:
+lemma wtight_ctx_tail:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
     and "length lm = 2" "length lt = 2"
@@ -1055,7 +1052,7 @@ qed
 
 text \<open>The context of a round, as specified in the loop: (C).\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> wtight_ctx_imp_rule:
+lemma wtight_ctx_imp_rule:
   "<gtx X c1 c2 (Si, Gc, C1, C2) * wws Vi Fr Bf Da Pa Mi Ti> wtight_ctx_imp Gc Vi Fr Bf Da Pa Mi Ti Si C1 C2
    <\<lambda> _. gtx X c1 c2 (Si, Gc, C1, C2) * wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2)>"
 proof-
@@ -1079,7 +1076,7 @@ qed
 
 text \<open>The path of the context: (P).\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> ti_reads:
+lemma ti_reads:
   assumes "length ti = 2"
     and "<Ti \<mapsto>\<^sub>a ti * F> (if ti ! 0 = 1 then do { Array.upd 0 (ti ! 1) Ra; return (Some 1) }
               else if ti ! 0 = 2 then do { l \<leftarrow> bfs_path Pa Ra (ti ! 1); return (Some l) } else return None)
@@ -1093,7 +1090,7 @@ proof-
         rule ht_bind[OF r], rule ht_pure_pre, elim conjE) (simp only: assms(2))
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> wctx_path_cases:
+lemma wctx_path_cases:
   assumes "length ti = 2"
   shows "<Ti \<mapsto>\<^sub>a ti * (wpath_assn Vi Da Pa (ti ! 0, ti ! 1) (csr.wtight_ctx X c1 c2) * parr_assn n Ra)>
            (if ti ! 0 = 1 then do { Array.upd 0 (ti ! 1) Ra; return (Some 1) }
@@ -1121,7 +1118,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> wctx_path_imp_rule:
+lemma wctx_path_imp_rule:
   "<wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) * parr_assn n Ra> wctx_path_imp Pa Ti Ra
    <\<lambda> r. wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) *
          path_assn n (wctx_path (csr.wtight_ctx X c1 c2)) r Ra>"
@@ -1130,7 +1127,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> wctx_path_imp_rule:
 
 subsubsection \<open>The Minimum Gap\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> gap_rule:
+lemma gap_rule:
   assumes "u < n" "v < n"
   shows "<\<up>(map_option h ai = a) * (F * (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2))>
            gap_imp C1 C2 (u \<in> X) Vi u v ai
@@ -1143,7 +1140,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> gap_rule:
 
 text \<open>The gaps of the exchange edges leaving an element.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> edge_part:
+lemma edge_part:
   assumes "u < n"
   shows "<gxs X Si Gc * \<up>(map_option h ai = a) *
           (bool_array_set_assn n V Vi * warr_assn n h c1 C1 * warr_assn n h c2 C2)>
@@ -1179,7 +1176,7 @@ qed
 
 text \<open>One element contributes the gaps of its edges, as a source and as a target.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> weps_step_rule:
+lemma weps_step_rule:
   assumes "u < n"
     and "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
@@ -1273,7 +1270,7 @@ proof-
     unfolding T_def S_def E_def g_def fst_conv snd_conv .
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> weps_fold:
+lemma weps_fold:
   assumes "csr.srcs (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mS = wctx_mS (csr.wtight_ctx X c1 c2)"
     and "csr.tgts (csr.exch_ctx X) \<noteq> [] \<longrightarrow> h mT = wctx_mT (csr.wtight_ctx X c1 c2)"
   shows "<\<up>(map_option h None = None) *
@@ -1288,7 +1285,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> weps_fold:
 
 text \<open>(E): without a path the visited array holds the reachable set.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> weps_imp_rule:
+lemma weps_imp_rule:
   assumes "wctx_path (csr.wtight_ctx X c1 c2) = None"
   shows "<gtx X c1 c2 (Si, Gc, C1, C2) * wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2)>
            weps_imp Gc Vi Mi Si C1 C2
@@ -1301,7 +1298,7 @@ subsubsection \<open>The Shift and the Stale Context\<close>
 
 text \<open>(S)\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> wshift_imp_rule:
+lemma wshift_imp_rule:
   assumes "wctx_path (csr.wtight_ctx X c1 c2) = None"
   shows "<wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) * warr_assn n h c C> wshift_imp Vi e C
          <\<lambda> _. wctx_assn Vi Fr Bf Da Pa Mi Ti (csr.wtight_ctx X c1 c2) *
@@ -1405,7 +1402,7 @@ qed
 
 text \<open>The loop on preallocated arrays.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> loop_correct:
+lemma loop_correct:
   "<(sol_assn {} Si) * warr_assn n h c Co * len_assn n C1 * len_assn n C2 *
     wws Vi Fr Bf Da Pa Mi Ti * (ost1 * ost2 * (case Gc of (Ba, Ga) \<Rightarrow>
       Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] * Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n)) *

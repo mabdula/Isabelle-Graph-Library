@@ -6,9 +6,6 @@ theory Push_Relabel_Generic_Imperative
     Data_Structures.Real_Embedding
 begin
 
-provenance ai
-
-
 section \<open>Imperative Refinement of the Generic Push-Relabel Algorithm\<close>
 
 text \<open>The operations of @{locale push_relabel_ops} are implemented once more, now on imperative
@@ -113,7 +110,7 @@ definition "push_bwd_imp d Si = do {
    c \<leftarrow> emap_get_imp (pi_bwd Si) d;
    augment_imp d u v (- min x c) Si }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) skip_scan_imp ::
+partial_function (heap) skip_scan_imp ::
   "('gi \<Rightarrow> 'v \<Rightarrow> bool Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> 'e Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> unit Heap) \<Rightarrow>
    ('e \<Rightarrow> bool Heap) \<Rightarrow> 'v \<Rightarrow> 'gi \<Rightarrow> unit Heap" where
   "skip_scan_imp has cur move adm u Ci = do {
@@ -150,7 +147,7 @@ text \<open>A relabelling scan improves the minimum held in the references of th
 
 definition "min_set_imp Si k d = do { pi_mf Si := True; pi_mk Si := k; pi_md Si := d }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) min_scan_imp ::
+partial_function (heap) min_scan_imp ::
   "('gi \<Rightarrow> 'v \<Rightarrow> bool Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> 'e Heap) \<Rightarrow> ('gi \<Rightarrow> 'v \<Rightarrow> unit Heap) \<Rightarrow> 'fi \<Rightarrow>
    ('e \<Rightarrow> 'v Heap) \<Rightarrow> 'v \<Rightarrow> 'gi \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> unit Heap" where
   "min_scan_imp has cur move Ri endp u Ci Si = do {
@@ -253,7 +250,7 @@ locale push_relabel_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t num
     and init_ctx_imp :: "'xc \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> unit Heap"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) push_relabel_loop_imp where
+partial_function (heap) push_relabel_loop_imp where
   "push_relabel_loop_imp Ci Si = do {
      op \<leftarrow> select_imp Ci Si;
      if op = Done then return ()
@@ -342,25 +339,25 @@ definition min_assn :: "(nat \<times> 'e) option \<Rightarrow> ('fi, 'xi, 'li, '
 
 definition "min_scratch_assn Si = (\<exists>\<^sub>A mb. min_assn mb Si)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_clear_rule: "<min_assn mb Si> pi_mf Si := False <\<lambda>_. min_assn None Si>"
+lemma min_clear_rule: "<min_assn mb Si> pi_mf Si := False <\<lambda>_. min_assn None Si>"
   unfolding min_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_set_rule: "<min_assn mb Si> min_set_imp Si k d <\<lambda>_. min_assn (Some (k, d)) Si>"
+lemma min_set_rule: "<min_assn mb Si> min_set_imp Si k d <\<lambda>_. min_assn (Some (k, d)) Si>"
   unfolding min_set_imp_def min_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_get_flag_rule: "<min_assn mb Si> !(pi_mf Si) <\<lambda>f. min_assn mb Si * \<up>(f = (mb \<noteq> None))>"
+lemma min_get_flag_rule: "<min_assn mb Si> !(pi_mf Si) <\<lambda>f. min_assn mb Si * \<up>(f = (mb \<noteq> None))>"
   unfolding min_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_get_label_rule:
+lemma min_get_label_rule:
   "<min_assn mb Si> !(pi_mk Si)
    <\<lambda>k. min_assn mb Si * \<up>(\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> k = k0)>"
   unfolding min_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_get_edge_rule:
+lemma min_get_edge_rule:
   "<min_assn mb Si> !(pi_md Si)
    <\<lambda>d. min_assn mb Si * \<up>(\<forall> k0 d0. mb = Some (k0, d0) \<longrightarrow> d = d0)>"
   unfolding min_assn_def
@@ -395,13 +392,13 @@ lemma invar_basic_iters:
   using assms
   by (auto elim!: invar_basic_props simp: out_graph_inv_delta in_graph_inv_delta)
 
-lemma \<^marker>\<open>provenance ai_human\<close> fst_state_rule:
+lemma fst_state_rule:
   "d \<in> \<E>
    \<Longrightarrow> <state_assn st Si> fst_imp (pi_ends Si) d <\<lambda>u. state_assn st Si * \<up>(u = fst d)>"
   unfolding state_assn_def
   by (sep_auto heap: fst_imp_rule)
 
-lemma \<^marker>\<open>provenance ai_human\<close> snd_state_rule:
+lemma snd_state_rule:
   "d \<in> \<E>
    \<Longrightarrow> <state_assn st Si> snd_imp (pi_ends Si) d <\<lambda>v. state_assn st Si * \<up>(v = snd d)>"
   unfolding state_assn_def
@@ -409,7 +406,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> snd_state_rule:
 
 subsubsection \<open>Pushing\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> admissible_fwd_imp_rule:
+lemma admissible_fwd_imp_rule:
   assumes "emap_invar fw" "label_invar l" "d \<in> \<E>"
   shows "<ends_assn Ei * emap_assn fw Fi * label_assn l Li> admissible_fwd_imp Ei Fi Li d
          <\<lambda>r. ends_assn Ei * emap_assn fw Fi * label_assn l Li *
@@ -418,7 +415,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> admissible_fwd_imp_rule:
   unfolding admissible_fwd_imp_def admissible_fwd_impl_def
   by (sep_auto heap: fst_imp_rule snd_imp_rule simp: eq_commute[of "h _"])
 
-lemma \<^marker>\<open>provenance ai_human\<close> admissible_bwd_imp_rule:
+lemma admissible_bwd_imp_rule:
   assumes "emap_invar bw" "label_invar l" "d \<in> \<E>"
   shows "<ends_assn Ei * emap_assn bw Bi * label_assn l Li> admissible_bwd_imp Ei Bi Li d
          <\<lambda>r. ends_assn Ei * emap_assn bw Bi * label_assn l Li *
@@ -427,7 +424,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> admissible_bwd_imp_rule:
   unfolding admissible_bwd_imp_def admissible_bwd_impl_def
   by (sep_auto heap: fst_imp_rule snd_imp_rule simp: eq_commute[of "h _"])
 
-lemma \<^marker>\<open>provenance ai_human\<close> augment_imp_rule:
+lemma augment_imp_rule:
   assumes "emap_invar (pr_fwd st)" "emap_invar (pr_bwd st)" "ex_invar (pr_excess st)" "d \<in> \<E>"
   shows "<state_assn st Si> augment_imp d (fst d) (snd d) \<delta> Si
          <\<lambda>_. state_assn (case augment_impl d (h \<delta>) (pr_fwd st) (pr_bwd st) (pr_excess st) of
@@ -436,28 +433,28 @@ lemma \<^marker>\<open>provenance ai_human\<close> augment_imp_rule:
   unfolding state_assn_def augment_imp_def augment_impl_def Let_def
   by (sep_auto simp: ex_map.fixed_univ_map_upd_invar ex_map.fixed_univ_map_upd h_add)
 
-lemma \<^marker>\<open>provenance ai_human\<close> ex_get_state_rule:
+lemma ex_get_state_rule:
   assumes "ex_invar (pr_excess st)" "v \<in> \<V>"
   shows "<state_assn st Si> ex_get_imp (pi_ex Si) v
          <\<lambda>x. state_assn st Si * \<up>(ex_get (pr_excess st) v = h x)>"
   using assms unfolding state_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> fwd_get_state_rule:
+lemma fwd_get_state_rule:
   assumes "emap_invar (pr_fwd st)" "d \<in> \<E>"
   shows "<state_assn st Si> emap_get_imp (pi_fwd Si) d
          <\<lambda>x. state_assn st Si * \<up>(emap_get (pr_fwd st) d = h x)>"
   using assms unfolding state_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> bwd_get_state_rule:
+lemma bwd_get_state_rule:
   assumes "emap_invar (pr_bwd st)" "d \<in> \<E>"
   shows "<state_assn st Si> emap_get_imp (pi_bwd Si) d
          <\<lambda>x. state_assn st Si * \<up>(emap_get (pr_bwd st) d = h x)>"
   using assms unfolding state_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> push_fwd_imp_rule:
+lemma push_fwd_imp_rule:
   assumes "invar_basic st" "d \<in> \<E>"
   shows "<state_assn st Si> push_fwd_imp d Si <\<lambda>_. state_assn (push_fwd_impl d st) Si>"
 proof-
@@ -471,7 +468,7 @@ proof-
                  simp: push_fwd_impl_def Let_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> push_bwd_imp_rule:
+lemma push_bwd_imp_rule:
   assumes "invar_basic st" "d \<in> \<E>"
   shows "<state_assn st Si> push_bwd_imp d Si <\<lambda>_. state_assn (push_bwd_impl d st) Si>"
 proof-
@@ -508,7 +505,7 @@ proof-
     by (auto simp: it.idx_move_invar it.idx_move_remaining it.idx_move_abstract card_gt_0_iff)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> skip_scan_imp_rule:
+lemma skip_scan_imp_rule:
   assumes it: "indexed_iterable_set_imp it_invar it_abstract cur has it_iterated it_remaining move
                  it_reset \<V> A cur_i has_i move_i reset_i"
       and "it_invar C" "u \<in> \<V>" "finite (it_remaining C u)"
@@ -542,7 +539,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> skip_imp_rule:
+lemma skip_imp_rule:
   assumes "invar_basic st" "u \<in> \<V>"
   shows "<state_assn st Si> skip_imp u Si <\<lambda>_. state_assn (skip_impl u st) Si>"
 proof-
@@ -582,7 +579,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> move_imp_rule:
+lemma move_imp_rule:
   assumes "invar_basic st" "u \<in> \<V>" "current_res st u \<noteq> None"
   shows "<state_assn st Si> move_imp u Si <\<lambda>_. state_assn (move_impl u st) Si>"
 proof(cases "out_has (pr_out st) u")
@@ -610,7 +607,7 @@ next
                  simp: False move_impl_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> advance_imp_rule:
+lemma advance_imp_rule:
   assumes "invar_state st" "u \<in> \<V>" "current_res st u = Some e"
           "\<not> admissible (flow_abs st) (labels_abs st) e"
   shows "<state_assn st Si> advance_imp u Si <\<lambda>_. state_assn (advance_impl u st) Si>"
@@ -626,7 +623,7 @@ qed
 
 subsubsection \<open>Relabelling\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_scan_imp_rule:
+lemma min_scan_imp_rule:
   assumes it: "indexed_iterable_set_imp it_invar it_abstract cur has it_iterated it_remaining move
                  it_reset \<V> A cur_i has_i move_i reset_i"
       and "it_invar C" "u \<in> \<V>" "finite (it_remaining C u)" "emap_invar r" "label_invar l"
@@ -679,7 +676,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> new_label_imp_rule:
+lemma new_label_imp_rule:
   assumes "invar_state st" "relabel_precond s t (flow_abs st) (labels_abs st) u"
   shows "<state_assn st Si> new_label_imp u Si
          <\<lambda>k. case new_label (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) u of
@@ -766,7 +763,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> change_label_imp_rule:
+lemma change_label_imp_rule:
   assumes "label_invar (pr_labels st)" "count_invar (pr_counts st)" "v \<in> \<V>"
           "label_get (pr_labels st) v < 2 * card \<V>" "k' < 2 * card \<V>"
   shows "<state_assn st Si> change_label_imp v k' Si
@@ -776,7 +773,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> change_label_imp_rule:
   unfolding change_label_imp_def change_label_def Let_def state_assn_def
   by (sep_auto simp: count_map.fixed_univ_map_upd_invar count_map.fixed_univ_map_upd)
 
-lemma \<^marker>\<open>provenance ai_human\<close> relabel_imp_rule:
+lemma relabel_imp_rule:
   assumes "invar_state st" "relabel_precond s t (flow_abs st) (labels_abs st) u"
   shows "<state_assn st Si> relabel_imp u Si <\<lambda>_. state_assn (relabel_impl u st) Si>"
 proof-
@@ -812,7 +809,7 @@ definition "gap_frame_assn Si = (\<lambda> (cnt, og, ig).
    count_assn cnt (pi_cnt Si) * out_assn og (pi_out Si) * in_assn ig (pi_in Si) *
    \<up>(count_invar cnt \<and> out_invar og \<and> in_invar ig))"
 
-lemma \<^marker>\<open>provenance ai_human\<close> gap_step_imp_rule:
+lemma gap_step_imp_rule:
   assumes "label_invar (prod.fst acc)" "v \<in> \<V>" "k < label_get (prod.fst acc) v"
           "label_get (prod.fst acc) v < card \<V>"
   shows "(\<exists> k'. card \<V> \<le> k' \<and> prod.fst (gap_step k acc v) = label_upd (prod.fst acc) v k') \<and>
@@ -846,7 +843,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> gap_imp_rule:
+lemma gap_imp_rule:
   assumes "label_invar (pr_labels st)" "count_invar (pr_counts st)" "out_invar (pr_out st)"
           "in_invar (pr_in st)"
   shows "<state_assn st Si> gap_imp k Si <\<lambda>_. state_assn (gap_impl k st) Si>"
@@ -867,21 +864,21 @@ proof-
     by (sep_auto heap: gf)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> label_get_state_rule:
+lemma label_get_state_rule:
   assumes "label_invar (pr_labels st)" "v \<in> \<V>"
   shows "<state_assn st Si> label_get_imp (pi_lab Si) v
          <\<lambda>x. state_assn st Si * \<up>(x = label_get (pr_labels st) v)>"
   using assms unfolding state_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> count_get_state_rule:
+lemma count_get_state_rule:
   assumes "count_invar (pr_counts st)" "k < 2 * card \<V>"
   shows "<state_assn st Si> count_get_imp (pi_cnt Si) k
          <\<lambda>x. state_assn st Si * \<up>(x = count_get (pr_counts st) k)>"
   using assms unfolding state_assn_def
   by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> relabel_gap_imp_rule:
+lemma relabel_gap_imp_rule:
   assumes "invar_state st" "relabel_precond s t (flow_abs st) (labels_abs st) u"
   shows "<state_assn st Si> relabel_gap_imp u Si <\<lambda>_. state_assn (relabel_gap_impl u st) Si>"
 proof-
@@ -910,7 +907,7 @@ lemma good_op_push_edge:
   using o_edge_res[of "F d"] o_edge_res[of "B d"]
   by (auto simp: good_op_def elim!: push_precondE admissibleE)
 
-lemma \<^marker>\<open>provenance ai_human\<close> apply_op_imp_rule:
+lemma apply_op_imp_rule:
   assumes "invar_state st" "good_op st op"
   shows "<state_assn st Si> apply_op_imp op Si <\<lambda>_. state_assn (apply_op op st) Si>"
 proof(cases op)
@@ -983,7 +980,7 @@ definition "init_frame_assn Si = (\<lambda> (fw, bw, x).
 
 definition "init_invar = (\<lambda> (fw, bw, x). emap_invar fw \<and> emap_invar bw \<and> ex_invar x)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_step_imp_rule:
+lemma init_step_imp_rule:
   assumes "init_invar acc" "d \<in> \<E>"
   shows "init_invar (init_step acc d) \<and>
          <init_frame_assn Si acc> init_step_imp Si d <\<lambda>_. init_frame_assn Si (init_step acc d)>"
@@ -1010,7 +1007,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_imp_rule: "<init_assn Si> init_imp Si <\<lambda>_. state_assn init_state Si>"
+lemma init_imp_rule: "<init_assn Si> init_imp Si <\<lambda>_. state_assn init_state Si>"
 proof-
   obtain fw bw x where
     res: "edge_fold init_step (emap_init, emap_init, ex_init) = (fw, bw, x)"
@@ -1035,7 +1032,7 @@ qed
 
 subsubsection \<open>The Loop\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_loop_imp_rule:
+lemma push_relabel_loop_imp_rule:
   assumes "invar_state st" "ctx_invar st"
   shows "<state_assn st Si * ctx_assn (pr_ctx st) Ci> push_relabel_loop_imp Ci Si
          <\<lambda>_. state_assn (push_relabel_loop st) Si * ctx_assn (pr_ctx (push_relabel_loop st)) Ci>"
@@ -1102,7 +1099,7 @@ text \<open>Started on the initial data structures, the program leaves the resul
       algorithm, a maximum flow by @{thm push_relabel_correct}, in the backward residual
       capacities.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_imp_rule:
+lemma push_relabel_imp_rule:
   "<init_assn Si * ctx_init_assn Ci> push_relabel_imp Ci Si
    <\<lambda>_. ends_assn (pi_ends Si) * emap_assn caps (pi_caps Si) * emap_assn push_relabel (pi_bwd Si) *
         true>"

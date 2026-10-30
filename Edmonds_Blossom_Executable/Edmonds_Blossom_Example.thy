@@ -8,85 +8,23 @@ provenance ai_human
 section \<open>The executable blossom algorithm on red-black trees\<close>
 
 text \<open>Graphs, matchings and the encapsulated alternating forest use red-black trees.
-  Vertices are natural numbers. The universe of vertices is finite: it consists of the numbers
-  below a sentinel, which is kept fixed throughout a run. The sentinel is chosen such that the
-  vertices of the input are a strict subset of the universe. Contraction chooses the smallest
-  number that is not a vertex of the current graph.\<close>
+  Vertices are natural numbers. A sentinel outside the input is kept fixed throughout a run;
+  contraction chooses fresh vertices distinct from that sentinel.\<close>
 
-subsection \<open>The universe and fresh vertices\<close>
+subsection \<open>Fresh vertices and vertex lists\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> "sentinel (vs :: nat list) = Suc (Suc (foldr max vs 0))"
+definition \<^marker>\<open>provenance ai_human\<close> "fresh_nat (vs :: nat list) = Suc (foldr max vs 0)"
 
 lemma foldr_max_ge: "x \<in> set vs \<Longrightarrow> x \<le> foldr max vs (a :: nat)"
   by (induction vs) auto
 
-lemma vs_strict_sentinel: "set vs \<subset> {..<sentinel vs}"
-proof(rule psubsetI)
-  show "set vs \<subseteq> {..<sentinel vs}"
-    using foldr_max_ge[of _ vs 0]
-    by (fastforce simp: sentinel_def)
-  have "Suc (foldr max vs 0) \<notin> set vs"
-    using foldr_max_ge[of _ vs 0]
-    by fastforce
-  thus "set vs \<noteq> {..<sentinel vs}"
-    by (auto simp: sentinel_def)
-qed
+lemma fresh_nat: "fresh_nat vs \<notin> set vs"
+  using foldr_max_ge[of _ vs 0]
+  by (fastforce simp: fresh_nat_def)
 
-text \<open>The smallest number that is not in a list is at most the length of the list.\<close>
-
-definition \<^marker>\<open>provenance ai_human\<close> "fresh_nat (vs :: nat list) =
-  (case find (\<lambda>n. n \<notin> set vs) [0..<Suc (length vs)] of Some n \<Rightarrow> n | None \<Rightarrow> length vs)"
-
-lemma fresh_nat_exists: "\<exists>n \<le> length vs. n \<notin> set vs"
-proof(rule ccontr)
-  assume "\<not> (\<exists>n \<le> length vs. n \<notin> set vs)"
-  hence "{..length vs} \<subseteq> set vs"
-    by auto
-  hence "card {..length vs} \<le> card (set vs)"
-    by (rule card_mono[OF List.finite_set])
-  thus False
-    using card_length[of vs]
-    by simp
-qed
-
-lemma fresh_nat:
-  "fresh_nat vs \<notin> set vs" "m < fresh_nat vs \<Longrightarrow> m \<in> set vs"
-proof-
-  obtain n where "n \<le> length vs" "n \<notin> set vs"
-    using fresh_nat_exists
-    by blast
-  hence "find (\<lambda>n. n \<notin> set vs) [0..<Suc (length vs)] \<noteq> None"
-    by (auto simp del: upt_Suc simp: find_None_iff less_Suc_eq_le)
-  then obtain x where x: "find (\<lambda>n. n \<notin> set vs) [0..<Suc (length vs)] = Some x"
-    by blast
-  then obtain i where "i < Suc (length vs)" "x = i" "i \<notin> set vs" "\<And>j. j < i \<Longrightarrow> j \<in> set vs"
-    by (auto simp del: upt_Suc simp: find_Some_iff)
-  moreover have "fresh_nat vs = x"
-    using x
-    by (simp del: upt_Suc add: fresh_nat_def)
-  ultimately have "x \<notin> set vs" "\<And>m. m < x \<Longrightarrow> m \<in> set vs" "fresh_nat vs = x"
-    by auto
-  thus "fresh_nat vs \<notin> set vs" "m < fresh_nat vs \<Longrightarrow> m \<in> set vs"
-    by auto
-qed
-
-lemma fresh_nat_in_univ:
-  assumes "set vs \<subset> {..<nil}"
-  shows "fresh_nat vs \<notin> set vs" "fresh_nat vs \<in> {..<nil}"
-proof-
-  show "fresh_nat vs \<notin> set vs"
-    by (rule fresh_nat(1))
-  show "fresh_nat vs \<in> {..<nil}"
-  proof(rule ccontr)
-    assume "fresh_nat vs \<notin> {..<nil}"
-    hence "{..<nil} \<subseteq> set vs"
-      using fresh_nat(2)
-      by auto
-    thus False
-      using assms
-      by blast
-  qed
-qed
+lemma fresh_nat_avoids_sentinel:
+  "fresh_nat (nil # vs) \<notin> set vs" "fresh_nat (nil # vs) \<noteq> nil"
+  using fresh_nat[of "nil # vs"] by auto
 
 lemma vset_to_list_rbt: "vset_inv N \<Longrightarrow> set (Tree2.inorder N) = Tree2.set_tree N"
   by simp
@@ -98,7 +36,7 @@ definition "blossom_map_update t (k :: nat) (v :: nat) = update k v t"
 definition "blossom_map_get (nil :: nat) t k =
   (case lookup t k of None \<Rightarrow> nil | Some v \<Rightarrow> v)"
 
-definition "blossom_set_invar (nil :: nat) S = (vset_inv S \<and> t_set S \<subseteq> {..<nil})"
+definition "blossom_set_invar (nil :: nat) S = (vset_inv S \<and> nil \<notin> t_set S)"
 
 definition "blossom_set_iterate f init S = foldl f init (Tree2.inorder S)"
 
@@ -108,7 +46,7 @@ lemma blossom_rbt_map:
      (auto simp: M.map_update M.invar_update blossom_map_update_def blossom_map_get_def)
 
 lemma blossom_rbt_set:
-  "fixed_univ_set {..<nil} (blossom_set_invar nil) t_set
+  "fixed_univ_set (- {nil}) (blossom_set_invar nil) t_set
     vset_empty vset_insert vset_delete isin"
   by unfold_locales
      (auto simp: blossom_set_invar_def set.invar_empty[folded RBT_Set.empty_def]
@@ -132,7 +70,7 @@ proof-
 qed
 
 global_interpretation matching_rbt: matching_augmentation
-  where K = "{..<nil}" and buddy_invar = M.invar and buddy_upd = blossom_map_update
+  where K = "- {nil}" and buddy_invar = M.invar and buddy_upd = blossom_map_update
     and buddy_get = "blossom_map_get nil" and buddy_empty = Leaf and nil = nil
   for nil
   defines matching_abs_rbt = matching_rbt.\<M>
@@ -156,7 +94,7 @@ global_interpretation gm: Graph_Matching_Specs
   where empty = map_empty and delete = RBT_Map.delete and lookup = lookup and insert = vset_insert
     and isin = isin and t_set = t_set and sel = sel and update = update and adjmap_inv = adj_inv
     and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
-    and K = "{..<nil}" and mate_empty = Leaf
+    and K = "- {nil}" and mate_empty = Leaf
     and matching_invar_abs = "matching_invar_abs_rbt nil" and matching_abs = "matching_abs_rbt nil"
     and mate_lookup = "matching_lookup_rbt nil" and mate_partner = "matching_partner_rbt nil"
     and mate_augment = augment_rbt and mate_contract = "contract_path_rbt nil"
@@ -176,7 +114,7 @@ proof(rule Graph_Matching_Specs.intro)
           vset_empty vset_delete vset_inv"
     using G.Pair_Graph_Specs_axioms
     by (simp add: RBT_Set.empty_def adj_inv_def map_empty_def)
-  show "blossom_matching {..<nil} Leaf (matching_invar_abs_rbt nil) (matching_lookup_rbt nil)
+  show "blossom_matching (- {nil}) Leaf (matching_invar_abs_rbt nil) (matching_lookup_rbt nil)
     (matching_partner_rbt nil) augment_rbt (matching_abs_rbt nil) (contract_path_rbt nil)
     (expand_path_rbt nil) add_alternatingly_rbt"
     by (rule blossom_matching_rbt)
@@ -185,7 +123,7 @@ proof(rule Graph_Matching_Specs.intro)
 qed
 
 global_interpretation forest_rbt: forest_manipulation
-  where K = "{..<nil}"
+  where K = "- {nil}"
     and parent_invar = M.invar and parent_upd = blossom_map_update
     and parent_get = "blossom_map_get nil"
     and origin_invar = M.invar and origin_upd = blossom_map_update
@@ -216,7 +154,7 @@ global_interpretation compute_alt_path: Compute_Alt_Path
   where empty = map_empty and delete = RBT_Map.delete and lookup = lookup and insert = vset_insert
     and isin = isin and t_set = t_set and sel = sel and update = update and adjmap_inv = adj_inv
     and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
-    and K = "{..<nil}" and mate_empty = Leaf
+    and K = "- {nil}" and mate_empty = Leaf
     and matching_invar_abs = "matching_invar_abs_rbt nil" and matching_abs = "matching_abs_rbt nil"
     and mate_lookup = "matching_lookup_rbt nil" and mate_partner = "matching_partner_rbt nil"
     and mate_augment = augment_rbt and mate_contract = "contract_path_rbt nil"
@@ -258,7 +196,7 @@ global_interpretation find_aug_path_subprocedures: Find_Aug_Path_subprocedures
   where empty = map_empty and delete = RBT_Map.delete and lookup = lookup and insert = vset_insert
     and isin = isin and t_set = t_set and sel = sel and update = update and adjmap_inv = adj_inv
     and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
-    and K = "{..<nil}" and mate_empty = Leaf
+    and K = "- {nil}" and mate_empty = Leaf
     and matching_invar_abs = "matching_invar_abs_rbt nil" and matching_abs = "matching_abs_rbt nil"
     and mate_lookup = "matching_lookup_rbt nil" and mate_partner = "matching_partner_rbt nil"
     and mate_augment = augment_rbt and mate_contract = "contract_path_rbt nil"
@@ -278,7 +216,7 @@ global_interpretation find_aug_path: Find_Aug_Path
   where empty = map_empty and delete = RBT_Map.delete and lookup = lookup and insert = vset_insert
     and isin = isin and t_set = t_set and sel = sel and update = update and adjmap_inv = adj_inv
     and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
-    and K = "{..<nil}" and mate_empty = Leaf
+    and K = "- {nil}" and mate_empty = Leaf
     and matching_invar_abs = "matching_invar_abs_rbt nil" and matching_abs = "matching_abs_rbt nil"
     and mate_lookup = "matching_lookup_rbt nil" and mate_partner = "matching_partner_rbt nil"
     and mate_augment = augment_rbt and mate_contract = "contract_path_rbt nil"
@@ -286,7 +224,7 @@ global_interpretation find_aug_path: Find_Aug_Path
     and vset_to_list = Tree2.inorder
     and G = G and vs = vs and M = N
     and blos_search = "compute_match_blossom_impl nil"
-    and create_vert = fresh_nat
+    and create_vert = "\<lambda>vs. fresh_nat (nil # vs)"
   for nil G vs N
   defines find_aug_path_impl = find_aug_path.Find_Aug_Path_impl
     and find_aug_path_initial_state = find_aug_path.initial_state
@@ -300,18 +238,16 @@ global_interpretation find_aug_path: Find_Aug_Path
   apply (fold graph_input_rbt_def matching_invar_rbt_def ugraph_abs_rbt_def matching_abs_rbt_def)
   by ((rule find_aug_path_subprocedures.compute_match_blossom[
         folded graph_input_rbt_def matching_invar_rbt_def ugraph_abs_rbt_def matching_abs_rbt_def];
-        assumption) | rule fresh_nat_in_univ; assumption)+
+        assumption) | simp add: fresh_nat_avoids_sentinel)+
 
 lemma find_aug_path_run_impl_correct:
-  "\<lbrakk>graph_input_rbt nil G vs; set vs \<subset> {..<nil}; matching_invar_rbt nil G N;
-    find_aug_path_run_impl nil G vs N = Some p\<rbrakk>
+  "\<lbrakk>graph_input_rbt nil G vs; matching_invar_rbt nil G N; find_aug_path_run_impl nil G vs N = Some p\<rbrakk>
    \<Longrightarrow> graph_augmenting_path (ugraph_abs_rbt G) (matching_abs_rbt nil N) p"
-  "\<lbrakk>graph_input_rbt nil G vs; set vs \<subset> {..<nil}; matching_invar_rbt nil G N;
+  "\<lbrakk>graph_input_rbt nil G vs; matching_invar_rbt nil G N;
     \<exists>p. graph_augmenting_path (ugraph_abs_rbt G) (matching_abs_rbt nil N) p\<rbrakk>
    \<Longrightarrow> find_aug_path_run_impl nil G vs N \<noteq> None"
   using find_aug_path.Find_Aug_Path_run_impl_correct[unfolded find_aug_path.Find_Aug_Path_axiom_def,
-          folded graph_input_rbt_def matching_invar_rbt_def ugraph_abs_rbt_def matching_abs_rbt_def,
-          OF conjI[OF _ conjI]]
+          folded graph_input_rbt_def matching_invar_rbt_def ugraph_abs_rbt_def matching_abs_rbt_def]
   by blast+
 
 subsection \<open>The algorithm\<close>
@@ -320,7 +256,7 @@ global_interpretation find_max_matching: Find_Max_Matching
   where empty = map_empty and delete = RBT_Map.delete and lookup = lookup and insert = vset_insert
     and isin = isin and t_set = t_set and sel = sel and update = update and adjmap_inv = adj_inv
     and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
-    and K = "{..<nil}" and mate_empty = Leaf
+    and K = "- {nil}" and mate_empty = Leaf
     and matching_invar_abs = "matching_invar_abs_rbt nil" and matching_abs = "matching_abs_rbt nil"
     and mate_lookup = "matching_lookup_rbt nil" and mate_partner = "matching_partner_rbt nil"
     and mate_augment = augment_rbt and mate_contract = "contract_path_rbt nil"
@@ -337,20 +273,20 @@ global_interpretation find_max_matching: Find_Max_Matching
       insert find_aug_path_run_impl_correct, blast+)
 
 definition "find_max_matching_run_impl G vs =
-  find_max_matching_run_core (sentinel vs) G vs"
+  find_max_matching_run_core (fresh_nat vs) G vs"
 
 subsection \<open>Correctness of the executable algorithm\<close>
 
 context
   fixes nil :: nat and G :: "((nat \<times> (nat \<times> color) tree) \<times> color) tree" and vs :: "nat list"
-  assumes graph_input: "graph_input_rbt nil G vs" and vs_strict: "set vs \<subset> {..<nil}"
+  assumes graph_input: "graph_input_rbt nil G vs"
 begin
 
 interpretation find_max_matching_proofs: Find_Max_Matching_thms
   where empty = map_empty and delete = RBT_Map.delete and lookup = lookup and insert = vset_insert
     and isin = isin and t_set = t_set and sel = sel and update = update and adjmap_inv = adj_inv
     and vset_empty = vset_empty and vset_delete = vset_delete and vset_inv = vset_inv
-    and K = "{..<nil}" and mate_empty = Leaf
+    and K = "- {nil}" and mate_empty = Leaf
     and matching_invar_abs = "matching_invar_abs_rbt nil" and matching_abs = "matching_abs_rbt nil"
     and mate_lookup = "matching_lookup_rbt nil" and mate_partner = "matching_partner_rbt nil"
     and mate_augment = augment_rbt and mate_contract = "contract_path_rbt nil"
@@ -359,7 +295,7 @@ interpretation find_max_matching_proofs: Find_Max_Matching_thms
     and G = G and vs = vs and aug_path_search = "find_aug_path_run_impl nil G vs"
   by (intro Find_Max_Matching_thms.intro find_max_matching.Find_Max_Matching_axioms
             Find_Max_Matching_thms_axioms.intro)
-     (simp add: find_max_matching.Find_Max_Matching_axiom_def graph_input vs_strict)
+     (simp add: find_max_matching.Find_Max_Matching_axiom_def graph_input)
 
 lemmas edmonds_blossom_core_correct_1 =
   find_max_matching_proofs.Find_Max_Matching_correct_1[
@@ -378,16 +314,16 @@ lemmas edmonds_blossom_core_correct_2 =
 end
 
 lemma edmonds_blossom_correct_1:
-  "graph_input_rbt (sentinel vs) G vs \<Longrightarrow>
+  "graph_input_rbt (fresh_nat vs) G vs \<Longrightarrow>
     max_card_matching (ugraph_abs_rbt G)
-      (matching_abs_rbt (sentinel vs) (current_matching (find_max_matching_run_impl G vs)))"
-  using edmonds_blossom_core_correct_1[where nil="sentinel vs" and G=G and vs=vs, OF _ vs_strict_sentinel]
+      (matching_abs_rbt (fresh_nat vs) (current_matching (find_max_matching_run_impl G vs)))"
+  using edmonds_blossom_core_correct_1[where nil="fresh_nat vs" and G=G and vs=vs]
   by (simp add: find_max_matching_run_impl_def)
 
 lemma edmonds_blossom_correct_2:
-  "graph_input_rbt (sentinel vs) G vs \<Longrightarrow>
-    matching_invar_rbt (sentinel vs) G (current_matching (find_max_matching_run_impl G vs))"
-  using edmonds_blossom_core_correct_2[where nil="sentinel vs" and G=G and vs=vs, OF _ vs_strict_sentinel]
+  "graph_input_rbt (fresh_nat vs) G vs \<Longrightarrow>
+    matching_invar_rbt (fresh_nat vs) G (current_matching (find_max_matching_run_impl G vs))"
+  using edmonds_blossom_core_correct_2[where nil="fresh_nat vs" and G=G and vs=vs]
   by (simp add: find_max_matching_run_impl_def)
 
 subsection \<open>Code generation\<close>
@@ -422,13 +358,13 @@ definition "demo_vs = [0, 1, 2, 3, 4, 5::nat]"
 
 value "Tree2.inorder (current_matching (find_max_matching_run_impl demo_G demo_vs))"
 
-lemma demo_input: "graph_input_rbt (sentinel demo_vs) demo_G demo_vs"
+lemma demo_input: "graph_input_rbt (fresh_nat demo_vs) demo_G demo_vs"
   unfolding demo_G_def
-  by (rule gm.from_list_graph_input) (auto simp: demo_edges_def demo_vs_def dVs_eq sentinel_def)
+  by (rule gm.from_list_graph_input) (auto simp: demo_edges_def demo_vs_def dVs_eq fresh_nat_def)
 
 lemma demo_max:
   "max_card_matching (ugraph_abs_rbt demo_G)
-     (matching_abs_rbt (sentinel demo_vs) (current_matching (find_max_matching_run_impl demo_G demo_vs)))"
+     (matching_abs_rbt (fresh_nat demo_vs) (current_matching (find_max_matching_run_impl demo_G demo_vs)))"
   by (rule edmonds_blossom_correct_1[OF demo_input])
 
 export_code find_max_matching_run_impl in SML module_name Edmonds_Blossom

@@ -8,9 +8,6 @@ theory Network_Simplex_Instantiation_Refinement
           Use_Network_Simplex.Rooted_Arborescense_Refinement
 begin
 
-provenance ai
-
-
 section \<open>Imperative refinement of the orchestrator @{const initial_basis_code_spec.solve}\<close>
 
 text \<open>This theory assembles the imperative counterpart of the top-level functional orchestrator
@@ -50,7 +47,7 @@ text \<open>The concrete counterpart of @{term \<open>list_all (\<lambda>k. f ! 
       walk the flow array over the artificial index range @{term \<open>[i..<hi]\<close>} and report whether every
       artificial edge carries zero flow.  Purely a read loop over one array; no allocation.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_art_imp ::
+partial_function (heap) scan_art_imp ::
   "('n::{heap,zero}) array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap"
   where
   "scan_art_imp fa i hi =
@@ -63,7 +60,7 @@ text \<open>@{const scan_art_imp} computes exactly the functional test
       untouched.  By induction on the remaining length @{term \<open>hi - i\<close>}, unfolding the fixpoint one
       step per iteration.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> scan_art_imp_rule:
+lemma scan_art_imp_rule:
   "hi \<le> length xs \<Longrightarrow>
    <fa \<mapsto>\<^sub>a xs> scan_art_imp fa i hi <\<lambda>b. fa \<mapsto>\<^sub>a xs
      * \<up>(b = list_all (\<lambda>k. xs ! k = 0) [i..<hi])>"
@@ -179,7 +176,7 @@ text \<open>The join (apex / LCA) of @{term u} and @{term v}: the two pointers c
       the smaller subtree size (@{const snum_impl}) climbing to its parent, until they meet --- the
       imperative counterpart of @{const join_of}.  This mirrors the convergence of
       @{const join_paths_loop_imp} but keeps only the meeting vertex.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) join_of_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
+partial_function (heap) join_of_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "join_of_imp Ti u v =
      (if u = v then return u
       else do { snu \<leftarrow> Array.nth (snum_impl Ti) u;
@@ -205,7 +202,7 @@ text \<open>The snum-driven climb refines the functional @{const join_of}: for a
       of @{term cu} and @{term cv} whose strictly-below prefixes are disjoint, @{const join_of_imp}
       returns @{term j}.  Proved by strong induction on the combined remaining root-path length, the
       exact skeleton of @{thm join_paths_loop_imp_rule} but tracking only the meeting vertex.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> join_of_imp_rule:
+lemma join_of_imp_rule:
   "\<lbrakk>arb_invar r V S; cu \<in> V; cv \<in> V; j \<in> set (follow (prnt S) cu);
             j \<in> set (follow (prnt S) cv);
     set (takeWhile (\<lambda>x. x \<noteq> j) (follow (prnt S) cu))
@@ -258,7 +255,7 @@ qed
 text \<open>Specialised to the deepest common ancestor: @{const join_of_imp} returns exactly
       @{term \<open>join_of (prnt S) u v\<close>}.  The common-ancestor side conditions of @{thm join_of_imp_rule}
       are the @{thm join_of_mem} membership and @{thm join_takeWhile_disjoint} disjointness at the join.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> join_of_imp_correct:
+lemma join_of_imp_correct:
   "\<lbrakk>arb_invar r V S; u \<in> V; v \<in> V\<rbrakk>
    \<Longrightarrow> <ndtree_assn V S Ti> join_of_imp Ti u v <\<lambda>res. ndtree_assn V S Ti
      * \<up>(res = join_of (prnt S) u v)>"
@@ -268,14 +265,14 @@ lemma \<^marker>\<open>provenance ai_human\<close> join_of_imp_correct:
 text \<open>The functional \<open>swap_edge_impl S x u v = update_tree S u v x (join_of (prnt S) u v)\<close>,
       imperatively: compute the join of the entering edge's endpoints and hand it to
       @{const update_tree_imp}.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> ns_swap_edge_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
+definition ns_swap_edge_imp :: "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
                                   \<Rightarrow> unit Heap" where
   "ns_swap_edge_imp Ti x u v = do { j \<leftarrow> join_of_imp Ti u v; update_tree_imp Ti u v x j }"
 
 text \<open>The functional \<open>get_path_pair_impl\<close>, imperatively: the verified @{const get_path_pair_imp}
       with the two caller path arrays moved after the endpoints, to match the fixed operation's argument
       order.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> ns_get_path_pair_imp ::
+definition ns_get_path_pair_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array
      \<Rightarrow> (nat \<times> nat) Heap" where
   "ns_get_path_pair_imp Ti u v a1 a2 = get_path_pair_imp Ti a1 a2 u v"
@@ -285,7 +282,7 @@ text \<open>The functional \<open>shift_pot_impl\<close>, imperatively: fold the
       @{const iterate_root_opposed_imp}.  The sign of the shift is chosen by @{term up} (add on the
       up-side, subtract on the down-side).  The accumulator is the unused unit --- the potential array is
       mutated in place.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> ns_shift_pot_imp ::
+definition ns_shift_pot_imp ::
   "ndtree_impl \<Rightarrow> nat \<Rightarrow> (mtag \<times> 'n::{heap,linordered_idom}) array
      \<Rightarrow> (mtag \<times> 'n) \<Rightarrow> bool \<Rightarrow> unit Heap" where
   "ns_shift_pot_imp Ti v pa g up =
@@ -310,14 +307,14 @@ type_synonym ns_sel_imp = "nat array \<times> nat ref \<times> nat ref"
 
 text \<open>The functional \<open>cost_pval\<close>: the plain cost of an original edge (tag @{term M_0}), or the
       artificial cost @{const pval_M} for an artificial edge @{term \<open>e \<ge> m\<close>}.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> cost_pval_imp :: "nat \<Rightarrow> 'n::{heap,linordered_idom} array \<Rightarrow> nat
+definition cost_pval_imp :: "nat \<Rightarrow> 'n::{heap,linordered_idom} array \<Rightarrow> nat
                                \<Rightarrow> (mtag \<times> 'n) Heap" where
   "cost_pval_imp m cost_arr e =
      (if e < m then do { c \<leftarrow> Array.nth cost_arr e; return (M_0, c) } else return pval_M)"
 
 text \<open>The functional \<open>evaluate\<close>: read the edge tag and endpoints once; a self-loop is ineligible
       without pricing; otherwise assemble the reduced-cost descriptor once and test its sign M-free.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> evaluate_imp ::
+definition evaluate_imp ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{heap,linordered_idom} array
      \<Rightarrow> edge_tag array
    \<Rightarrow> (mtag \<times> 'n) array \<Rightarrow> nat
@@ -337,7 +334,7 @@ text \<open>Minor iteration (the functional \<open>scan_cache\<close>): one pass
       running best (index advances), a dud is deleted by swap-with-last (write
       @{term \<open>sarr ! (len-1)\<close>} into slot @{term i}, drop the length, do not advance).  Returns the
       shrunk length and the best; the array is mutated in place.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_cache_imp ::
+partial_function (heap) scan_cache_imp ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{heap,linordered_idom} array
      \<Rightarrow> edge_tag array
    \<Rightarrow> (mtag \<times> 'n) array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat
@@ -359,7 +356,7 @@ text \<open>Major iteration (the functional \<open>scan\<close>): the wrap-aroun
       a whole block has been scanned and at least the min candidate count is held.  An eligible arc is
       pushed at the length pointer.  Returns the advanced bookmark, the new length and the best; the
       cache array is mutated in place.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_imp ::
+partial_function (heap) scan_imp ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{heap,linordered_idom} array
    \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> edge_tag array
      \<Rightarrow> (mtag \<times> 'n) array \<Rightarrow> nat array
@@ -383,7 +380,7 @@ text \<open>The functional \<open>sel_select_impl\<close>, imperatively: minor i
       edge, commit the shrunk length and return it; otherwise a major iteration, committing bookmark and
       length on success, @{term None} (optimal) otherwise.  The state triple is mutated in place, so the
       returned tuple drops the selector --- exactly the \<^emph>\<open>\_imp\<close> discipline.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> ns_sel_select_imp ::
+definition ns_sel_select_imp ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array
      \<Rightarrow> nat array \<Rightarrow> 'n::{heap,linordered_idom} array
    \<Rightarrow> ns_sel_imp \<Rightarrow> (mtag \<times> 'n) array \<Rightarrow> edge_tag array
@@ -449,7 +446,7 @@ text \<open>The functional \<open>passA_step\<close> as a Heap loop over the edg
       edge (tag @{const InTree}) to the free outgoing range of its tail and the free ingoing range of its head.
       The edge arrays @{term oe_arr} / @{term ie_arr} are those of the two CSRs, the range ends @{term oh_arr} /
       @{term ih_arr} start at the block starts.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) passA_imp ::
+partial_function (heap) passA_imp ::
   "'n::{heap,linordered_idom} array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array
      \<Rightarrow> edge_tag array \<Rightarrow> 'n array
    \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat
@@ -474,7 +471,7 @@ subsection \<open>Imbalance: the excess transformed in place\<close>
 text \<open>The functional
       \<open>imbalance = fold (\<lambda>v arr. arr[v := arr ! v + b_lookup v]) [0..<vcount] excess\<close>: add
       each vertex's target balance to its achieved excess, in place on the (reused) excess array.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) imbalance_imp ::
+partial_function (heap) imbalance_imp ::
   "'n::{heap,linordered_idom} array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "imbalance_imp exc_arr b_arr v vcount =
@@ -529,7 +526,7 @@ subsection \<open>Discovering and finishing a vertex\<close>
 text \<open>Linking a vertex @{term w} into the tree: its parent @{term p}, parent edge @{term e}, orientation
       @{term d} and potential @{term pw}, and the thread after the last emitted vertex, whose successor
       @{term w} becomes.  Shared by discovering a vertex and opening a tree component.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> tree_link_imp ::
+definition tree_link_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool
      \<Rightarrow> mtag \<times> 'n \<Rightarrow> unit Heap" where
   "tree_link_imp st w p e d pw =
@@ -549,7 +546,7 @@ text \<open>The functional @{term dfs_discover}: finalise the fresh child @{term
       free real edge @{term e} --- seed its tree fields, thread-link it after the last emitted vertex, give
       @{term e} zero reduced cost (\<open>\<plusminus> cost\<close> by whether @{term v} is @{term e}'s tail), and
       push it, resetting its two cursors.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> dfs_discover_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat
+definition dfs_discover_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat
                                   \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dfs_discover_imp st v w e =
      do {
@@ -566,7 +563,7 @@ definition \<^marker>\<open>provenance ai_human\<close> dfs_discover_imp :: "'n:
 text \<open>The functional @{term dfs_finish}: on popping @{term v} (post-order) the last vertex emitted is
       its rightmost descendant, so it is @{term v}'s \<open>lsuc\<close>; add @{term v}'s completed subtree size to
       its parent's and pop it.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> dfs_finish_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition dfs_finish_imp :: "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dfs_finish_imp st v =
      do { p \<leftarrow> Array.nth (prnt_impl (di_tree st)) v;
           pv \<leftarrow> Ref.lookup (di_prev st);
@@ -584,7 +581,7 @@ text \<open>The functional @{term build_dfs_a}: at the stack top @{term v} take 
       (@{const csr_step_upto_imp}), recursing after discovering an unseen neighbour; when both ranges
       are exhausted, finish the vertex.  The neighbour across an outgoing edge @{term e} is
       @{term \<open>snd_list ! e\<close>}, across an ingoing edge @{term \<open>fst_list ! e\<close>}.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) build_dfs_a_imp ::
+partial_function (heap) build_dfs_a_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> unit Heap" where
   "build_dfs_a_imp st =
      do {
@@ -610,7 +607,7 @@ subsection \<open>Opening tree components and emitting artificial edges\<close>
 
 text \<open>Writing an artificial edge --- tail, head, capacity, flow and tag --- at index @{term aidx} of
       the augmented arrays.  Shared by opening a tree component and emitting a @{term U} edge.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> art_edge_imp ::
+definition art_edge_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n
      \<Rightarrow> 'n \<Rightarrow> edge_tag \<Rightarrow> unit Heap" where
   "art_edge_imp st aidx x y u f tag =
@@ -630,7 +627,7 @@ text \<open>The functional @{term open_tree_component}: open an unseen imbalance
       (\<open>c \<rightarrow> root\<close>) iff @{term \<open>0 \<le> imb\<close>}, flow
       @{term \<open>\<bar>imb\<bar>\<close>}, a tree edge getting a \<open>+ 1\<close> slack toward the root when
       it points up.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> open_tree_component_imp ::
+definition open_tree_component_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "open_tree_component_imp st imb_arr m vcount c =
@@ -652,7 +649,7 @@ definition \<^marker>\<open>provenance ai_human\<close> open_tree_component_imp 
 text \<open>The functional @{term emit_U_edge}: a \<^emph>\<open>saturated\<close> @{term U} artificial edge for an
       already-seen imbalanced vertex @{term v} --- capacity equal to its flow
       @{term \<open>\<bar>imb\<bar>\<close>}, tagged @{const InU}, touching no tree field.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> emit_U_edge_imp ::
+definition emit_U_edge_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "emit_U_edge_imp st imb_arr m vcount v =
@@ -668,7 +665,7 @@ subsection \<open>The two vertex scans\<close>
 
 text \<open>The functional @{term phase1_step}: an imbalanced unseen vertex opens its tree component, an
       imbalanced already-seen vertex emits a saturated @{term U} edge, a balanced vertex is skipped.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> phase1_step_imp ::
+definition phase1_step_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "phase1_step_imp st imb_arr m vcount v =
@@ -679,7 +676,7 @@ definition \<^marker>\<open>provenance ai_human\<close> phase1_step_imp ::
                       else open_tree_component_imp st imb_arr m vcount v) }) }"
 
 text \<open>@{term phase1}: the fused first scan of the vertices @{term \<open>vs_list = [1..n]\<close>}.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) phase1_imp ::
+partial_function (heap) phase1_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "phase1_imp st imb_arr m vcount v n =
@@ -690,7 +687,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) phase1_imp 
 text \<open>The functional @{term phase2_step}: open every still-unseen, \<^emph>\<open>non-lonely\<close> (hence
       balanced) vertex as a flow-0 tree component.  A vertex is lonely when it is an endpoint of no edge --- its
       blocks in both CSRs are empty (@{const csr_empty_imp}).\<close>
-definition \<^marker>\<open>provenance ai_human\<close> phase2_step_imp ::
+definition phase2_step_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "phase2_step_imp st imb_arr m vcount v =
@@ -701,7 +698,7 @@ definition \<^marker>\<open>provenance ai_human\<close> phase2_step_imp ::
                       else open_tree_component_imp st imb_arr m vcount v) }) }"
 
 text \<open>@{term phase2}: the second scan opening every remaining balanced vertex.\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) phase2_imp ::
+partial_function (heap) phase2_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "phase2_imp st imb_arr m vcount v n =
@@ -718,7 +715,7 @@ text \<open>The functional @{term build_tree}: seed the root (subtree size @{ter
       arrays are assumed freshly zeroed by the orchestrator (parents / edges / thread pointers @{term 0},
       directions @{term False}, potentials @{const pval_zero}, sizes @{term 0}); this seeds only the
       root-specific cells and the three references.\<close>
-definition \<^marker>\<open>provenance ai_human\<close> build_tree_imp ::
+definition build_tree_imp ::
   "'n::{heap,linordered_idom} dfs_imp \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "build_tree_imp st imb_arr m vcount n =
@@ -738,7 +735,7 @@ text \<open>The imperative counterpart of the functional @{const initial_basis_c
       vertex range @{term \<open>[1..n]\<close>} with the \<^emph>\<open>lonely\<close> names (endpoints of no edge
       --- both blocks empty, @{const csr_empty_imp}) removed.  The acyclifier iterates exactly these.  We count
       them, then fill an exactly-sized array (so the iterator's length matches the abstraction).\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) count_edged_imp ::
+partial_function (heap) count_edged_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> nat Heap" where
   "count_edged_imp ob ib v n acc =
@@ -746,7 +743,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) count_edged
       else do { eo \<leftarrow> csr_empty_imp ob v; ei \<leftarrow> csr_empty_imp ib v;
                 count_edged_imp ob ib (Suc v) n (if eo \<and> ei then acc else Suc acc) })"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fill_edged_imp ::
+partial_function (heap) fill_edged_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
      \<Rightarrow> unit Heap" where
   "fill_edged_imp vl ob ib v n j =
@@ -775,7 +772,7 @@ text \<open>The imperative refinement of the functional orchestrator @{const ini
       artificial edges @{term \<open>[m..<m + Kart]\<close>} --- all-zero means the minimum-cost @{term b}-flow is
       left in the first @{term m} flow cells (@{term OptimalF}), otherwise the instance is infeasible
       (@{term InfeasibleF}).\<close>
-definition \<^marker>\<open>provenance ai_human\<close> solve_imp ::
+definition solve_imp ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat
    \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{heap,linordered_idom} array
      \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array
@@ -922,23 +919,23 @@ definition state_assn_v :: "vertex_state list \<Rightarrow> vertex_state array \
 text \<open>The per-operation Hoare triples of the stores, for the concrete arrays; the edge iterators
       and the vertex iterator are discharged by the library rules.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> flow_lookup_rule_c:
+lemma flow_lookup_rule_c:
   "\<lbrakk>length Fl = m; e \<in> {0..<m}\<rbrakk> \<Longrightarrow>
    <flow_assn_m Fl fh> Array.nth fh e <\<lambda>r. flow_assn_m Fl fh * \<up>(r = Fl ! e)>"
   unfolding flow_assn_m_def by (sep_auto simp: nth_append)
 
-lemma \<^marker>\<open>provenance ai_human\<close> flow_upd_rule_c:
+lemma flow_upd_rule_c:
   "\<lbrakk>length Fl = m; e \<in> {0..<m}\<rbrakk> \<Longrightarrow>
    <flow_assn_m Fl fh> array_fun_upd_imp fh e w <\<lambda>_. flow_assn_m (list_update Fl e w) fh>"
   unfolding flow_assn_m_def array_fun_upd_imp_def by (sep_auto simp: list_update_append)
 
-lemma \<^marker>\<open>provenance ai_human\<close> state_lookup_rule_c:
+lemma state_lookup_rule_c:
   "\<lbrakk>\<forall>v\<in>original_network.\<V>. v < length St;
             v \<in> original_network.\<V>\<rbrakk> \<Longrightarrow>
    <state_assn_v St sh> Array.nth sh v <\<lambda>r. state_assn_v St sh * \<up>(r = St ! v)>"
   unfolding state_assn_v_def by (sep_auto simp: nth_append)
 
-lemma \<^marker>\<open>provenance ai_human\<close> state_upd_rule_c:
+lemma state_upd_rule_c:
   "\<lbrakk>\<forall>v\<in>original_network.\<V>. v < length St;
             v \<in> original_network.\<V>\<rbrakk> \<Longrightarrow>
    <state_assn_v St sh> array_fun_upd_imp sh v q <\<lambda>_. state_assn_v (list_update St v q) sh>"
@@ -1060,7 +1057,7 @@ text \<open>Running @{const imbalance_imp} over \<open>[v..<vcount]\<close> adds
       to its excess cell, exactly the functional @{const imbalance} fold.  The balance array is a parameter here
       (@{term bl}); at the call site it holds the vertex-indexed balances and the agreement
       \<open>bl ! w = b_arr ! w\<close> is supplied then.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> imbalance_imp_rule:
+lemma imbalance_imp_rule:
   "\<lbrakk>v \<le> vcount; vcount \<le> length exc0; \<forall>w<vcount. w < length bl\<rbrakk> \<Longrightarrow>
    <exc_arr \<mapsto>\<^sub>a exc0 * ba \<mapsto>\<^sub>a bl>
     imbalance_imp exc_arr ba v vcount
@@ -1324,7 +1321,7 @@ lemma tree_link_imp_rule:
         snum_impl (di_tree st) \<mapsto>\<^sub>a ((list_update sm (w) (1)))>"
   unfolding tree_link_imp_def by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> art_edge_imp_rule:
+lemma art_edge_imp_rule:
   "\<lbrakk>i < length fs; i < length sn; i < length cp; i < length fw; i < length es\<rbrakk> \<Longrightarrow>
    <di_fst st \<mapsto>\<^sub>a fs *
         di_snd st \<mapsto>\<^sub>a sn *
@@ -1341,26 +1338,26 @@ lemma \<^marker>\<open>provenance ai_human\<close> art_edge_imp_rule:
 
 text \<open>Reads of the fields of the folded relation.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_sp:
+lemma dfs_rel_sp:
   "<dfs_rel fl0 es0 st s> Ref.lookup (di_sp st) <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = length (ds_stk s))>"
   unfolding dfs_rel_def by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_top:
+lemma dfs_rel_top:
   assumes "ds_stk s = v # rest"
   shows "<dfs_rel fl0 es0 st s> Array.nth (di_stk st) (length rest) <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = v)>"
   unfolding dfs_rel_def by (sep_auto simp: assms stk_top(2,3))
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_snd:
+lemma dfs_rel_snd:
   assumes "e < m"
   shows "<dfs_rel fl0 es0 st s> Array.nth (di_snd st) e <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = snd_list ! e)>"
   unfolding dfs_rel_def by (sep_auto simp: assms)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_fst:
+lemma dfs_rel_fst:
   assumes "e < m"
   shows "<dfs_rel fl0 es0 st s> Array.nth (di_fst st) e <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = fst_list ! e)>"
   unfolding dfs_rel_def by (sep_auto simp: assms)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_seen:
+lemma dfs_rel_seen:
   assumes "w < length (ds_seen s)"
   shows "<dfs_rel fl0 es0 st s> Array.nth (di_seen st) w <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = ds_seen s ! w)>"
   unfolding dfs_rel_def by (sep_auto simp: assms)
@@ -1368,7 +1365,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_seen:
 text \<open>The stack top: an empty stack ends the traversal, otherwise the continuation runs on the top
       vertex.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_top_rule:
+lemma dfs_rel_top_rule:
   assumes "ds_stk s = v # rest" "<dfs_rel fl0 es0 st s> K v <Q>"
   shows "<dfs_rel fl0 es0 st s>
            do { sp \<leftarrow> Ref.lookup (di_sp st);
@@ -1376,7 +1373,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_top_rule:
          <Q>"
   by (sep_auto heap: dfs_rel_sp dfs_rel_top[OF assms(1)] assms(2) simp: assms(1))
 
-lemma \<^marker>\<open>provenance ai_human\<close> build_dfs_a_imp_ret:
+lemma build_dfs_a_imp_ret:
   assumes "ds_stk s = []"
   shows "<dfs_rel fl0 es0 st s> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st s>"
   by (subst build_dfs_a_imp.simps) (sep_auto heap: dfs_rel_sp simp: assms)
@@ -1384,7 +1381,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> build_dfs_a_imp_ret:
 text \<open>One step of the iterator of a vertex over its free outgoing resp.\ ingoing range
       (@{thm [source] FO.csr_step_upto_imp_rule}), on the folded relation.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_step_out:
+lemma dfs_rel_step_out:
   assumes "v < vcount"
     and "FO.csr_has (ds_oc s) v \<Longrightarrow>
        <dfs_rel fl0 es0 st (s\<lparr>ds_oc := FO.csr_move (ds_oc s) v\<rparr>)> f (FO.csr_current (ds_oc s) v) <Q>"
@@ -1423,7 +1420,7 @@ proof -
     done
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_step_in:
+lemma dfs_rel_step_in:
   assumes "v < vcount"
     and "FI.csr_has (ds_ic s) v \<Longrightarrow>
        <dfs_rel fl0 es0 st (s\<lparr>ds_ic := FI.csr_move (ds_ic s) v\<rparr>)> f (FI.csr_current (ds_ic s) v) <Q>"
@@ -1506,7 +1503,7 @@ lemma dfs_discover_imp_small:
   unfolding dfs_discover_imp_def by
     (sep_auto heap: tree_link_imp_rule FO.csr_reset_imp_rule FI.csr_reset_imp_rule simp: dfs_sized_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_discover_imp_rule:
+lemma dfs_discover_imp_rule:
   assumes "e < m" "w < vcount" "dfs_sized s" "v < Suc vcount" "ds_prev s < Suc vcount"
     "length (ds_stk s) < Suc vcount"
   shows "<dfs_rel fl0 es0 st s> dfs_discover_imp st v w e
@@ -1543,7 +1540,7 @@ lemma dfs_finish_eq:
         ds_stk := rest\<rparr>"
   by (simp add: dfs_finish_def Let_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_finish_imp_small:
+lemma dfs_finish_imp_small:
   "\<lbrakk>v < Suc vcount; ds_prnt s ! v < Suc vcount; dfs_sized s\<rbrakk> \<Longrightarrow>
    <prnt_impl (di_tree st) \<mapsto>\<^sub>a ds_prnt s * lsuc_impl (di_tree st) \<mapsto>\<^sub>a ds_lsuc s *
     snum_impl (di_tree st) \<mapsto>\<^sub>a ds_snum s * di_sp st \<mapsto>\<^sub>r sp
@@ -1556,7 +1553,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> dfs_finish_imp_small:
     di_sp st \<mapsto>\<^sub>r (sp - 1) * di_prev st \<mapsto>\<^sub>r ds_prev s>"
   unfolding dfs_finish_imp_def by (sep_auto simp: dfs_sized_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_finish_imp_rule:
+lemma dfs_finish_imp_rule:
   assumes "ds_stk s = v # rest" "dfs_sized s" "v < Suc vcount" "ds_prnt s ! v < Suc vcount"
   shows "<dfs_rel fl0 es0 st s> dfs_finish_imp st v <\<lambda>_. dfs_rel fl0 es0 st (dfs_finish s v rest)>"
   unfolding dfs_rel_def[of _ _ _ s] dfs_finish_eq
@@ -1639,7 +1636,7 @@ qed
 text \<open>The three branches of one traversal step: scanning a free outgoing resp.\ ingoing edge of the
       top vertex @{term v}, and finishing @{term v}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> bd_out_imp:
+lemma bd_out_imp:
   assumes "dfs_inv acyc_flow s" "ds_stk s = v # rest" "FO.csr_has (ds_oc s) v"
     and "bd_call1_conds acyc_flow s \<Longrightarrow> <dfs_rel fl0 es0 st (bd_upd1 acyc_flow s)> build_dfs_a_imp st
            <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow (bd_upd1 acyc_flow s))>"
@@ -1674,7 +1671,7 @@ proof -
     by (sep_auto heap: dfs_rel_snd dfs_rel_seen T D)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> bd_in_imp:
+lemma bd_in_imp:
   assumes "dfs_inv acyc_flow s" "ds_stk s = v # rest" "\<not> FO.csr_has (ds_oc s) v" "FI.csr_has (ds_ic s) v"
     and "bd_call2_conds acyc_flow s \<Longrightarrow> <dfs_rel fl0 es0 st (bd_upd2 acyc_flow s)> build_dfs_a_imp st
            <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow (bd_upd2 acyc_flow s))>"
@@ -1709,7 +1706,7 @@ proof -
     by (sep_auto heap: dfs_rel_fst dfs_rel_seen T D)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> bd_finish_imp:
+lemma bd_finish_imp:
   assumes "dfs_inv acyc_flow s" "ds_stk s = v # rest" "bd_call3_conds acyc_flow s"
     and "bd_call3_conds acyc_flow s \<Longrightarrow> <dfs_rel fl0 es0 st (bd_upd3 s)> build_dfs_a_imp st
            <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow (bd_upd3 s))>"
@@ -1727,7 +1724,7 @@ qed
 
 text \<open>The traversal: induction along @{const build_dfs}, one branch per call.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> build_dfs_a_imp_rule:
+lemma build_dfs_a_imp_rule:
   assumes "dfs_inv acyc_flow s0"
   shows "<dfs_rel fl0 es0 st s0> build_dfs_a_imp st <\<lambda>_. dfs_rel fl0 es0 st (build_dfs acyc_flow s0)>"
   using assms
@@ -1822,7 +1819,7 @@ next
         simp: assms(2-4))
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> emit_U_edge_imp_small:
+lemma emit_U_edge_imp_small:
   assumes "imbl ! v = x" "(0 \<le> x) = u" "\<bar>x\<bar> = a"
     and "v < length imbl" "m + nx < length fs" "m + nx < length sn" "m + nx < length cp"
       "m + nx < length fw" "m + nx < length es"
@@ -1855,7 +1852,7 @@ lemma emit_U_edge_eq:
         ds_aest := list_update (ds_aest s) (ds_nxt s) InU, ds_nxt := Suc (ds_nxt s)\<rparr>"
   by (simp add: emit_U_edge_def Let_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> emit_U_edge_imp_rule:
+lemma emit_U_edge_imp_rule:
   assumes "v < Suc vcount" "art_len s" "ds_nxt s < length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> emit_U_edge_imp st imb_arr m vcount v
          <\<lambda>_. dfs_rel fl0 es0 st (emit_U_edge s v) * imb_arr \<mapsto>\<^sub>a imbalance>"
@@ -1902,7 +1899,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> emit_U_edge_imp_rule:
 text \<open>Opening a tree component refines @{const open_tree_component}: the writes produce the seed state of
       @{thm [source] open_tree_component_seed}, from which the traversal runs.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> open_tree_component_imp_rule:
+lemma open_tree_component_imp_rule:
   assumes "dfs_inv acyc_flow s" "c < vcount" "\<not> ds_seen s ! c" "c \<noteq> 0" "ds_stk s = []" "art_len s"
     "ds_nxt s < length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> open_tree_component_imp st imb_arr m vcount c
@@ -2048,17 +2045,17 @@ lemma phase2_step_mono:
 
 text \<open>The emptiness tests of the two blocks of a vertex, on the folded relation.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_empty_out:
+lemma dfs_rel_empty_out:
   "v < vcount \<Longrightarrow> <dfs_rel fl0 es0 st s> csr_empty_imp (di_ob st) v
    <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = FO.csr_empty v)>"
   unfolding dfs_rel_def by (sep_auto heap: FO.csr_empty_imp_rule)
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_empty_in:
+lemma dfs_rel_empty_in:
   "v < vcount \<Longrightarrow> <dfs_rel fl0 es0 st s> csr_empty_imp (di_ib st) v
    <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = FI.csr_empty v)>"
   unfolding dfs_rel_def by (sep_auto heap: FI.csr_empty_imp_rule)
 
-lemma \<^marker>\<open>provenance ai_human\<close> phase1_step_imp_rule:
+lemma phase1_step_imp_rule:
   assumes "v \<in> set vs_list" "dfs_inv acyc_flow s" "ds_stk s = []" "art_len s"
     "ds_nxt (phase1_step acyc_flow v s) \<le> length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase1_step_imp st imb_arr m vcount v
@@ -2084,7 +2081,7 @@ proof -
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> phase1_imp_rule:
+lemma phase1_imp_rule:
   assumes "Suc 0 \<le> v" "v \<le> Suc n" "dfs_inv acyc_flow s" "ds_stk s = []" "art_len s"
     "ds_nxt (fold (phase1_step acyc_flow) [v..<Suc n] s) \<le> length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase1_imp st imb_arr m vcount v n
@@ -2116,7 +2113,7 @@ next
     by (subst phase1_imp.simps) (sep_auto heap: phase1_step_imp_rule Suc.hyps(1))
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> phase2_step_imp_rule:
+lemma phase2_step_imp_rule:
   assumes "v \<in> set vs_list" "dfs_inv acyc_flow s" "ds_stk s = []" "art_len s"
     "ds_nxt (phase2_step acyc_flow v s) \<le> length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase2_step_imp st imb_arr m vcount v
@@ -2143,7 +2140,7 @@ proof -
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> phase2_imp_rule:
+lemma phase2_imp_rule:
   assumes "Suc 0 \<le> v" "v \<le> Suc n" "dfs_inv acyc_flow s" "ds_stk s = []" "art_len s"
     "ds_nxt (fold (phase2_step acyc_flow) [v..<Suc n] s) \<le> length vs_list"
   shows "<dfs_rel fl0 es0 st s * imb_arr \<mapsto>\<^sub>a imbalance> phase2_imp st imb_arr m vcount v n
@@ -2181,7 +2178,7 @@ subsection \<open>Layer (d.8): assembling @{const build_tree_imp}\<close>
 
 text \<open>Seeding the root: the four initial writes take the freshly allocated state to @{const dfs_init}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> build_tree_seed_cps:
+lemma build_tree_seed_cps:
   assumes "<dfs_rel fl0 es0 st dfs_init * Fr> K <Q>"
   shows "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>) * Fr>
          do { _ \<leftarrow> array_fun_upd_imp (snum_impl (di_tree st)) vcount 1;
@@ -2204,7 +2201,7 @@ qed
 
 text \<open>The root finalisation: its last successor is the last vertex emitted.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_root_lsuc:
+lemma dfs_rel_root_lsuc:
   "length (ds_lsuc s) = Suc vcount \<Longrightarrow>
    <dfs_rel fl0 es0 st s> do { pv \<leftarrow> Ref.lookup (di_prev st);
                               array_fun_upd_imp (lsuc_impl (di_tree st)) vcount pv }
@@ -2216,7 +2213,7 @@ text \<open>The builder refines @{const build_tree}, from the freshly allocated 
 lemma vs_list_upt: "vs_list = [Suc 0..<Suc n]"
   by (simp add: vs_list_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> build_tree_imp_rule:
+lemma build_tree_imp_rule:
   "<dfs_rel fl0 es0 st (dfs_init\<lparr>ds_snum := replicate (Suc vcount) 0, ds_prev := 0\<rparr>)
      * imb_arr \<mapsto>\<^sub>a imbalance>
      build_tree_imp st imb_arr m vcount n
@@ -2301,7 +2298,7 @@ proof -
       follow_ne_ps[OF \<open>parent_spec (prnt S)\<close>, of j] by (auto simp: j_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> ns_swap_edge_imp_rule:
+lemma ns_swap_edge_imp_rule:
   assumes "arb_invar rt Vt S" "get_path_pair_impl S u v = (p1, p2)"
     and "u \<noteq> v" "walk_betw (abstract_arb S) u (p1 @ a # p3) rt"
     and "distinct (p1 @ a # p3)" "(x, y) \<in> set (edges_of_vwalk (p1 @ [a]))"
@@ -2320,7 +2317,7 @@ text \<open>Fundamental-circuit path search: the verified @{const get_path_pair_
       @{term \<open>length p_i \<le> length l_i\<close>} follow from @{thm take_len_bound}; the final existential
       is introduced explicitly (@{thm ent_ex_postI}) since @{method sep_auto}'s entailment solver loops on the
       framed @{term true}.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> ns_get_path_pair_imp_rule:
+lemma ns_get_path_pair_imp_rule:
   assumes "arb_invar rt Vt S" "u \<noteq> v" "u \<in> Vt" "v \<in> Vt"
     and "card Vt - 1 \<le> length xs1" "card Vt - 1 \<le> length xs2"
   shows "<ndtree_assn Vt S Ti * a1 \<mapsto>\<^sub>a xs1 * a2 \<mapsto>\<^sub>a xs2>
@@ -2377,7 +2374,7 @@ text \<open>Potential shift: the subtree-fold refinement @{thm iterate_root_oppo
       visited @{term \<open>x \<in> Vt\<close>} is in range).  The resulting functional value
       @{term \<open>iterate_root_opposed_impl S v f pl\<close>} is @{const shift_pot_impl} by
       @{thm shift_pot_impl_iterate}.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> ns_shift_pot_imp_rule:
+lemma ns_shift_pot_imp_rule:
   assumes "arb_invar rt Vt S" "v \<in> Vt" "\<forall>w\<in>Vt. w < length pl"
   shows "<ndtree_assn Vt S Ti * pa \<mapsto>\<^sub>a pl>
            ns_shift_pot_imp Ti v pa g up
@@ -2405,7 +2402,7 @@ text \<open>The cost part of a reduced-cost descriptor: a real cost cell
       @{term \<open>(M_0, cost_list ! e)\<close>} for a genuine edge (@{term \<open>e < m\<close>}), the big-M unit
       @{const pval_M} for an artificial one.  Reads the cost array only on the genuine branch, exactly where
       @{const cost_pval} does.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> cost_pval_imp_rule:
+lemma cost_pval_imp_rule:
   assumes "e < m \<Longrightarrow> e < length col \<and> col ! e = cost_list ! e"
   shows "<cost_arr \<mapsto>\<^sub>a col> cost_pval_imp m cost_arr e
            <\<lambda>r. cost_arr \<mapsto>\<^sub>a col * \<up>(r = cost_pval e)>"
@@ -2417,7 +2414,7 @@ text \<open>One-arc pricing: @{const evaluate_imp} reads the two endpoints (@{te
       functional @{const evaluate}.  A self-loop is ineligible without pricing; otherwise the M-free sign
       test on the assembled descriptor gives eligibility, alongside the @{term \<open>InU\<close>} flag and the
       descriptor itself.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> evaluate_imp_rule:
+lemma evaluate_imp_rule:
   assumes "e < length fstl \<and> e < length sndl \<and> e < length esl \<and>
         (e < m \<longrightarrow> e < length col \<and> col ! e = cost_list ! e) \<and> fstl ! e = fst_all ! e
           \<and> sndl ! e = snd_all ! e \<and>
@@ -2755,7 +2752,7 @@ interpretation NS: network_simplex
 text \<open>Reading one array out of a larger separation-logic frame, without the frame-inference blow-up
       @{method sep_auto} suffers when several concrete @{term \<open>(\<mapsto>\<^sub>a)\<close>} conjuncts are
       present.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> arr_read_framed:
+lemma arr_read_framed:
   fixes F :: assn
   assumes "i < length xs"
   shows "<a \<mapsto>\<^sub>a xs * F> Array.nth a i <\<lambda>r. a \<mapsto>\<^sub>a xs * F * \<up>(r = xs ! i)>"
@@ -4189,7 +4186,7 @@ subsection \<open>Layer (f): the CSR build and the edged vertices\<close>
 
 text \<open>The shared builder fills the block starts and the edges of the two CSRs of the input.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_out_rule:
+lemma csr_build_out_rule:
   "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list
      * ob \<mapsto>\<^sub>a (0 # replicate vcount 0) * oe \<mapsto>\<^sub>a replicate m 0>
      csr_build_into_edges vcount (in_fst, in_snd) 0 ob oe
@@ -4197,7 +4194,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> csr_build_out_rule:
      * ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec>"
   using outI.csr_build_into_rule[of "replicate m 0", unfolded csr_build_into_edges_src] by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_in_rule:
+lemma csr_build_in_rule:
   "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list
      * ib \<mapsto>\<^sub>a (0 # replicate vcount 0) * ie \<mapsto>\<^sub>a replicate m 0>
      csr_build_into_edges_tgt vcount (in_fst, in_snd) 0 ib ie
@@ -4211,7 +4208,7 @@ text \<open>Copying the block starts into the cursor array makes the arrays a co
       (@{thm [source] outI.graph.csr_assn_release}) into the empty ranges at the block starts that
       Pass A appends to.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_copy_out_init:
+lemma csr_copy_out_init:
   assumes "length l = vcount"
   shows "<ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec
            * oh \<mapsto>\<^sub>a l> copy_prefix_imp vcount ob oh 0
@@ -4232,7 +4229,7 @@ proof -
        (simp add: ac_simps)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_copy_in_init:
+lemma csr_copy_in_init:
   assumes "length l = vcount"
   shows "<ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec
            * ih \<mapsto>\<^sub>a l> copy_prefix_imp vcount ib ih 0
@@ -4253,7 +4250,7 @@ proof -
        (simp add: ac_simps)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_copy_out_ranges:
+lemma csr_copy_out_ranges:
   "<outI.graph.csr_assn c (ob, oe, oh)> copy_prefix_imp vcount ob oh 0
    <\<lambda>_. ob \<mapsto>\<^sub>a out.inp.B_spec * oe \<mapsto>\<^sub>a out.inp.E_spec
      * oh \<mapsto>\<^sub>a out_lo>"
@@ -4283,7 +4280,7 @@ proof -
     done
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_copy_in_ranges:
+lemma csr_copy_in_ranges:
   "<incI.graph.csr_assn c (ib, ie, ih)> copy_prefix_imp vcount ib ih 0
    <\<lambda>_. ib \<mapsto>\<^sub>a inc.inp.B_spec * ie \<mapsto>\<^sub>a inc.inp.E_spec
      * ih \<mapsto>\<^sub>a in_lo>"
@@ -4328,7 +4325,7 @@ lemma edged_lst_empty: "n < v \<Longrightarrow> edged_lst v = []"
 lemma edged_lst_vs: "edged_lst (Suc 0) = edged_vs_list"
   by (simp add: edged_lst_def edged_vs_list_def vs_list_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> count_edged_imp_rule:
+lemma count_edged_imp_rule:
   "v \<le> Suc n \<Longrightarrow>
    <outI.graph.csr_assn co (ob, oe, oh) * incI.graph.csr_assn ci (ib, ie, ih)>
      count_edged_imp ob ib v n acc
@@ -4351,7 +4348,7 @@ next
                  simp: edged_lst_Cons[OF \<open>v \<le> n\<close>] is_lonely_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> fill_edged_imp_rule:
+lemma fill_edged_imp_rule:
   "v \<le> Suc n \<Longrightarrow> j + length (edged_lst v) \<le> length vlst \<Longrightarrow>
    <va \<mapsto>\<^sub>a vlst * outI.graph.csr_assn co (ob, oe, oh) * incI.graph.csr_assn ci (ib, ie, ih)>
      fill_edged_imp va ob ib v n j
@@ -4915,7 +4912,7 @@ text \<open>Two rules restated with the state record's \<^emph>\<open>components
       never be unified against the program's @{term \<open>Ref.lookup nxt_ref\<close>}: higher-order unification
       would have to invert a record selector.  Taking the component as a parameter and discharging
       @{term \<open>di_nxt st = nx\<close>} afterwards sidesteps this.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> dfs_rel_rd_nxt:
+lemma dfs_rel_rd_nxt:
   "di_nxt st = nx \<Longrightarrow>
    <dfs_rel fl0 es0 st s> Ref.lookup nx <\<lambda>r. dfs_rel fl0 es0 st s * \<up>(r = ds_nxt s)>"
   unfolding dfs_rel_def by sep_auto
@@ -5055,7 +5052,7 @@ text \<open>\<^emph>\<open>Total correctness of the whole solver.\<close>  @{con
       @{term b}-flow in its first @{term m} cells.  The acyclifier splits the proof in two: its @{const None}
       verdict is the infinite-cycle branch, closed outright, and its @{term \<open>Some f'\<close>} verdict is the
       whole rest of the solver, which is @{thm [source] solve_tail_triple}.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> solve_imp_correct:
+lemma solve_imp_correct:
   "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * in_cap \<mapsto>\<^sub>a capacity_list *
     in_cost \<mapsto>\<^sub>a cost_list * in_flow \<mapsto>\<^sub>a flow_list * in_b \<mapsto>\<^sub>a b_arr>
      solve_imp n m block_size min_candidates max_candidates
@@ -5225,7 +5222,7 @@ text \<open>\<^emph>\<open>The specification of the imperative solver.\<close>  
       five read-only input arrays come back unchanged.  Apart from @{const solve_imp} itself, nothing in this
       statement refers to the implementation: the balances are read directly off the caller's
       @{term b_list}.\<close>
-lemma \<^marker>\<open>provenance ai_human\<close> solve_imp_spec:
+lemma solve_imp_spec:
   "<in_fst \<mapsto>\<^sub>a fst_list * in_snd \<mapsto>\<^sub>a snd_list * in_cap \<mapsto>\<^sub>a capacity_list *
     in_cost \<mapsto>\<^sub>a cost_list * in_flow \<mapsto>\<^sub>a flow_list
       * in_b \<mapsto>\<^sub>a (0 # b_list @ [0])>
@@ -5271,7 +5268,7 @@ text \<open>A random well-formed min-cost-flow instance meeting the locale condi
       is written back into the first @{term \<open>40::nat\<close>} cells of the input flow array, which we freeze
       and return alongside the status flag.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> solve_sample :: "(solve_status \<times> int list) Heap" where
+definition solve_sample :: "(solve_status \<times> int list) Heap" where
   "solve_sample = do {
      in_fst  \<leftarrow> Array.of_list
        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 10, 6, 7, 10, 8, 7, 10, 3, 1,

@@ -13,20 +13,6 @@
 !*.cls
 !*.bst
 !/.gitignore
-!/LICENSE
-!/ARTEFACT_README.md
-!Paper_Index/README.md
-!/evaluation/experiments_smoke.sh
-!/evaluation/experiments_8h.sh
-!/evaluation/experiments_full.sh
-!/NOTICES.txt
-
-# non-theory files the build needs
-!/etc/components
-!/AI_Provenance/etc/settings
-!/AI_Provenance/etc/build.props
-!/AI_Provenance/src/ai_provenance.scala
-!/Imperative/Separation_Logic_Imperative_HOL_Partial/Tools/named_simpsets.ML
 
 # editor backups and autosaves
 *~

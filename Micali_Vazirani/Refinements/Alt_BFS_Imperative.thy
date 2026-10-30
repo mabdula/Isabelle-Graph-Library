@@ -2,8 +2,6 @@ theory Alt_BFS_Imperative
   imports Micali_Vazirani.Alt_BFS_Dist "HOL-Imperative_HOL.Imperative_HOL" Imperative.Array_Range_Iteration
 begin
 
-provenance human
-
 section \<open>Imperative Refinement of the Alternating BFS\<close>
 
 text \<open>The imperative program mirrors the distance BFS of @{theory Micali_Vazirani.Alt_BFS_Dist}.

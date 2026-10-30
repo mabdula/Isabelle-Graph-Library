@@ -6,9 +6,6 @@ theory Push_Relabel_FIFO_Imperative
     Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
-provenance ai
-
-
 section \<open>Imperative FIFO Push-Relabel\<close>
 
 text \<open>The context of the FIFO strategy in place: the queue, the current vertex in two references,
@@ -104,7 +101,7 @@ definition "fifo_ctx_assn = (\<lambda> (Q, cur) (Qi, Cf, Cu, Vi).
 definition "fifo_ctx_init_assn = (\<lambda> (Qi, Cf, Cu, Vi).
    queue_assn queue_empty Qi * (\<exists>\<^sub>A cur. cur_assn cur Cf Cu) * vset_assn Vi)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> fifo_after_push_imp_rule:
+lemma fifo_after_push_imp_rule:
   assumes "ex_invar (pr_excess st)" "queue_invar Q" "length (queue_abstract Q) < qcap" "v \<in> \<V>"
   shows "<state_assn st Si * queue_assn Q Qi * cur_assn cur Cf Cu>
            fifo_after_push_imp Qi Cf Cu Si u v keep
@@ -114,7 +111,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> fifo_after_push_imp_rule:
   by (sep_auto heap: ex_get_state_rule[OF assms(1,4)] queue_imp.queue_push_rule[OF assms(2,3)]
                      cur_set_rule cur_clear_rule)
 
-lemma \<^marker>\<open>provenance ai_human\<close> fifo_ctx_upd_imp_rule:
+lemma fifo_ctx_upd_imp_rule:
   assumes "invar_state st" "queue_invar Q" "length (queue_abstract Q) < qcap" "u \<in> \<V>"
           "good_op st op"
   shows "<state_assn st Si * queue_assn Q Qi * cur_assn cur Cf Cu> fifo_ctx_upd_imp op Qi Cf Cu Si u
@@ -148,7 +145,7 @@ proof-
                 heap: cur_set_rule cur_clear_rule queue_imp.queue_push_rule[OF assms(2,3)])+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> fifo_discharge_imp_rule:
+lemma fifo_discharge_imp_rule:
   assumes "invar_state st" "queue_invar Q" "distinct (u # queue_abstract Q)"
           "set (u # queue_abstract Q) = {v. active_vertex s t (flow_abs st) v}"
           "fifo_discharge Q u (pr_fwd st) (pr_bwd st) (pr_excess st) (pr_labels st) (pr_out st)
@@ -187,7 +184,7 @@ lemma fifo_ctx_invar_pop:
   using assms queue.queue_is_empty[of Q] queue.queue_pop[of Q] hd_Cons_tl[of "queue_abstract Q"]
   by (auto simp: fifo_ctx_invar_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> fifo_select_imp_rule:
+lemma fifo_select_imp_rule:
   assumes "invar_state st" "fifo_ctx_invar st" "fifo.select_of st = (op, c)"
   shows "<state_assn st Si * fifo_ctx_assn (pr_ctx st) Ci> fifo_select_imp Ci Si
          <\<lambda>r. state_assn st Si * fifo_ctx_assn c Ci * \<up>(r = op)>"
@@ -240,7 +237,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> fifo_init_ctx_imp_rule:
+lemma fifo_init_ctx_imp_rule:
   "<state_assn fifo.init_state Si * fifo_ctx_init_assn Ci> fifo_init_ctx_imp Ci Si
    <\<lambda>_. state_assn fifo.init_state Si * fifo_ctx_assn (pr_ctx fifo.init_state) Ci>"
 proof-

@@ -2,9 +2,6 @@ theory Network_Simplex_Initial_Basis_Arb
   imports Network_Simplex_Initial_Basis_Correct
 begin
 
-provenance ai
-
-
 context initial_basis_correct
 begin
 

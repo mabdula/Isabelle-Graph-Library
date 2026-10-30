@@ -2,9 +2,6 @@ theory CSR_Graph_Spec
   imports CSR_Buildup Directed_Set_Graphs.Multigraph Data_Structures.Iterable_Set_Specs
 begin
 
-provenance ai
-
-
 section \<open>Graphs in CSR Form: the Functional Specification\<close>
 
 text \<open>A graph in compressed sparse row (CSR) form: a list \<open>B\<close> of block starts and a list \<open>E\<close>
@@ -28,7 +25,7 @@ text \<open>The entries of vertex \<open>v\<close> are \<open>E!i\<close> for \<
       modified by the iteration, so the start index needed for a reset is always available in
       \<open>B\<close>.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> csr_blocks =
+locale csr_blocks =
   fixes n :: nat
     and K :: "nat set"
     and B :: "nat list"
@@ -154,7 +151,7 @@ text \<open>The entries are distinct within each range only; different ranges ma
       e.g.\ when \<open>E\<close> holds the targets of the edges. Distinctness is what the set semantics of
       the cursor needs: moving past the current entry removes it from the remaining ones.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> csr_ranges = csr_blocks +
+locale csr_ranges = csr_blocks +
   assumes E_distinct: "\<And>v. v < n \<Longrightarrow> inj_on ((!) E) {B ! v..<H v}"
 begin
 
@@ -344,7 +341,7 @@ subsection \<open>The graph in CSR form\<close>
 text \<open>The out-edges of vertex \<open>v\<close> are the entries \<open>E!i\<close> for \<open>B!v \<le> i < B!(v+1)\<close>: the ranges
       end where the next one starts.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> csr_graph = csr_ranges n K B "\<lambda>v. B ! Suc v" E
+locale csr_graph = csr_ranges n K B "\<lambda>v. B ! Suc v" E
   for n K B and E :: "'e list"
 begin
 
@@ -409,7 +406,7 @@ text \<open>The input: \<open>n\<close> bounds the vertices, @{term fs} and @{te
       CSR form groups the edges by @{term key}, one of the two endpoints. The neighbourhoods are
       indexed by the vertices of the input.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> csr_edge_spec =
+locale csr_edge_spec =
   fixes n :: nat
     and fs :: "nat list"
     and ts :: "nat list"

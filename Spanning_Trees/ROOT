@@ -7,22 +7,11 @@ session "Spanning_Trees" = "HOL-Data_Structures" +
     "Graph_Algorithms_Dev"
     Greedoids
     Directed_Set_Graphs
-    Imperative
-    Union_Find_Partial
-  directories
-    Refinements
+
   theories
-    Spanning_Trees
-    Encoding
-    Insertion_Sort_Desc
+    "Spanning_Trees"
+    "Encoding"
+    "Insertion_Sort_Desc"
+    "Kruskal_Greedy"
     Arborescense
     Jarnik_Prim
-    Kruskal
-    Kruskal_Min
-    Kruskal_Functional
-
-    "Refinements/Quicksort_Desc_Imperative"
-    "Refinements/Kruskal_Imperative"
-    "Refinements/Kruskal_Imperative_Inst"
-    "Refinements/Kruskal_Imperative_Min_Inst"
-    "Refinements/Kruskal_Code_Export"

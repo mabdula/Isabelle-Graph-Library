@@ -3,8 +3,6 @@ theory Alt_BFS
           Data_Structures.Set2_Addons Data_Structures.More_Lists
 begin
 
-provenance human
-
 record ('graph, 'vset, 'dmap) BFS_state =
     parents:: "'graph" current:: "'vset" visited_even:: "'vset" visited_odd:: "'vset"
     distances:: "'dmap"

@@ -1,7 +1,0 @@
-(* MLton basis file of bench_sml_csr, the imperative (CSR) export.  GEN is work/exports/current/bfs;
-   bfs_api.sml there binds the export's path function for the program. *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/BFS_CSR_SML/BFS_CSR.sml
-$(GEN)/bfs_api.sml
-gr_parser.sml
-main_csr.sml

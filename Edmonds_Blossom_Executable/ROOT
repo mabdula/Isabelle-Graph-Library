@@ -8,11 +8,6 @@ session Blossom_Executable = Basic_Matching +
     Directed_Set_Graphs
     Undirected_Set_Graphs
     Graph_Algorithms_Dev
-    Imperative
-    Separation_Logic_Imperative_HOL_Partial
-
-  directories
-    Refinements
 
   theories
     Blossom_Misc
@@ -30,11 +25,3 @@ session Blossom_Executable = Basic_Matching +
     Find_Aug_Path
     Find_Aug_Path_Subprocedures
     Edmonds_Blossom_Example
-    "Refinements/Alternating_Forest_Specs_Imp"
-    "Refinements/Blossom_Matching_Specs_Imp"
-    "Refinements/Compute_Alt_Path_Imperative"
-    "Refinements/Find_Aug_Path_Subprocedures_Imperative"
-    "Refinements/Graph_Quotient_Lifting_Imperative"
-    "Refinements/Find_Aug_Path_Imperative"
-    "Refinements/Find_Max_Matching_Imperative"
-    "Refinements/Edmonds_Blossom_Imperative"

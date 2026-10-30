@@ -28,10 +28,6 @@ and arborescenceD:
  "\<lbrakk>arborescence r T; T \<noteq> {}\<rbrakk> \<Longrightarrow> Vs T = connected_component T r"
   by(auto simp add: arborescence_def)
 
-lemma contains_empty: "arborescence r {}"
-  using has_no_cycle_indep_ex has_no_cycle_indep_subset 
-  by (fastforce simp add: arborescence_def)
-
 lemma (in -) unique_walks_arborescence:
   assumes "graph_invar G" "r \<in> Vs G"
     "\<And>x y. \<lbrakk>x \<in> Vs G; y \<in> Vs G\<rbrakk> \<Longrightarrow> \<exists>!p. walk_betw G x p y \<and> distinct p"
@@ -81,6 +77,10 @@ proof-
   ultimately show ?thesis
     by (auto simp: has_no_cycle_def intro!: arborescenceI)
 qed
+
+lemma contains_empty: "arborescence r {}"
+  using has_no_cycle_indep_ex has_no_cycle_indep_subset 
+  by (fastforce simp add: arborescence_def)
 
 lemma extension_property_one: 
   assumes "arborescence r S"

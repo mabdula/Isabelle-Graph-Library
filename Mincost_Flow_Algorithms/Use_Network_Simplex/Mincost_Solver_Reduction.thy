@@ -34,9 +34,6 @@ theory Mincost_Solver_Reduction
   imports Flow_Theory.Cost_Optimality Data_Structures.Real_Embedding
 begin
 
-provenance ai
-
-
 
 subsection \<open>Validity and optimality\<close>
 
@@ -62,7 +59,7 @@ text \<open>An instance adds two data to a cost flow network: the lower bounds \
             set \<open>{1..n}\<close> of the problem line, which may properly contain \<^term>\<open>\<V>\<close>.
       \end{itemize}\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> dimacs_spec = cost_flow_spec where \<E> = "\<E>::'edge set" for \<E> +
+locale dimacs_spec = cost_flow_spec where \<E> = "\<E>::'edge set" for \<E> +
   fixes l::"'edge \<Rightarrow> ereal"
     and b::"'a \<Rightarrow> real"
 begin
@@ -149,7 +146,7 @@ text \<open>The locale above is more permissive than a DIMACS instance in two re
       DIMACS instance has finitely many arcs and integer bounds, which restores the dichotomy
       between an optimal solution and infeasibility.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> dimacs_network = dimacs_spec where \<E> = "\<E>::'edge set" for \<E> +
+locale dimacs_network = dimacs_spec where \<E> = "\<E>::'edge set" for \<E> +
   assumes finite_E: "finite \<E>"
       and u_finite: "\<And> e. e \<in> \<E> \<Longrightarrow> \<bar>\<u> e\<bar> \<noteq> \<infinity>"
       and l_finite: "\<And> e. e \<in> \<E> \<Longrightarrow> \<bar>l e\<bar> \<noteq> \<infinity>"
@@ -175,7 +172,7 @@ text \<open>The parsed form of an instance, in the style of \<open>initial_basis
       \<open>n+1\<close> whose slot \<open>0\<close> is a dummy, exactly as \<open>b_arr\<close> of
       \<open>Network_Simplex_Initial_Basis_Code\<close> does.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> dimacs_lists =
+locale dimacs_lists =
   fixes fst_list     :: "nat list"
     and snd_list     :: "nat list"
     and lower        :: "('n::linordered_idom) list"
@@ -360,7 +357,7 @@ text \<open>The embedding \<^term>\<open>h\<close> of \<^locale>\<open>real_embe
       \<^locale>\<open>multigraph\<close>. An arc-less instance is settled by inspection before the reduction is
       reached; see \<open>DIMACS_Solver\<close>.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> dimacs_lists_network =
+locale dimacs_lists_network =
   dimacs_lists where lower = "lower :: ('n::linordered_idom) list" +
   real_embedding where h = "h :: 'n \<Rightarrow> real"
   for lower h +

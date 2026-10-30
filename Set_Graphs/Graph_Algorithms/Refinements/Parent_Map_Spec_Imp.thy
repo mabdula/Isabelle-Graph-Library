@@ -2,9 +2,6 @@ theory Parent_Map_Spec_Imp
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main Graph_Algorithms_Dev.Parent_Map_Spec
 begin
 
-provenance ai
-
-
 section \<open>Imperative Parent Maps\<close>
 
 text \<open>The imperative counterparts of the locales of @{theory Graph_Algorithms_Dev.Parent_Map_Spec}.

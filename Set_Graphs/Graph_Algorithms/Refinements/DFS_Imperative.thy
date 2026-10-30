@@ -2,9 +2,6 @@ theory DFS_Imperative
 imports DFS Directed_Set_Graphs.Pair_Graph_Imperative DFS_Example
 begin
 
-provenance ai
-
-
   
     
   section \<open>Imperative DFS Locale\<close>
@@ -66,7 +63,7 @@ provenance ai
     subsection \<open>Main Algorithm\<close>
     
       
-    partial_function \<^marker>\<open>provenance ai_human\<close> (heap) DFS_imperative::"_ \<Rightarrow> _ \<Rightarrow> ('v, 'simpl) DFS_state \<Rightarrow> ('v, 'simpl) DFS_state Heap" where
+    partial_function (heap) DFS_imperative::"_ \<Rightarrow> _ \<Rightarrow> ('v, 'simpl) DFS_state \<Rightarrow> ('v, 'simpl) DFS_state Heap" where
       "DFS_imperative G t dfs_state = do {
          (case stack dfs_state of (v # stack_tl) \<Rightarrow>
            (if v = t then 
@@ -93,12 +90,12 @@ provenance ai
     lemmas [code] = DFS_imperative.simps DFS_impl.simps initial_state_def
         
     
-    lemma \<^marker>\<open>provenance ai_human\<close> DFS_initial_state_rule[sep_heap_rules]: "<emp> DFS_initial_state_impl s <DFS_state_assn (initial_state s)>"
+    lemma DFS_initial_state_rule[sep_heap_rules]: "<emp> DFS_initial_state_impl s <DFS_state_assn (initial_state s)>"
       unfolding DFS_initial_state_impl_def initial_state_def DFS_state_assn_def
       by sep_auto
   
     
-    lemma \<^marker>\<open>provenance ai_human\<close> DFS_imperative_rule[sep_heap_rules]: "<graph_assn G Gi * DFS_state_assn dfs_state dfs_statei> DFS_imperative Gi t dfs_statei <\<lambda>ri. graph_assn G Gi * DFS_state_assn (DFS_impl G t dfs_state) ri>"
+    lemma DFS_imperative_rule[sep_heap_rules]: "<graph_assn G Gi * DFS_state_assn dfs_state dfs_statei> DFS_imperative Gi t dfs_statei <\<lambda>ri. graph_assn G Gi * DFS_state_assn (DFS_impl G t dfs_state) ri>"
     proof (induction arbitrary: dfs_state dfs_statei rule: DFS_imperative.fixp_induct)
       case 1
       then show ?case by simp
@@ -181,7 +178,7 @@ provenance ai
 
     definition "DFS_imperative' G s t \<equiv> do { state\<leftarrow>DFS_initial_state_impl s; DFS_imperative G t state }"
     
-lemma \<^marker>\<open>provenance ai_human\<close> DFS_imperative'_rule[sep_heap_rules]: 
+lemma DFS_imperative'_rule[sep_heap_rules]: 
         "<graph_assn G Gi> DFS_imperative' Gi s t
            <\<lambda>ri. graph_assn G Gi * DFS_state_assn (DFS_run_impl G s t) ri>"
       unfolding DFS_imperative'_def DFS_run_def DFS_run_impl_def by sep_auto
@@ -216,7 +213,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> DFS_imperative'_rule[sep_heap
     *)  
     thm DFS_correct_1 DFS_correct_2
   
-lemma \<^marker>\<open>provenance ai_human\<close> DFS_imperative'_absrl: 
+lemma DFS_imperative'_absrl: 
       "<graph_assn G Gi> DFS_imperative' Gi s t <\<lambda>ri. graph_assn G Gi * \<up>(
       case DFS_state.return ri of
         NotReachable \<Rightarrow> \<nexists>p. distinct p \<and> vwalk_bet (digraph_abs G) s p t
@@ -356,7 +353,7 @@ in SML_imp module_name exported file_prefix DFS_imperative
   text \<open>DFS on a graph given by two arrays holding the first and the second endpoints of the
         edges: build the imperative graph (a map to neighbourhood lists) and run the imperative DFS.\<close>
 
-  definition \<^marker>\<open>provenance ai_human\<close> dfs_input_arrays_run where
+  definition dfs_input_arrays_run where
     "dfs_input_arrays_run Fa Ta s t = do {
        G \<leftarrow> iam_graph.from_arrays_impl Fa Ta;
        iam_dfs.DFS_imperative' G s t }"
@@ -373,7 +370,7 @@ in SML_imp module_name exported file_prefix DFS_imperative
     is_ias ias_new ias_memb ias_ins ias_delete "iam_graph.from_list (zip fs ts)" s t
     by unfold_locales (simp add: iam_dfs.DFS_axioms_def iam_graph.from_list_correct(2,3) s_in_G)
 
-  theorem \<^marker>\<open>provenance ai_human\<close> dfs_input_arrays_run_correct:
+  theorem dfs_input_arrays_run_correct:
     "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> dfs_input_arrays_run Fa Ta s t
      <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * \<up>(case DFS_state.return r of
           NotReachable \<Rightarrow> \<nexists>p. vwalk_bet (set (zip fs ts)) s p t

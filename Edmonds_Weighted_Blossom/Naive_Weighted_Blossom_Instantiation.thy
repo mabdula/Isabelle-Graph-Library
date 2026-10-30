@@ -4,8 +4,6 @@ theory Naive_Weighted_Blossom_Instantiation
     Blossom_Executable.Find_Max_Matching
 begin
 
-provenance human
-
 section \<open>Instantiation of the Abstract Algorithm\<close>
 
 text \<open>The matching and reduced decomposition are computed on the graph, matching and
@@ -76,8 +74,6 @@ interpretation pedg: find_aug_path_pedg
   apply (rule Subprocedures.compute_match_blossom(2); assumption)
   apply (rule Subprocedures.compute_match_blossom(3); assumption)
   apply (rule create_vert)
-  apply (erule create_vert_in_univ[OF psubset_imp_subset])
-  apply (rule create_vert)
   apply (erule create_vert_in_univ)
   apply (simp only: compute_blossom_None; rule compute_pedg_props(2); assumption)
   by (simp only: compute_blossom_None; rule compute_pedg_props(1); assumption)
@@ -98,11 +94,11 @@ interpretation max_matching: Find_Max_Matching
       Find_Max_Matching_axioms.intro)
   apply (rule Decomposition.Find_Aug_Path_run_impl_correct(1)[
       unfolded Decomposition.Find_Aug_Path_axiom_def])
-  apply (intro conjI; assumption)
+  apply (rule conjI; assumption)
   apply assumption
   apply (rule Decomposition.Find_Aug_Path_run_impl_correct(2)[
       unfolded Decomposition.Find_Aug_Path_axiom_def])
-  apply (intro conjI; assumption)
+  apply (rule conjI; assumption)
   by assumption
 
 definition "maximum_matching G vs =
@@ -113,9 +109,6 @@ lemma maximum_matching_correct:
   shows "max_card_matching (GM.ugraph_abs G) (Matching.\<M> (maximum_matching G vs))"
     "GM.matching_invar G (maximum_matching G vs)"
 proof-
-  have \<^marker>\<open>provenance ai\<close> strict: "set vs \<subset> K"
-    using GM.graph_inputD(7)[OF assms] create_vert[of vs] create_vert_in_univ[of vs]
-    by blast
   interpret proofs: Find_Max_Matching_thms
   where empty = empty and delete = delete and lookup = lookup and update = update
     and adjmap_inv = adjmap_inv and insert = insert and isin = isin and t_set = t_set
@@ -129,7 +122,7 @@ proof-
     and G = G and vs = vs and aug_path_search = "Decomposition.Find_Aug_Path_run_impl G vs"
     by (intro Find_Max_Matching_thms.intro max_matching.Find_Max_Matching_axioms
         Find_Max_Matching_thms_axioms.intro)
-       (simp add: max_matching.Find_Max_Matching_axiom_def assms strict)
+       (simp only: max_matching.Find_Max_Matching_axiom_def assms)
   show "max_card_matching (GM.ugraph_abs G) (Matching.\<M> (maximum_matching G vs))"
     "GM.matching_invar G (maximum_matching G vs)"
     using proofs.Find_Max_Matching_correct_1 proofs.Find_Max_Matching_correct_2

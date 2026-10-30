@@ -6,9 +6,6 @@ theory Push_Relabel_HL_Imperative
     Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
-provenance ai
-
-
 section \<open>Imperative Highest-Label Push-Relabel\<close>
 
 text \<open>The context of the highest-label strategy in place: the buckets of active vertices, a
@@ -36,7 +33,7 @@ locale push_relabel_hl_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t 
     and vertex_fold_imp :: "'vs \<Rightarrow> ('v \<Rightarrow> unit Heap) \<Rightarrow> unit Heap"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) hl_find_imp :: "'bki \<Rightarrow> nat ref \<Rightarrow> nat \<Rightarrow> 'v option Heap" where
+partial_function (heap) hl_find_imp :: "'bki \<Rightarrow> nat ref \<Rightarrow> nat \<Rightarrow> 'v option Heap" where
   "hl_find_imp Bi Br k = do {
      p \<leftarrow> buckets_pick_imp Bi k;
      (case p of
@@ -57,7 +54,7 @@ definition "hl_after_push_imp Bi Br Cf Cu Si u v keep = do {
     else return ());
    if keep then cur_set_imp Cf Cu u else cur_clear_imp Cf }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) hl_lift_imp :: "'bki \<Rightarrow> nat ref \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function (heap) hl_lift_imp :: "'bki \<Rightarrow> nat ref \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "hl_lift_imp Bi Br k j =
      (if j = 0 \<or> j \<le> k then return ()
       else do {
@@ -160,7 +157,7 @@ lemma suc_num_verts_bound: "Suc num_verts < 2 * card \<V>"
   using card_V_ge_2
   by (simp add: num_verts)
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_find_imp_rule:
+lemma hl_find_imp_rule:
   assumes "buckets_invar Bk" "k < 2 * card \<V>"
   shows "<buckets_assn Bk Bi * Br \<mapsto>\<^sub>r b> hl_find_imp Bi Br k
          <\<lambda>r. buckets_assn Bk Bi *
@@ -180,7 +177,7 @@ next
                        Suc.IH[OF Suc_lessD[OF Suc.prems]])+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_insert_imp_rule:
+lemma hl_insert_imp_rule:
   assumes "label_invar (pr_labels st)" "buckets_invar Bk" "v \<in> \<V>" "buckets_abstract Bk v = None"
           "label_get (pr_labels st) v < 2 * card \<V>"
   shows "<state_assn st Si * buckets_assn Bk Bi * Br \<mapsto>\<^sub>r b> hl_insert_imp Bi Br Si v
@@ -190,7 +187,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> hl_insert_imp_rule:
   by (sep_auto heap: label_get_state_rule[OF assms(1,3)]
                      bucket_imp.buckets_insert_rule[OF assms(2,3) assms(5)[folded lessThan_iff] assms(4)])
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_after_push_imp_rule:
+lemma hl_after_push_imp_rule:
   assumes "invar_state st" "buckets_invar Bk" "v \<in> \<V>"
           "v \<noteq> s \<and> v \<noteq> t \<and> ex_get (pr_excess st) v \<le> 0
            \<Longrightarrow> buckets_abstract Bk v = None"
@@ -219,7 +216,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_lift_imp_rule:
+lemma hl_lift_imp_rule:
   assumes "buckets_invar Bk" "j < num_verts"
   shows "<buckets_assn Bk Bi * Br \<mapsto>\<^sub>r b> hl_lift_imp Bi Br k j
          <\<lambda>_. buckets_assn (prod.fst (hl_lift Bk b k j)) Bi * Br \<mapsto>\<^sub>r prod.snd (hl_lift Bk b k j)>"
@@ -261,7 +258,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_after_relabel_imp_rule:
+lemma hl_after_relabel_imp_rule:
   assumes "invar_state st" "buckets_invar Bk" "u \<in> \<V>"
   shows "<state_assn st Si * hl_ctx_assn (Bk, b, cur) (Bi, Br, Cf, Cu, Vi)>
            hl_after_relabel_imp Bi Br Cf Cu Si u
@@ -307,7 +304,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_ctx_upd_imp_rule:
+lemma hl_ctx_upd_imp_rule:
   assumes "invar_state st" "buckets_invar Bk" "u \<in> \<V>" "good_op st op"
           "\<And> w. active_vertex s t (flow_abs st) w
                  \<longleftrightarrow> buckets_abstract Bk w \<noteq> None \<or> w = u"
@@ -351,7 +348,7 @@ proof-
   qed (sep_auto simp: hl_ctx_upd_imp_def hl_ctx_upd_def hl_ctx_assn_tuple heap: cur_set_rule)+
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_discharge_imp_rule:
+lemma hl_discharge_imp_rule:
   assumes "invar_state st" "buckets_invar Bk"
           "\<And> w. active_vertex s t (flow_abs st) w
                  \<longleftrightarrow> buckets_abstract Bk w \<noteq> None \<or> w = u"
@@ -390,7 +387,7 @@ lemma hl_ctx_invar_cur:
   using assms bucket.buckets_remove[of Bk u k]
   by (auto simp: hl_ctx_invar_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_select_imp_rule:
+lemma hl_select_imp_rule:
   assumes "invar_state st" "hl_ctx_invar st" "hl.select_of st = (op, c)"
   shows "<state_assn st Si * hl_ctx_assn (pr_ctx st) Ci> hl_select_imp Ci Si
          <\<lambda>r. state_assn st Si * hl_ctx_assn c Ci * \<up>(r = op)>"
@@ -458,7 +455,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hl_init_ctx_imp_rule:
+lemma hl_init_ctx_imp_rule:
   "<state_assn hl.init_state Si * hl_ctx_init_assn Ci> hl_init_ctx_imp Ci Si
    <\<lambda>_. state_assn hl.init_state Si * hl_ctx_assn (pr_ctx hl.init_state) Ci>"
 proof-

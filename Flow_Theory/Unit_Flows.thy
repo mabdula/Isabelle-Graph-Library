@@ -4,8 +4,6 @@ theory Unit_Flows
     Flow_Theory.STFlow
 begin
 
-provenance human
-
 section \<open>Unit Flows\<close>
 
 text \<open>A unit network is a flow network, i.e. a multigraph, in which all edges have capacity one.

@@ -150,6 +150,7 @@ locale \<^marker>\<open>provenance ai_human\<close> quot_lift = quot E s u for E
       and mate_M: "\<And>v w. mate v = Some w \<longleftrightarrow> {v, w} \<in> M"
       and M_subset_E: "M \<subseteq> E"
       and s_cycle: "s = Vs E - set C"
+      and u_fresh: "u \<notin> Vs E"
       and hd_last_cycle: "hd C = last C"
 begin
 
@@ -206,7 +207,7 @@ proof
     using M_subset_E
     by (auto simp: Vs_def)
   hence "x \<noteq> u"
-    using c(1) s_cycle good_quot_map(1)
+    using u_fresh
     by auto
   have "P ` {x, c} = {x, u}"
     using c(1,3) \<open>x \<in> Vs E\<close> s_cycle
@@ -257,11 +258,11 @@ next
         using eq
         by auto
       thus False
-        using \<open>a \<in> Vs E\<close> \<open>b \<in> Vs E\<close> False \<open>b \<notin> set C\<close> s_cycle good_quot_map(1)
+        using \<open>a \<in> Vs E\<close> \<open>b \<in> Vs E\<close> u_fresh
         by auto
     qed
     moreover have "x = a"
-      using eq \<open>b \<in> set C\<close> \<open>x \<noteq> u\<close> s_cycle good_quot_map(1) \<open>b \<in> Vs E\<close>
+      using eq \<open>b \<in> set C\<close> \<open>x \<noteq> u\<close> s_cycle u_fresh \<open>b \<in> Vs E\<close>
       by (auto simp: doubleton_eq_iff)
     ultimately show ?thesis
       using False ab(2)
@@ -2377,7 +2378,7 @@ proof-
   proof-
     define a2' where "a2' = hd p2"
     interpret Lc: quot_lift E s u adj mate M C
-      by (unfold_locales; (rule adj_E mate_M M_subset_E | rule quot | rule odd_cycleD(3)[OF cycle(1)])+)
+      by (unfold_locales; (rule adj_E mate_M M_subset_E u_fresh | rule quot | rule odd_cycleD(3)[OF cycle(1)])+)
     define p2' where "p2' = tl p2"
     have Cons: "p2 = a2' # p2'"
       unfolding a2'_def p2'_def
@@ -2690,7 +2691,7 @@ proof(rule, goal_cases)
       using Berge[OF matching dblton_E finite_Vs] graph_matching
       by(auto simp add: max_card_matching_def)
     then obtain p' where "graph_augmenting_path (quotG E) (quotG M) p'"
-      using aug_path_works_in_contraction[OF assms(1) p matching(2,3,1) quot(1)] quot(2)
+      using aug_path_works_in_contraction[OF assms(1) p matching(2,3,1) quot]
       by auto
     moreover have "graph_matching (quotG E) (quotG M)"
       using max_card_matchingDs(1,2) one by blast

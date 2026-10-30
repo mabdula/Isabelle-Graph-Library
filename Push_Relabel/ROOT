@@ -6,7 +6,6 @@ session "Push_Relabel" = "HOL-Library" +
     Imperative
     Separation_Logic_Imperative_HOL_Partial
     Prpu_Maxflow
-    AI_Provenance
 
   directories
     Refinements

@@ -3,8 +3,6 @@ theory Naive_Weighted_Blossom
     "HOL-Library.Disjoint_Sets" Data_Structures.More_Arith Partition_Quotient_Graph
 begin
 
-provenance human
-
 section \<open>Outline of the Weighted Matching Algorithm (see KV)\<close>
 
 lemma near_perfect_matching_odd:

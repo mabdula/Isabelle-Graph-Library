@@ -4,9 +4,6 @@ theory Push_Relabel_HL
     Data_Structures.Fixed_Univ_Buckets_Specs
 begin
 
-provenance ai
-
-
 section \<open>Highest-Label Push-Relabel with the Gap Heuristic\<close>
 
 text \<open>The context of the strategy consists of buckets of active vertices, an upper bound \<open>b\<close>
@@ -26,7 +23,7 @@ text \<open>The context of the strategy consists of buckets of active vertices, 
       @{term bucket_vertex_fold} has the same specification as @{term vertex_fold}, but a
       different accumulator type.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> push_relabel_hl_spec =
+locale push_relabel_hl_spec =
   push_relabel_ops where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar +
   bucket: fixed_univ_buckets \<V> "{..<2 * card \<V>}" buckets_invar buckets_abstract buckets_empty
@@ -52,7 +49,7 @@ lemmas buckets_move_lt = bucket.buckets_move[unfolded lessThan_iff]
 
 text \<open>The highest non-empty bucket at or below \<open>k\<close>, with one of its vertices.\<close>
 
-fun \<^marker>\<open>provenance ai_human\<close> hl_find where
+fun hl_find where
   "hl_find Bk 0 = (case buckets_pick Bk 0 of Some u \<Rightarrow> Some (0, u) | None \<Rightarrow> None)"
 | "hl_find Bk (Suc k) =
      (case buckets_pick Bk (Suc k) of Some u \<Rightarrow> Some (Suc k, u) | None \<Rightarrow> hl_find Bk k)"
@@ -69,7 +66,7 @@ definition "hl_after_push Bk b u v keep x l =
 text \<open>A gap at \<open>k\<close>: the non-empty buckets \<open>j\<close> with
       \<open>k < j\<close>, from \<open>j\<close> downwards, are moved into bucket \<open>|V| + 1\<close>.\<close>
 
-fun \<^marker>\<open>provenance ai_human\<close> hl_lift where
+fun hl_lift where
   "hl_lift Bk b k 0 = (Bk, b)"
 | "hl_lift Bk b k (Suc j) =
      (if Suc j \<le> k then (Bk, b)
@@ -127,7 +124,7 @@ definition "hl_ctx_invar st =
 
 end
 
-locale \<^marker>\<open>provenance ai_human\<close> push_relabel_hl =
+locale push_relabel_hl =
   push_relabel_hl_spec where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd
       and label_upd = label_upd and count_upd = count_upd and out_invar = out_invar +
   push_relabel_ops_correct where fst = fst and emap_upd = emap_upd and ex_upd = ex_upd

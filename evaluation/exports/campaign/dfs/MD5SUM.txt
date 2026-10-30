@@ -1,3 +1,0 @@
-55327ac27a007b3ddff0b42edce2254a  ./DFS_CSR_SML/DFS_CSR.sml
-8cdd292f7fe5ea19bdaad5dc3e2db15b  ./DFS_Lists_SML/DFS_Lists.sml
-13387dd54a2aa181faacf0725a7e277f  ./DFS_RBT_SML/DFS_RBT.sml

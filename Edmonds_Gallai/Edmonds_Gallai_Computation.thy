@@ -4,8 +4,6 @@ theory Edmonds_Gallai_Computation
     Basic_Matching.Alternating_Forest_Executable
 begin 
 
-provenance human
-
 section \<open>Computing the Decomposition with the Blossom Algorithm\<close>
 
 subsection \<open>Obtaining the Decomposition from a Maximal Tree\<close>
@@ -456,9 +454,7 @@ locale find_aug_path_edg =
     and fset_delete :: "'v \<Rightarrow> 'fset \<Rightarrow> 'fset"
     and fset_isin :: "'fset \<Rightarrow> 'v \<Rightarrow> bool" +
   fixes edg_search :: "'adjmap \<Rightarrow> 'v list \<Rightarrow> 'mate \<Rightarrow> 'fset \<times> 'fset"
-  assumes create_vert_fresh: "\<And>vs'. create_vert vs' \<notin> set vs'"
-  and create_vert_univ: "\<And>vs'. set vs' \<subseteq> K \<Longrightarrow> create_vert vs' \<in> K"
-  and edg_search_sound:
+  assumes edg_search_sound:
     "\<And>E vs' N. \<lbrakk>graph_input E vs'; matching_invar E N; blos_search E vs' N = None\<rbrakk>
       \<Longrightarrow> edmonds_gallai (ugraph_abs E) (matching_abs N)
         {{v} |v. v \<in> fset_to_set (fst (edg_search E vs' N))}
@@ -560,8 +556,8 @@ proof (induction "card (Vs (ugraph_abs E))" arbitrary: E vs' N rule: less_induct
   proof -
     have contract: "graph_input E vs'" "matching_invar E N"
       "blossom (ugraph_abs E) (matching_abs N) stem C"
-      "create_vert vs' \<notin> set vs' - set C" "create_vert vs' \<in> K"
-      using less.prems blos_search(2)[OF less.prems that] create_vert_fresh create_vert_univ
+      "create_vert vs' \<notin> set vs'" "create_vert vs' \<in> K"
+      using less.prems blos_search(2)[OF less.prems that] create_vert create_vert_in_univ
       by (auto dest: graph_inputD(7))
     show ?thesis
       by (rule less.hyps[OF contract_card_Vs[OF contract]
@@ -613,17 +609,13 @@ proof -
         by (cases r) blast+
       let ?u = "create_vert vs'"
       have contract: "graph_input E vs'" "matching_invar E N"
-        "blossom (ugraph_abs E) (matching_abs N) stem C" "?u \<notin> set vs' - set C" "?u \<in> K"
+        "blossom (ugraph_abs E) (matching_abs N) stem C" "?u \<notin> set vs'" "?u \<in> K"
         using less.prems(1,2) blos_search(2)[OF less.prems(1,2) result]
-          create_vert_fresh create_vert_univ[OF graph_inputD(7)[OF less.prems(1)]]
+          create_vert create_vert_in_univ[OF graph_inputD(7)[OF less.prems(1)]]
         by auto
       interpret Q: quot "ugraph_abs E" "Vs (ugraph_abs E) - set C" ?u
         by (rule quot_here[OF contract])
       note abs = contract_graph_abs[OF contract] contract_matching_abs[OF contract]
-      have fresh: "?u \<notin> Vs (ugraph_abs E)"
-        "create_vert (?u # vs') \<notin> Vs (ugraph_abs E)" "create_vert (?u # vs') \<noteq> ?u"
-        using create_vert_fresh[of vs'] create_vert_fresh[of "?u # vs'"]
-          Vs_ugraph_abs_subset_vs[OF less.prems(1)] by auto
       let ?E = "contract_graph E vs' C ?u"
       let ?vs = "contract_vertices vs' C ?u"
       let ?N = "contract_matching N C ?u"
@@ -633,7 +625,7 @@ proof -
         using matching_invar_props(2,3)[OF less.prems(2)] by auto
       have max: "max_card_matching (ugraph_abs ?E) (matching_abs ?N)"
         using Q.max_card_matching_equiv_blossom_contraction[
-          OF contract(3) matching refl fresh(1)] less.prems(3)
+          OF contract(3) matching refl contraction_facts(6)[OF contract]] less.prems(3)
         by (simp add: abs)
       have IH: "list_all fset_invar ?Ds" "fset_invar ?A"
         "edmonds_gallai (Q.quotG (ugraph_abs E)) (Q.quotG (matching_abs N))
@@ -648,6 +640,10 @@ proof -
         "fset_to_set (edg_insert_list C fset_empty) = set C"
         using edg_insert_list_props[OF Fset.fixed_univ_set_empty(1) C]
         by (auto simp: Fset.fixed_univ_set_empty(2))
+      have fresh: "?u \<notin> Vs (ugraph_abs E)"
+        "create_vert (?u # vs') \<notin> Vs (ugraph_abs E)" "create_vert (?u # vs') \<noteq> ?u"
+        using create_vert[of "?u # vs'"] Vs_ugraph_abs_subset_vs[OF less.prems(1)]
+          contraction_facts(6)[OF contract] by auto
       show ?thesis
       proof (cases "edg_isolated E C (edg_insert_list C fset_empty)")
         case True
@@ -873,8 +869,6 @@ sublocale Decomposition: find_aug_path_edg
   apply (rule Subprocedures.compute_match_blossom(1); assumption)
   apply (rule Subprocedures.compute_match_blossom(2); assumption)
   apply (rule Subprocedures.compute_match_blossom(3); assumption)
-  apply (rule create_vert)
-  apply (erule create_vert_in_univ[OF psubset_imp_subset])
   apply (rule create_vert)
   apply (erule create_vert_in_univ)
   by (simp only: compute_blossom_None; rule compute_edg_props; assumption)+

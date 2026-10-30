@@ -3,9 +3,6 @@ theory CSR_Graph
     Imperative.Array_Range_Iteration Data_Structures.More_Logic
 begin
 
-provenance ai
-
-
 section \<open>Graphs in CSR Form\<close>
 
 text \<open>The imperative refinement of the CSR graphs of @{theory Directed_Set_Graphs.CSR_Graph_Spec},
@@ -33,19 +30,19 @@ sublocale csr_graph_imp \<subseteq> csr_ranges_imp n K B "\<lambda>v. B ! Suc v"
 text \<open>The imperative collection: the arrays \<open>B\<close> and \<open>E\<close> and the cursor array
       \<open>C\<close> of size \<open>n\<close>. The programs are global.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_has_imp ::
+definition csr_has_imp ::
   "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "csr_has_imp = (\<lambda>(Ba, Ea, Ca) v. do { i \<leftarrow> Array.nth Ca v; e \<leftarrow> Array.nth Ba (Suc v); return (i < e) })"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_current_imp ::
+definition csr_current_imp ::
   "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> 'e Heap" where
   "csr_current_imp = (\<lambda>(Ba, Ea, Ca) v. do { i \<leftarrow> Array.nth Ca v; Array.nth Ea i })"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_move_imp ::
+definition csr_move_imp ::
   "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_move_imp = (\<lambda>(Ba, Ea, Ca) v. do { i \<leftarrow> Array.nth Ca v; _ \<leftarrow> Array.upd v (Suc i) Ca; return () })"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_reset_imp ::
+definition csr_reset_imp ::
   "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_reset_imp = (\<lambda>(Ba, Ea, Ca) v. do { s \<leftarrow> Array.nth Ba v; _ \<leftarrow> Array.upd v s Ca; return () })"
 
@@ -54,7 +51,7 @@ text \<open>One step of the iterator of \<open>v\<close> over a range whose end 
       \<open>f\<close>, otherwise continue with \<open>g\<close>. The cursor is read once. The step is inlined at
       its call sites.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_step_upto_imp ::
+definition csr_step_upto_imp ::
   "nat array \<times> 'e::heap array \<times> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> ('e \<Rightarrow> 'a Heap) \<Rightarrow> 'a Heap
    \<Rightarrow> 'a Heap" where
   "csr_step_upto_imp = (\<lambda>(Ba, Ea, Ca) Ha v f g. do {
@@ -78,7 +75,7 @@ lemma csr_step_upto_imp_mono[partial_function_mono]:
 
 text \<open>Appending to a range (@{const csr_append}): the end is read once.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_append_imp ::
+definition csr_append_imp ::
   "'e::heap array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'e \<Rightarrow> unit Heap" where
   "csr_append_imp Ea Ha v x = do {
      h \<leftarrow> Array.nth Ha v;
@@ -86,7 +83,7 @@ definition \<^marker>\<open>provenance ai_human\<close> csr_append_imp ::
      _ \<leftarrow> Array.upd v (Suc h) Ha;
      return () }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_append_imp_rule:
+lemma csr_append_imp_rule:
   "\<lbrakk>v < length Hl; Hl ! v < length E\<rbrakk> \<Longrightarrow>
    <Ea \<mapsto>\<^sub>a E * Ha \<mapsto>\<^sub>a Hl> csr_append_imp Ea Ha v x
    <\<lambda>_. Ea \<mapsto>\<^sub>a snd (csr_append v x (Hl, E)) * Ha \<mapsto>\<^sub>a fst (csr_append v x (Hl, E))>"
@@ -94,12 +91,12 @@ lemma \<^marker>\<open>provenance ai_human\<close> csr_append_imp_rule:
 
 text \<open>Emptiness of the block of a vertex (@{const csr_blocks.csr_empty}): two reads of \<open>B\<close>.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_empty_imp :: "nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition csr_empty_imp :: "nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "csr_empty_imp Ba v = do { a \<leftarrow> Array.nth Ba v; b \<leftarrow> Array.nth Ba (Suc v); return (a = b) }"
 
 text \<open>The cursor array is initialised as a copy of the start indices.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_cursor_init :: "nat \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
+definition csr_cursor_init :: "nat \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
   "csr_cursor_init n Ba = do { Ca \<leftarrow> Array.new n 0; copy_prefix_imp n Ba Ca 0; return Ca }"
 
 text \<open>Cursors and their reset need no distinct entries.\<close>
@@ -125,28 +122,28 @@ lemma csr_assn_release:
   "csr_assn c (Ba, Ea, Ca) \<Longrightarrow>\<^sub>A Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E * (\<exists>\<^sub>Al. Ca \<mapsto>\<^sub>a l * \<up>(length l = n))"
   by (sep_auto simp: csr_assn_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_current_imp_rule:
+lemma csr_current_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_current_imp (Ba, Ea, Ca) v
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_current c v)>"
   using assms H_hi[of v] B_bound[of v] K_less[of v]
   by (sep_auto simp: csr_assn_def csr_current_imp_def csr_current_def remaining_ne)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_move_imp_rule:
+lemma csr_move_imp_rule:
   assumes "v \<in> K" "csr_remaining c v \<noteq> {}"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_move_imp (Ba, Ea, Ca) v
          <\<lambda>_. csr_assn (csr_move c v) (Ba, Ea, Ca)>"
   using K_less[of v] assms
   by (sep_auto simp: csr_assn_def csr_move_imp_def csr_move_def remaining_ne nth_list_update)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_reset_imp_rule:
+lemma csr_reset_imp_rule:
   assumes "v \<in> K"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_reset_imp (Ba, Ea, Ca) v
          <\<lambda>_. csr_assn (csr_reset c v) (Ba, Ea, Ca)>"
   using K_less[of v] assms B_length
   by (sep_auto simp: csr_assn_def csr_reset_imp_def csr_reset_def nth_list_update)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_step_upto_imp_rule:
+lemma csr_step_upto_imp_rule:
   assumes "v \<in> K" "v < length Hl" "Hl ! v = H v"
     and "csr_has c v \<Longrightarrow>
            <csr_assn (csr_move c v) (Ba, Ea, Ca) * Ha \<mapsto>\<^sub>a Hl * F> f (csr_current c v) <Q>"
@@ -170,7 +167,7 @@ next
         heap: assms(5)[OF False, unfolded csr_assn_def prod.case])
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_empty_imp_rule:
+lemma csr_empty_imp_rule:
   assumes "v < n"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_empty_imp Ba v
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_empty v)>"
@@ -179,14 +176,14 @@ lemma \<^marker>\<open>provenance ai_human\<close> csr_empty_imp_rule:
 
 text \<open>Copying the start indices into the cursor array, from index \<open>i\<close> on.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_cursor_copy_rule:
+lemma csr_cursor_copy_rule:
   assumes "i \<le> n" "length l = n" "\<forall>j<i. l ! j = B ! j"
   shows "<Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a l> copy_prefix_imp n Ba Ca i
          <\<lambda>_. Ba \<mapsto>\<^sub>a B * Ca \<mapsto>\<^sub>a take n B>"
   using copy_prefix_imp_rule[of i n B l Ba Ca] assms B_length nth_equalityI[of "take i l" "take i B"]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_cursor_init_rule:
+lemma csr_cursor_init_rule:
   "<Ba \<mapsto>\<^sub>a B * Ea \<mapsto>\<^sub>a E> csr_cursor_init n Ba <\<lambda>Ca. csr_assn (\<lambda>v. B ! v) (Ba, Ea, Ca)>"
   unfolding csr_cursor_init_def csr_assn_def
   using B_length K_less
@@ -201,7 +198,7 @@ end
 context csr_graph_imp
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_has_imp_rule:
+lemma csr_has_imp_rule:
   assumes "v \<in> K"
   shows "<csr_assn c (Ba, Ea, Ca)> csr_has_imp (Ba, Ea, Ca) v
          <\<lambda>r. csr_assn c (Ba, Ea, Ca) * \<up>(r = csr_has c v)>"
@@ -227,7 +224,7 @@ text \<open>The entries of the block of a vertex can also be folded over directl
       requires the end of the range to be a valid index; the last block ends at the length of
       the array.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_fold_imp ::
+definition csr_fold_imp ::
   "nat array \<times> 'e::heap array \<Rightarrow> nat \<Rightarrow> ('e \<Rightarrow> 'a \<Rightarrow> 'a Heap) \<Rightarrow> 'a \<Rightarrow> 'a Heap" where
   "csr_fold_imp = (\<lambda>(Ba, Ea) v f acc. do {
      i \<leftarrow> Array.nth Ba v;
@@ -245,7 +242,7 @@ lemma csr_fold_imp_inline[code_unfold]:
 
 declare iterate_range_strict.simps[code]
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_fold_imp_rule:
+lemma csr_fold_imp_rule:
   assumes "Suc v < length B" "B ! Suc v \<le> length E"
     and "\<And>acc acci x. x \<in> set (nths E {B ! v..<B ! Suc v}) \<Longrightarrow>
            <acc_assn acc acci * F> fi x acci <\<lambda>r. acc_assn (f acc x) r * F>"
@@ -270,7 +267,7 @@ lemma csr_list_nths: "v < n \<Longrightarrow> csr_list v = nths E {B ! v..<B ! S
   using B_bound
   by (simp add: csr_list_def map_nth_upt_take_drop nths_intervall_strict_as_drop_and_take drop_take)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_fold_imp_refine:
+lemma csr_fold_imp_refine:
   assumes "v \<in> K"
     and "\<And>acc acci x. x \<in> csr_abstract c v \<Longrightarrow>
            <acc_assn acc acci> fi x acci <\<lambda>r. acc_assn (f x acc) r>"
@@ -306,17 +303,17 @@ definition ends_assn ::
   "nat list \<Rightarrow> nat list \<Rightarrow> nat array \<times> nat array \<Rightarrow> assn" where
   "ends_assn fs ts = (\<lambda>(Fa, Ta). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts)"
 
-definition \<^marker>\<open>provenance ai_human\<close> src_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition src_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "src_imp = (\<lambda>(Fa, Ta) i. Array.nth Fa i)"
 
-definition \<^marker>\<open>provenance ai_human\<close> tgt_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition tgt_imp :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "tgt_imp = (\<lambda>(Fa, Ta) i. Array.nth Ta i)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> src_imp_rule:
+lemma src_imp_rule:
   "i < length fs \<Longrightarrow> <ends_assn fs ts Ei> src_imp Ei i <\<lambda>u. ends_assn fs ts Ei * \<up>(u = e_src fs i)>"
   by (cases Ei) (sep_auto simp: ends_assn_def src_imp_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> tgt_imp_rule:
+lemma tgt_imp_rule:
   "\<lbrakk>i < length fs; length ts = length fs\<rbrakk> \<Longrightarrow>
    <ends_assn fs ts Ei> tgt_imp Ei i <\<lambda>v. ends_assn fs ts Ei * \<up>(v = e_tgt fs ts i)>"
   by (cases Ei) (sep_auto simp: ends_assn_def tgt_imp_def)
@@ -324,13 +321,13 @@ lemma \<^marker>\<open>provenance ai_human\<close> tgt_imp_rule:
 text \<open>The imperative input iterator: the container is the pair of endpoint arrays, the iterator
       state is the position, which is the edge.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> edge_has_next :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition edge_has_next :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "edge_has_next = (\<lambda>(Fa, Ta) i. do { l \<leftarrow> Array.len Fa; return (i < l) })"
 
-definition \<^marker>\<open>provenance ai_human\<close> edge_cur :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition edge_cur :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "edge_cur = (\<lambda>_ i. return i)"
 
-definition \<^marker>\<open>provenance ai_human\<close> edge_adv :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition edge_adv :: "nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "edge_adv = (\<lambda>_ i. return (Suc i))"
 
 subsection \<open>The CSR buildup for the input\<close>
@@ -369,27 +366,27 @@ text \<open>The CSR collection of @{locale csr_graph} (start array \<open>B\<clo
 
       None of the operations allocates.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> wnb_has_imp ::
+definition wnb_has_imp ::
   "(nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "wnb_has_imp = (\<lambda>(Ci, Wa) v. csr_has_imp Ci v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> wnb_current_imp ::
+definition wnb_current_imp ::
   "('e \<Rightarrow> 'a) \<Rightarrow> (nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> nat \<Rightarrow> 'a Heap" where
   "wnb_current_imp tgt = (\<lambda>(Ci, Wa) v. do { e \<leftarrow> csr_current_imp Ci v; return (tgt e) })"
 
-definition \<^marker>\<open>provenance ai_human\<close> wnb_current_cost_imp ::
+definition wnb_current_cost_imp ::
   "(nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> nat \<Rightarrow> 'w Heap" where
   "wnb_current_cost_imp = (\<lambda>((Ba, Ea, Ca), Wa) v. do { i \<leftarrow> Array.nth Ca v; Array.nth Wa i })"
 
-definition \<^marker>\<open>provenance ai_human\<close> wnb_move_imp ::
+definition wnb_move_imp ::
   "(nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "wnb_move_imp = (\<lambda>(Ci, Wa) v. csr_move_imp Ci v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> wnb_reset_imp ::
+definition wnb_reset_imp ::
   "(nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "wnb_reset_imp = (\<lambda>(Ci, Wa) v. csr_reset_imp Ci v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> wnb_reset_all_imp ::
+definition wnb_reset_all_imp ::
   "nat \<Rightarrow> (nat array \<times> 'e::heap array \<times> nat array) \<times> 'w::heap array \<Rightarrow> unit Heap" where
   "wnb_reset_all_imp n = (\<lambda>((Ba, Ea, Ca), Wa). copy_prefix_imp n Ba Ca 0)"
 
@@ -458,20 +455,20 @@ definition wnb_assn ::
 lemma wnb_assn_split: "wnb_assn c (Ci, Wa) = csr_assn c Ci * Wa \<mapsto>\<^sub>a W"
   by (simp add: wnb_assn_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wnb_has_imp_rule:
+lemma wnb_has_imp_rule:
   "v \<in> K \<Longrightarrow>
    <wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_has_imp ((Ba, Ea, Ca), Wa) v
    <\<lambda>r. wnb_assn c ((Ba, Ea, Ca), Wa) * \<up>(r = csr_has c v)>"
   by (sep_auto heap: csr_has_imp_rule simp: wnb_assn_def wnb_has_imp_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wnb_current_imp_rule:
+lemma wnb_current_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
   shows "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_current_imp tgt ((Ba, Ea, Ca), Wa) v
          <\<lambda>r. wnb_assn c ((Ba, Ea, Ca), Wa) * \<up>(r = wnb_current c v)>"
   by (sep_auto heap: csr_current_imp_rule[OF assms]
                simp: wnb_assn_def wnb_current_imp_def wnb_current_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wnb_current_cost_imp_rule:
+lemma wnb_current_cost_imp_rule:
   assumes "v \<in> K" "csr_invar c" "csr_remaining c v \<noteq> {}"
   shows "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_current_cost_imp ((Ba, Ea, Ca), Wa) v
          <\<lambda>w. wnb_assn c ((Ba, Ea, Ca), Wa) * \<up>(wval w = cost v (wnb_current c v))>"
@@ -487,19 +484,19 @@ proof-
     by (sep_auto simp: wnb_assn_def csr_assn_def wnb_current_cost_imp_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> wnb_move_imp_rule:
+lemma wnb_move_imp_rule:
   assumes "v \<in> K" "csr_remaining c v \<noteq> {}"
   shows "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_move_imp ((Ba, Ea, Ca), Wa) v
          <\<lambda>_. wnb_assn (csr_move c v) ((Ba, Ea, Ca), Wa)>"
   by (sep_auto heap: csr_move_imp_rule[OF assms] simp: wnb_assn_def wnb_move_imp_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wnb_reset_imp_rule:
+lemma wnb_reset_imp_rule:
   "v \<in> K \<Longrightarrow>
    <wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_reset_imp ((Ba, Ea, Ca), Wa) v
    <\<lambda>_. wnb_assn (csr_reset c v) ((Ba, Ea, Ca), Wa)>"
   by (sep_auto heap: csr_reset_imp_rule simp: wnb_assn_def wnb_reset_imp_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wnb_reset_all_imp_rule:
+lemma wnb_reset_all_imp_rule:
   "<wnb_assn c ((Ba, Ea, Ca), Wa)> wnb_reset_all_imp n ((Ba, Ea, Ca), Wa)
    <\<lambda>_. wnb_assn (\<lambda>v. B ! v) ((Ba, Ea, Ca), Wa)>"
   unfolding wnb_reset_all_imp_def wnb_assn_def csr_assn_def prod.case

@@ -1,5 +1,0 @@
-(* MLton basis file of bench_sml.  GEN is work/exports/current/matroid_intersections (the Makefile passes it). *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/SML/Bipartite_Matching.sml
-instance.sml
-main.sml

@@ -2,9 +2,6 @@ theory CSR_Neighbour_Lists
   imports Directed_Set_Graphs.CSR_Graph Data_Structures.Imp_Range_Iteration
 begin
 
-provenance ai
-
-
 section \<open>Concatenated Blocks as a CSR\<close>
 
 text \<open>The functional model of a CSR given by the block of every vertex: the starts of the blocks
@@ -68,7 +65,7 @@ subsection \<open>The Concatenated Blocks as a CSR\<close>
 text \<open>The block starts of the vertices up to \<open>n\<close> and the entries form a CSR whose block of a
   vertex below \<open>n\<close> is its block under \<open>blk\<close>.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> csr_concat =
+locale csr_concat =
   fixes blk :: "nat \<Rightarrow> 'x::heap list" and n :: nat
 begin
 
@@ -130,7 +127,7 @@ lemma prefix_map_Suc_0: "f 0 = 0 \<Longrightarrow> prefix_map f (Suc 0) n = repl
 lemma csr_entries_Suc: "csr_entries blk (Suc u) = csr_entries blk u @ blk u"
   by (simp add: csr_entries_def)
 
-locale \<^marker>\<open>provenance ai_human\<close> csr_concat_build =
+locale csr_concat_build =
   fixes blk :: "nat \<Rightarrow> 'x::heap list" and n :: nat and F :: assn and d :: 'x
     and cnt :: "nat \<Rightarrow> nat \<Rightarrow> nat Heap" and wr :: "nat \<Rightarrow> 'x array \<Rightarrow> nat \<Rightarrow> nat Heap"
   assumes cnt_rule: "u < n \<Longrightarrow> <F> cnt u c <\<lambda> r. F * \<up>(r = c + length (blk u))>"

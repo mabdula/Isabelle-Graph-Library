@@ -4,9 +4,6 @@ theory CSR_Graph_Reset_To
     Data_Structures.Imp_Range_Iteration
 begin
 
-provenance ai
-
-
 section \<open>CSR Iterators with Jumping to an Element\<close>
 
 text \<open>The CSR collection of @{locale csr_graph} extended by a position array \<open>P\<close>, built once:
@@ -50,19 +47,19 @@ text \<open>The imperative collection: the CSR arrays together with the position
 
 type_synonym 'e csr_rt_imp = "nat array \<times> 'e array \<times> nat array \<times> nat array"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_rt_has_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition csr_rt_has_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "csr_rt_has_imp = (\<lambda> (Ba, Ea, Ca, Pa) v. csr_has_imp (Ba, Ea, Ca) v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_rt_current_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> 'e Heap" where
+definition csr_rt_current_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> 'e Heap" where
   "csr_rt_current_imp = (\<lambda> (Ba, Ea, Ca, Pa) v. csr_current_imp (Ba, Ea, Ca) v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_rt_move_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition csr_rt_move_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_rt_move_imp = (\<lambda> (Ba, Ea, Ca, Pa) v. csr_move_imp (Ba, Ea, Ca) v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_rt_reset_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition csr_rt_reset_imp :: "'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_rt_reset_imp = (\<lambda> (Ba, Ea, Ca, Pa) v. csr_reset_imp (Ba, Ea, Ca) v)"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_reset_to_imp ::
+definition csr_reset_to_imp ::
   "('e \<Rightarrow> nat) \<Rightarrow> 'e::heap csr_rt_imp \<Rightarrow> nat \<Rightarrow> 'e \<Rightarrow> unit Heap" where
   "csr_reset_to_imp key = (\<lambda> (Ba, Ea, Ca, Pa) v e. do {
      p \<leftarrow> Array.nth Pa (key e);
@@ -75,7 +72,7 @@ begin
 definition csr_rt_assn :: "(nat \<Rightarrow> nat) \<Rightarrow> 'e csr_rt_imp \<Rightarrow> assn" where
   "csr_rt_assn c = (\<lambda> (Ba, Ea, Ca, Pa). csr_assn c (Ba, Ea, Ca) * Pa \<mapsto>\<^sub>a P)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_reset_to_imp_rule:
+lemma csr_reset_to_imp_rule:
   assumes "csr_invar c" "v \<in> K" "e \<in> csr_abstract c v"
   shows "<csr_rt_assn c Ci> csr_reset_to_imp key Ci v e <\<lambda>_. csr_rt_assn (csr_reset_to c v e) Ci>"
   using assms(2,3) seg_pos[of v e c] K_less[of v]
@@ -111,7 +108,7 @@ section \<open>Folding over All Elements\<close>
 
 text \<open>A fold over the whole element array, independent of the cursors.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_rt_edges_fold_imp ::
+definition csr_rt_edges_fold_imp ::
   "'e::heap csr_rt_imp \<Rightarrow> ('e \<Rightarrow> unit Heap) \<Rightarrow> unit Heap" where
   "csr_rt_edges_fold_imp = (\<lambda> (Ba, Ea, Ca, Pa) g. do {
      m \<leftarrow> Array.len Ea;
@@ -120,7 +117,7 @@ definition \<^marker>\<open>provenance ai_human\<close> csr_rt_edges_fold_imp ::
 context csr_graph_reset_to
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_rt_edges_fold_imp_rule:
+lemma csr_rt_edges_fold_imp_rule:
   assumes "I acc"
       and g: "\<And> acc e. \<lbrakk>I acc; e \<in> set E\<rbrakk> \<Longrightarrow>
                 I (g acc e) \<and> <R acc> g_imp e <\<lambda>_. R (g acc e)>"
@@ -171,12 +168,12 @@ lemma csr_graph_reset_to_pos_list:
   by (intro csr_graph_reset_to.intro csr_graph_reset_to_axioms.intro csr_graph_imp.intro)
     (simp_all add: assms csr_pos_list_props)
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_pos_build_imp ::
+definition csr_pos_build_imp ::
   "('e \<Rightarrow> nat) \<Rightarrow> 'e::heap array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "csr_pos_build_imp key Ea Pa m =
      foldl_range_imp (\<lambda> i _. do { e \<leftarrow> Array.nth Ea i; Array.upd (key e) i Pa; return () }) 0 m ()"
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_pos_build_imp_rule:
+lemma csr_pos_build_imp_rule:
   assumes "\<forall> e \<in> set E. key e < length P0"
   shows "<Ea \<mapsto>\<^sub>a E * Pa \<mapsto>\<^sub>a P0> csr_pos_build_imp key Ea Pa (length E)
          <\<lambda>_. Ea \<mapsto>\<^sub>a E * Pa \<mapsto>\<^sub>a csr_pos_list key E P0>"

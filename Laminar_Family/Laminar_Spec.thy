@@ -2,8 +2,6 @@ theory Laminar_Spec
   imports Laminar_Family
 begin
 
-provenance human
-
 locale laminar_family_spec = 
   fixes all_ids:: "'L \<Rightarrow> 'id set"
    and  universe:: "'L \<Rightarrow> 'v set"

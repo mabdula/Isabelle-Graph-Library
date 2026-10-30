@@ -4,9 +4,6 @@ theory CSR_Edge_Input
     Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
-provenance ai
-
-
 section \<open>Arrays Indexed by Keys\<close>
 
 text \<open>An array of size \<open>N\<close> represents a function on a key set @{term K}, whose keys are mapped
@@ -24,11 +21,11 @@ definition arr_upd ::
 lemma arr_lookup_upd[simp]: "arr_lookup (arr_upd f k x) = fun_upd (arr_lookup f) k x"
   by (simp add: arr_lookup_def arr_upd_def fun_eq_iff)
 
-definition \<^marker>\<open>provenance ai_human\<close> arr_lookup_imp ::
+definition arr_lookup_imp ::
   "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b Heap" where
   "arr_lookup_imp ix a k = Array.nth a (ix k)"
 
-definition \<^marker>\<open>provenance ai_human\<close> arr_upd_imp ::
+definition arr_upd_imp ::
   "('k \<Rightarrow> nat) \<Rightarrow> 'b::heap array \<Rightarrow> 'k \<Rightarrow> 'b \<Rightarrow> unit Heap" where
   "arr_upd_imp ix a k x = do { _ \<leftarrow> Array.upd (ix k) x a; return () }"
 
@@ -44,17 +41,17 @@ begin
 definition arr_assn :: "('k \<Rightarrow> 'b) \<Rightarrow> 'bi array \<Rightarrow> assn" where
   "arr_assn f a = (\<exists>\<^sub>Al. a \<mapsto>\<^sub>a l * \<up>(length l = N \<and> (\<forall>k\<in>K. val (l ! idx k) = f k)))"
 
-lemma \<^marker>\<open>provenance ai_human\<close> arr_lookup_imp_rule:
+lemma arr_lookup_imp_rule:
   "k \<in> K \<Longrightarrow> <arr_assn f a> arr_lookup_imp idx a k <\<lambda>x. arr_assn f a * \<up>(val x = arr_lookup f k)>"
   unfolding arr_assn_def arr_lookup_imp_def arr_lookup_def
   by (sep_auto simp: idx_bound)
 
-lemma \<^marker>\<open>provenance ai_human\<close> arr_upd_imp_rule:
+lemma arr_upd_imp_rule:
   "k \<in> K \<Longrightarrow> <arr_assn f a> arr_upd_imp idx a k x <\<lambda>_. arr_assn (arr_upd f k (val x)) a>"
   unfolding arr_assn_def arr_upd_imp_def arr_upd_def
   by (sep_auto simp: idx_bound nth_list_update inj_on_eq_iff[OF idx_inj])
 
-lemma \<^marker>\<open>provenance ai_human\<close> arr_new_rule:
+lemma arr_new_rule:
   "<emp> Array.new N x <\<lambda>a. arr_assn (\<lambda>_. val x) a>"
   unfolding arr_assn_def
   by (sep_auto simp: idx_bound)
@@ -131,7 +128,7 @@ qed (sep_auto heap: key_imp_rule simp: edge_cur_def edge_adv_def edge_next_def e
 sublocale graph: csr_graph_imp n "verts fs ts" inp.B_spec inp.E_spec
   by (rule csr_graph_imp.intro[OF graph.csr_graph_axioms])
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_rule:
+lemma csr_build_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> ci.csr_build_imp (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
   using ci.csr_build_imp_rule[of "(Fa, Ta)" 0]
@@ -139,7 +136,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> csr_build_rule:
 
 text \<open>The build into arrays allocated by the caller, one cell per edge.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_into_rule:
+lemma csr_build_into_rule:
   "length Es = length fs \<Longrightarrow>
    <Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a replicate (Suc n) 0 * Ea \<mapsto>\<^sub>a Es> ci.csr_build_into (Fa, Ta) 0 Ba Ea
    <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
@@ -154,7 +151,7 @@ sublocale ch: imp_csr_buildup "edge_next fs" "edge_seq fs" "\<lambda>_. True" ke
   by unfold_locales
     (rule ci.has_next_rule ci.cur_rule ci.adv_rule ci.key_rule tgt_imp_rule; simp add: edge_seq_def)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_heads_rule:
+lemma csr_build_heads_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> ch.csr_build_imp (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a map (e_tgt fs ts) inp.E_spec>"
   using ch.csr_build_imp_rule[of "(Fa, Ta)" 0]

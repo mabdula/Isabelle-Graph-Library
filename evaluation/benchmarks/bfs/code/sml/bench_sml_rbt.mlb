@@ -1,5 +1,0 @@
-(* MLton basis file of bench_sml_rbt, the functional (red-black tree) export.  GEN is work/exports/current/bfs. *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/BFS_RBT_SML/BFS_RBT.sml
-gr_parser.sml
-main_rbt.sml

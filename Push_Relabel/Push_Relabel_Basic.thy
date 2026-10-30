@@ -3,9 +3,6 @@ theory Push_Relabel_Basic
     Flow_Theory.Unit_Flows
 begin
 
-provenance ai
-
-
 section \<open>Preflows, Labellings, and the Basic Operations of Push-Relabel\<close>
 
 text \<open>This is a port of the mathematical part of the push-relabel formalisation by Lammich and
@@ -178,7 +175,7 @@ definition "active_potential s t f l = (\<Sum> v \<in> {v. active_vertex s t f v
 
 end
 
-locale \<^marker>\<open>provenance ai_human\<close> push_relabel_network = flow_network +
+locale push_relabel_network = flow_network +
   fixes s t
   assumes s_in_V: "s \<in> \<V>"
       and t_in_V: "t \<in> \<V>"

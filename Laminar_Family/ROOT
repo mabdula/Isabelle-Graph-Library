@@ -1,7 +1,6 @@
 session "Laminar_Family" = "HOL" +
   options [document = pdf]
   sessions
-    "AI_Provenance"
     "HOL-Eisbach"
     "HOL-Data_Structures"
     "Directed_Set_Graphs"

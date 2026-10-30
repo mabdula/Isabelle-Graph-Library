@@ -5,9 +5,6 @@ theory DFS_by_Iterator_Imperative
 
 begin
 
-provenance ai
-
-
 section \<open>Imperative DFS by Neighbourhood Iterators\<close>
 
 subsection \<open>Setup\<close>
@@ -44,7 +41,7 @@ begin
 
 subsection \<open>Main Algorithm\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) DFS_it_imperative :: "'v \<Rightarrow> (_, _, _) DFS_it_imp_state \<Rightarrow> return Heap" where
+partial_function (heap) DFS_it_imperative :: "'v \<Rightarrow> (_, _, _) DFS_it_imp_state \<Rightarrow> return Heap" where
   "DFS_it_imperative t sti = do {
      e \<leftarrow> stack_is_empty_imp (imp_stack sti);
      if e then Heap_Monad.return NotReachable
@@ -70,7 +67,7 @@ lemmas [code] = DFS_it_imperative.simps
 
 subsection \<open>Algorithm combined with Initial State\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> DFS_it_imperative' :: "'v \<Rightarrow> 'v \<Rightarrow> (_, _, _) DFS_it_imp_state \<Rightarrow> return Heap" where
+definition DFS_it_imperative' :: "'v \<Rightarrow> 'v \<Rightarrow> (_, _, _) DFS_it_imp_state \<Rightarrow> return Heap" where
   "DFS_it_imperative' s t sti = do {
      stack_push_imp (imp_stack sti) s;
      seen_insert_imp s (imp_seen sti);
@@ -153,7 +150,7 @@ lemma DFS_it_state_assnI:
    \<Longrightarrow>\<^sub>A DFS_it_state_assn st sti"
   unfolding DFS_it_state_assn_def by sep_auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> DFS_it_imperative_rule:
+lemma DFS_it_imperative_rule:
   "invar_it G st \<longrightarrow>
    <DFS_it_state_assn st sti> DFS_it_imperative t sti
    <\<lambda>r. DFS_it_state_assn (DFS_it t st) sti * \<up>(r = DFS_state.return (DFS_it t st))>"
@@ -499,7 +496,7 @@ lemma DFS_it_correct_Reachable:
 
 text \<open>The caller supplies an empty stack, an empty seen set and the iterators at @{term nbs_init}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> DFS_it_imperative'_rule:
+lemma DFS_it_imperative'_rule:
   assumes "stack_invar S" "stack_abstract S = []"
   shows "<(stack_assn S (imp_stack sti)) * seen_assn seen_empty (imp_seen sti) * nbs_assn nbs_init (imp_its sti)>
            DFS_it_imperative' s t sti
@@ -527,7 +524,7 @@ proof-
     by (sep_auto heap: IH[OF push] simp: seen_imp.fixed_univ_set_empty(1))
 qed
 
-theorem \<^marker>\<open>provenance ai_human\<close> DFS_it_imperative'_correct:
+theorem DFS_it_imperative'_correct:
   assumes "stack_invar S" "stack_abstract S = []"
   shows "<(stack_assn S (imp_stack sti)) * seen_assn seen_empty (imp_seen sti) * nbs_assn nbs_init (imp_its sti)>
            DFS_it_imperative' s t sti
@@ -637,7 +634,7 @@ text \<open>The program takes the number \<open>n\<close> of vertices and the ar
       (@{const csr_build_heads}), initialises the cursors, allocates the stack and the seen set and
       runs the DFS. It returns the result and the stack, which holds the path found.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> dfs_edges_run :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (return \<times> nat arsi) Heap" where
+definition dfs_edges_run :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (return \<times> nat arsi) Heap" where
   "dfs_edges_run n Fa Ta s t = do {
      (Ba, Ea) \<leftarrow> csr_build_heads n (Fa, Ta) 0;
      Ca \<leftarrow> csr_cursor_init n Ba;
@@ -746,7 +743,7 @@ next
   qed (simp_all add: s_in_G heads_edges)
 qed
 
-theorem \<^marker>\<open>provenance ai_human\<close> dfs_edges_run_correct:
+theorem dfs_edges_run_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> dfs_edges_run n Fa Ta s t
    <\<lambda>(r, Si). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * (\<exists>\<^sub>AS. ars_assn S Si * \<up>(ars_invar n S \<and>
       (case r of NotReachable \<Rightarrow> \<nexists>p. vwalk_bet (set (zip fs ts)) s p t

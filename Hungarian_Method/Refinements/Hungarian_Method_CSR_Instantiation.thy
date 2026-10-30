@@ -14,9 +14,6 @@ theory Hungarian_Method_CSR_Instantiation
     Path_Search_Shortcut_Imperative
 begin
 
-provenance ai
-
-
 
 section \<open>An Imperative Instantiation of the Hungarian Method\<close>
 
@@ -140,7 +137,7 @@ text \<open>The data structures of the path search form a single handle: the col
       neighbourhoods, the queue, the left vertices, the forest, the best even neighbours and the
       missed values. The potential is updated in place.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> path_search_csr where
+definition path_search_csr where
   "path_search_csr n = (\<lambda>(Ci, Qi, Li, Fi, Bi, Mi) Bdi Pti Ra. do {
      (res, Fi') \<leftarrow> pds_csr_search n Ci Qi Pti Bdi Li Ra Fi Bi Mi;
      return (res, Pti, (Ci, Qi, Li, Fi', Bi, Mi)) })"
@@ -172,7 +169,7 @@ text \<open>The full path search as the fallback of the shortcut. The cursors ar
       search before it starts and here after it ends; the iteration over the left vertices
       starts over.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> fallback_csr where
+definition fallback_csr where
   "fallback_csr n Di Mt Pti Ra = do {
      (res, Pti', Di') \<leftarrow> path_search_csr n Di (fst Mt) Pti Ra;
      (case Di' of (Ci, Qi, Li, Fi, Bi, Mi) \<Rightarrow> do {
@@ -186,7 +183,7 @@ text \<open>The path search of the instantiation: while the matching has fewer t
       the test takes constant time. The scratch state consists of the data structures of the
       full path search and the iterator over the left vertices still to be tried.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> path_search_sc_csr where
+definition path_search_sc_csr where
   "path_search_sc_csr n theta cap = (\<lambda>Si Mt Pti Ra.
    case Si of (Di, it) \<Rightarrow> do {
      k \<leftarrow> matching_card_csr Mt;
@@ -225,7 +222,7 @@ text \<open>The CSR is built over the edge indices. The search reads only the ta
       target, in place. The weights and the targets of a neighbourhood are then read
       sequentially during the search.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) perm_weights_targets_imp ::
+partial_function (heap) perm_weights_targets_imp ::
   "nat array \<Rightarrow> nat array \<Rightarrow> 'n::heap array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "perm_weights_targets_imp Ea Ta Wa Wc i m =
      (if i < m then do {
@@ -239,7 +236,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) perm_weight
 
 text \<open>Inserting the elements of an array into a Boolean array, in place.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) bool_array_set_insert_all :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool array \<Rightarrow> unit Heap" where
+partial_function (heap) bool_array_set_insert_all :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool array \<Rightarrow> unit Heap" where
   "bool_array_set_insert_all La i m s =
      (if i < m then do {
         v \<leftarrow> Array.nth La i;
@@ -256,7 +253,7 @@ text \<open>The final program takes the number of vertices \<open>n\<close>, the
       final potential. This is the only place with allocations. With \<open>theta = 0\<close>, the shortcut is
       never tried.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_run ::
+definition hungarian_csr_run ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
    nat array \<Rightarrow> (result \<times> nat array \<times> 'n array) Heap" where
   "hungarian_csr_run n theta cap Fa Ta Wa La Rv = do {
@@ -285,7 +282,7 @@ definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_run ::
          Ra;
      return (r, Mm', Pti') }"
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_run_int ::
+definition hungarian_csr_run_int ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
    (result \<times> nat array \<times> int array) Heap" where
   "hungarian_csr_run_int = hungarian_csr_run"
@@ -624,7 +621,7 @@ lemma Vs_G_below: "Vs G \<subseteq> {..<n}"
   using L_less R_less
   by (auto simp: Vs_G)
 
-lemma \<^marker>\<open>provenance ai_human\<close> buddy_lookup_rule:
+lemma buddy_lookup_rule:
   "v \<in> {..<n} \<Longrightarrow>
    <array_fun_assn n M Bdi> array_fun_lookup_imp Bdi v <\<lambda>r. array_fun_assn n M Bdi * \<up>(r = array_fun_lookup M v)>"
   by (sep_auto heap: array_fun_lookup_rule simp: array_fun_lookup_imp_def array_fun_lookup_def)
@@ -840,7 +837,7 @@ lemma scratch_eq:
      (sep_auto simp: csr_scratch_assn_def pds_aux_assn_def ps.scratch_assn_def
                      wcsr.wnb_abstract_eq)+
 
-lemma \<^marker>\<open>provenance ai_human\<close> path_search_csr_rule:
+lemma path_search_csr_rule:
   assumes "card (L \<union> R) \<le> length xs"
   shows "<csr_scratch_assn Di * array_fun_assn n M Bdi * array_fun_val_assn h n \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
          path_search_csr n Di Bdi Pti Ra
@@ -869,7 +866,7 @@ lemma precond_instance:
   by (intro hungarian_csr_search.intro hungarian_csr_input.intro hungarian_csr_search_axioms.intro
             real_embedding_axioms hungarian_csr_input_axioms assms)
 
-lemma \<^marker>\<open>provenance ai_human\<close> path_search_rule_csr:
+lemma path_search_rule_csr:
   assumes "csr_precond M \<pi>" "card (L \<union> R) \<le> length xs"
   shows "<csr_scratch_assn Di * array_fun_assn n M Bdi * array_fun_val_assn h n \<pi> Pti * Ra \<mapsto>\<^sub>a xs>
          path_search_csr n Di Bdi Pti Ra
@@ -984,7 +981,7 @@ lemma ffallback_good:
   using fsearch_good[OF assms(1)] graph.csr_init_invar assms(4)
   by (auto simp: ffallback_def split: prod.splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> counted_buddy_rule:
+lemma counted_buddy_rule:
   "v \<in> {..<n} \<Longrightarrow>
    <aug_csr.counted_assn n M Mt> array_fun_lookup_imp (fst Mt) v
    <\<lambda>r. aug_csr.counted_assn n M Mt * \<up>(r = array_fun_lookup M v)>"
@@ -1011,7 +1008,7 @@ proof-
     by (auto simp: Vs_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> rematch_counted_rule:
+lemma rematch_counted_rule:
   assumes "aug_csr.invar_matching n G M" "{lq, r} \<in> aug_csr.\<M> n M" "l \<notin> Vs (aug_csr.\<M> n M)"
       "{l, r} \<in> G"
   shows "<aug_csr.counted_assn n M Mt> rematch_counted_csr n Mt l r
@@ -1096,7 +1093,7 @@ proof(cases Di rule: prod_cases6)
     by (sep_auto)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> fallback_csr_rule:
+lemma fallback_csr_rule:
   assumes "csr_precond M \<pi>" "card (L \<union> R) \<le> length xs" "fsearch M \<pi> = (r, \<pi>')"
       and "graph.csr_invar C"
   shows "<sc_scratch_assn (ys, C) (Di, it) * aug_csr.counted_assn n M Mt *
@@ -1156,7 +1153,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> path_search_sc_rule_csr:
+lemma path_search_sc_rule_csr:
   assumes "csr_precond M \<pi>" "sc.sc_ctx_invar c" "fsearch_sc c M \<pi> = (r, M', \<pi>', c')"
       and "card (L \<union> R) \<le> length xs"
   shows "<sc_scratch_assn c Si * aug_csr.counted_assn n M Mt * array_fun_val_assn h n \<pi> Pti *
@@ -1310,7 +1307,7 @@ end
 
 subsection \<open>Initialisation\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> perm_weights_targets_rule:
+lemma perm_weights_targets_rule:
   assumes "i \<le> length es" "length xs = length es" "\<forall>e\<in>set es. e < length us \<and> e < length vs"
   shows "<Ea \<mapsto>\<^sub>a (map ((!) us) (take i es) @ drop i es) * Ta \<mapsto>\<^sub>a us * Wa \<mapsto>\<^sub>a vs * Wc \<mapsto>\<^sub>a xs>
          perm_weights_targets_imp Ea Ta Wa Wc i (length es)
@@ -1330,7 +1327,7 @@ next
        (sep_auto heap: step.IH[of "list_update xs i (vs ! (es ! i))"])
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> bool_array_set_insert_all_rule:
+lemma bool_array_set_insert_all_rule:
   assumes "i \<le> length xs" "set xs \<subseteq> {..<n}" "S \<subseteq> {..<n}"
   shows "<La \<mapsto>\<^sub>a xs * bool_array_set_assn n S s> bool_array_set_insert_all La i (length xs) s
          <\<lambda>_. La \<mapsto>\<^sub>a xs * bool_array_set_assn n (S \<union> set (drop i xs)) s>"
@@ -1355,7 +1352,7 @@ qed
 
 text \<open>Freshly allocated arrays as maps and sets.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> bool_array_set_insert_all_new:
+lemma bool_array_set_insert_all_new:
   "set xs \<subseteq> {..<n} \<Longrightarrow>
    <La \<mapsto>\<^sub>a xs * s \<mapsto>\<^sub>a replicate n False> bool_array_set_insert_all La 0 (length xs) s
    <\<lambda>_. La \<mapsto>\<^sub>a xs * bool_array_set_assn n (set xs) s>"
@@ -1369,7 +1366,7 @@ lemma array_fun_val_zero: "Xi \<mapsto>\<^sub>a replicate n 0 \<Longrightarrow>\
   unfolding array_fun_val_assn_def array_fun_assn_replicate[symmetric]
   by (rule ent_ex_postI[where x = "\<lambda>_. 0"]) simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_pot_rule:
+lemma init_pot_rule:
   "<graph.csr_assn nb_init (Ba, Ea, Ca) * Wc \<mapsto>\<^sub>a W *
     Pti \<mapsto>\<^sub>a replicate n 0 * bool_array_set_assn n L Li>
    init_pot_csr ((Ba, Ea, Ca), Wc) Li Pti
@@ -1385,7 +1382,7 @@ lemma card_LR: "card (L \<union> R) \<le> n"
   using card_mono[OF finite_lessThan verts_below]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> hungarian_step:
+lemma hungarian_step:
   "<wcsr.wnb_assn nb_init Ci * hp.heap_assn heap_empty Qi *
     forest_csr.forest_assn n (forest_csr.empty_forest n {}) Fi *
     Bi \<mapsto>\<^sub>a replicate n n * Mi \<mapsto>\<^sub>a replicate n 0 * bool_array_set_assn n L Li *
@@ -1402,7 +1399,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> hungarian_step:
     by (sep_auto)
   by (sep_auto simp: aug_csr.counted_assn_pair split: prod.splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> perm_csr_rule:
+lemma perm_csr_rule:
   "<Ea \<mapsto>\<^sub>a ei.inp.E_spec * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a replicate (length ei.inp.E_spec) 0>
    perm_weights_targets_imp Ea Ta Wa Wc 0 (length ei.inp.E_spec)
    <\<lambda>_. Ea \<mapsto>\<^sub>a Et * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Wc \<mapsto>\<^sub>a W>"
@@ -1411,7 +1408,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> perm_csr_rule:
         ei.E_spec_ids ts_length ws_length
   by (simp add: Et_def W_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_rule:
+lemma csr_build_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a ei.inp.B_spec * Ea \<mapsto>\<^sub>a ei.inp.E_spec>"
   unfolding csr_build_edges_src[symmetric]
@@ -1420,7 +1417,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> csr_build_rule:
 text \<open>The imperative Hungarian method on the CSR representation computes the result of the
       functional @{term hl.hungarian}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> hungarian_csr_run_rule:
+lemma hungarian_csr_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1441,7 +1438,7 @@ qed
 text \<open>Together with the correctness of the functional Hungarian method: on success, the matching
       is a perfect matching of minimum weight; on failure, there is no perfect matching.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> hungarian_csr_run_correct:
+lemma hungarian_csr_run_correct:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *

@@ -2,8 +2,6 @@ theory IDFS_Imperative
   imports Micali_Vazirani.IDFS Data_Structures.Bounded_Stack_Specs_Imp Data_Structures.Fixed_Univ_Set_Specs_Imp
 begin
 
-provenance human
-
 section \<open>Imperative Refinement of the Incremental DFS\<close>
 
 text \<open>The imperative program mirrors the incremental DFS of @{theory Micali_Vazirani.IDFS}, i.e.\

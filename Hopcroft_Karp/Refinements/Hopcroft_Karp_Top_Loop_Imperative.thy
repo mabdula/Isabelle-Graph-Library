@@ -2,9 +2,6 @@ theory Hopcroft_Karp_Top_Loop_Imperative
   imports Hopcroft_Karp.Hopcroft_Karp_Top_Loop Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
-provenance ai
-
-
 section \<open>Imperative Refinement of the Top Loop\<close>
 
 text \<open>The imperative top loop mirrors @{const Hopcroft_Karp_Loop.Hopcroft_Karp_Loop_impl}. As the
@@ -26,14 +23,14 @@ locale Hopcroft_Karp_Loop_Imperative_spec =
     and augment_first_imp :: "'mi \<Rightarrow> 'ips \<Rightarrow> ('mi \<times> 'ips) Heap"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) augment_all_imp :: "'mi \<Rightarrow> 'ips \<Rightarrow> 'mi Heap" where
+partial_function (heap) augment_all_imp :: "'mi \<Rightarrow> 'ips \<Rightarrow> 'mi Heap" where
   "augment_all_imp Mi Psi =
      do { e \<leftarrow> paths_is_empty_imp Psi;
           if e then return Mi
           else do { (Mi', Psi') \<leftarrow> augment_first_imp Mi Psi;
                     augment_all_imp Mi' Psi' } }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) Hopcroft_Karp_Loop_imp ::
+partial_function (heap) Hopcroft_Karp_Loop_imp ::
   "'mi Hopcroft_Karp_Loop_state_imp \<Rightarrow> 'mi Hopcroft_Karp_Loop_state_imp Heap" where
   "Hopcroft_Karp_Loop_imp s =
      do { Psi \<leftarrow> phase_imp (i_matching s);
@@ -81,7 +78,7 @@ begin
 
 subsubsection \<open>The augmentation along all paths of a phase\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> augment_all_imp_rule:
+lemma augment_all_imp_rule:
   assumes "matching_invar M" "\<forall>p \<in> set ps. graph_augmenting_path ugraph_abs (matching_abstract M) p"
           "sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) ps"
   shows "<matching_assn M Mi * paths_assn ps Psi> augment_all_imp Mi Psi
@@ -121,7 +118,7 @@ subsubsection \<open>The loop\<close>
 definition "state_assn s si =
   matching_assn (current_matching s) (i_matching si) * \<up>(phases s = i_phases si)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> Hopcroft_Karp_Loop_imp_refine:
+lemma Hopcroft_Karp_Loop_imp_refine:
   assumes "Hopcroft_Karp_Loop_dom s" "invar_matching s"
   shows "<input_assn * state_assn s si> Hopcroft_Karp_Loop_imp si
          <\<lambda>si'. input_assn * state_assn (Hopcroft_Karp_Loop s) si'>"
@@ -171,7 +168,7 @@ qed
 
 subsubsection \<open>Final correctness\<close>
 
-theorem \<^marker>\<open>provenance ai_human\<close> Hopcroft_Karp_Loop_run_imp_rule:
+theorem Hopcroft_Karp_Loop_run_imp_rule:
   "<input_assn> Hopcroft_Karp_Loop_run_imp
    <\<lambda>si. input_assn * matching_assn (current_matching (Hopcroft_Karp_Loop initial_state)) (i_matching si) *
          \<up>(i_phases si = phases (Hopcroft_Karp_Loop initial_state))>"
@@ -189,7 +186,7 @@ qed
 
 text \<open>The imperative loop computes a maximum cardinality matching.\<close>
 
-theorem \<^marker>\<open>provenance ai_human\<close> Hopcroft_Karp_Loop_run_imp_correct:
+theorem Hopcroft_Karp_Loop_run_imp_correct:
   "<input_assn> Hopcroft_Karp_Loop_run_imp
    <\<lambda>si. \<exists>\<^sub>AM. input_assn * matching_assn M (i_matching si) *
               \<up>(matching_invar M \<and> max_card_matching ugraph_abs (matching_abstract M))>"

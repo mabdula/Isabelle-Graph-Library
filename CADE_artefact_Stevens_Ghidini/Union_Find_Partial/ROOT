@@ -1,5 +1,0 @@
-session Union_Find_Partial = Separation_Logic_Imperative_HOL_Partial +
-  sessions
-    Union_Find
-  theories
-    Union_Find_Size_Int_Imp_Partial

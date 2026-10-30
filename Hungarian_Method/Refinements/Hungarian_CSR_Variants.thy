@@ -6,9 +6,6 @@ theory Hungarian_CSR_Variants
 
 begin
 
-provenance ai
-
-
 section \<open>Variants of Weighted Bipartite Matching on Arrays\<close>
 
 text \<open>The variants of  \<open>WBP_Matching_Exec.thy\<close> on top of @{const hungarian_csr_run}: from
@@ -658,12 +655,12 @@ subsection \<open>Loops\<close>
 
 text \<open>A loop over @{term "[i..<m]"} that threads a state through the iterations.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fold_imp :: "nat \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 's \<Rightarrow> 's Heap) \<Rightarrow> 's \<Rightarrow> 's Heap" where
+partial_function (heap) fold_imp :: "nat \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 's \<Rightarrow> 's Heap) \<Rightarrow> 's \<Rightarrow> 's Heap" where
   "fold_imp i m f s = (if i < m then do { s' \<leftarrow> f i s; fold_imp (Suc i) m f s' } else return s)"
 
 declare fold_imp.simps[code]
 
-lemma \<^marker>\<open>provenance ai_human\<close> fold_imp_rule:
+lemma fold_imp_rule:
   assumes "i \<le> m" "\<And>j s. \<lbrakk>i \<le> j; j < m\<rbrakk> \<Longrightarrow> <P j s> f j s <P (Suc j)>"
   shows "<P i s> fold_imp i m f s <P m>"
   using assms
@@ -687,13 +684,13 @@ subsection \<open>Building the Arrays of the Completed Graph\<close>
 
 text \<open>Copying a side and padding it by new vertices @{term "n + i"}.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> pad_step :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
+definition pad_step :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
   "pad_step S l nv A a u = do {
      x \<leftarrow> (if a < l then Array.nth S a else return (nv + (a - l)));
      _ \<leftarrow> Array.upd a x A;
      return () }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> pad_loop_rule:
+lemma pad_loop_rule:
   assumes "length xs = K" "length src \<le> K"
   shows "<A \<mapsto>\<^sub>a xs * S \<mapsto>\<^sub>a src> fold_imp 0 K (pad_step S (length src) nv A) ()
          <\<lambda>_. A \<mapsto>\<^sub>a (src @ [nv..<nv + (K - length src)]) * S \<mapsto>\<^sub>a src>"
@@ -725,10 +722,10 @@ qed
 
 text \<open>The positions of the vertices in their side.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> pos_step :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
+definition pos_step :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
   "pos_step S P a u = do { x \<leftarrow> Array.nth S a; _ \<leftarrow> Array.upd x a P; return () }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> pos_loop_rule:
+lemma pos_loop_rule:
   assumes "length ys = K" "\<forall>x\<in>set ys. x < length P0"
   shows "<Pa \<mapsto>\<^sub>a P0 * S \<mapsto>\<^sub>a ys> fold_imp 0 K (pos_step S Pa) ()
          <\<lambda>_. Pa \<mapsto>\<^sub>a foldl (\<lambda>P a. list_update P (ys ! a) a) P0 [0..<K] * S \<mapsto>\<^sub>a ys>"
@@ -754,7 +751,7 @@ qed
 
 text \<open>The endpoints of the edges of the completed graph, in row-major order.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> grid_step :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow>
+definition grid_step :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow>
                           unit \<Rightarrow> unit Heap" where
   "grid_step k As Bs Fa Ta j u = do {
      x \<leftarrow> Array.nth As (j div k);
@@ -763,7 +760,7 @@ definition \<^marker>\<open>provenance ai_human\<close> grid_step :: "nat \<Righ
      _ \<leftarrow> Array.upd j y Ta;
      return () }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> grid_loop_rule:
+lemma grid_loop_rule:
   assumes "length as = k" "length bs = k" "length xs = k * k" "length ys = k * k"
   shows "<As \<mapsto>\<^sub>a as * Bs \<mapsto>\<^sub>a bs * Fa \<mapsto>\<^sub>a xs * Ta \<mapsto>\<^sub>a ys> fold_imp 0 (k * k) (grid_step k As Bs Fa Ta) ()
          <\<lambda>_. As \<mapsto>\<^sub>a as * Bs \<mapsto>\<^sub>a bs * Fa \<mapsto>\<^sub>a map (\<lambda>j. as ! (j div k)) [0..<k * k] *
@@ -800,7 +797,7 @@ qed
 text \<open>The weights of the completed graph: the default weight everywhere, and @{term "cf w"} at the
       edge of the completed graph for an original edge of weight @{term w}.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> wgt_step :: "('n \<Rightarrow> 'n) \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::heap array \<Rightarrow> nat array \<Rightarrow>
+definition wgt_step :: "('n \<Rightarrow> 'n) \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::heap array \<Rightarrow> nat array \<Rightarrow>
                          'n array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
   "wgt_step cf k Fa Ta Wa Pa Wc i u = do {
      x \<leftarrow> Array.nth Fa i;
@@ -814,7 +811,7 @@ definition \<^marker>\<open>provenance ai_human\<close> wgt_step :: "('n \<Right
 text \<open>The arrays of the completed graph, together with the position array and the numbers of
       vertices and of vertices per side.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_complete ::
+definition hungarian_csr_complete ::
   "'n::heap \<Rightarrow> ('n \<Rightarrow> 'n) \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
    (nat array \<times> nat array \<times> 'n array \<times> nat array \<times> nat array \<times> nat array \<times> nat \<times> nat) Heap" where
   "hungarian_csr_complete dflt cf n Fa Ta Wa La Rv = do {
@@ -843,7 +840,7 @@ text \<open>The buddies of the completed graph are read from the array @{term Mi
       free vertex. The kept pairs are written into the array @{term Mo} of size @{term n}, in
       place.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> extract_imp_step :: "('n::heap \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
+definition extract_imp_step :: "('n::heap \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
                                 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
   "extract_imp_step kp n' k La Pa Wc Mi Mo a s = do {
      u \<leftarrow> Array.nth La a;
@@ -854,7 +851,7 @@ definition \<^marker>\<open>provenance ai_human\<close> extract_imp_step :: "('n
         w \<leftarrow> Array.nth Wc (a * k + pv);
         if kp w then do { array_fun_upd_imp Mo u v; array_fun_upd_imp Mo v u } else return () }) }"
 
-definition \<^marker>\<open>provenance ai_human\<close> extract_imp :: "('n::heap \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow>
+definition extract_imp :: "('n::heap \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow>
                            nat array \<Rightarrow> nat array \<Rightarrow> unit Heap" where
   "extract_imp kp n' k La Pa Wc Mi Mo = do {
      l \<leftarrow> Array.len La;
@@ -867,7 +864,7 @@ text \<open>The array of the result is allocated, the arrays of the completed gr
       the original graph is read off. The result is the array of buddies, with @{term n} for a
       free vertex.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_reduced_run ::
+definition hungarian_csr_reduced_run ::
   "'n::{linordered_idom, heap} \<Rightarrow> ('n \<Rightarrow> 'n) \<Rightarrow> ('n \<Rightarrow> bool) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
   "hungarian_csr_reduced_run dflt cf kp n \<theta> cap Fa Ta Wa La Rv = do {
@@ -891,7 +888,7 @@ lemma edge_bounds':
 lemma eix_posl: "posl ! (fs ! j) * k + posl ! (ts ! j) = eix j"
   by (simp add: eix_def pos_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> wgt_loop_rule:
+lemma wgt_loop_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a replicate (k * k) dflt>
    fold_imp 0 (length fs) (wgt_step cf k Fa Ta Wa Pa Wc) ()
    <\<lambda>_. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws'>"
@@ -914,39 +911,39 @@ proof-
     by (simp add: ws'_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> pad_ls'_rule:
+lemma pad_ls'_rule:
   "<A \<mapsto>\<^sub>a replicate k 0 * La \<mapsto>\<^sub>a ls> fold_imp 0 k (pad_step La (length ls) n A) ()
    <\<lambda>_. A \<mapsto>\<^sub>a ls' * La \<mapsto>\<^sub>a ls>"
   using pad_loop_rule[of "replicate k 0" k ls]
   by (simp add: ls'_def k_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> pad_rs'_rule:
+lemma pad_rs'_rule:
   "<A \<mapsto>\<^sub>a replicate k 0 * Rv \<mapsto>\<^sub>a rs> fold_imp 0 k (pad_step Rv (length rs) n A) ()
    <\<lambda>_. A \<mapsto>\<^sub>a rs' * Rv \<mapsto>\<^sub>a rs>"
   using pad_loop_rule[of "replicate k 0" k rs]
   by (simp add: rs'_def k_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> pos_ls'_rule:
+lemma pos_ls'_rule:
   "<Pa \<mapsto>\<^sub>a replicate n' 0 * S \<mapsto>\<^sub>a ls'> fold_imp 0 k (pos_step S Pa) ()
    <\<lambda>_. Pa \<mapsto>\<^sub>a foldl (\<lambda>P a. list_update P (ls' ! a) a) (replicate n' 0) [0..<k] * S \<mapsto>\<^sub>a ls'>"
   using pos_loop_rule[of ls' k "replicate n' 0"] length_ls' below_n'
   by auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> pos_rs'_rule:
+lemma pos_rs'_rule:
   "<Pa \<mapsto>\<^sub>a foldl (\<lambda>P a. list_update P (ls' ! a) a) (replicate n' 0) [0..<k] * S \<mapsto>\<^sub>a rs'>
    fold_imp 0 k (pos_step S Pa) () <\<lambda>_. Pa \<mapsto>\<^sub>a posl * S \<mapsto>\<^sub>a rs'>"
   using pos_loop_rule[of rs' k "foldl (\<lambda>P a. list_update P (ls' ! a) a) (replicate n' 0) [0..<k]"]
         length_rs' below_n'
   by (auto simp: posl_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> grid'_rule:
+lemma grid'_rule:
   "<As \<mapsto>\<^sub>a ls' * Bs \<mapsto>\<^sub>a rs' * Fb \<mapsto>\<^sub>a replicate (k * k) 0 * Tb \<mapsto>\<^sub>a replicate (k * k) 0>
    fold_imp 0 (k * k) (grid_step k As Bs Fb Tb) ()
    <\<lambda>_. As \<mapsto>\<^sub>a ls' * Bs \<mapsto>\<^sub>a rs' * Fb \<mapsto>\<^sub>a fs' * Tb \<mapsto>\<^sub>a ts'>"
   using grid_loop_rule[of ls' k rs' "replicate (k * k) 0" "replicate (k * k) 0"] length_ls' length_rs'
   by (simp add: fs'_def ts'_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> complete_rule:
+lemma complete_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_complete dflt cf n Fa Ta Wa La Rv
    <\<lambda>(Fa', Ta', Wa', La', Rv', Pa, n'', k'). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -975,7 +972,7 @@ text \<open>The matching of the completed graph is the total map @{term Mb} with
       vertex; it is read through @{term "aug_csr.buddy_lookup n'"}. A kept pair belongs to the
       original graph, hence its vertices are below @{term n}.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> extract_imp_rule:
+lemma extract_imp_rule:
   assumes "\<And>u v. aug_csr.buddy_lookup n' Mb u = Some v \<Longrightarrow> {u, v} \<in> cp.G"
     and "\<And>u v. \<lbrakk>u \<in> L; v \<in> set rs'; kp (ws' ! (pos u * k + pos v))\<rbrakk> \<Longrightarrow> v < n"
   shows "<La \<mapsto>\<^sub>a ls * Pa \<mapsto>\<^sub>a posl * Wc \<mapsto>\<^sub>a ws' * array_fun_assn n' Mb Mi * Mo \<mapsto>\<^sub>a replicate n n>
@@ -1094,7 +1091,7 @@ lemma cp_result:
   by (auto simp: aug_csr.invar_matching_def aug_csr.symmetric_buddies_def aug_csr.\<M>_def')
      (blast)
 
-lemma \<^marker>\<open>provenance ai_human\<close> reduced_run_rule:
+lemma reduced_run_rule:
   assumes "\<And>u v. \<lbrakk>u \<in> L; v \<in> set rs'; kp (ws' ! (pos u * k + pos v))\<rbrakk> \<Longrightarrow> v < n"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_reduced_run dflt cf kp n theta cap Fa Ta Wa La Rv
@@ -1151,7 +1148,7 @@ lemma mw_kept: "\<lbrakk>u \<in> L; v \<in> set rs'; ws' ! (pos u * k + pos v) <
   using mw_keep G_below[of "{u, v}" v]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> mw_run_rule:
+lemma mw_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_reduced_run 0 (\<lambda>w. min 0 (sgn_w neg w)) (\<lambda>w. w < 0) n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1222,7 +1219,7 @@ lemma mwmc_kept:
   using mwmc_keep G_below[of "{u, v}" v]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> mwmc_run_rule:
+lemma mwmc_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_reduced_run (2 + of_nat (length ls + length rs) * max_abs_weight ws) (sgn_w neg)
      (\<lambda>w. w < 2 + of_nat (length ls + length rs) * max_abs_weight ws) n \<theta> cap Fa Ta Wa La Rv
@@ -1259,10 +1256,10 @@ definition "hungarian_csr_mw_run neg = hungarian_csr_reduced_run 0 (\<lambda>w. 
 text \<open>Minimum and maximum weight maximum cardinality matchings. The penalty is computed from the
       largest absolute weight.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> max_abs_step :: "'n::{linordered_idom, heap} array \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n Heap" where
+definition max_abs_step :: "'n::{linordered_idom, heap} array \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n Heap" where
   "max_abs_step Wa i s = do { w \<leftarrow> Array.nth Wa i; return (max \<bar>w\<bar> s) }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> max_abs_loop_rule:
+lemma max_abs_loop_rule:
   "<Wa \<mapsto>\<^sub>a ws> fold_imp 0 (length ws) (max_abs_step Wa) 0
    <\<lambda>s. Wa \<mapsto>\<^sub>a ws * \<up>(s = max_abs_weight ws)>"
 proof-
@@ -1280,7 +1277,7 @@ proof-
     by (simp add: max_abs_weight_def)
 qed
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_mwmc_run ::
+definition hungarian_csr_mwmc_run ::
   "bool \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array 
    \<Rightarrow> nat array \<Rightarrow>
    nat array \<Rightarrow> nat array Heap" where
@@ -1294,10 +1291,10 @@ definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_mwmc_run :
 
 text \<open>Maximum weight perfect matchings, on the negated weights.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> neg_step :: "'n::{uminus, heap} array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
+definition neg_step :: "'n::{uminus, heap} array \<Rightarrow> 'n array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow> unit Heap" where
   "neg_step Wa Wn i u = do { w \<leftarrow> Array.nth Wa i; _ \<leftarrow> Array.upd i (- w) Wn; return () }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> neg_loop_rule:
+lemma neg_loop_rule:
   "<Wa \<mapsto>\<^sub>a ws * Wn \<mapsto>\<^sub>a replicate (length ws) 0> fold_imp 0 (length ws) (neg_step Wa Wn) ()
    <\<lambda>_. Wa \<mapsto>\<^sub>a ws * Wn \<mapsto>\<^sub>a map uminus ws>"
 proof-
@@ -1332,7 +1329,7 @@ subsection \<open>Correctness of the Programs\<close>
 context hungarian_csr_input
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> hungarian_csr_mw_run_rule:
+lemma hungarian_csr_mw_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mw_run neg n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1346,7 +1343,7 @@ proof-
     by (rule mw.mw_run_rule)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_weight_matching_run:
+lemma min_weight_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mw_run False n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1354,7 +1351,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> min_weight_matching_run:
   using hungarian_csr_mw_run_rule[of _ _ _ _ _ False]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> max_weight_matching_run:
+lemma max_weight_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mw_run True n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1362,7 +1359,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> max_weight_matching_run:
   using hungarian_csr_mw_run_rule[of _ _ _ _ _ True]
   by (simp add: neg_min_weight_matching)
 
-lemma \<^marker>\<open>provenance ai_human\<close> hungarian_csr_mwmc_run_rule:
+lemma hungarian_csr_mwmc_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mwmc_run neg n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1376,7 +1373,7 @@ proof-
     by (sep_auto heap: max_abs_loop_rule mwmc.mwmc_run_rule)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> min_weight_max_card_matching_run:
+lemma min_weight_max_card_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mwmc_run False n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1385,7 +1382,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> min_weight_max_card_matching_
   using hungarian_csr_mwmc_run_rule[of _ _ _ _ _ False]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> max_weight_max_card_matching_run:
+lemma max_weight_max_card_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_mwmc_run True n \<theta> cap Fa Ta Wa La Rv
    <\<lambda>Mo. \<exists>\<^sub>AM. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1399,7 +1396,7 @@ lemma neg_input: "hungarian_csr_input h n fs ts (map uminus ws) ls rs"
      (simp_all add: ts_length ws_length ls_distinct rs_distinct fs_ls ts_rs sides_disjoint
                     verts_below[unfolded Un_subset_iff] no_parallel)
 
-lemma \<^marker>\<open>provenance ai_human\<close> max_weight_perfect_matching_run:
+lemma max_weight_perfect_matching_run:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs>
    hungarian_csr_max_perfect_run n theta cap Fa Ta Wa La Rv
    <\<lambda>(r, Mi, Pti). \<exists>\<^sub>AM \<pi>. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs *
@@ -1444,15 +1441,15 @@ qed
 
 end
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_mw_run_int :: "bool \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
+definition hungarian_csr_mw_run_int :: "bool \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
     nat array \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
   "hungarian_csr_mw_run_int = hungarian_csr_mw_run"
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_mwmc_run_int :: "bool \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
+definition hungarian_csr_mwmc_run_int :: "bool \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
     nat array \<Rightarrow> nat array \<Rightarrow> nat array Heap" where
   "hungarian_csr_mwmc_run_int = hungarian_csr_mwmc_run"
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_max_perfect_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
+definition hungarian_csr_max_perfect_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow>
     nat array \<Rightarrow> nat array \<Rightarrow> (result \<times> nat array \<times> int array) Heap" where
   "hungarian_csr_max_perfect_run_int = hungarian_csr_max_perfect_run"
 

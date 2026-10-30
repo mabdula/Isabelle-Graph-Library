@@ -4,9 +4,6 @@ theory Matching_Augmentation_Imperative
     Basic_Matching.Matching_Augmentation_Executable
 begin
 
-provenance ai
-
-
 section \<open>Imperative Augmentation of Matchings\<close>
 
 text \<open>This is the imperative counterpart of @{locale Matching_Augmentation_Specs}. It is generic in
@@ -23,19 +20,19 @@ locale matching_augmentation_imp =
     and buddy_assn :: "'buddy \<Rightarrow> 'bi \<Rightarrow> assn" and buddy_upd_imp buddy_get_imp
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> buddy_get_rule[sep_heap_rules]:
+lemma buddy_get_rule[sep_heap_rules]:
   "\<lbrakk>buddy_invar M; u \<in> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi> buddy_get_imp Bi u <\<lambda>r. buddy_assn M Bi * \<up>(r = buddy_get M u)>"
   using bm.fixed_univ_map_lookup_rule[of M u Bi]
   by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> buddy_upd_rule[sep_heap_rules]:
+lemma buddy_upd_rule[sep_heap_rules]:
   "\<lbrakk>buddy_invar M; u \<in> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi> buddy_upd_imp Bi u v <\<lambda>_. buddy_assn (buddy_upd M u v) Bi>"
   using bm.fixed_univ_map_upd_rule[of M u Bi v]
   by simp
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) augment_loop :: "'bi \<Rightarrow> 'v array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function (heap) augment_loop :: "'bi \<Rightarrow> 'v array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "augment_loop Bi Ra i k =
      (if i + 1 < k
       then do { u \<leftarrow> Array.nth Ra i;
@@ -51,7 +48,7 @@ lemma augment_impl_short:
   "length p \<le> 1 \<Longrightarrow> augment_impl M p = M"
   by (cases "(M, p)" rule: augment_impl.cases) auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> augment_loop_rule:
+lemma augment_loop_rule:
   "\<lbrakk>buddy_invar M; k \<le> length xs; set (drop i (take k xs)) \<subseteq> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi * Ra \<mapsto>\<^sub>a xs> augment_loop Bi Ra i k
    <\<lambda>_. buddy_assn (augment_impl M (drop i (take k xs))) Bi * Ra \<mapsto>\<^sub>a xs>"
@@ -75,7 +72,7 @@ proof(induction "k - i" arbitrary: i M rule: less_induct)
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> augment_imp_rule:
+lemma augment_imp_rule:
   "\<lbrakk>buddy_invar M; k \<le> length xs; set (take k xs) \<subseteq> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi * Ra \<mapsto>\<^sub>a xs> augment_imp Bi Ra k
    <\<lambda>_. buddy_assn (augment_impl M (take k xs)) Bi * Ra \<mapsto>\<^sub>a xs>"
@@ -91,7 +88,7 @@ definition "rematch_imp Bi l r = do {
    buddy_upd_imp Bi r l;
    buddy_upd_imp Bi l r }"
 
-lemma \<^marker>\<open>provenance ai_human\<close> rematch_imp_rule:
+lemma rematch_imp_rule:
   "\<lbrakk>buddy_invar M; l \<in> K; r \<in> K; buddy_get M r \<in> K\<rbrakk> \<Longrightarrow>
    <buddy_assn M Bi> rematch_imp Bi l r <\<lambda>_. buddy_assn (rematch M l r) Bi>"
   unfolding rematch_imp_def rematch_def
@@ -117,11 +114,11 @@ definition "augment_counted_imp = (\<lambda>(Bi, Ki) Ra k. do {
 
 definition "matching_card_imp = (\<lambda>(Bi, Ki). !Ki)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> matching_card_imp_rule:
+lemma matching_card_imp_rule:
   "<counted_assn M Mi> matching_card_imp Mi <\<lambda>c. counted_assn M Mi * \<up>(c = card (\<M> M))>"
   by (cases Mi) (sep_auto simp: counted_assn_pair matching_card_imp_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> augment_counted_imp_rule:
+lemma augment_counted_imp_rule:
   "\<lbrakk>buddy_invar M; k \<le> length xs; set (take k xs) \<subseteq> K;
     card (\<M> (augment_impl M (take k xs))) = Suc (card (\<M> M))\<rbrakk> \<Longrightarrow>
    <counted_assn M Mi * Ra \<mapsto>\<^sub>a xs> augment_counted_imp Mi Ra k
@@ -132,7 +129,7 @@ text \<open>Rematching does not change the cardinality, hence the reference is l
 
 definition "rematch_counted_imp = (\<lambda>(Bi, Ki) l r. rematch_imp Bi l r)"
 
-lemma \<^marker>\<open>provenance ai_human\<close> rematch_counted_imp_rule:
+lemma rematch_counted_imp_rule:
   "\<lbrakk>buddy_invar M; l \<in> K; r \<in> K; buddy_get M r \<in> K;
     card (\<M> (rematch M l r)) = card (\<M> M)\<rbrakk> \<Longrightarrow>
    <counted_assn M Mi> rematch_counted_imp Mi l r <\<lambda>_. counted_assn (rematch M l r) Mi>"

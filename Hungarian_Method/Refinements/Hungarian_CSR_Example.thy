@@ -3,9 +3,6 @@ theory Hungarian_CSR_Example
     Hungarian_CSR_Variants
 begin
 
-provenance ai
-
-
 section \<open>The Example of  \<open>Hungarian_Example.thy\<close> with Integer Weights\<close>
 
 text \<open>The graph of  \<open>Hungarian_Example.thy\<close>, with the weights multiplied by 1000 and
@@ -32,7 +29,7 @@ subsection \<open>Perfect Matchings\<close>
 text \<open>The program allocates the input arrays, runs the Hungarian method and reads off the matched
       pairs \<open>(l, r)\<close> with \<open>l\<close> left, and the potential of every vertex.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_example :: "(result \<times> (nat \<times> nat) list \<times> int list) Heap" where
+definition hungarian_csr_example :: "(result \<times> (nat \<times> nat) list \<times> int list) Heap" where
   "hungarian_csr_example = do {
      Fa \<leftarrow> Array.of_list fs_ex;
      Ta \<leftarrow> Array.of_list ts_ex;
@@ -44,7 +41,7 @@ definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_example ::
      P \<leftarrow> Array.freeze Pti;
      return (r, [(u, M ! u). u \<leftarrow> ls_ex, M ! u \<noteq> n_ex], P) }"
 
-definition \<^marker>\<open>provenance ai_human\<close> hungarian_csr_max_perfect_example :: "(result \<times> (nat \<times> nat) list) Heap" where
+definition hungarian_csr_max_perfect_example :: "(result \<times> (nat \<times> nat) list) Heap" where
   "hungarian_csr_max_perfect_example = do {
      Fa \<leftarrow> Array.of_list fs_ex;
      Ta \<leftarrow> Array.of_list ts_ex;
@@ -62,7 +59,7 @@ ML_val \<open>@{code hungarian_csr_max_perfect_example} ()\<close>
 
 subsection \<open>The Other Variants\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> run_matching_example ::
+definition run_matching_example ::
   "(nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array Heap) \<Rightarrow>
    (nat \<times> nat) list Heap" where
   "run_matching_example prog = do {

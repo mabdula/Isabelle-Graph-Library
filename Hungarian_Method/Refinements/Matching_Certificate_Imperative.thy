@@ -6,9 +6,6 @@ theory Matching_Certificate_Imperative
     Data_Structures.Fixed_Univ_List_Specs_Imp
 begin
 
-provenance ai
-
-
 section \<open>Certificate Checkers for Extremal Bipartite Matchings: Imperative Refinement\<close>
 
 subsection \<open>The Interfaces\<close>
@@ -71,7 +68,7 @@ begin
 
 text \<open>Feasibility, over all edges.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) feas_loop :: "bool \<Rightarrow> 'n \<Rightarrow> 'p \<Rightarrow> 'py \<Rightarrow> 'it \<Rightarrow> bool Heap" where
+partial_function (heap) feas_loop :: "bool \<Rightarrow> 'n \<Rightarrow> 'p \<Rightarrow> 'py \<Rightarrow> 'it \<Rightarrow> bool Heap" where
   "feas_loop neg t p Ya it = do {
      b \<leftarrow> it_has_next it;
      (if b then do {
@@ -86,7 +83,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) feas_loop :
 
 text \<open>The candidate matching: membership of the names, disjointness and tightness.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) match_loop ::
+partial_function (heap) match_loop ::
   "bool \<Rightarrow> 'n \<Rightarrow> 'p \<Rightarrow> 'py \<Rightarrow> 'pe \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> bool Heap" where
   "match_loop neg t p Ya Ma i k Ui =
      (if i < k then do {
@@ -108,7 +105,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) match_loop 
 
 text \<open>Sign and complementary slackness of the potential, over a list of vertices.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) vert_loop :: "'py \<Rightarrow> 'pv \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> bool Heap" where
+partial_function (heap) vert_loop :: "'py \<Rightarrow> 'pv \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> bool Heap" where
   "vert_loop Ya Va i k Ui =
      (if i < k then do {
         x \<leftarrow> vnth Va i;
@@ -117,7 +114,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) vert_loop :
         (if y \<le> 0 \<and> (y \<noteq> 0 \<longrightarrow> b) then vert_loop Ya Va (Suc i) k Ui else return False) }
       else return True)"
 
-definition \<^marker>\<open>provenance ai_human\<close> certify_sh_imp ::
+definition certify_sh_imp ::
   "bool \<Rightarrow> bool \<Rightarrow> 'n \<Rightarrow> nat \<Rightarrow> 'p \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 'pe \<Rightarrow> 'py \<Rightarrow> 's \<Rightarrow> bool Heap" where
   "certify_sh_imp neg perfect t n p La Ra Ma Ya Ui = do {
      ly \<leftarrow> ylen Ya;
@@ -138,19 +135,19 @@ definition \<^marker>\<open>provenance ai_human\<close> certify_sh_imp ::
          else return False) }
       else return False) }"
 
-definition \<^marker>\<open>provenance ai_human\<close> certify_imp ::
+definition certify_imp ::
   "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> 'p \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 'pe \<Rightarrow> 'py \<Rightarrow> 's \<Rightarrow> bool Heap" where
   "certify_imp neg perfect = certify_sh_imp neg perfect 0"
 
 text \<open>Hall violators. The entries of the violator are input: the ones not below @{term n} are
       rejected before the mark sets are read.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) insert_loop :: "'pv \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> unit Heap" where
+partial_function (heap) insert_loop :: "'pv \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> unit Heap" where
   "insert_loop Va i k Ui =
      (if i < k then do { x \<leftarrow> vnth Va i; sins x Ui; insert_loop Va (Suc i) k Ui }
       else return ())"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) hall_S_loop ::
+partial_function (heap) hall_S_loop ::
   "nat \<Rightarrow> 's \<Rightarrow> 'pv \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> nat \<Rightarrow> (nat \<times> bool) Heap" where
   "hall_S_loop n Li Sa i k Si c =
      (if i < k then do {
@@ -163,7 +160,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) hall_S_loop
          else return (c, False)) }
       else return (c, True))"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) hall_N_loop :: "'p \<Rightarrow> 's \<Rightarrow> 'it \<Rightarrow> 's \<Rightarrow> nat \<Rightarrow> nat Heap" where
+partial_function (heap) hall_N_loop :: "'p \<Rightarrow> 's \<Rightarrow> 'it \<Rightarrow> 's \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "hall_N_loop p Si it Ni c = do {
      b \<leftarrow> it_has_next it;
      (if b then do {
@@ -176,7 +173,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) hall_N_loop
          else hall_N_loop p Si it' Ni c) }
       else return c) }"
 
-definition \<^marker>\<open>provenance ai_human\<close> hall_imp :: "nat \<Rightarrow> 'p \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> bool Heap" where
+definition hall_imp :: "nat \<Rightarrow> 'p \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> bool Heap" where
   "hall_imp n p La Ra Sa Li Si Ni = do {
      kl \<leftarrow> vlen La;
      kr \<leftarrow> vlen Ra;
@@ -194,7 +191,7 @@ definition \<^marker>\<open>provenance ai_human\<close> hall_imp :: "nat \<Right
 text \<open>Extremal weight maximum cardinality matchings: the shifted dual check, and the deficient
       set @{term S}.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> certify_mc_imp ::
+definition certify_mc_imp ::
   "bool \<Rightarrow> nat \<Rightarrow> 'p \<Rightarrow> 'pv \<Rightarrow> 'pv \<Rightarrow> 'pe \<Rightarrow> 'py \<Rightarrow> 'n \<Rightarrow> 'pv \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow>
    bool Heap" where
   "certify_mc_imp neg n p La Ra Ma Ya t Sa Ui Li Si Ni = do {
@@ -255,16 +252,16 @@ text \<open>A mark set, up to abstraction.\<close>
 
 definition "mark_assn U Ui = (\<exists>\<^sub>AS. set_assn S Ui * \<up>(sinvar S \<and> sabs S = U))"
 
-lemma \<^marker>\<open>provenance ai_human\<close> mark_empty_rule: "<emp> sempty_imp <mark_assn {}>"
+lemma mark_empty_rule: "<emp> sempty_imp <mark_assn {}>"
   unfolding mark_assn_def
   by (sep_auto heap: mk.fixed_univ_set_empty_rule simp: mk.fixed_univ_set_empty)
 
-lemma \<^marker>\<open>provenance ai_human\<close> mark_memb_rule:
+lemma mark_memb_rule:
   "x \<in> K \<Longrightarrow> <mark_assn U Ui> smemb Ui x <\<lambda>r. mark_assn U Ui * \<up>(r \<longleftrightarrow> x \<in> U)>"
   unfolding mark_assn_def
   by (sep_auto heap: mk.fixed_univ_set_isin_rule simp: mk.fixed_univ_set_isin)
 
-lemma \<^marker>\<open>provenance ai_human\<close> mark_ins_rule:
+lemma mark_ins_rule:
   "x \<in> K \<Longrightarrow> <mark_assn U Ui> sins x Ui <\<lambda>_. mark_assn (insert x U) Ui>"
   unfolding mark_assn_def
   by (sep_auto heap: mk.fixed_univ_set_insert_rule simp: mk.fixed_univ_set_insert)
@@ -297,7 +294,7 @@ lemma below_n_props:
 lemma elist_sub: "set elist \<subseteq> E"
   by (simp add: elist_E)
 
-lemma \<^marker>\<open>provenance ai_human\<close> feas_loop_rule:
+lemma feas_loop_rule:
   assumes "set xs \<subseteq> E" "n \<le> length ys"
   shows "<EA p * yl_assn ys Ya * EI p xs it> code.feas_loop neg t p Ya it
          <\<lambda>r. EA p * yl_assn ys Ya * true * \<up>(r = list_all (feas_ok neg t ys) xs)>"
@@ -315,7 +312,7 @@ next
                        es.w_rule[of e] yl.nth_rule Cons.IH simp: e assms(2) edge_bounds feas_ok_def)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> match_loop_rule:
+lemma match_loop_rule:
   assumes "k = length ms" "n \<le> length ys" "i \<le> k"
   shows "<EA p * yl_assn ys Ya * el_assn ms Ma * mark_assn U Ui> code.match_loop neg t p Ya Ma i k Ui
          <\<lambda>r. EA p * yl_assn ys Ya * el_assn ms Ma *
@@ -346,7 +343,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> vert_loop_rule:
+lemma vert_loop_rule:
   assumes "k = length xs" "set xs \<subseteq> L \<union> R" "n \<le> length ys" "i \<le> k"
   shows "<yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui> code.vert_loop Ya Va i k Ui
          <\<lambda>r. yl_assn ys Ya * vl_assn xs Va * mark_assn U Ui *
@@ -376,7 +373,7 @@ lemma certify_alt:
           list_all (vert_ok ys (fst (match_list neg t ys {} ms))) rs))"
   by (simp add: certify_sh_def split: prod.split)
 
-lemma \<^marker>\<open>provenance ai_human\<close> certify_sh_imp_rule:
+lemma certify_sh_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * mark_assn {} Ui>
    code.certify_sh_imp neg perfect t n p La Ra Ma Ya Ui
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * true *
@@ -397,7 +394,7 @@ next
                  simp: True certify_alt)
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> certify_imp_rule:
+lemma certify_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * mark_assn {} Ui>
    code.certify_imp neg perfect n p La Ra Ma Ya Ui
    <\<lambda>r. EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * true *
@@ -407,7 +404,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> certify_imp_rule:
 
 subsubsection \<open>Hall Violators\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> insert_loop_rule:
+lemma insert_loop_rule:
   assumes "k = length xs" "set xs \<subseteq> K" "i \<le> k"
   shows "<vl_assn xs Va * mark_assn U Ui> code.insert_loop Va i k Ui
          <\<lambda>_. vl_assn xs Va * mark_assn (U \<union> set (drop i xs)) Ui>"
@@ -427,7 +424,7 @@ next
                  simp: step.hyps assms(1)[symmetric] Cons_nth_drop_Suc[symmetric])
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hall_S_loop_rule:
+lemma hall_S_loop_rule:
   assumes "k = length S" "i \<le> k"
   shows "<vl_assn S Sa * mark_assn L Li * mark_assn Sm Si> code.hall_S_loop n Li Sa i k Si c
          <\<lambda>(c', ok). vl_assn S Sa * mark_assn L Li * mark_assn (fst (hall_S Sm c (drop i S))) Si *
@@ -456,7 +453,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> hall_N_loop_rule:
+lemma hall_N_loop_rule:
   assumes "set xs \<subseteq> E"
   shows "<EA p * mark_assn Sm Si * mark_assn Nm Ni * EI p xs it> code.hall_N_loop p Si it Ni c
          <\<lambda>c'. EA p * mark_assn Sm Si * mark_assn (fst (hall_N Sm Nm c xs)) Ni * true *
@@ -486,7 +483,7 @@ lemma ls_K: "set ls \<subseteq> K"
   using vert_K
   by blast
 
-lemma \<^marker>\<open>provenance ai_human\<close> hall_imp_rule:
+lemma hall_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * vl_assn S Sa * mark_assn {} Li * mark_assn {} Si *
     mark_assn {} Ni>
    code.hall_imp n p La Ra Sa Li Si Ni
@@ -506,7 +503,7 @@ lemma defic_ok_alt:
     length ls + snd (hall_N (fst (hall_S {} 0 S)) {} 0 elist) \<le> length ms + fst (snd (hall_S {} 0 S)))"
   by (simp add: defic_ok_def split: prod.split)
 
-lemma \<^marker>\<open>provenance ai_human\<close> certify_mc_imp_rule:
+lemma certify_mc_imp_rule:
   "<EA p * vl_assn ls La * vl_assn rs Ra * el_assn ms Ma * yl_assn ys Ya * vl_assn S Sa *
     mark_assn {} Ui * mark_assn {} Li * mark_assn {} Si * mark_assn {} Ni>
    code.certify_mc_imp neg n p La Ra Ma Ya t Sa Ui Li Si Ni

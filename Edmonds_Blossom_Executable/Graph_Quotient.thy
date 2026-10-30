@@ -1277,7 +1277,7 @@ lemma aug_path_works_in_contraction_unmatched_base:
   assumes cycle: "odd_cycle C" "alt_list (\<lambda>e. e \<notin> M) (\<lambda>e. e \<in> M) (edges_of_path C)" and
     aug_path: "matching_augmenting_path M p" "path E p" "distinct p" "(set p) \<inter> (set C) \<noteq> {}" "last C \<notin> Vs M" and 
     matching: "matching M" "M \<subseteq> E" and
-    quot: "s = (Vs E) - set C" "u \<notin>  Vs E - set C"
+    quot: "s = (Vs E) - set C" "u \<notin>  Vs E"
   shows "\<exists>p'. matching_augmenting_path (quotG M) p' \<and>
               path (quotG E) p' \<and>
               distinct p'"
@@ -1325,7 +1325,7 @@ proof-
         using last_p1_in_s quot(1)
         by blast
       then have "last p1 \<noteq> u"
-        using last_p1_in_s good_quot_map(1)
+        using quot(2)
         by auto
       moreover have "w \<notin> s"
         using quot(1) wx(2)
@@ -1382,7 +1382,7 @@ proof-
         using hd_in_set
         by blast
       then have "hd p3 \<noteq> u"
-        using hd_in_set[OF p3_nempty] p3_subset_s good_quot_map(1)
+        using quot(2)
         by auto
       moreover have "x \<notin> s"
         using quot(1) wx(2)
@@ -1400,6 +1400,20 @@ proof-
       using p3_nempty
       by(cases p3; auto simp add: insert_commute)
   qed 
+
+  have "set p \<subseteq> Vs E"
+    using aug_path(2)
+    by (simp add: subset_path_Vs)
+  then have u_nin_p: "u \<notin> set p"
+    using quot
+    by auto
+
+  have "u \<notin> Vs E"
+    using quot
+    by auto
+  then have u_nin_VsM: "u \<notin> Vs M"
+    using matching(2)
+    by (auto simp add: Vs_def)
 
   show ?thesis
   proof(cases "\<exists>v. (set p) \<inter> (set C) = {v}")
@@ -1531,7 +1545,7 @@ proof-
           using path_u_p3[OF p1p2x(1,2,4) aug_path(2) p2_subset_s p2_nempty]
           .
         moreover have "distinct (u # p2)"
-          using p1p2x(1) subsetD[OF p2_subset_s, of u] good_quot_map(1) aug_path(3)
+          using p1p2x(1) u_nin_p aug_path(3)
           by auto
         moreover have "last (u # p2) \<notin> Vs (quotG M)"
         proof \<^marker>\<open>provenance ai\<close>-
@@ -1568,7 +1582,7 @@ proof-
         moreover have "path (quotG E) (u # (rev p1))"
           by (intro path_u_p3[of "rev p" "rev p2" x] rev_path_is_path[OF aug_path(2)]; simp)
         moreover have "distinct (u # (rev p1))"
-          using p1p2x(1) subsetD[OF p1_subset_s, of u] good_quot_map(1) aug_path(3)
+          using p1p2x(1) u_nin_p aug_path(3)
           by auto
         moreover have "hd (u # (rev p1)) \<notin> Vs (quotG M)"
           using not_in_quot_matching_not_in_matching_2[OF matching(1,2) cycle quot(1) aug_path(5)]
@@ -1773,7 +1787,7 @@ proof-
         using path_u_p3[OF _ _ _ aug_path(2) p3_subset_s p3_nempty] wx
         by auto
       moreover have "distinct (u # p3)"
-        using wx(1) p3_subset_s good_quot_map(1) aug_path(3)
+        using wx(1) u_nin_p aug_path(3)
         by auto
       moreover have "hd (u # p3) \<notin> Vs (quotG M)"
         using not_in_quot_matching_not_in_matching_2[OF matching(1,2) cycle quot(1) aug_path(5)]
@@ -1817,7 +1831,7 @@ proof-
         moreover have "path (quotG E) (u # (rev p1))"
           by (intro path_u_p3[of "rev p" "rev (p2 @ x # p3)" w] rev_path_is_path[OF aug_path(2)]; auto)
         moreover have "distinct (u # (rev p1))"
-          using subsetD[OF p1_subset_s, of u] good_quot_map(1) aug_path(3)
+          using u_nin_p aug_path(3)
           by auto
         moreover have "hd (u # (rev p1)) \<notin> Vs (quotG M)"
           using not_in_quot_matching_not_in_matching_2[OF matching(1,2) cycle quot(1) aug_path(5)]
@@ -1850,7 +1864,7 @@ lemma aug_path_works_in_contraction_unmatched_base':
   assumes cycle: "odd_cycle C" "alt_path M C" and
     aug_path: "matching_augmenting_path M p" "path E p" "distinct p" "last C \<notin> Vs M" and 
     matching: "matching M" "M \<subseteq> E" and
-    quot: "s = (Vs E) - set C" "u \<notin>  Vs E - set C"(* and
+    quot: "s = (Vs E) - set C" "u \<notin>  Vs E"(* and
     graph: "dblton_graph E"*)
   shows "\<exists>p'. matching_augmenting_path (quotG M) p' \<and>
               path (quotG E) p' \<and>
@@ -2181,7 +2195,7 @@ theorem aug_path_works_in_contraction:
   assumes match_blossom: "blossom E M stem C" and
     aug_path: "graph_augmenting_path E M p" and 
     matching: "matching M" "M \<subseteq> E" "finite M" and
-    quot: "s = (Vs E) - set C" "u \<notin>  Vs E - set C"(* and
+    quot: "s = (Vs E) - set C" "u \<notin>  Vs E"(* and
     graph: "dblton_graph G" "finite (Vs G)"*)
   shows "\<exists>p'. graph_augmenting_path (quotG E) (quotG M) p'"
 proof(cases "(set p) \<inter> (set C) \<noteq> {}")
@@ -2192,10 +2206,10 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
   proof(cases "last C \<notin> Vs M")
     case True
     then show ?thesis
-      using aug_path_works_in_contraction_unmatched_base'[OF
-              match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]
-              match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] _ _ _ True matching(1,2) quot]
-            aug_path
+      using aug_path_works_in_contraction_unmatched_base' assms(2-) match_blossom(1)
+            match_blossomD[OF \<open>match_blossom M stem C\<close>]
+            match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>]
+            dblton_E finite_E
       by fastforce
   next
     case False
@@ -2208,12 +2222,10 @@ proof(cases "(set p) \<inter> (set C) \<noteq> {}")
         using match_blossomD(4)[OF \<open>match_blossom M stem C\<close>] odd_cycleD(3)[OF match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]]
         by simp
       then show ?thesis
-        using aug_path_works_in_contraction_unmatched_base'[OF
-                match_blossomD(3)[OF \<open>match_blossom M stem C\<close>]
-                match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>] _ _ _ \<open>last C \<notin> Vs M\<close>
-                matching(1,2) quot]
-              aug_path
-        by fastforce
+        using aug_path_works_in_contraction_unmatched_base' assms(2-)
+              match_blossomD[OF \<open>match_blossom M stem C\<close>]
+              match_blossom_alt_cycle[OF \<open>match_blossom M stem C\<close>]
+        by blast
     next
       case stem_nempty: False
       define M' where "M' = M \<oplus> (set (edges_of_path (stem @ [hd C])))"

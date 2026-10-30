@@ -2,9 +2,6 @@ theory Network_Simplex_Preservation
   imports Network_Simplex
 begin
 
-provenance ai
-
-
 text \<open>\<^bold>\<open>Unique-path characterisation of an arborescence.\<close>
       @{thm unique_walks_arborescence} states that a finite graph in
       which every vertex is joined to the designated root @{term r} by \<^emph>\<open>exactly one\<close>

@@ -3,8 +3,6 @@ theory Hopcroft_Karp_Top_Loop
           "Directed_Set_Graphs.Pair_Graph_Specs"
 begin
 
-provenance ai_human
-
 section \<open>Top Loop of the Hopcroft-Karp Algorithm\<close>
 
 subsection \<open>Augmenting along vertex-disjoint augmenting paths\<close>

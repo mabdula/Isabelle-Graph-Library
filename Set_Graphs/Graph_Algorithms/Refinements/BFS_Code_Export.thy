@@ -5,9 +5,6 @@ theory BFS_Code_Export
     Imperative.Code_Target_Machine_Int
 begin
 
-provenance ai
-
-
 section \<open>Code Export of the Breadth-First Searches\<close>
 
 text \<open>Two breadth-first searches, with vertices as machine integers (see

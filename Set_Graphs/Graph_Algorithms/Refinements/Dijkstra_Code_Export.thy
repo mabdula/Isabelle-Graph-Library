@@ -4,9 +4,6 @@ theory Dijkstra_Code_Export
     Imperative.Code_Target_Machine_Int
 begin
 
-provenance ai
-
-
 section \<open>Code Export of the Shortest-Path Programs\<close>
 
 text \<open>The programs on integers of \<open>Dijkstra_Instantiation.thy\<close>: the search for a shortest path

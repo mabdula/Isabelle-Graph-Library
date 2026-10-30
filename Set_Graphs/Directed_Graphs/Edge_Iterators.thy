@@ -2,9 +2,6 @@ theory Edge_Iterators
   imports Directed_Set_Graphs.Multigraph Data_Structures.Iterable_Set_Specs
 begin
 
-provenance ai
-
-
 section \<open>A Directed Multigraph via Two Indexed Edge-Iterators\<close>
 
 text \<open>The multigraph is presented to the algorithm through two @{locale indexed_iterable_set}s
@@ -14,7 +11,7 @@ text \<open>The multigraph is presented to the algorithm through two @{locale in
       applied. Each direction is a separate combination of @{locale indexed_iterable_set} with
       @{locale multigraph_spec}.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> outgoing_edge_iterator =
+locale outgoing_edge_iterator =
   multigraph_spec where fst = fst +
   outg: indexed_iterable_set where
       idx_invar     = out_invar and
@@ -45,7 +42,7 @@ definition "out_graph_inv og \<longleftrightarrow>
 
 end
 
-locale \<^marker>\<open>provenance ai_human\<close> ingoing_edge_iterator =
+locale ingoing_edge_iterator =
   multigraph_spec where fst = fst +
   ing: indexed_iterable_set where
       idx_invar     = in_invar and
@@ -78,7 +75,7 @@ end
 
 text \<open>Both directions over the same multigraph. The two collections may have different types.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> bidirectional_iterator =
+locale bidirectional_iterator =
   outgoing_edge_iterator where fst = fst +
   ingoing_edge_iterator where fst = fst
   for fst :: "'e \<Rightarrow> 'v"

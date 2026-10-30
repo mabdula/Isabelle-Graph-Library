@@ -2,9 +2,6 @@ theory CSR_Buildup_Imperative
   imports Directed_Set_Graphs.CSR_Buildup Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
-provenance ai
-
-
 section \<open>Imperative CSR Buildup\<close>
 
 text \<open>
@@ -45,7 +42,7 @@ subsection \<open>Programs\<close>
 
 text \<open>Count pass, refining @{term "it_fold count_step"}.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) count_imp ::
+partial_function (heap) count_imp ::
   "'ci \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> 'si \<Rightarrow> nat Heap" where
   "count_imp c B m si = do {
      b \<leftarrow> it_has_next_impl c si;
@@ -64,7 +61,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) count_imp :
 text \<open>Prefix sums, refining @{term "fold prefix_step [j..<Suc n]"}; \<open>acc\<close> holds
       \<open>B!(j-1)\<close>.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) prefix_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function (heap) prefix_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "prefix_imp B j acc =
      (if j \<le> n then do {
         c \<leftarrow> Array.nth B j;
@@ -75,7 +72,7 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) prefix_imp 
 
 text \<open>Fill pass, refining @{term "it_fold fill_step"}; the value of the element is stored.\<close>
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fill_imp ::
+partial_function (heap) fill_imp ::
   "'ci \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> 'si \<Rightarrow> unit Heap" where
   "fill_imp c B E si = do {
      b \<leftarrow> it_has_next_impl c si;
@@ -92,13 +89,13 @@ partial_function \<^marker>\<open>provenance ai_human\<close> (heap) fill_imp ::
 
 text \<open>Allocation of the edge array, refining @{const csr_buildup.init_E}.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> init_E_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> nat \<Rightarrow> 'x array Heap" where
+definition init_E_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> nat \<Rightarrow> 'x array Heap" where
   "init_E_imp c si m = do {
      b \<leftarrow> it_has_next_impl c si;
      if b then do { e \<leftarrow> it_cur_impl c si; x \<leftarrow> val_impl c e; Array.new m x }
      else Array.of_list [] }"
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<times> 'x array) Heap" where
+definition csr_build_imp :: "'ci \<Rightarrow> 'si \<Rightarrow> (nat array \<times> 'x array) Heap" where
   "csr_build_imp c si = do {
      B \<leftarrow> Array.new (Suc n) 0;
      m \<leftarrow> count_imp c B 0 si;
@@ -110,7 +107,7 @@ definition \<^marker>\<open>provenance ai_human\<close> csr_build_imp :: "'ci \<
 text \<open>The build into arrays allocated by the caller: \<open>B\<close> is zero, \<open>E\<close> has one cell
       per element. This lets an algorithm allocate all its arrays once at the start.\<close>
 
-definition \<^marker>\<open>provenance ai_human\<close> csr_build_into ::
+definition csr_build_into ::
   "'ci \<Rightarrow> 'si \<Rightarrow> nat array \<Rightarrow> 'x array \<Rightarrow> unit Heap" where
   "csr_build_into c si B E = do {
      count_imp c B 0 si;
@@ -155,7 +152,7 @@ begin
 
 subsection \<open>Correctness\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> count_imp_rule:
+lemma count_imp_rule:
   "<input_assn c * B \<mapsto>\<^sub>a Bs * \<up>(it_invar s \<and> it_rel s si \<and> set (it_seq s) \<subseteq> set es \<and> length Bs = Suc n)>
      count_imp c B m si
    <\<lambda>r. input_assn c * B \<mapsto>\<^sub>a fst (it_fold count_step s (Bs, m))
@@ -180,7 +177,7 @@ proof(induction arbitrary: s si Bs m rule: count_imp.fixp_induct)
   qed (intro ht_extract_pre_pure(1), simp)
 qed simp_all
 
-lemma \<^marker>\<open>provenance ai_human\<close> prefix_imp_rule:
+lemma prefix_imp_rule:
   "<B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc n \<and> 0 < j \<and> acc = Bs ! (j - 1))>
      prefix_imp B j acc
    <\<lambda>_. B \<mapsto>\<^sub>a fold prefix_step [j..<Suc n] Bs>"
@@ -199,12 +196,12 @@ proof(induction arbitrary: Bs j acc rule: prefix_imp.fixp_induct)
   qed (intro ht_extract_pre_pure(1), simp)
 qed simp_all
 
-lemma \<^marker>\<open>provenance ai_human\<close> prefix_sums_imp_rule:
+lemma prefix_sums_imp_rule:
   "<B \<mapsto>\<^sub>a Bs * \<up>(length Bs = Suc n \<and> Bs ! 0 = 0)> prefix_imp B 1 0 <\<lambda>_. B \<mapsto>\<^sub>a prefix_sums Bs>"
   using prefix_imp_rule[where j=1 and acc=0]
   by (simp add: prefix_sums_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> fill_imp_rule:
+lemma fill_imp_rule:
   "<input_assn c * B \<mapsto>\<^sub>a Bs * E \<mapsto>\<^sub>a map val Es
       * \<up>(it_invar s \<and> it_rel s si \<and> xs @ it_seq s = es \<and> fill_invar xs (Bs, Es))>
      fill_imp c B E si
@@ -235,7 +232,7 @@ proof(induction arbitrary: s si xs Bs Es rule: fill_imp.fixp_induct)
   qed (intro ht_extract_pre_pure(1), simp)
 qed simp_all
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_E_imp_rule:
+lemma init_E_imp_rule:
   "<input_assn c * \<up>(it_rel s0 si)> init_E_imp c si m <\<lambda>E. input_assn c * E \<mapsto>\<^sub>a map val (init_E m)>"
 proof(cases "it_next s0")
   case (Some a)
@@ -247,7 +244,7 @@ proof(cases "it_next s0")
     by (sep_auto heap: has_next_rule[of s0] cur_rule[of s0 _ e s'] val_rule)
 qed (sep_auto simp: init_E_imp_def init_E_def s0_invar heap: has_next_rule[of s0])
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_imp_rule:
+lemma csr_build_imp_rule:
   "<input_assn c * \<up>(it_rel s0 si)> csr_build_imp c si
    <\<lambda>(B, E). input_assn c * B \<mapsto>\<^sub>a B_spec * E \<mapsto>\<^sub>a map val E_spec>"
   unfolding csr_build_imp_def
@@ -256,7 +253,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> csr_build_imp_rule:
       fill_imp_rule[where s=s0 and xs="[]"]
       simp: count_edges_def csr_build_def count_B_nth s0_invar es_def[symmetric] fill_invar_init)
 
-lemma \<^marker>\<open>provenance ai_human\<close> csr_build_into_rule:
+lemma csr_build_into_rule:
   "<input_assn c * B \<mapsto>\<^sub>a replicate (Suc n) 0 * E \<mapsto>\<^sub>a map val Es
       * \<up>(it_rel s0 si \<and> length Es = length es)>
      csr_build_into c si B E

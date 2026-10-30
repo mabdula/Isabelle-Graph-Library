@@ -7,9 +7,6 @@ theory Init_Potential_Imperative
     Data_Structures.Real_Embedding
 begin
 
-provenance ai
-
-
 section \<open>Imperative Computation of the Initial Potential\<close>
 
 text \<open>The imperative counterpart of @{locale init_potential_coll}. The weights are read at the
@@ -34,7 +31,7 @@ definition "upd_min_imp Pti u c = do {
    r \<leftarrow> pot_get_imp Pti u;
    (if r \<le> c then return () else pot_upd_imp Pti u c) }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_min_imp :: "'ci \<Rightarrow> 'pi \<Rightarrow> 'v \<Rightarrow> unit Heap" where
+partial_function (heap) scan_min_imp :: "'ci \<Rightarrow> 'pi \<Rightarrow> 'v \<Rightarrow> unit Heap" where
   "scan_min_imp Ci Pti u = do {
      b \<leftarrow> has_imp Ci u;
      (if b then do { c \<leftarrow> current_cost_imp Ci u;
@@ -93,13 +90,13 @@ sublocale init_potential_imp \<subseteq> code: init_potential_imp_code
 context init_potential_imp
 begin
 
-lemma \<^marker>\<open>provenance ai_human\<close> pot_get_rule:
+lemma pot_get_rule:
   "\<lbrakk>potential_invar \<pi>; u \<in> K\<rbrakk> \<Longrightarrow>
      <pot_assn \<pi> Pti> pot_get_imp Pti u <\<lambda>r. pot_assn \<pi> Pti * \<up>(potential_get \<pi> u = h r)>"
   using pot.fixed_univ_map_lookup_rule[of \<pi> u Pti]
   by (simp add: eq_commute)
 
-lemma \<^marker>\<open>provenance ai_human\<close> upd_min_imp_rule:
+lemma upd_min_imp_rule:
   assumes "potential_invar \<pi>" "u \<in> K"
   shows "<pot_assn \<pi> Pti> code.upd_min_imp Pti u c <\<lambda>_. pot_assn (upd_min u (h c) \<pi>) Pti>"
   unfolding code.upd_min_imp_def
@@ -130,7 +127,7 @@ lemma init_step_split:
       else (rnb_reset C u, \<pi>))"
   by (simp add: init_step_def Let_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> scan_min_imp_rule:
+lemma scan_min_imp_rule:
   assumes "rnb_invar C" "u \<in> K" "finite (rnb_remaining C u)" "potential_invar \<pi>"
   shows "<nb_assn C Ci * pot_assn \<pi> Pti> code.scan_min_imp Ci Pti u
          <\<lambda>_. nb_assn (fst (scan_min u C \<pi>)) Ci * pot_assn (snd (scan_min u C \<pi>)) Pti>"
@@ -156,7 +153,7 @@ proof(induction "card (rnb_remaining C u)" arbitrary: C \<pi> rule: less_induct)
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_pot_step_rule:
+lemma init_pot_step_rule:
   assumes "rnb_invar C" "rnb_abstract C = rnb_abstract C0" "u \<in> K"
           "finite (rnb_abstract C0 u)" "potential_invar \<pi>"
   shows "<nb_assn C Ci * pot_assn \<pi> Pti> code.init_pot_step Ci Pti u x
@@ -182,7 +179,7 @@ definition "init_pre C0 u Cp =
   (u \<in> K \<and> finite (rnb_abstract C0 u) \<and> rnb_invar (fst Cp) \<and>
    rnb_abstract (fst Cp) = rnb_abstract C0 \<and> potential_invar (snd Cp))"
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_pot_step_pre_rule:
+lemma init_pot_step_pre_rule:
   "init_pre C0 u Cp \<Longrightarrow>
      <nb_assn (fst Cp) Ci * pot_assn (snd Cp) Pti> code.init_pot_step Ci Pti u x
      <\<lambda>_. nb_assn (fst (init_step Cp u)) Ci * pot_assn (snd (init_step Cp u)) Pti>"
@@ -215,7 +212,7 @@ lemma init_potential_coll_lst:
      init_potential_coll C0 potential_empty left = foldl init_step (C0, potential_empty) (lst (vset_to_set left))"
   by (simp add: init_potential_coll_def vset_iterate_lst)
 
-lemma \<^marker>\<open>provenance ai_human\<close> init_pot_imp_rule:
+lemma init_pot_imp_rule:
   assumes "rnb_invar C0" "vset_invar left" "finite (vset_to_set left)"
           "\<And>u. u \<in> vset_to_set left \<Longrightarrow> finite (rnb_abstract C0 u)"
   shows "<nb_assn C0 Ci * pot_assn potential_empty Pti * vset_assn left Li>

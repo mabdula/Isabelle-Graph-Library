@@ -2,15 +2,12 @@ theory Network_Simplex_Initial_Basis
   imports Network_Simplex_Initial_Basis_Code
 begin
 
-provenance ai
-
-
 text \<open>Proof layer of the list instantiation: it imports the single code theory
       \<open>Network_Simplex_Initial_Basis_Code\<close> (all executable definitions) and adds the
       cost-flow-network and acyclic-flow-instance interpretations, the eleven well-formedness
       assumptions, the proof-only constants (bigM, sized, dfs\_sized, is\_free) and every lemma.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> initial_basis_lists =
+locale initial_basis_lists =
   initial_basis_code_spec where capacity_list = capacity_list +
   real_embedding where h = "h :: 'n \<Rightarrow> real"
   for capacity_list :: "('n :: linordered_idom) list" and h :: "'n \<Rightarrow> real" +

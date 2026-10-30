@@ -6,9 +6,6 @@ theory Push_Relabel_RTF_Imperative
     Data_Structures.Fixed_Univ_Set_Iterate_Imp
 begin
 
-provenance ai
-
-
 section \<open>Imperative Relabel-to-Front Push-Relabel\<close>
 
 text \<open>The context of the relabel-to-front strategy in place: the list of vertices, the current
@@ -35,7 +32,7 @@ locale push_relabel_rtf_imp_code = push_relabel_ops_imp_code fst_imp snd_imp s t
     and vertex_fold_imp :: "'vs \<Rightarrow> ('v \<Rightarrow> unit Heap) \<Rightarrow> unit Heap"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) rtf_scan_imp ::
+partial_function (heap) rtf_scan_imp ::
   "'lsi \<Rightarrow> ('fi, 'xi, 'li, 'ci, 'gi, 'ei, 'e) pr_imp \<Rightarrow> nat \<Rightarrow> 'v \<Rightarrow> 'v option Heap" where
   "rtf_scan_imp Ls Si n u =
      (if n = 0 then return None
@@ -132,7 +129,7 @@ lemma rtf_scan_in:
   using assms
   by (induction n arbitrary: u) (auto split: if_splits option.splits dest: list_next_in)
 
-lemma \<^marker>\<open>provenance ai_human\<close> rtf_scan_imp_rule:
+lemma rtf_scan_imp_rule:
   assumes "list_invar L" "set (list_abstract L) = \<V> - {s, t}" "u \<in> set (list_abstract L)"
           "ex_invar (pr_excess st)"
   shows "<state_assn st Si * list_assn L Ls> rtf_scan_imp Ls Si n u
@@ -163,7 +160,7 @@ next
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> rtf_discharge_imp_rule:
+lemma rtf_discharge_imp_rule:
   assumes "invar_state st" "u \<in> \<V>"
           "rtf_discharge L u rel (pr_fwd st) (pr_bwd st) (pr_labels st) (pr_out st) (pr_in st) =
            (op, (L', cur', rel'))"
@@ -245,7 +242,7 @@ lemma rtf_ctx_invar_cur:
   using assms
   by (auto simp: rtf_ctx_invar_def rtf_cur_invar_def split: if_splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> rtf_select_imp_rule:
+lemma rtf_select_imp_rule:
   assumes "invar_state st" "rtf_ctx_invar st" "rtf.select_of st = (op, c)"
   shows "<state_assn st Si * rtf_ctx_assn (pr_ctx st) Ci> rtf_select_imp Ci Si
          <\<lambda>r. state_assn st Si * rtf_ctx_assn c Ci * \<up>(r = op)>"
@@ -322,7 +319,7 @@ proof-
   qed
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> rtf_init_ctx_imp_rule:
+lemma rtf_init_ctx_imp_rule:
   "<state_assn rtf.init_state Si * rtf_ctx_init_assn Ci> rtf_init_ctx_imp Ci Si
    <\<lambda>_. state_assn rtf.init_state Si * rtf_ctx_assn (pr_ctx rtf.init_state) Ci>"
 proof-

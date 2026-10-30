@@ -2,9 +2,6 @@ theory Rooted_Arborescense
   imports Rooted_Arborescense_Defs
 begin
 
-provenance ai
-
-
 named_theorems parent_walk_simps
 
 subsection \<open>Threaded tree with subtree sizes (the @{text last}/@{text size} representation)\<close>
@@ -42,7 +39,7 @@ paragraph \<open>Path computation --- the only place a parent chain is walked.\<
 text \<open>Executable root-path (ancestor list) \<open>[v, the (T v), ..., r]\<close>, the code-level counterpart
       of @{term "follow T v"}.  This is the one parent-chain walk allowed in the functions; it is
       tail-recursive (the chain length is not structurally bounded).\<close>
-partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) anc_list :: "('a \<rightharpoonup> 'a) \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow>
+partial_function (tailrec) anc_list :: "('a \<rightharpoonup> 'a) \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow>
   'a list" where
   "anc_list T v acc = (case T v of None \<Rightarrow> rev (v # acc) | Some w \<Rightarrow> anc_list T w (v # acc))"
 
@@ -761,7 +758,7 @@ text \<open>The path-reversal loop @{const stem_loop} is a @{command partial_fun
       @{term m} body iterations is pinned down field-by-field by @{term "Istem m"}: every map is
       @{term "S0"}'s map overlaid (@{text "++"}, highest priority last) with the edits made so far.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> stem_setup =
+locale stem_setup =
   fixes S0 :: "'a ndtree" and r :: 'a and V :: "'a set"
     and i j p :: 'a and k :: nat and s :: "nat \<Rightarrow> 'a"
   assumes arb:   "arb_invar r V S0"
@@ -892,7 +889,7 @@ text \<open>The locality (geometry) facts the induction quotes directly: the out
       a genuinely new last-successor is untouched by the edits.  Per  these are consequences of
       @{const arb_invar} plus the pivot preconditions (clause J etc.); they are assumed here so the
       stem induction can be developed in isolation.\<close>
-locale \<^marker>\<open>provenance ai_human\<close> stem_setup_geom = stem_setup +
+locale stem_setup_geom = stem_setup +
   assumes out_notin_stem: "\<And>t. t < k \<Longrightarrow> out t \<noteq> None \<Longrightarrow> the (out t) \<notin>
     s ` {..k}"
       and bef_notin_lsx:  "\<And>m. m < k \<Longrightarrow> bef m \<notin> lsx ` {..m}"
@@ -2637,7 +2634,7 @@ end
 
 subsection \<open>A shared invariant proof for all pivot stems\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> stem_pivot = stem_setup_geom +
+locale stem_pivot = stem_setup_geom +
   fixes jn :: 'a
   assumes jneq: "jn = join_of (prnt S0) i j"
       and jnp: "jn \<in> set (follow (prnt S0) p)"

@@ -3,8 +3,6 @@ theory Disjoint_Paths_Search
           Micali_Vazirani.Layered_Digraph
 begin
 
-provenance ai_human
-
 section \<open>Searching for Vertex-Disjoint Paths\<close>
 
 text \<open>From each root in turn, a search step looks for a path to a target vertex that avoids

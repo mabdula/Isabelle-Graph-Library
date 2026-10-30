@@ -4,8 +4,6 @@ theory Laminar_Family_Executable
           Laminar_Spec
 begin
 
-provenance human
-
 datatype ('v, 'id) contracted_laminar = elem_vert (the_vert: 'v) 
   | subverts (the_children :"'id list")
 term foldl

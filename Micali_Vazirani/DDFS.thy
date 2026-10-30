@@ -3,8 +3,6 @@ theory DDFS
           Data_Structures.Set2_Addons
 begin
 
-provenance human
-
 text \<open>Some auxiliary theory about lists\<close>
 
 lemma last_P_in_list'':

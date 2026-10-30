@@ -6,9 +6,6 @@ theory Path_Search_Shortcut_Imperative
     Data_Structures.Fixed_Univ_Map_Specs_Imp
 begin
 
-provenance ai
-
-
 section \<open>The Imperative Shortcut\<close>
 
 text \<open>The imperative counterpart of @{const path_search_shortcut_spec.sc_loop}. The free left
@@ -48,7 +45,7 @@ definition "pot_shift_imp Pti l v r1 d = do {
    pot_upd_imp Pti l v;
    pot_upd_imp Pti r1 (p1 - d) }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) chain_imp :: "nat \<Rightarrow> 'ci \<Rightarrow> 'pi \<Rightarrow> 'bdi \<Rightarrow> 'v \<Rightarrow> ('v \<times> 'v) option Heap"
+partial_function (heap) chain_imp :: "nat \<Rightarrow> 'ci \<Rightarrow> 'pi \<Rightarrow> 'bdi \<Rightarrow> 'v \<Rightarrow> ('v \<times> 'v) option Heap"
   where
   "chain_imp k Ci Pti Bdi l = do {
      bs \<leftarrow> bs.best_two_imp (cur_red_imp Pti Bdi) Ci l;
@@ -74,7 +71,7 @@ definition "sc_row_imp Ci Pti Bdi l = do {
    bl \<leftarrow> buddy_imp Bdi l;
    (if bl = nil then chain_imp cap Ci Pti Bdi l else return None) }"
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (heap) sc_loop_imp ::
+partial_function (heap) sc_loop_imp ::
   "'ci \<Rightarrow> 'pi \<Rightarrow> 'bdi \<Rightarrow> 'lit \<Rightarrow> (('v \<times> 'v \<times> 'v) option \<times> 'lit) Heap" where
   "sc_loop_imp Ci Pti Bdi it = do {
      b \<leftarrow> left_it_has_next it;
@@ -150,7 +147,7 @@ text \<open>The end points of a path represent the path.\<close>
 
 definition "path_rel = (\<lambda>(a, b) p. p = [a, b])"
 
-lemma \<^marker>\<open>provenance ai_human\<close> cur_red_imp_rule:
+lemma cur_red_imp_rule:
   assumes "rnb_invar C" "l \<in> K" "rnb_remaining C l \<noteq> {}" "rnb_current C l \<in> K"
       and "potential_invar \<pi>"
   shows "<nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi)> code.cur_red_imp Pti Bdi Ci l
@@ -159,7 +156,7 @@ lemma \<^marker>\<open>provenance ai_human\<close> cur_red_imp_rule:
   unfolding code.cur_red_imp_def
   by (sep_auto heap: bs.nb.idx_current_rule bs.nb.current_cost_rule simp: assms red_def free_def)
 
-lemma \<^marker>\<open>provenance ai_human\<close> pot_shift_imp_rule:
+lemma pot_shift_imp_rule:
   assumes "potential_invar \<pi>" "l \<in> K" "r1 \<in> K" "h v = a" "h d = b"
   shows "<pot_assn \<pi> Pti> code.pot_shift_imp Pti l v r1 d
          <\<lambda>_. pot_assn (pot_shift \<pi> l a r1 b) Pti>"
@@ -190,7 +187,7 @@ lemma chain_rematch_props:
         not_free_matched[of M \<pi> r1] assms(1,4-6) edge_right_K[of l r1]
   by auto
 
-lemma \<^marker>\<open>provenance ai_human\<close> chain_imp_rule:
+lemma chain_imp_rule:
   assumes "path_search_precond M \<pi>" "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
           "l \<in> L" "l \<notin> Vs (matching_abstract M)"
   shows "<nb_assn C Ci * (pot_assn \<pi> Pti * buddy_assn M Bdi)> code.chain_imp k Ci Pti Bdi l
@@ -301,7 +298,7 @@ lemma sc_row_P:
   by (cases "chain cap (fst (snd s)) (snd (snd s)) (fst s) l")
      (auto simp: sc_P_def sc_row_def split: prod.splits)
 
-lemma \<^marker>\<open>provenance ai_human\<close> sc_row_imp_rule:
+lemma sc_row_imp_rule:
   assumes "sc_P s" "l \<in> L"
   shows "<sc_A Ci Pti Bdi s> code.sc_row_imp Ci Pti Bdi l
          <\<lambda>r. sc_A Ci Pti Bdi (fst (sc_row s l)) * \<up>(rel_option path_rel r (snd (sc_row s l)))>"
@@ -330,7 +327,7 @@ lemma rel_option_path_rel_Some:
 text \<open>The loop takes the left vertices from the iterator and hands back the iterator over the
       remaining ones.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> sc_loop_imp_rule:
+lemma sc_loop_imp_rule:
   assumes "set xs \<subseteq> L" "sc_P s"
   shows "<vset_assn left Li * left_is_it (vset_to_set left) Li xs it * sc_A Ci Pti Bdi s>
          code.sc_loop_imp Ci Pti Bdi it
@@ -372,7 +369,7 @@ lemma rel_option_path_rel_pair_Some:
 text \<open>The cursors may be anywhere, as long as they belong to the collection of the
       neighbourhoods. The path array keeps its length; on success, it starts with the path.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> shortcut_imp_rule:
+lemma shortcut_imp_rule:
   assumes "path_search_precond M \<pi>" "set xs \<subseteq> L"
       and "rnb_invar C" "rnb_abstract C = rnb_abstract rnb_init"
       and "sc_loop (C, M, \<pi>) xs = ((C', M', \<pi>'), res, xs')"

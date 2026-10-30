@@ -6,9 +6,6 @@ theory DFS_Code_Export
     Imperative.Code_Target_Machine_Int
 begin
 
-provenance ai
-
-
 locale rbt_DFS_by_input_list =
   fixes n :: nat and fs ts :: "nat list" and s t :: nat
   assumes ts_length: "length ts = length fs"
@@ -28,7 +25,7 @@ and t = t and s = s
   by (intro DFS_thms.intro dfs.DFS_axioms DFS_thms_axioms.intro)
      (simp add: dfs.DFS_axioms_def dfs.Graph.from_list_correct(2,3) s_in_G)
 
-theorem \<^marker>\<open>provenance ai_human\<close> rbt_dfs_correct:
+theorem rbt_dfs_correct:
   "let r = rbt_dfs_impl (rbt_from_list (zip fs ts)) t (rbt_dfs_initial_state s) in
    case DFS_state.return r of
      NotReachable \<Rightarrow> \<nexists>p. vwalk_bet (set (zip fs ts)) s p t

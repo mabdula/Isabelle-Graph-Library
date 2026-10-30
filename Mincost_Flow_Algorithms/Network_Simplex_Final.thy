@@ -3,9 +3,6 @@ theory Network_Simplex_Final
 Flow_Theory.Optimality_Certification
 begin
 
-provenance ai
-
-
 text \<open>\<^bold>\<open>Consequences of the terminating branches.\<close> When the loop stops it does so in one
       of two terminal branches. In the success branch the selector found no entering edge, so the
       current flow is a genuine minimum-cost \<open>b\<close>-flow (via \<open>optimality_from_potentials\<close>). In
@@ -382,7 +379,7 @@ text \<open>The correctness theorem @{thm [source] network_simplex.ns_loop_corre
 text \<open>The initial-basis specification locale fixes the seven starting components and
       builds the concrete starting state @{term init_state}. It carries no assumptions.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> network_simplex_init_spec =
+locale network_simplex_init_spec =
   network_simplex_spec where flow_lookup = flow_lookup and pot_lookup = pot_lookup
     and parent_lookup = parent_lookup and dir_lookup = dir_lookup and es_lookup = es_lookup
     and sel_select = sel_select and swap_edge = swap_edge
@@ -410,7 +407,7 @@ end
 text \<open>The initial-basis proof locale adds the well-formedness / feasibility assumptions on
       the fixed components and derives total correctness for the constructed state.\<close>
 
-locale \<^marker>\<open>provenance ai_human\<close> network_simplex_init = network_simplex + network_simplex_init_spec +
+locale network_simplex_init = network_simplex + network_simplex_init_spec +
   assumes
       init_flow_invar:   "flow_invar init_flow"
   and init_pot_valid:    "pot_valid init_pot"
@@ -476,7 +473,7 @@ text \<open>Total correctness specialised to the constructed initial state: the 
       @{term unbounded} result witnesses an infinite-capacity negative circuit, and a @{term success}
       result is a minimum-cost \<open>b\<close>-flow.\<close>
 
-lemma \<^marker>\<open>provenance ai_human\<close> network_simplex_correct:
+lemma network_simplex_correct:
   "ns_loop_dom init_state"
   "return (ns_loop init_state) = unbounded \<Longrightarrow> has_neg_infty_cycle make_pair \<E> \<c> \<u>"
   "return (ns_loop init_state) = success \<Longrightarrow> is_Opt b (ns_flow_of (ns_loop init_state))"

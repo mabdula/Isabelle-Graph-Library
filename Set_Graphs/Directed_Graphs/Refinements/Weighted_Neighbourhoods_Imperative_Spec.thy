@@ -4,9 +4,6 @@ theory Weighted_Neighbourhoods_Imperative_Spec
           Complex_Main
 begin
 
-provenance ai
-
-
 section \<open>Imperative Collections of Weighted Neighbourhoods\<close>
 
 text \<open>The imperative collection of neighbourhoods with cursors,

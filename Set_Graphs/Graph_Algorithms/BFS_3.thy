@@ -4,14 +4,11 @@ theory BFS_3
           Parent_Map_Spec
 begin
 
-provenance ai
-
-
 hide_const  Undirected_Set_Graphs.neighbourhood
 
 record ('parents, 'vset) BFS_state = parents:: "'parents" current:: "'vset" visited:: "'vset"
 
-locale \<^marker>\<open>provenance ai_human\<close> BFS =
+locale BFS =
   Graph: Pair_Graph_Specs
     where lookup = lookup +
   set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
@@ -68,7 +65,7 @@ abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 
-function \<^marker>\<open>provenance ai_human\<close> (domintros) BFS::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
+function (domintros) BFS::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS BFS_state = 
      (
         if current BFS_state \<noteq> \<emptyset>\<^sub>N then
@@ -81,7 +78,7 @@ function \<^marker>\<open>provenance ai_human\<close> (domintros) BFS::"('adjmap
           BFS_state)"
   by pat_completeness auto
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) BFS_impl::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
+partial_function (tailrec) BFS_impl::"('adjmap, 'vset) BFS_state \<Rightarrow> ('adjmap, 'vset) BFS_state" where
   "BFS_impl BFS_state = 
      (
         if current BFS_state \<noteq> \<emptyset>\<^sub>N then
@@ -1996,7 +1993,7 @@ end text \<open>locale @{const BFS}\<close>
 
 record ('parents, 'vset) BFS_dist_state = dists:: "'parents" current:: "'vset" visited:: "'vset" current_dist::nat
 
-locale \<^marker>\<open>provenance ai_human\<close> BFS_distance =
+locale BFS_distance =
  BFS
  where lookup = lookup for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option" +
  fixes some_dist::'dist
@@ -2019,7 +2016,7 @@ begin
 definition "initial_dist_state = 
       \<lparr>dists = set_all_dists_in_set some_dist srcs 0, current = srcs, visited = srcs, current_dist = 0\<rparr>"
 
-function \<^marker>\<open>provenance ai_human\<close> (domintros) BFS_dist::"('dist, 'vset) BFS_dist_state \<Rightarrow> ('dist, 'vset) BFS_dist_state" where
+function (domintros) BFS_dist::"('dist, 'vset) BFS_dist_state \<Rightarrow> ('dist, 'vset) BFS_dist_state" where
   "BFS_dist BFS_state = 
      (
         if current BFS_state \<noteq> \<emptyset>\<^sub>N then
@@ -2034,7 +2031,7 @@ function \<^marker>\<open>provenance ai_human\<close> (domintros) BFS_dist::"('d
           BFS_state)"
   by pat_completeness auto
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) BFS_dist_impl::
+partial_function (tailrec) BFS_dist_impl::
    "('dist, 'vset) BFS_dist_state \<Rightarrow> ('dist, 'vset) BFS_dist_state" where
   "BFS_dist_impl BFS_state = 
      (
@@ -2465,7 +2462,7 @@ text \<open>The parents are built while the next frontier is computed: every ver
 
 record ('dist, 'vset, 'par) BFS_par_state = "('dist, 'vset) BFS_dist_state" + parent :: "'par"
 
-locale \<^marker>\<open>provenance ai_human\<close> BFS_distance_parents =
+locale BFS_distance_parents =
   BFS_distance where lookup = lookup and set_all_dists_in_set = set_all_dists_in_set
   + Parent_Map_Spec_static where U = U and to_dir_graph = parent_abstract
         and get_path = get_path and roots = roots and invar = parent_invar
@@ -2513,7 +2510,7 @@ for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option"
    and G_in_U: "dVs (Graph.digraph_abs G) \<subseteq> U"
 begin
 
-partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) BFS_par_impl ::
+partial_function (tailrec) BFS_par_impl ::
   "('dist, 'vset, 'par) BFS_par_state \<Rightarrow> ('dist, 'vset, 'par) BFS_par_state" where
   "BFS_par_impl s =
      (if current s \<noteq> \<emptyset>\<^sub>N then
@@ -2898,7 +2895,7 @@ text \<open>The main properties of the final state: a vertex is visited iff it i
       edge and has a distance that is one smaller, and
       the path reconstructed by @{term get_path} is a shortest path from the sources.\<close>
 
-theorem \<^marker>\<open>provenance ai_human\<close> BFS_par_correct:
+theorem BFS_par_correct:
   assumes "final_state = BFS_par_impl initial_par_state"
   shows "x \<in> t_set (visited final_state) \<longleftrightarrow>
            (\<exists>u \<in> t_set srcs. \<exists>q. vwalk_bet (Graph.digraph_abs G) u q x)"

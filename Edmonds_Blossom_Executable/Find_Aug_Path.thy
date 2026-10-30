@@ -7,11 +7,8 @@ provenance ai
 section \<open>Searching for an augmenting path by shrinking blossoms\<close>
 
 text \<open>The search calls a procedure that returns an augmenting path, a blossom, or nothing. When
-  it returns a blossom, the cycle of the blossom is contracted to a vertex of the universe that
-  is not a vertex of the current graph, in the graph and in the matching, and the search is
-  repeated on the contracted graph. Such a vertex exists as long as the vertices of the graph are
-  a strict subset of the universe, which a contraction preserves: it replaces the at least two
-  vertices of the cycle by one vertex. The contractions are
+  it returns a blossom, the cycle of the blossom is contracted to a fresh vertex, in the graph
+  and in the matching, and the search is repeated on the contracted graph. The contractions are
   recorded on a stack. When an augmenting path of the contracted graph is found, it is lifted
   through the recorded contractions, from the last one to the first, to an augmenting path of the
   input graph. A contraction preserves the existence of augmenting paths, so if the procedure
@@ -138,11 +135,11 @@ locale Find_Aug_Path = Graph_Matching_Specs where lookup = lookup and mate_empty
     "\<And>G' vs' M'. \<lbrakk>graph_input G' vs'; matching_invar G' M';
                   \<exists>p. graph_augmenting_path (ugraph_abs G') (matching_abs M') p\<rbrakk>
        \<Longrightarrow> blos_search G' vs' M' \<noteq> None"
-  and create_vert: "\<And>vs'. set vs' \<subset> K \<Longrightarrow> create_vert vs' \<notin> set vs'"
-  and create_vert_in_univ: "\<And>vs'. set vs' \<subset> K \<Longrightarrow> create_vert vs' \<in> K"
+  and create_vert: "\<And>vs'. create_vert vs' \<notin> set vs'"
+  and create_vert_in_univ: "\<And>vs'. set vs' \<subseteq> K \<Longrightarrow> create_vert vs' \<in> K"
 begin
 
-definition "Find_Aug_Path_axiom \<longleftrightarrow> graph_input G vs \<and> matching_invar G M \<and> set vs \<subset> K"
+definition "Find_Aug_Path_axiom \<longleftrightarrow> graph_input G vs \<and> matching_invar G M"
 
 subsubsection \<open>Contraction\<close>
 
@@ -169,14 +166,13 @@ context
   fixes E N C u vs' stem
   assumes contraction:
     "graph_input E vs'" "matching_invar E N" "blossom (ugraph_abs E) (matching_abs N) stem C"
-    "u \<notin> set vs' - set C" "u \<in> K"
+    "u \<notin> set vs'" "u \<in> K"
 begin
 
 lemma contraction_facts:
   "graph_invar (ugraph_abs E)" "set C \<subseteq> Vs (ugraph_abs E)" "C \<noteq> []" "hd C = last C"
-  "2 \<le> card (set C)" "u \<notin> Vs (ugraph_abs E) - set C" "matching_invar_abs (ugraph_abs E) N"
+  "2 \<le> card (set C)" "u \<notin> Vs (ugraph_abs E)" "matching_invar_abs (ugraph_abs E) N"
   "matching (matching_abs N)" "matching_abs N \<subseteq> ugraph_abs E" "finite (matching_abs N)"
-  "u \<in> K"
 proof-
   show "graph_invar (ugraph_abs E)"
     by (rule ugraph_abs_graph_invar[OF contraction(1)])
@@ -187,11 +183,9 @@ proof-
       odd_cycleD(3)[OF match_blossomD(3)[OF blossomD(2)[OF contraction(3)]]]
       blossom_cycle_longer_2[OF blossomD(2)[OF contraction(3)]]
     by simp_all
-  show "u \<notin> Vs (ugraph_abs E) - set C"
+  show "u \<notin> Vs (ugraph_abs E)"
     using contraction(4) Vs_ugraph_abs_subset_vs[OF contraction(1)]
     by blast
-  show "u \<in> K"
-    by (rule contraction(5))
   show "matching_invar_abs (ugraph_abs E) N"
     using contraction(2)
     by (simp add: matching_invar_def)
@@ -250,46 +244,8 @@ proof(rule from_list_graph_input)
     using dVs_quotient_edges[of C u "adjacency_edges E vs'"]
     by (auto simp: contract_vertices_def)
   show "set (contract_vertices vs' C u) \<subseteq> K"
-    using graph_inputD(7)[OF contraction(1)] contraction_facts(11)
+    using graph_inputD(7)[OF contraction(1)] contraction(5)
     by (auto simp: contract_vertices_def)
-qed
-
-text \<open>A contraction replaces the at least two vertices of the cycle by one vertex, so a vertex
-  list that is a strict subset of the universe stays one.\<close>
-
-lemma contract_vertices_strict:
-  assumes "set vs' \<subset> K"
-  shows "set (contract_vertices vs' C u) \<subset> K"
-proof-
-  have eq: "set (contract_vertices vs' C u) = Set.insert u (set vs' - set C)"
-    by (auto simp: contract_vertices_def)
-  have sub: "set (contract_vertices vs' C u) \<subseteq> K"
-    using assms contraction(5)
-    by (auto simp: contract_vertices_def)
-  have C: "set C \<subseteq> set vs'"
-    using contraction_facts(2) Vs_ugraph_abs_subset_vs[OF contraction(1)]
-    by blast
-  have "card (Set.insert u (set vs' - set C)) \<le> Suc (card (set vs' - set C))"
-    by (simp add: card_insert_if)
-  moreover have "card (set vs' - set C) = card (set vs') - card (set C)"
-    using C
-    by (simp add: card_Diff_subset)
-  moreover have "card (set C) \<le> card (set vs')"
-    using C
-    by (simp add: card_mono)
-  ultimately have less: "card (set (contract_vertices vs' C u)) < card (set vs')"
-    using contraction_facts(5)
-    by (simp add: eq)
-  show ?thesis
-  proof(rule psubsetI[OF sub], rule notI)
-    assume K: "set (contract_vertices vs' C u) = K"
-    hence "card (set vs') \<le> card K"
-      using assms
-      by (metis List.finite_set card_mono psubset_imp_subset)
-    thus False
-      using K less
-      by simp
-  qed
 qed
 
 lemma contract_matching_abs:
@@ -310,7 +266,7 @@ proof-
     using cycle_props(1) contraction_facts(2) graph_inputD(7)[OF contraction(1)]
       Vs_ugraph_abs_subset_vs[OF contraction(1)] by blast
   have fresh: "u \<notin> Vs (matching_abs N) - set (butlast C)"
-    using contraction_facts(6,9) Vs_subset cycle_props(1) by blast
+    using contraction_facts(6,9) Vs_subset by blast
   let ?contr = "\<lambda>x. if x \<in> set (butlast C) then u else x"
   have quot_eq: "quot_graph ?contr X - {{u}} = Q.quotG X" if "X \<subseteq> ugraph_abs E" for X
   proof (rule arg_cong[where f="\<lambda>A. A - {{u}}"], rule quot_graph_cong)
@@ -323,7 +279,7 @@ proof-
   qed
   have precond: "Mate.contract_path_precond (ugraph_abs E) N (butlast C) u ?contr"
     by (rule Mate.contract_path_precondI[
-          OF contraction_facts(7) path cycle_props(2,3) fresh refl in_univ contraction_facts(11)])
+          OF contraction_facts(7) path cycle_props(2,3) fresh refl in_univ contraction(5)])
   show "matching_abs (contract_matching N C u) = Q.quotG (matching_abs N)"
     using Mate.contract(2)[OF precond] quot_eq[OF contraction_facts(9)]
     by (simp add: contract_matching_def)
@@ -371,6 +327,8 @@ proof(intro quot_lift.intro quot_here quot_lift_axioms.intro)
     by (simp add: matching_abs_iff[OF contraction_facts(7)])
   show "matching_abs N \<subseteq> ugraph_abs E"
     by (rule contraction_facts(9))
+  show "u \<notin> Vs (ugraph_abs E)"
+    by (rule contraction_facts(6))
   show "hd C = last C"
     by (rule contraction_facts(4))
 qed simp
@@ -484,8 +442,7 @@ abbreviation "Find_Aug_Path_ret2 state \<equiv> state"
 
 definition "invar_1 state \<longleftrightarrow>
   graph_input (search_graph state) (search_vertices state) \<and>
-  matching_invar (search_graph state) (search_matching state) \<and>
-  set (search_vertices state) \<subset> K"
+  matching_invar (search_graph state) (search_matching state)"
 
 definition "invar_search state \<longleftrightarrow>
   search_result state =
@@ -588,7 +545,6 @@ begin
 
 lemma graph_input_G[simp]: "graph_input G vs"
   and matching_invar_M[simp]: "matching_invar G M"
-  and vs_strict[simp]: "set vs \<subset> K"
   using Find_Aug_Path_axiom
   by (simp_all add: Find_Aug_Path_axiom_def)
 
@@ -599,7 +555,7 @@ lemma call_1_facts:
     "graph_input (search_graph state) (search_vertices state)"
     "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
-    "create_vert (search_vertices state) \<notin> set (search_vertices state) - set C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
     "create_vert (search_vertices state) \<in> K"
 proof-
   obtain stem C where sc: "search_result state = Some (Blossom stem C)"
@@ -609,17 +565,11 @@ proof-
           "matching_invar (search_graph state) (search_matching state)"
     using assms(2)
     by (auto simp: invar_1_def)
-  have b: "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
+  have "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
     using blos_search(2) assms(2,3) sc
     by (auto simp: invar_1_def invar_search_def)
-  have strict: "set (search_vertices state) \<subset> K"
-    using assms(2)
-    by (simp add: invar_1_def)
-  have "create_vert (search_vertices state) \<notin> set (search_vertices state) - set C"
-    using create_vert[OF strict]
-    by blast
   thus ?thesis
-    by (rule that[OF sc g b _ create_vert_in_univ[OF strict]])
+    by (rule that[OF sc g _ create_vert create_vert_in_univ[OF graph_inputD(7)[OF g(1)]]])
 qed
 
 lemma upd1_fields:
@@ -647,14 +597,12 @@ subsubsection \<open>The representation invariant\<close>
 lemma invar_1_props[invar_props_elims]:
   "\<lbrakk>invar_1 state;
    (\<lbrakk>graph_input (search_graph state) (search_vertices state);
-     matching_invar (search_graph state) (search_matching state);
-     set (search_vertices state) \<subset> K\<rbrakk> \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
+     matching_invar (search_graph state) (search_matching state)\<rbrakk> \<Longrightarrow> P) \<rbrakk> \<Longrightarrow> P"
   by (auto simp: invar_1_def)
 
 lemma invar_1_intro[invar_props_intros]:
   "\<lbrakk>graph_input (search_graph state) (search_vertices state);
-    matching_invar (search_graph state) (search_matching state);
-    set (search_vertices state) \<subset> K\<rbrakk> \<Longrightarrow> invar_1 state"
+    matching_invar (search_graph state) (search_matching state)\<rbrakk> \<Longrightarrow> invar_1 state"
   by (auto simp: invar_1_def)
 
 lemma invar_1_holds_1[invar_holds_intros]:
@@ -666,16 +614,12 @@ proof-
     "graph_input (search_graph state) (search_vertices state)"
     "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
-    "create_vert (search_vertices state) \<notin> set (search_vertices state) - set C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
     "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms])
   note upd = upd1_fields[OF result]
-  have strict: "set (search_vertices state) \<subset> K"
-    using assms(2)
-    by (simp add: invar_1_def)
   show ?thesis
     using contract_graph_input[OF contract] contract_matching_invar[OF contract]
-      contract_vertices_strict[OF contract strict]
     by (auto intro!: invar_props_intros simp: upd)
 qed
 
@@ -753,7 +697,7 @@ proof-
     "graph_input (search_graph state) (search_vertices state)"
     "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
-    "create_vert (search_vertices state) \<notin> set (search_vertices state) - set C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
     "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms(1-3)])
   note upd = upd1_fields[OF result]
@@ -800,7 +744,7 @@ proof-
     "graph_input (search_graph state) (search_vertices state)"
     "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
-    "create_vert (search_vertices state) \<notin> set (search_vertices state) - set C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
     "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms(1-3)])
   note upd = upd1_fields[OF result]
@@ -851,7 +795,7 @@ proof-
     "graph_input (search_graph state) (search_vertices state)"
     "matching_invar (search_graph state) (search_matching state)"
     "blossom (ugraph_abs (search_graph state)) (matching_abs (search_matching state)) stem C"
-    "create_vert (search_vertices state) \<notin> set (search_vertices state) - set C"
+    "create_vert (search_vertices state) \<notin> set (search_vertices state)"
     "create_vert (search_vertices state) \<in> K"
     by (rule call_1_facts[OF assms])
   note upd = upd1_fields[OF result]
@@ -959,7 +903,7 @@ lemma initial_state_props[invar_holds_intros, termination_intros]:
   "invar_complete initial_state" "Find_Aug_Path_dom initial_state"
 proof-
   show inv1: "invar_1 initial_state"
-    by (rule invar_1_intro) (simp_all add: initial_state_def)
+    by (auto intro!: invar_props_intros simp: initial_state_def)
   show invs: "invar_search initial_state"
     by (auto intro!: invar_props_intros simp: initial_state_def)
   show "invar_lift initial_state"

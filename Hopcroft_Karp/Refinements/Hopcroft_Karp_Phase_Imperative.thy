@@ -3,9 +3,6 @@ theory Hopcroft_Karp_Phase_Imperative
           Micali_Vazirani.IDFS_Imperative Disjoint_Paths_Search_Imperative
 begin
 
-provenance ai
-
-
 section \<open>Imperative Refinement of the Phase\<close>
 
 text \<open>The imperative phase composes the imperative alternating BFS
@@ -491,7 +488,7 @@ qed (rule imp_cf_is_empty_rule imp_src_to_cf_rule set_srcs_visited_rule |     (r
       assumption) |
      (rule set_all_dists_imp_rule[OF _ bfs_G_univ(2)]; assumption))+
 
-lemma \<^marker>\<open>provenance ai_human\<close> bfs_run_rule:
+lemma bfs_run_rule:
   "<graph_assn (matching_graph edges m) Mgi * graph_assn (non_matching_graph edges m) Ugi *
     imp_vis_assn vset_empty VEi * imp_vis_assn vset_empty VOi * imp_src_assn (bfs_sources vs m) Fi *
     imp_dist_assn some_dist Di>
@@ -699,7 +696,7 @@ next
     by (sep_auto heap: commit_path_rule[of "dVs (CGraph.digraph_abs (copies_graph vs edges m))"])
 qed
 
-lemma \<^marker>\<open>provenance ai_human\<close> dps_run_rule:
+lemma dps_run_rule:
   "<cgraph_assn (copies_graph vs edges m) Gi * set_assn (dVs (set (copies_edge_list vs edges m))) CVi *
     imp_dist_assn (d_dists dist_final) Di * set_assn {} SNi * stack_assn stack_empty Si *
     (\<exists>\<^sub>AR. stack_assn R Ri * \<up>(stack_invar R \<and> stack_abstract R = copy_roots vs edges m)) *
@@ -737,7 +734,7 @@ subsection \<open>The imperative phase\<close>
 lemma capacity_vs: "length vs \<le> cap"
   using capacity by simp
 
-lemma \<^marker>\<open>provenance ai_human\<close> hopcroft_karp_phase_imp_rule_free:
+lemma hopcroft_karp_phase_imp_rule_free:
   "<edges_assn edges Ei * verts_assn vs Vi * mate_assn m Mi>
      hopcroft_karp_phase_imp Ei Vi Mi
    <\<lambda>Psi. edges_assn edges Ei * verts_assn vs Vi * mate_assn m Mi *
@@ -753,7 +750,7 @@ end
 
 text \<open>The imperative phase computes the paths of the functional phase.\<close>
 
-theorem \<^marker>\<open>provenance ai_human\<close> hopcroft_karp_phase_imp_rule:
+theorem hopcroft_karp_phase_imp_rule:
   assumes "mate_invar (hk_input.ugraph_abs Gin) m"
   shows "<edges_assn edges Ei * verts_assn vs Vi * mate_assn m Mi>
            hopcroft_karp_phase_imp Ei Vi Mi

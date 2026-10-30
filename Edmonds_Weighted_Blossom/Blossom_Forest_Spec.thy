@@ -2,8 +2,6 @@ theory Blossom_Forest_Spec
   imports Laminar_Family.Laminar_Spec Undirected_Set_Graphs.Paths
 begin
 
-provenance human
-
 locale blossom_forest_spec =
  laminar_family_spec where collect_elems = collect_elems
  and laminar_invar = blossom_forest_invar
