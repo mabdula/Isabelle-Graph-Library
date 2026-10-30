@@ -2952,10 +2952,8 @@ proof -
         have "B = submatrix A I J" 
           apply rule
             apply (simp add: "10" "30" "11" append_rows_def index_mat_four_block(1) index_zero_mat(1))
-           apply (metis (no_types, lifting) "10" "11" 30 add.right_neutral append_rows_def
-              index_mat_four_block(2) index_zero_mat(2))
-          proof -
-  have dimA: "dim_col A = n"
+           apply (simp add: "10" 30 append_rows_def index_mat_four_block dim_submatrix(1))
+          proof -  have dimA: "dim_col A = n"
     using carrier_matD(2)[OF A] .
   have dimA': "dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) = n"
   proof -
