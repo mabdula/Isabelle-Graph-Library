@@ -24,7 +24,7 @@ text \<open>\<^bold>\<open>Listing 5. inductive vwalk (Vwalk.thy)\<close>
   Checked reference: @{const vwalk}.\<close>
 
 text \<open>\<^bold>\<open>Listing 6. definition awalk (Awalk_Defs.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Awalk_Defs.thy\<close> (line 12).
+  In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Awalk_Defs.thy\<close> (line 29).
   Checked reference: @{const awalk}.\<close>
 
 text \<open>\<^bold>\<open>Listing 7. definition walk_betw (Paths.thy)\<close>

@@ -17,7 +17,7 @@ text \<open>\<^bold>\<open>Listing 48. locale multigraph_spec (Multigraph.thy)\<
   Checked reference: @{locale multigraph_spec}.\<close>
 
 text \<open>\<^bold>\<open>Listing 49. function DFS (DFS.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (line 35).
+  In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (line 66, locale DFS).
   Checked reference: @{const DFS.DFS}.\<close>
 
 text \<open>\<^bold>\<open>Listing 50. record DFS_state (DFS.thy)\<close>
@@ -26,7 +26,11 @@ text \<open>\<^bold>\<open>Listing 50. record DFS_state (DFS.thy)\<close>
 
 text \<open>\<^bold>\<open>Listing 51. locale find_max_match (Blossom_Algo_Main_Loop.thy)\<close>
   In this snapshot: \<^file>\<open>../../Edmonds_Blossom_Executable/Find_Max_Matching.thy\<close> (line 32).
-  Note: paper: locale find_max_match (Blossom_Algo_Main_Loop.thy); in-tree name Find_Max_Matching.
+  Note: the locale of the listing is in Blossom_Algo_Main_Loop.thy of the session
+  Edmonds_Blossom_Algorithm, which is not part of this artefact. This entry points at the
+  corresponding locale of the executable version instead: the graph and the matching are given by
+  their implementations, and the search for an augmenting path has the soundness and completeness
+  assumptions of the listing, stated for the abstractions of the graph and of the matching.
   Checked reference: @{locale Find_Max_Matching}.\<close>
 
 text \<open>\<^bold>\<open>Listing 52. locale BFS (BFS_2.thy)\<close>

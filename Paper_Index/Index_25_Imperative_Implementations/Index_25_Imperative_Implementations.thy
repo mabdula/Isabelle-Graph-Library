@@ -34,11 +34,11 @@ text \<open>\<^bold>\<open>Listing 104. interpretation hm_dfs: imp_DFS (DFS_Impe
 
 text \<open>\<^bold>\<open>Listing 105. lemma DFS_imperative_rule (DFS_Imperative.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/Refinements/DFS_Imperative.thy\<close> (line 98).
-  Checked reference: @{thm DFS_imperative_rule}.\<close>
+  Checked reference: @{thm imp_DFS.DFS_imperative_rule}.\<close>
 
-text \<open>\<^bold>\<open>Listing 106. lemma DFS_imperative’_absrl (DFS_Imperative.thy)\<close>
+text \<open>\<^bold>\<open>Listing 106. lemma DFS_imperative'_absrl (DFS_Imperative.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/Refinements/DFS_Imperative.thy\<close> (line 216).
   Note: branch bfs_refinement.
-  Checked reference: @{thm DFS_imperative'_absrl}.\<close>
+  Checked reference: @{thm imp_DFS_thms.DFS_imperative'_absrl}.\<close>
 
 end

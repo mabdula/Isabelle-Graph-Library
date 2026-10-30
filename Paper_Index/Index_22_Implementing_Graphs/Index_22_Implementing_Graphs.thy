@@ -25,7 +25,8 @@ text \<open>Index of the paper's listings for: Section 2.2: Implementing Graphs.
 
 text \<open>\<^bold>\<open>Listing 28. locale wf_digraph (Digraph.thy)\<close>
   Location: Digraph.thy (AFP entry (Graph_Theory)).
-  Checked reference: @{locale wf_digraph}.\<close>
+  Table 4 also names the locale @{locale nomulti_digraph} of the same theory.
+  Checked references: @{locale wf_digraph}, @{locale nomulti_digraph}.\<close>
 
 text \<open>\<^bold>\<open>Listing 29. locale multigraph (Multigraph.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Multigraph.thy\<close> (line 125).
@@ -46,15 +47,22 @@ text \<open>\<^bold>\<open>Listing 32. locale outgoing_edge_iterator (Acyclic_Fl
 
 text \<open>\<^bold>\<open>Listing 33. locale Pair_Graph_Specs (Pair_Graph_Specs.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Pair_Graph_Specs.thy\<close> (line 243).
+  Note: in this snapshot the vertex set operations enter through @{locale Pair_Graph_Specs_Read_Only}
+  instead of the parent \<open>vset: Set_Choose\<close> of the listing.
   Checked reference: @{locale Pair_Graph_Specs}.\<close>
 
 text \<open>\<^bold>\<open>Listing 34. locale Pair_Graph_U_Specs (Pair_Graph_U_Specs.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Undirected_Graphs/Pair_Graph_U_Specs.thy\<close> (line 464).
-  Checked reference: @{locale Pair_Graph_U_Specs}.\<close>
+  Note: in this snapshot the locale has the further parent \<open>Pair_Graph_U_Specs_Read_Only\<close>.
+  Table 4 also names its abstraction \<open>ugraph_abs\<close> (line 57, locale Pair_Graph_U_Specs_Read_Only).
+  Checked references: @{locale Pair_Graph_U_Specs}, @{const Pair_Graph_U_Specs_Read_Only.ugraph_abs}.\<close>
 
 text \<open>\<^bold>\<open>Listing 35. locale csr_graph (CSR_Graph.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Refinements/CSR_Graph.thy\<close> (line 26).
-  Note: branch more_algorithms.
+  In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/CSR_Graph_Spec.thy\<close> (line 344).
+  Note: branch more_algorithms. In this snapshot the locale is @{locale csr_ranges} with the range
+  of a vertex \<open>v\<close> ending at \<open>B ! Suc v\<close>. It has the assumptions of the listing except that it
+  asks the entries of each range to be distinct, not the whole list \<open>E\<close>, and the sort \<open>heap\<close>
+  is only required by its imperative extension \<open>csr_graph_imp\<close> in \<open>CSR_Graph.thy\<close>.
   Checked reference: @{locale csr_graph}.\<close>
 
 text \<open>\<^bold>\<open>Listing 36. interpretation G: Pair_Graph_Specs (Pair_Graph_RBT.thy)\<close>
@@ -63,13 +71,14 @@ text \<open>\<^bold>\<open>Listing 36. interpretation G: Pair_Graph_Specs (Pair_
   Checked reference: @{locale Pair_Graph_Specs}.\<close>
 
 text \<open>\<^bold>\<open>Listing 37. interpretation G: Pair_Graph_Specs (Pair_Graph_AVL.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Pair_Graph_AVL.thy\<close> (line 44).
-  interpretation @{text \<open>G: Adj_Map_Specs\<close>} with AVL trees (paper cites Pair_Graph_Specs).
-  Checked reference: @{locale Adj_Map_Specs}.\<close>
+  In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Pair_Graph_AVL.thy\<close> (line 60).
+  interpretation @{text \<open>G: Pair_Graph_Specs\<close>} with AVL trees.
+  Checked reference: @{locale Pair_Graph_Specs}.\<close>
 
 text \<open>\<^bold>\<open>Listing 38. locale Pair_Graph_Imperative (Pair_Graph_Imperative.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Refinements/Pair_Graph_Imperative.thy\<close> (line 13).
-  Checked reference: @{locale Pair_Graph_Imperative}.\<close>
+  Table 4 also names its abstraction \<open>graph_assn\<close> (line 34).
+  Checked references: @{locale Pair_Graph_Imperative}, @{const Pair_Graph_Imperative.graph_assn}.\<close>
 
 text \<open>\<^bold>\<open>Listing 39. lemma vwalk_iff (Pair_Graph_Library_Adaptor.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Directed_Graphs/Adaptors/Pair_Graph_Library_Adaptor.thy\<close> (line 175, locale wf_digraph).
@@ -98,7 +107,8 @@ text \<open>\<^bold>\<open>Listing 44. locale Multi_Graph_Specs (BFS_Multi.thy)\
 
 text \<open>\<^bold>\<open>Listing 45. locale indexed_iterable_set (Iterable_Set_Specs.thy)\<close>
   In this snapshot: \<^file>\<open>../../Data_Structures/Iterable_Set_Specs.thy\<close> (line 145).
-  Note: branch more_algorithms.
+  Note: branch more_algorithms. In this snapshot the assumptions of the listing are those of the
+  parent locales @{locale indexed_set_cursor} and @{locale indexed_set_reset}.
   Checked reference: @{locale indexed_iterable_set}.\<close>
 
 text \<open>\<^bold>\<open>Listing 46. locale weighted_csr (CSR_Graph.thy)\<close>

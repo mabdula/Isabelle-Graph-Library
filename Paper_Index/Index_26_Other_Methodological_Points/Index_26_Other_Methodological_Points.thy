@@ -6,7 +6,6 @@ theory Index_26_Other_Methodological_Points
     "Mincost_Flow_Algorithms.Orlins_Time"
     "Mincost_Flow_Algorithms.Path_Aug_Opt"
     "Spanning_Trees.Kruskal_Greedy"
-    "Use_Orlins_Algorithm.Usage_Capacitated"
 begin
 
 section \<open>Section 2.6: Other Methodological Points\<close>
@@ -17,13 +16,16 @@ text \<open>Index of the paper's listings for: Section 2.6: Other Methodological
 
 text \<open>\<^bold>\<open>Listing 107. global_interpretation Kruskal_Greedy: BestInGreedy_exec (Kruskal_Functional.thy)\<close>
   In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Greedy.thy\<close> (line 119).
-  Note: paper: Kruskal_Functional.thy; in this snapshot: Kruskal_Greedy.thy.
+  Note: paper: Kruskal_Functional.thy; in this snapshot: Kruskal_Greedy.thy. The locale
+  \<open>BestInGreedy_exec\<close> of the listing is called @{locale Best_In_Greedy'} here, and the constant
+  defined as \<open>kruskal'\<close> is \<open>Kruskal_Greedy.BestInGreedy'\<close>.
   global_interpretation @{text \<open>Kruskal_Greedy: Best_In_Greedy'\<close>}.
   Checked reference: @{locale Best_In_Greedy'}.\<close>
 
 text \<open>\<^bold>\<open>Listing 108. theorem solution (Max_Bipartite_Matching_Matroid.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Matroid_Intersection/Applications/Max_Bipartite_Matching_Matroid.thy\<close> (line 1545, locale max_bimatch_by_matroid_spec).
-  Checked reference: @{thm max_bimatch_by_matroid_spec.solution}.\<close>
+  In this snapshot: \<^file>\<open>../../Matroid_Intersection/Applications/Max_Bipartite_Matching_Matroid.thy\<close> (line 1545, in an unnamed context).
+  Note: the field \<open>sol\<close> of the state is called \<open>solution\<close> in this snapshot.
+  Checked reference: @{thm Max_Bipartite_Matching_Matroid.solution}.\<close>
 
 text \<open>\<^bold>\<open>Listing 109. definition local_indep_oracle (Kruskal_Greedy.thy)\<close>
   In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Greedy.thy\<close> (line 102, locale Oracle).
@@ -34,8 +36,9 @@ text \<open>\<^bold>\<open>Listing 110. theorem reduction_of_min_cost_flow_to_hi
   Checked reference: @{thm reduction_of_min_cost_flow_to_hitchcock_general}.\<close>
 
 text \<open>\<^bold>\<open>Listing 111. corollary correctness_of_implementation_success (Usage_Capacitated.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Mincost_Flow_Algorithms/Use_Orlins_Algorithm/Usage_Capacitated.thy\<close> (line 633, locale with_capacity_proofs).
-  Checked reference: @{thm with_capacity_proofs.correctness_of_implementation_success}.\<close>
+  Indexed in \<^file>\<open>Index_26_Usage_Capacitated.thy\<close>: \<open>Usage_Capacitated\<close> imports
+  \<open>Bellman_Ford_Example\<close>, whose order on pairs clashes with the one of
+  \<open>HOL-Library.Product_Lexorder\<close> that the theories of Listings 107 to 109 import.\<close>
 
 text \<open>\<^bold>\<open>Listing 112. corollary is_opt_iff_no_augcycle (Cost_Optimality.thy)\<close>
   In this snapshot: \<^file>\<open>../../Flow_Theory/Cost_Optimality.thy\<close> (line 634, locale cost_flow_network).

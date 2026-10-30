@@ -32,6 +32,8 @@ text \<open>\<^bold>\<open>Listing 85. lemma DFS_cases (DFS.thy)\<close>
 
 text \<open>\<^bold>\<open>Listing 86. lemma DFS_simps (DFS.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (line 213, locale DFS).
+  Note: the lemma has a fourth conclusion, for the branch \<open>DFS_ret_2_conds\<close>, which the listing
+  leaves out.
   Checked reference: @{thm DFS.DFS_simps}.\<close>
 
 text \<open>\<^bold>\<open>Listing 87. lemma DFS_induct (DFS.thy)\<close>
@@ -39,7 +41,7 @@ text \<open>\<^bold>\<open>Listing 87. lemma DFS_induct (DFS.thy)\<close>
   Checked reference: @{thm DFS.DFS_induct}.\<close>
 
 text \<open>\<^bold>\<open>Listing 88. lemma DFS_call_1_conds (DFS.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (line 89, locale DFS).
+  In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (line 101, locale DFS).
   Checked reference: @{thm DFS.DFS_call_1_conds}.\<close>
 
 text \<open>\<^bold>\<open>Listing 89. lemma invar_1_holds_1 (DFS.thy)\<close>
@@ -50,8 +52,11 @@ text \<open>\<^bold>\<open>Listing 90. lemma invar_1_holds (DFS.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (line 329, locale DFS_thms).
   Checked reference: @{thm DFS_thms.invar_1_holds}.\<close>
 
-text \<open>\<^bold>\<open>Listing 91. collections of theorems (named_theorems)\<close>
-  Prose only: not a single entity: the methodology's named_theorems collections (e.g. invar_holds_intros, call_cond_elims). There is no antiquotation, so this listing is not entity-checked in this snapshot.\<close>
+text \<open>\<^bold>\<open>Listing 91. collections of theorems (named_theorems) (DFS.thy)\<close>
+  In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/DFS.thy\<close> (lines 23 to 30).
+  Checked references: @{thm DFS.call_cond_elims}, @{thm DFS.call_cond_intros},
+  @{thm DFS.ret_holds_intros}, @{thm DFS.invar_props_intros}, @{thm DFS.invar_props_elims},
+  @{thm DFS.invar_holds_intros}, @{thm DFS.state_rel_intros}, @{thm DFS.state_rel_holds_intros}.\<close>
 
 text \<open>\<^bold>\<open>Listing 92. lemma BFS_induct (BFS_2.thy)\<close>
   In this snapshot: \<^file>\<open>../../Set_Graphs/Graph_Algorithms/BFS_2.thy\<close> (line 246, locale BFS).

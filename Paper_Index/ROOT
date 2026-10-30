@@ -69,6 +69,7 @@ session "Paper_Index_Algorithms_Main_Theorems" (paper_index) in "Index_Algorithm
     "Spanning_Trees"
   theories
     Index_Algorithms_Main_Theorems
+    Index_Algorithms_Main_Theorems_Spanning_Trees
 
 session "Paper_Index_24_Proofs_About_Algorithms" (paper_index) in "Index_24_Proofs_About_Algorithms" = "HOL-Library" +
   description \<open>Section 2.4: Proofs about Algorithms\<close>
@@ -104,4 +105,11 @@ session "Paper_Index_26_Other_Methodological_Points" (paper_index) in "Index_26_
     "Use_Orlins_Algorithm"
   theories
     Index_26_Other_Methodological_Points
+    Index_26_Usage_Capacitated
 
+
+session "Paper_Index_C_AI_Assisted_Development" (paper_index) in "Index_C_AI_Assisted_Development" = Pure +
+  description \<open>Appendix C: AI-Assisted Development\<close>
+  options [document = false]
+  theories
+    Index_C_AI_Assisted_Development
