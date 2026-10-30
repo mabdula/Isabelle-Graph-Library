@@ -1,8 +1,8 @@
 #!/bin/bash
 # setup.sh MODE [--old-generated-code] -- prepares everything run/run.sh MODE needs, on a fresh TACAS 2027
-# VM (Ubuntu with build-essential, cmake, curl, patch, perl and python3), without root, with network access:
-#   1. the toolchains (setup/toolchains.sh): MLton with GMP; the JDK and CPython when the mode's library
-#      columns need them; Isabelle2025-2 when the mode builds the code exports
+# VM (Ubuntu with build-essential, curl, patch, perl and python3), without root, with network access:
+#   1. the toolchains (setup/toolchains.sh): MLton with GMP and the paper's gcc 11.4; CMake, the JDK and CPython
+#      when the mode's library columns need them; Isabelle2025-2 when the mode builds the code exports
 #   2. for built exports: the AFP entries the sessions need, and the Isabelle build of the export sessions
 #      (setup/isabelle.sh)
 #   3. the code exports the mode measures, placed in work/exports/current (setup/exports.sh)
@@ -28,7 +28,7 @@ t0=$(date +%s); echo "$t0" > "$WORK/started_$mode"
 exports=$(conf "$mode.exports"); [[ $old == 1 ]] && exports=campaign
 echo "$exports" > "$WORK/exports_$mode"
 rm -f "$NA"
-need gcc build-essential; need g++ build-essential; need make build-essential; need cmake cmake; need patch patch
+need gcc build-essential; need g++ build-essential; need make build-essential; need patch patch
 need perl perl; need tar tar; need md5sum coreutils; need python3 python3
 say "== setup $mode (code exports: $exports), $(date)"
 bash "$EVAL/setup/toolchains.sh" "$mode" "$exports" || fail "toolchains.sh failed"

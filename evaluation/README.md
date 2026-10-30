@@ -3,7 +3,7 @@
 This directory reproduces the running-time comparison of the paper's body (Fig. 2 and 3; the tables behind
 them are Tables 5, 7 to 9, 11 to 24 and 26 to 28 of the appendix): the verified code exports of the library,
 in Standard ML, against the libraries they were compared with.  It is meant to be run on a fresh TACAS 2027
-VM (Ubuntu, x86_64, with `build-essential`, `cmake`, `curl`, `patch`, `perl` and `python3`), without root,
+VM (Ubuntu, x86_64, with `build-essential`, `curl`, `patch`, `perl` and `python3`), without root,
 with network access during the setup.  Everything it needs is downloaded by the setup and kept under
 `evaluation/work/`; nothing is installed outside the repository.
 
@@ -35,7 +35,9 @@ paper's machine, the runs of the full experiment took about 217 hours in total, 
 hours (18 days) plus the setup; the 8-hour experiment's runs took about 3 hours, so with the setup it fills its
 8 hours; the smoke test's runs take a few minutes.  The largest instances need up to about 48 GB of RAM (`PROTOCOL.txt`
 of each benchmark); the generated instances take up to 60 GB of disk in the full experiment, and are deleted
-as soon as no run needs them.
+as soon as no run needs them.  The TACAS 2027 VM as distributed has 2 processors, 8 GB of RAM and 25 GB of free disk:
+enough for the smoke test and the 8-hour experiment (whose runs stop at the sizes that no longer fit, marked `OOM`);
+for the full experiment give it the RAM and disk above.
 
 ## Results
 
@@ -71,6 +73,8 @@ file there and run the setup again.
 | component | version |
 |---|---|
 | MLton, with GMP 6.3.0 from the Ubuntu libgmp-dev package | 20241230 |
+| gcc and g++, the compilers of the paper's campaign, from the Ubuntu 22.04 packages (with their isl, mpc and mpfr); they compile everything, MLton's C code included | 11.4.0 |
+| CMake (for LEMON) | 3.22.1 |
 | Eclipse Temurin JDK (for the JGraphT columns) | 21.0.12.1+1 |
 | CPython, with numpy 2.2.6, scipy 1.15.3, networkx 3.4.2, ortools 9.15.6755, passagemath 10.6.48 (pinned in each `requirements.txt`) | 3.10.12 |
 | Isabelle, and the AFP entries the export sessions need, from the AFP's Isabelle2025-2 release branch at one pinned state | 2025-2 |
