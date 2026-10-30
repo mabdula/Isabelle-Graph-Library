@@ -2,11 +2,14 @@ session "Matroids_Greedy" = "HOL-Data_Structures" +
   options [document = pdf, document_output = "output"]
   sessions
     AI_Provenance
+    Imperative
     "Matroids"
-
+  directories
+    Refinements
   theories
-    "Matroids_Theory"
-    "Indep_System_Matroids_Specs"
-    "Best_In_Greedy"
-    "Greedy_Common"
-    "Worst_Out_Greedy"
+    Matroids_Theory
+    Indep_System_Matroids_Specs
+    BestInGreedy_base
+    BestInGreedy_exec
+    BestInGreedy_stablesort
+    "Refinements/BestInGreedy_Imperative"

@@ -1,16 +1,132 @@
 (*
-  Author: Adem Rimpapa
   Author: Thomas Ammer
 *)
 
-theory Kruskal_Greedy
-  imports Matroids_Greedy.Best_In_Greedy Spanning_Trees Encoding
+theory Kruskal_Functional
+  imports Matroids_Greedy.BestInGreedy_base Matroids_Greedy.BestInGreedy_exec Spanning_Trees Encoding
     Graph_Algorithms_Dev.DFS_Example Insertion_Sort_Desc "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.RBT_Map_Extension
     Undirected_Set_Graphs.Directed_Undirected
 begin
 
 provenance human
+
+section \<open>Using the Correctness Theorems of the Best-In-Greedy Algorithm\<close>
+
+locale Use_Greedy_Thms
+  =  Indep_System_Specs +
+  fixes indep_predicate input_G  c order and sort_desc :: "('b \<Rightarrow> rat) \<Rightarrow> 'b list \<Rightarrow> 'b list"
+  assumes indep_system: "indep_system (to_set input_G) indep_predicate"
+  assumes indep_finite: "(\<And>X. indep_predicate X \<Longrightarrow> finite X)"
+  assumes indep_in_input_G: "(\<And>X. indep_predicate X \<Longrightarrow> X \<subseteq> to_set input_G)"
+  assumes G_good: "set_inv input_G"
+  assumes non_negative_c:"\<And> e. e \<in> to_set input_G \<Longrightarrow> c e \<ge> (0::rat)"
+  assumes order_is_G: "to_set input_G = set order"
+  assumes order_length_is_G_card: "distinct order"
+  assumes finite_sets: "\<And> X. finite (to_set X)"
+  assumes sort_desc_axioms: "sort_desc_axioms' sort_desc"
+begin
+
+lemma indep_system_abs_lift:"
+    indep_system (to_set input_G) (indep_abs (\<lambda>Z. indep_predicate (to_set Z)))"
+  using indep_system indep_finite
+  by(subst indep_abs_def, subst to_function_def)
+    (auto simp add: to_function_def from_set_def set_correct_insert_elements indep_system_def)
+
+lemma indep_predicate_same:"
+(\<lambda>S. (finite S \<longrightarrow> indep_predicate (set (sorted_list_of_set S))) \<and> finite S) = indep_predicate"
+  using indep_finite by auto
+
+lemma indep_abs_id_indep_predicate: "(Indep_System_Specs.indep_abs set_empty set_insert (\<lambda>Z. indep_predicate (to_set Z)))
+       = indep_predicate"
+  apply(subst indep_abs_def)
+  apply(subst to_function_def)
+  apply(subst from_set_def)
+  apply(subst set_correct_insert_elements)
+  using  indep_system indep_finite indep_in_input_G 
+  by auto
+
+
+lemma indep_in_same_indep:"
+    (indep_system.indep_in
+       (Indep_System_Specs.indep_abs set_empty set_insert (\<lambda>Z. indep_predicate (to_set Z)))
+       (Indep_System_Specs.carrier_abs to_set input_G)) = indep_predicate"
+  apply(subst indep_abs_id_indep_predicate)
+  apply(subst carrier_abs_def)
+  using  indep_system indep_finite indep_in_input_G 
+  by (fastforce simp add: indep_system.indep_in_def)
+
+
+lemma basis_predicate_same:
+  "(indep_system.basis (to_set input_G) (indep_predicate) S) =
+(indep_system.basis_in (indep_abs (\<lambda> Z. indep_predicate (to_set Z)))(carrier_abs input_G) S)"
+  apply(subst indep_system.basis_in_def[OF indep_system_abs_lift])
+  apply(subst indep_in_same_indep)
+  by(auto simp add: carrier_abs_def)
+
+interpretation greedy:  BestInGreedy_base set_insert set_delete set_isin set_inv union inter 
+  diff cardinality to_set  set_empty input_G
+  "(\<lambda> Z. indep_predicate (to_set Z))" sort_desc
+  by(auto intro!: BestInGreedy_base.intro Matroid_Specs.intro simp add: Indep_System_Specs_axioms)
+
+lemma nonnegative:"greedy.nonnegative c"
+  by (simp add: G_good greedy.nonnegative_def non_negative_c set.set_isin)
+
+lemma size_G_length_order:"cardinality input_G = length order"
+  by (simp add: G_good distinct_card order_is_G order_length_is_G_card set.set_cardinality)
+
+lemma valid_order: "greedy.valid_order order"
+  by (simp add: greedy.valid_order_def order_is_G size_G_length_order)
+
+lemma bestingreedy_axioms: "greedy.BestInGreedy_base_axioms"
+  unfolding greedy.BestInGreedy_base_axioms_def invar_def finite_sets_def
+  by (auto simp add: G_good finite_sets)
+
+lemma greedy_sort_desc_axioms: "greedy.sort_desc_axioms"
+  using sort_desc_axioms 
+  by(auto simp add:  greedy.sort_desc_axioms_def  )
+
+lemma indep_system_axioms2: "indep_system_axioms input_G (\<lambda>Z. indep_predicate (to_set Z))"
+  using bestingreedy_axioms carrier_abs_def greedy.BestInGreedy_base_axioms_def indep_abs_id_indep_predicate 
+    indep_system indep_system_abs_to_impl by presburger
+
+lemmas BestInGreedy_base_correct_1 = greedy.BestInGreedy_base_correct_1[OF bestingreedy_axioms 
+    greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+
+lemmas BestInGreedy_base_correct_2 = greedy.BestInGreedy_base_correct_2[OF bestingreedy_axioms 
+    greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+
+lemmas BestInGreedy_base_correct_3 = greedy.BestInGreedy_base_correct_3[OF bestingreedy_axioms 
+    greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+
+lemma algo_gives_basis:
+  "(indep_system.basis (to_set input_G) (indep_predicate)
+ (to_set (result (greedy.BestInGreedy_base (greedy.initial_state c order)))))"
+  using basis_predicate_same
+    greedy.BestInGreedy_base_correct_3[OF bestingreedy_axioms 
+      greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order]
+  by simp
+
+thm greedy.valid_solution_def
+
+lemma indep_to_set_from_set_inv:"indep_predicate S \<Longrightarrow> to_set (from_set S) = S"
+  by (simp add: from_set_correct indep_finite)
+
+lemma indep_is_valid_solution: "indep_predicate X \<Longrightarrow> greedy.valid_solution (from_set X)"
+  using finite_indep_abs_expr[OF indep_finite, of X ] indep_abs_id_indep_predicate 
+  by (fastforce simp add:   G_good indep_in_input_G indep_to_set_from_set_inv invar_from_set
+      set.set_subseteq greedy.valid_solution_def)
+
+lemma indep_predicate_greedy_correct:"indep_predicate X \<Longrightarrow>
+indep_system.rank_quotient (to_set input_G) indep_predicate * sum c X
+\<le> sum c (to_set (result (greedy.BestInGreedy_base (greedy.initial_state c order))))"
+  by(subst sym[OF carrier_abs_def] , subst sym[OF indep_abs_id_indep_predicate],
+      subst indep_to_set_from_set_inv[of X, symmetric])
+    (auto intro: greedy.BestInGreedy_base_correct_2[OF bestingreedy_axioms 
+        greedy_sort_desc_axioms indep_system_axioms2 nonnegative valid_order  indep_is_valid_solution,
+        simplified greedy.c_set_def])
+
+end
 
 section \<open>Kruskal's Algorithm for Maximum Spanning Forest\<close>
 
@@ -116,7 +232,7 @@ global_interpretation orcl: Oracle
     and local_indep_oracle= orcl.local_indep_oracle
   done
 
-global_interpretation Kruskal_Greedy: Best_In_Greedy'
+global_interpretation Kruskal_Greedy: BestInGreedy_exec
   where set_empty = "\<langle>\<rangle>" and set_insert = insert_rbt and set_delete = delete_rbt 
     and set_inv = "vset_inv::(('v::linorder \<times> 'v) rbt \<Rightarrow> bool)" and
     set_isin = isin and to_set = "Tree2.set_tree" and union = "RBT.union" and inter = "RBT.inter" and diff = "RBT.diff" and
@@ -130,14 +246,14 @@ global_interpretation Kruskal_Greedy: Best_In_Greedy'
     and remove_wrapper = id
     and wrapper_empty = Leaf
   for  input_G
-  defines kruskal' = Kruskal_Greedy.BestInGreedy'
-    and  kruskal = Kruskal_Greedy.BestInGreedy
+  defines kruskal' = Kruskal_Greedy.BestInGreedy_exec
+    and  kruskal = Kruskal_Greedy.BestInGreedy_base
     and   kruskal_init = Kruskal_Greedy.initial_state
     and   kruskal_init' = Kruskal_Greedy.initial_state'
     and indep' = "Kruskal_Greedy.indep'"
     and to_ordinary = Kruskal_Greedy.to_ordinary
-  apply (subst Best_In_Greedy'_def, subst Best_In_Greedy_def, subst Greedy_Common_def)
-  by(auto intro!: Best_In_Greedy'_axioms.intro 
+  apply (subst BestInGreedy_exec_def, subst BestInGreedy_base_def)
+  by(auto intro!: BestInGreedy_exec_axioms.intro 
       simp add: Matroid_Specs_Inst.Matroid_Specs_axioms Pair_Graph_RBT.set.Set_axioms
       dfs.Graph.vset.set.invar_insert set.invar_empty)
 
@@ -218,7 +334,7 @@ lemma local_indep_oracle_correct:
   and   G_good: "vset_inv input_G"
   shows "local_indep_oracle e S = indep' input_G (vset_insert e (id S))"
   apply(insert assms)
-  unfolding indep'_def Kruskal_Greedy.indep_graph_matroid_def
+  unfolding indep'_def Kruskal_Functional.indep_graph_matroid_def
     indep_graph_matroid_def
 proof(goal_cases)
   case 1
@@ -761,25 +877,25 @@ for input_G::"(('a::linorder \<times> 'a) \<times> color) tree"+
 begin
 
 lemma best_in_greedy_axioms:
-  shows "Greedy_Common.greedy_axioms vset_inv t_set input_G
-     (Kruskal_Greedy.indep_graph_matroid input_G)"
+  shows "BestInGreedy_base.BestInGreedy_base_axioms vset_inv t_set input_G
+     (Kruskal_Functional.indep_graph_matroid input_G)"
   by(auto simp add:  Matroid_Specs_Inst.invar_def local.indep_graph_matroid_def
-      Greedy_Common.greedy_axioms_def[OF Kruskal_Greedy.Kruskal_Greedy.Greedy_Common_axioms] G_good Kruskal_Greedy.indep_graph_matroid_def
+      BestInGreedy_base.BestInGreedy_base_axioms_def[OF Kruskal_Greedy.BestInGreedy_base_axioms] G_good Kruskal_Functional.indep_graph_matroid_def
       Matroid_Specs_Inst.finite_setsI)
 
-lemma sort_desc_axioms: "Greedy_Common.sort_desc_axioms Kruskal_Greedy.carrier_sorted"
+lemma sort_desc_axioms: "sort_desc_axioms' Kruskal_Greedy.carrier_sorted"
   by (simp add: Kruskal_Greedy.sort_desc_axioms_def insort_key_desc_stable
       length_insort_key_desc set_insort_key_desc sorted_desc_f_insort_key_desc)
 
 lemma indep_system_axioms: 
   shows "Matroid_Specs_Inst.indep_system_axioms input_G
-             (Kruskal_Greedy.indep_graph_matroid input_G)"
+             (Kruskal_Functional.indep_graph_matroid input_G)"
   unfolding  Matroid_Specs_Inst.indep_system_axioms_def
 proof(rule conjI[OF _ conjI], goal_cases)
   case 1
   then show ?case 
     by(simp add: Card_Set2_RBT.set_subseteq[OF _ G_good, symmetric]
-        Kruskal_Greedy.indep_graph_matroid_def
+        Kruskal_Functional.indep_graph_matroid_def
         indep_graph_matroid_def) 
 next
   case 2
@@ -787,11 +903,11 @@ next
     using graph_abs.has_no_cycle_indep_ex[OF graph_abs_input_G] graph_abs.has_no_cycle_indep_subset[OF graph_abs_input_G]
     by(auto intro!: exI[of _ Leaf] 
         simp add: Kruskal_Greedy.wrapper_axioms(5) 
-        Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def G_good)
+        Kruskal_Functional.indep_graph_matroid_def indep_graph_matroid_def G_good)
 next
   case 3
   show ?case
-    unfolding Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def
+    unfolding Kruskal_Functional.indep_graph_matroid_def indep_graph_matroid_def
   proof((rule allI)+, (rule impI)+, goal_cases)
     case (1 X Y)
     have "graph_abs.has_no_cycle ((\<lambda>e. {fst e, snd e}) ` t_set input_G) ((\<lambda>e. {fst e, snd e}) ` t_set Y)"
@@ -810,7 +926,7 @@ lemma nonnegative:
 
 lemma size_G_length_order:
   shows "size input_G = length order"
-  by(simp add:  G_good  Kruskal_Greedy.rbt_size_correct distinct_card order_is_G order_length_is_G_card)
+  by(simp add:  G_good  Kruskal_Functional.rbt_size_correct distinct_card order_is_G order_length_is_G_card)
 
 lemma valid_order: 
   shows "Kruskal_Greedy.valid_order input_G order"
@@ -820,10 +936,10 @@ lemma valid_order:
 lemma kruskal_impl_corespondence:
   shows "to_ordinary (kruskal'  input_G (kruskal_init' c order)) =
   kruskal  input_G (kruskal_init c order)"
-proof((subst kruskal_def, subst indep'_def[symmetric]), rule Kruskal_Greedy.BestInGreedy'_corresp, goal_cases)
+proof((subst kruskal_def, subst indep'_def[symmetric]), rule Kruskal_Greedy.BestInGreedy_exec_corresp, goal_cases)
   case (1 S x)
   then show ?case 
-    by(unfold Kruskal_Greedy.local_indep_oracle_def, intro local_indep_oracle_correct)
+    by(unfold Kruskal_Functional.local_indep_oracle_def, intro local_indep_oracle_correct)
       (auto simp add: subseteq_def G_good)
 next
   case 2
@@ -897,7 +1013,7 @@ interpretation use_greedy_thms_kruskal:
 lemma kruskal_returns_basis: "indep_system.basis (t_set input_G)  has_no_cycle_in_graph
  (t_set (result (kruskal input_G (kruskal_init c order))))"
   using order_is_G use_greedy_thms_kruskal.algo_gives_basis
-  by(simp add:  kruskal_def Kruskal_Greedy.indep_graph_matroid_def local.indep_graph_matroid_def 
+  by(simp add:  kruskal_def Kruskal_Functional.indep_graph_matroid_def local.indep_graph_matroid_def 
       kruskal_init_def has_no_cycle_in_graph_def)
 
 corollary kruskal_returns_spanning_forest: 
@@ -911,7 +1027,7 @@ proof(subst graph_abs.spanning_forest_iff_basis[OF graph_abs_input_G[OF G_good]]
 next
   case 2
   show ?case
-  proof(rule, goal_cases)
+  proof(rule conjI, goal_cases)
     case 1
     then show ?case 
       using has_no_cycle_in_graph_def indep_system.basis_indep kruskal_returns_basis order_is_G
@@ -919,7 +1035,7 @@ next
   next
     case 2
     then show ?case 
-    proof(rule, rule, goal_cases)
+    proof(rule ballI, rule notI, goal_cases)
       case (1 e)
       then obtain edir where edir_props:"edir \<in> t_set input_G" "set_of_pair edir = e"
         "edir \<notin>  t_set (result (kruskal input_G (kruskal_init c order)))" by auto
@@ -969,7 +1085,7 @@ lemma rank_quotient_one: "indep_system.rank_quotient (t_set input_G)has_no_cycle
 theorem kruskal_is_max:
  "has_no_cycle_in_graph X \<Longrightarrow>
     sum c X \<le> sum c (t_set (result (kruskal  input_G (kruskal_init c order))))"
-  unfolding kruskal_def kruskal_init_def Kruskal_Greedy.indep_graph_matroid_def indep_graph_matroid_def
+  unfolding kruskal_def kruskal_init_def Kruskal_Functional.indep_graph_matroid_def indep_graph_matroid_def
   using use_greedy_thms_kruskal.indep_predicate_greedy_correct[of X]
   by(simp add:  rank_quotient_one  has_no_cycle_in_graph_def[simplified order_is_G[symmetric] set_of_pair_def', symmetric])+
 
@@ -994,7 +1110,7 @@ locale kruskal_correct =
 and pos_c: "\<And>e. e \<in> t_set G \<Longrightarrow> (0::rat) \<le> c e"
 begin
 
-interpretation kruskal_proof_maitroid_edges: Kruskal_Proof_Matroid_Edges' G 
+interpretation kruskal_proof_matroid_edges: Kruskal_Proof_Matroid_Edges' G 
 proof(rule  Kruskal_Proof_Matroid_Edges'.intro, 
 all \<open>rule Kruskal_Proof_Matroid_Edges.intro | rule Kruskal_Proof_Matroid_Edges'_axioms.intro\<close>, goal_cases)
   case (1 e d)
@@ -1019,7 +1135,7 @@ next
 qed
 
 lemmas kruskal_computes_max_spanning_forest = 
-  kruskal_proof_maitroid_edges.kruskal_computes_max_spanning_forest
+  kruskal_proof_matroid_edges.kruskal_computes_max_spanning_forest
 end
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),

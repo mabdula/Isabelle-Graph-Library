@@ -28,56 +28,6 @@ and arborescenceD:
  "\<lbrakk>arborescence r T; T \<noteq> {}\<rbrakk> \<Longrightarrow> Vs T = connected_component T r"
   by(auto simp add: arborescence_def)
 
-lemma (in -) unique_walks_arborescence:
-  assumes "graph_invar G" "r \<in> Vs G"
-    "\<And>x y. \<lbrakk>x \<in> Vs G; y \<in> Vs G\<rbrakk> \<Longrightarrow> \<exists>!p. walk_betw G x p y \<and> distinct p"
-  shows "graph_abs.arborescence G r G"
-proof-
-  have "graph_abs G"
-    using assms(1)
-    by (simp add: graph_abs_def)
-  then interpret graph_abs G .
-  have "connected_component G r = Vs G"
-  proof(rule connected_component_set)
-    show "reachable G r x" if "x \<in> Vs G" for x
-      using assms(2,3) that
-      by (blast intro: walk_symmetric[THEN reachableI])
-  qed (use assms(2) in \<open>auto simp: reachable_def dest: walk_endpoints(2)\<close>)
-  moreover have "\<nexists>u c. decycle G u c"
-  proof(rule notI, elim exE)
-    fix u c
-    assume "decycle G u c"
-    then have "hd c \<in> set c" "hd c \<in> G"
-      by (cases c; auto simp: decycle_def dest!: epath_edges_subset)+
-    then obtain a b where "hd c = {a, b}" "a \<noteq> b"
-      using dblton_graphE
-      by blast
-    then have "{a, b} \<in> G"
-      using \<open>hd c \<in> G\<close>
-      by simp
-    then obtain q where "walk_betw (G - {{a, b}}) b q a"
-      using decycle_edge_path[of a b "G - {{a, b}}" u c] \<open>decycle G u c\<close> \<open>hd c \<in> set c\<close>
-        \<open>hd c = {a, b}\<close>
-      by (auto simp: insert_absorb)
-    from walk_betw_different_verts_to_ditinct[OF this \<open>a \<noteq> b\<close>[symmetric] refl]
-    obtain D where "walk_betw (G - {{a, b}}) b D a" "distinct D"
-      by blast
-    have "b \<in> Vs G" "a \<in> Vs G" "walk_betw G b [b, a] a"
-      using \<open>{a, b} \<in> G\<close>
-      by (auto simp: Vs_def insert_commute edges_are_walks)
-    note U = the1_equality[OF assms(3)[OF this(1,2)]]
-    have "D = [b, a]"
-      using U[of D] U[of "[b, a]"] \<open>walk_betw G b [b, a] a\<close> walk_subset[OF \<open>walk_betw _ b D a\<close>]
-        \<open>distinct D\<close> \<open>a \<noteq> b\<close>
-      by auto
-    then show False
-      using \<open>walk_betw (G - {{a, b}}) b D a\<close>
-      by (simp add: walk_betw_def insert_commute)
-  qed
-  ultimately show ?thesis
-    by (auto simp: has_no_cycle_def intro!: arborescenceI)
-qed
-
 lemma contains_empty: "arborescence r {}"
   using has_no_cycle_indep_ex has_no_cycle_indep_subset 
   by (fastforce simp add: arborescence_def)
