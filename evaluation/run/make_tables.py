@@ -41,7 +41,7 @@ COLS = {'dfs': ['sml_csr', 'sml_lists', 'sml_rbt', 'scala_csr', 'scala_lists', '
         'bfs': ['sml_csr', 'sml_rbt', 'scala_csr', 'scala_rbt', 'go_csr', 'go_rbt', 'lemon_csr', 'lemon_linked', 'jgrapht_csr', 'jgrapht_hashgraph', 'scipy_csr', 'scipy_prebuilt', 'networkx'],
         'dijkstra': ['sml', 'scala', 'go', 'lemon_csr', 'lemon_linked', 'jgrapht_csr', 'jgrapht_hashgraph', 'scipy_csr', 'scipy_prebuilt', 'networkx'],
         'kruskal': ['sml', 'scala', 'go', 'lemon', 'jgrapht', 'scipy', 'networkx'],
-        'push_relabel': ['sml_hl', 'sml_fifo', 'sml_afp', 'lemon_csr', 'lemon_linked', 'hipr', 'jgrapht', 'scipy_csr', 'scipy_prebuilt', 'networkx'],
+        'push_relabel': ['sml_hl', 'sml_fifo', 'sml_afp', 'lemon_csr', 'lemon_linked', 'jgrapht', 'scipy_csr', 'scipy_prebuilt', 'networkx', 'hipr'],
         'hungarian': ['sml', 'scala', 'go', 'csa_q_csr', 'ortools', 'scipy_lsa', 'scipy_mwfbm_csr', 'jgrapht_kuhnmunkres_threadgc', 'jgrapht_mwbm_csr', 'jgrapht_mwbm_hashgraph'],
         'matroid_intersections': ['sml', 'scala', 'go', 'sage_oracle', 'sage_plain'],
         'hybrid_bipartite_matching': ['oracle_ms', 'cert_ms', 'check_ms', 'glue_ms', 'total_ms', 'total_over_oracle']}
@@ -80,6 +80,7 @@ def fmt(x):
     if x >= 10: return '%.1f' % x
     if x >= 1: return '%.2f' % x
     if x >= 0.01: return '%.3f' % x
+    if x < 0.00005: return '<0.0001'
     return '%.4f' % x
 def fmt_ratio(x):
     if x is None: return ''
@@ -225,6 +226,10 @@ def main():
         for c in cols:
             header += [c + '_s' if pkg != 'hybrid_bipartite_matching' else c, c + '_x', c + '_paper_s' if pkg != 'hybrid_bipartite_matching' else c + '_paper', c + '_paper_x'] if pkg != 'hybrid_bipartite_matching' else [c, c + '_paper']
         out = [header]; devs = []; measured = 0; any_cell = False
+        # the paper prints TO for the sizes above a column's first timeout, which the campaign did not attempt
+        to_from = {}
+        for (c, f, k), (v, st, nd) in pub.items():
+            if f in fams and st == 'TO' and str(nd).isdigit(): to_from[c] = min(to_from.get(c, int(nd)), int(nd))
         for s in sizes:
             def mcell(c):
                 if len(fams) == 1: return cells.get((pkg, c, fams[0], s))
@@ -241,13 +246,14 @@ def main():
                 if not vals: return None
                 good = [v[0] for v in vals if v[0] is not None]
                 return (statistics.mean(good) if good else None, vals[0][1], vals[0][2])
-            mb = mcell(base) if base else None; pb = pcell(base) if base else None
             nodes = next((mcell(c)['nodes'] for c in cols if mcell(c) and mcell(c)['nodes']), '')
             if not nodes:
                 pn = next((pcell(c)[2] for c in cols if pcell(c)), ''); nodes = pn or s
             line = [nodes]
             for c in cols:
                 mc = mcell(c); pc = pcell(c)
+                bc = ('%s/%s' % (base, c.split('/')[1]) if '/' in c else base) if base else None   # the ratio's base: the SML column of the same problem
+                mb = mcell(bc) if bc else None; pb = pcell(bc) if bc else None
                 if mc is not None: any_cell = True
                 if pkg == 'hybrid_bipartite_matching':
                     mv = mc['parts'].get(c) if mc and mc.get('parts') else None
@@ -265,16 +271,18 @@ def main():
                         v = mc['value'] / 1000.0; measured += 1
                         km = '' if mc['k'] == mc['m'] else ' %d/%d' % (mc['k'], mc['m'])
                         x = (mc['value'] / mb['value']) if (mb and mb.get('value')) else None
-                        line += [fmt(v) + km, fmt_ratio(x) if x is not None else ('-' if mb and mb.get('value') == 0 else '')]
+                        line += [fmt(v) + km, fmt_ratio(x) if x is not None else ('-' if mb else '')]
                     else: line += [mc['status'] or '-', '']
                 if pc is None: line += ['', '']
                 else:
                     pv, pst, _ = pc
                     if pv is not None:
                         px = (pv / pb[0]) if (pb and pb[0]) else None
-                        line += [fmt(pv / 1000.0), fmt_ratio(px) if px is not None else ('-' if pb and pb[0] == 0 else '')]
+                        line += [fmt(pv / 1000.0), fmt_ratio(px) if px is not None else ('-' if pb else '')]
                         if mc and mc['value'] is not None and pv > 0 and mc['value'] > 0: devs.append((mc['value'] / pv, c, s))
-                    else: line += [pst or '-', '']
+                    else:
+                        if pst == '-' and c in to_from and str(pc[2]).isdigit() and int(pc[2]) > to_from[c]: pst = 'TO'
+                        line += [pst or '-', '']
                 allcells.append([num, pkg, fam, s, nodes, c, mc['value'] / 1000.0 if mc and mc['value'] is not None else (mc['status'] if mc else ''), pc[0] / 1000.0 if pc and pc[0] is not None else (pc[1] if pc else '')])
             out.append(line)
         if not any_cell: continue          # none of this table's problems was run
