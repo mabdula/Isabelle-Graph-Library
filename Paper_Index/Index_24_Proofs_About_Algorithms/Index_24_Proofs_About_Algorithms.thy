@@ -64,7 +64,8 @@ text \<open>\<^bold>\<open>Listing 92. lemma BFS_induct (BFS_2.thy)\<close>
 
 text \<open>\<^bold>\<open>Listing 93. lemma BestInGreedy_induct (Best_In_Greedy.thy)\<close>
   In this snapshot: \<^file>\<open>../../Matroids_Greedy/BestInGreedy_base.thy\<close> (line 181, locale BestInGreedy_base).
-  Note: the lemma is called \<open>BestInGreedy_base_induct\<close> in this snapshot.
+  Note: paper: BestInGreedy_induct in Best_In_Greedy.thy; in this snapshot the loop
+  \<open>BestInGreedy\<close> is called \<open>BestInGreedy_base\<close>, and its names change accordingly.
   Checked reference: @{thm BestInGreedy_base.BestInGreedy_base_induct}.\<close>
 
 text \<open>\<^bold>\<open>Listing 94. lemma SSP_induct (Successive_Shortest_Path.thy)\<close>

@@ -10,6 +10,7 @@ text \<open>Listings 61 and 63 of Table 1, kept apart from \<open>Index_Algorith
 
 text \<open>\<^bold>\<open>Listing 61. corollary kruskal_computes_max_spanning_forest (Kruskal_Greedy.thy)\<close>
   In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Functional.thy\<close> (line 1097, locale Kruskal_Proof_Matroid_Edges').
+  Note: paper: Kruskal_Greedy.thy; in this snapshot: Kruskal_Functional.thy.
   Checked reference: @{thm Kruskal_Proof_Matroid_Edges'.kruskal_computes_max_spanning_forest}.\<close>
 
 text \<open>\<^bold>\<open>Listing 63. theorem jp_maximum_stree (Jarnik_Prim.thy)\<close>

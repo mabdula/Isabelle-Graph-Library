@@ -6,6 +6,6 @@
 session Union_Find = HOL +
   sessions
     "List-Index"
-    Separation_Logic_Imperative_HOL
+    Collections
   theories
     Union_Find_Size_Int_Quotient

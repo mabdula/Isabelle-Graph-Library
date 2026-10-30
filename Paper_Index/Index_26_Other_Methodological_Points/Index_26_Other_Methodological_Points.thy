@@ -16,7 +16,6 @@ text \<open>Index of the paper's listings for: Section 2.6: Other Methodological
 
 text \<open>\<^bold>\<open>Listing 107. global_interpretation Kruskal_Greedy: BestInGreedy_exec (Kruskal_Functional.thy)\<close>
   In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Functional.thy\<close> (line 235).
-  The constant defined as \<open>kruskal'\<close> is \<open>Kruskal_Greedy.BestInGreedy_exec\<close>.
   global_interpretation @{text \<open>Kruskal_Greedy: BestInGreedy_exec\<close>}.
   Checked reference: @{locale BestInGreedy_exec}.\<close>
 
@@ -27,6 +26,7 @@ text \<open>\<^bold>\<open>Listing 108. theorem solution (Max_Bipartite_Matching
 
 text \<open>\<^bold>\<open>Listing 109. definition local_indep_oracle (Kruskal_Greedy.thy)\<close>
   In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Functional.thy\<close> (line 218, locale Oracle).
+  Note: paper: Kruskal_Greedy.thy; in this snapshot: Kruskal_Functional.thy.
   Checked reference: @{const Oracle.local_indep_oracle}.\<close>
 
 text \<open>\<^bold>\<open>Listing 110. theorem reduction_of_min_cost_flow_to_hitchcock_general (Hitchcock_Reduction.thy)\<close>
