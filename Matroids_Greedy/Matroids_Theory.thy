@@ -594,8 +594,50 @@ proof-
     \<longleftrightarrow> (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) | 
     X. X \<subseteq> carrier} = 1)"
     using rq_fracs_finite rq_fracs_nonempty rq_fracs_leq_1
-    by (smt (verit, best) Min.boundedE Min_in mem_Collect_eq verit_la_disequality)
-  also have "...
+  proof -
+    show "(\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1) =
+      (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+      X. X \<subseteq> carrier} = 1)"
+    proof
+      assume asm: "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+      from Min_in[OF rq_fracs_finite rq_fracs_nonempty]
+      have "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} \<in> {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier}" .
+      then obtain Y where Y: "Y \<subseteq> carrier"
+        "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} = Frac (int (Min {card B | B. basis_in Y B})) (int (Max {card B | B. basis_in Y B}))"
+        by blast
+
+      from asm[rule_format, of Y, OF Y(1)]
+      have "Frac (int (Min {card B | B. basis_in Y B})) (int (Max {card B | B. basis_in Y B})) = 1" .
+      with Y(2)
+      show "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} = 1" by simp
+    next
+      assume asm: "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} = 1"
+      show "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+      proof (rule allI, rule impI)        fix X
+        assume "X \<subseteq> carrier"
+        then have mem: "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) \<in>
+          {Frac (int (Min {card B | B. basis_in Y B})) (int (Max {card B | B. basis_in Y B})) |
+          Y. Y \<subseteq> carrier}" by auto
+
+        from asm Min_le[OF rq_fracs_finite mem]
+        have le1: "1 \<le> Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B}))"
+          by simp
+
+        from rq_fracs_leq_1[rule_format, of X, OF \<open>X \<subseteq> carrier\<close>]
+        have le2: "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) \<le> 1"
+          .
+
+        from le1 le2
+        show "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+          by linarith
+      qed
+    qed
+  qed  also have "...
     \<longleftrightarrow> (Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} = 1)"
     using lower_rank_of_def upper_rank_of_def by auto
   also have "...
