@@ -18,6 +18,10 @@ has() { local w=$1; shift; local x; for x in "$@"; do [[ "$x" == "$w" ]] && retu
 # any_matches REGEX LIST...   does a word of the LIST match REGEX?
 any_matches() { local re=$1; shift; local x; for x in "$@"; do [[ "$x" =~ $re ]] && return 0; done; return 1; }
 
+# agent URL   the User-Agent to download URL with: coral.ise.lehigh.edu refuses curl's own, foss.heptapod.net answers a
+# browser's with a challenge page
+agent() { case $1 in *heptapod.net*) echo "IsaGraphLib-evaluation/1.0" ;; *) echo "Mozilla/5.0 (IsaGraphLib evaluation)" ;; esac; }
+
 # fetch_file DEST MD5 URL...   download from the first source that delivers the md5 (MD5 "-" means
 # unchecked), unless DEST already has it.  A total failure prints every source, the md5 and the path to put
 # the file at, records it in NOT_AVAILABLE.txt and returns 1; the caller goes on without the file.
@@ -29,8 +33,8 @@ fetch_file() {
   for url in "$@"; do
     say "   fetch  $(basename "$dest")  <-  $url"
     rm -f "$dest.part"
-    if command -v curl >/dev/null 2>&1; then curl -fsSL -A "Mozilla/5.0 (IsaGraphLib evaluation)" --connect-timeout 30 --retry 3 --speed-limit 1024 --speed-time 60 --max-time 7200 -o "$dest.part" "$url" >>"$LOG" 2>&1
-    else wget -q -U "Mozilla/5.0 (IsaGraphLib evaluation)" --timeout=60 --tries=3 -O "$dest.part" "$url" >>"$LOG" 2>&1; fi
+    if command -v curl >/dev/null 2>&1; then curl -fsSL -A "$(agent "$url")" --connect-timeout 30 --retry 3 --speed-limit 1024 --speed-time 60 --max-time 7200 -o "$dest.part" "$url" >>"$LOG" 2>&1
+    else wget -q -U "$(agent "$url")" --timeout=60 --tries=3 -O "$dest.part" "$url" >>"$LOG" 2>&1; fi
     if [[ -s "$dest.part" && ( "$md5" == - || "$(sum "$dest.part")" == "$md5" ) ]]; then mv "$dest.part" "$dest"; return 0; fi
     [[ -s "$dest.part" ]] && say "          (md5 $(sum "$dest.part") instead of $md5, trying the next source)" || say "          (not delivered, trying the next source)"
     rm -f "$dest.part"
@@ -57,8 +61,8 @@ try_fetch() {
   local dest=$1 md5=$2 url=$3
   if [[ -f "$dest" && ( "$md5" == - || "$(sum "$dest")" == "$md5" ) ]]; then return 0; fi
   mkdir -p "$(dirname "$dest")"; rm -f "$dest.part"
-  if command -v curl >/dev/null 2>&1; then curl -fsSL -A "Mozilla/5.0 (IsaGraphLib evaluation)" --connect-timeout 30 --retry 2 --speed-limit 1024 --speed-time 60 --max-time 3600 -o "$dest.part" "$url" >>"$LOG" 2>&1
-  else wget -q -U "Mozilla/5.0 (IsaGraphLib evaluation)" --timeout=60 --tries=2 -O "$dest.part" "$url" >>"$LOG" 2>&1; fi
+  if command -v curl >/dev/null 2>&1; then curl -fsSL -A "$(agent "$url")" --connect-timeout 30 --retry 2 --speed-limit 1024 --speed-time 60 --max-time 3600 -o "$dest.part" "$url" >>"$LOG" 2>&1
+  else wget -q -U "$(agent "$url")" --timeout=60 --tries=2 -O "$dest.part" "$url" >>"$LOG" 2>&1; fi
   if [[ -s "$dest.part" && ( "$md5" == - || "$(sum "$dest.part")" == "$md5" ) ]]; then mv "$dest.part" "$dest"; return 0; fi
   rm -f "$dest.part"; return 1
 }

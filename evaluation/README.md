@@ -27,6 +27,15 @@ its export is supplied pregenerated only, as is the AFP push-relabel export.
 The 8-hour experiment transfers its clock from the setup to the measurements by itself: the setup records its
 start in `work/started_8h`, and the measurement script starts no run after 8 hours from then.
 
+## Browsing the library in Isabelle/jEdit
+
+`browse_library_jedit.sh [THEORY ...]` opens an index theory of the paper (`../Paper_Index`, one theory per section;
+default `Index_00_Introduction_Main_Theorems`, or several, or `all`) in Isabelle/jEdit: every listing of the paper is an
+entry there that links to its theorem, definition or locale in the library.  The script downloads Isabelle2025-2 and the
+AFP entries the library needs into `work/` and builds HOL-Library, the session the index theories start from, and nothing
+more; Isabelle/jEdit checks the opened theory and the library theories it imports while they are shown, which takes
+longer the more of the library the theory refers to.  It needs a display.
+
 ## Estimates
 
 The measurement times are twice the wall time the campaign spent on the same runs (sequential; the campaign
@@ -89,8 +98,9 @@ file there and run the setup again.
 | entry | content |
 |---|---|
 | `experiments_smoke.sh`, `experiments_8h.sh`, `experiments_full.sh` | the three experiments |
+| `browse_library_jedit.sh` | the library in Isabelle/jEdit, from the paper's index theories |
 | `modes.conf` | what each experiment runs: benchmarks, columns, families, sizes, repeats, order, code exports |
-| `setup/` | the setup: `setup.sh` runs `toolchains.sh`, `isabelle.sh`, `exports.sh`, `thirdparty.sh`, `programs.sh`; `afp_entries.txt`, `export_files.txt` |
+| `setup/` | the setup: `setup.sh` runs `toolchains.sh`, `isabelle.sh` (which runs `afp.sh`), `exports.sh`, `thirdparty.sh`, `programs.sh`; `afp_entries.txt`, `export_files.txt` |
 | `run/` | the measurements: `run.sh` runs `run_experiments.py` (plans the runs, generates and deletes the instances, starts one single-run program per run) and `make_tables.py`; both need only the VM's `python3` |
 | `benchmarks/<name>/` | one directory per problem: the single-run programs (`code/`, `competitors/`), `columns.txt`, `instances/`, the published results, `README.txt`, `PROTOCOL.txt`, `ENVIRONMENT.txt` |
 | `exports/` | the code exports: `campaign/` (the paper's) and `pregenerated/` (from the current library) |
