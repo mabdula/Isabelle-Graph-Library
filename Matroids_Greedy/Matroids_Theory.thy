@@ -4110,7 +4110,27 @@ proof-
   have "finite ?fracs" using `finite carrier` by auto
 
   have 1: "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
-    unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
+  proof -
+    have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+                  {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (intro equalityI subsetI)
+      fix y assume "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+      then obtain X where "X \<subseteq> carrier" and "y = Frac (int (lower_rank_of X)) (int (rank X))" by blast
+      then have "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+        using upper_rank_equiv_rank by simp
+      then show "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        using `X \<subseteq> carrier` by blast
+    next
+      fix y assume "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      then obtain X where "X \<subseteq> carrier" and "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by blast
+      then have "y = Frac (int (lower_rank_of X)) (int (rank X))"
+        using upper_rank_equiv_rank by simp
+      then show "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        using `X \<subseteq> carrier` by blast
+    qed
+    show ?thesis
+      unfolding rank_quotient_def by (simp add: set_eq)
+  qed
 
   have "\<forall>X \<subseteq> carrier. int (lower_rank_of X) \<ge> 0"
     by simp
