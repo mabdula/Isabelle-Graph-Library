@@ -22,7 +22,6 @@ while read -r b f origin; do
   from=
   case "$source:$origin" in
     campaign:*)            from="$EVAL/exports/campaign/$b/$f" ;;
-    *:campaign)            from="$EVAL/exports/campaign/$b/$f" ;;
     pregenerated:*|*:pregenerated) from="$EVAL/exports/pregenerated/$b/$f" ;;
     built:*)               from="$EVAL/../$origin" ;;
   esac

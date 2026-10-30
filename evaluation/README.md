@@ -22,7 +22,7 @@ Each script first runs the setup for its experiment (`setup/setup.sh <mode>`) an
 With `--old-generated-code` the measured code exports are those of the paper's campaign (`exports/campaign/`),
 and Isabelle is neither downloaded nor built.  Without it, the smoke test measures the pregenerated exports
 and the other two the exports the Isabelle build writes.  Kruskal has no export theory in the library yet, so
-its campaign export is measured in every mode; the AFP push-relabel export is supplied pregenerated only.
+its export is supplied pregenerated only, as is the AFP push-relabel export.
 
 The 8-hour experiment transfers its clock from the setup to the measurements by itself: the setup records its
 start in `work/started_8h`, and the measurement script starts no run after 8 hours from then.
