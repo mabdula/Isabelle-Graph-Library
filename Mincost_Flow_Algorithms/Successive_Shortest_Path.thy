@@ -873,7 +873,59 @@ proof-
 
   have good_cap: "ereal \<gamma> \<le> Rcap (current_flow state) (set P)"
     unfolding \<gamma>_def f_def
-    by (smt (verit, ccfv_threshold) \<gamma>_def ereal_le_real_iff f_def gamma_pos min.boundedE)
+  proof -
+    have Rcap_eq: "Rcap (current_flow state) (set P) = Rcap f (set P)"
+      by (simp add: f_def)
+    have le1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> Rcap f (set P)"
+      by (rule min.cobounded2)
+    have le2: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
+      by (rule min.cobounded1)
+    have not_PInf: "min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> \<infinity>"
+    proof -
+      have lt0: "ereal (b s) < \<infinity>" by simp
+      have mb1: "min (ereal (b s)) (ereal (- b t)) \<le> ereal (b s)"
+        by (rule min.cobounded1)
+      from mb1 lt0 have lt1: "min (ereal (b s)) (ereal (- b t)) < \<infinity>"
+        by (rule le_less_trans)
+      have mb2: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))
+                 \<le> min (ereal (b s)) (ereal (- b t))"
+        by (rule min.cobounded1)
+      from mb2 lt1 have "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) < \<infinity>"
+        by (rule le_less_trans)
+      then show ?thesis by simp
+    qed
+    have not_MInf: "min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> - \<infinity>"
+    proof (cases "ereal (min (b s) (- b t)) \<le> Rcap f (set P)")
+      case True
+      have min1_ne_MInf: "min (ereal (b s)) (ereal (- b t)) \<noteq> - \<infinity>"
+        by (auto simp: min_def MInfty_neq_ereal)
+      with True have "min (min (b s) (- b t)) (Rcap f (set P)) = ereal (min (b s) (- b t))"
+        by (simp add: min_def)
+      then show ?thesis using min1_ne_MInf by simp
+    next
+      case False
+      then have "min (min (b s) (- b t)) (Rcap f (set P)) = Rcap f (set P)"
+        by (simp add: min_def)
+      then show ?thesis using Rcap_pos by force
+    qed
+    have eq: "ereal (real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))))
+                = min (min (b s) (- b t)) (Rcap f (set P))"
+    proof (cases "min (min (b s) (- b t)) (Rcap f (set P))")
+      case (real r)
+      then show ?thesis by simp
+    next
+      case PInf
+      then show ?thesis using not_PInf by simp
+    next
+      case MInf
+      then show ?thesis using not_MInf by simp
+    qed
+    show "ereal (real_of_ereal (min (ereal (min (b s) (- b t)))
+                              (Rcap (current_flow state) (set P))))
+          \<le> Rcap (current_flow state) (set P)"
+      using eq le1 Rcap_eq
+      by simp
+  qed
 
   have s_neq_t: "s \<noteq> t"
     using s_def t_def  get_source_axioms(1)[of b s]
