@@ -25,7 +25,7 @@ locale hungarian_top_loop_imp_code =
     and augment_imp :: "'mi \<Rightarrow> 'v array \<Rightarrow> nat \<Rightarrow> 'mi Heap"
 begin
 
-partial_function (heap) main_loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) main_loop_imp ::
   "'si \<Rightarrow> 'mi \<Rightarrow> 'pi \<Rightarrow> 'v array \<Rightarrow> (result \<times> 'mi \<times> 'pi \<times> 'si) Heap" where
   "main_loop_imp Si Mi Pti Ra = do {
      (res, Mi', Pti', Si') \<leftarrow> path_search_imp Si Mi Pti Ra;
@@ -97,7 +97,7 @@ lemma hungarian_loop_next:
         good_searchD(1,5) good_search_resultD(5) path_search_precondD(1) state_invar_pres_one_step[of state]
   by (fastforce simp: hungarian_loop_cont_cond_def hungarian_loop_upd_def loop_post_def fun_eq_iff)+
 
-lemma main_loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> main_loop_imp_rule:
   assumes "state_invar state" "len_bound \<le> length xs"
   shows "<scratch_assn (search_ctx state) Si * matching_assn (buddies state) Mi *
           pot_assn (potential state) Pti * Ra \<mapsto>\<^sub>a xs>
@@ -152,7 +152,7 @@ lemma hungarian_initial_result:
   by (cases "result (hungarian_loop initial_state)")
      (simp_all add: hungarian_loop_spec.hungarian_def initial_state_loops_same Let_def loop_on_initial_state_result(2))
 
-lemma hungarian_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> hungarian_imp_rule:
   assumes "len_bound \<le> length xs"
   shows "<scratch_assn init_ctx Si * matching_assn empty_matching Mi *
           pot_assn init_potential Pti * Ra \<mapsto>\<^sub>a xs>

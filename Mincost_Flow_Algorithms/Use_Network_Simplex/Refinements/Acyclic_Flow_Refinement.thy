@@ -140,7 +140,7 @@ text \<open>First pass --- \<^emph>\<open>scan-until-@{term x}\<close>. Walk the
 text \<open>The accumulator is threaded as \<^emph>\<open>three flat arguments\<close> @{term k} / @{term ra} /
       @{term rf} (rather than a boxed triple) so that the recursive call sits directly under a monadic bind, as in
       the network-simplex scan primitives; the collected triple is only assembled at the leaf.\<close>
-partial_function (heap) af_scan_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) af_scan_imp ::
   "('farr, 'sarr, 'g, 'vvit, 'v, 'e) af_impl_state \<Rightarrow> 'v \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'n
      \<Rightarrow> 'n \<Rightarrow> ('n \<times> 'n \<times> 'n) Heap"
   where
@@ -170,7 +170,7 @@ text \<open>Second pass --- push @{term \<gamma>} around the same cycle \<^emph>
       deepest saturated depth @{term best} seen so far (@{term 0} = none). Because the walk descends towards
       @{term x}, a later (deeper) hit simply overwrites @{term best}, so at the leaf @{term best} already
       \<^emph>\<open>is\<close> @{term \<open>m'\<close>}. The flow is mutated in place.\<close>
-partial_function (heap) af_push_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) af_push_imp ::
   "('farr, 'sarr, 'g, 'vvit, 'v, 'e) af_impl_state \<Rightarrow> 'n \<Rightarrow> 'v \<Rightarrow> nat
      \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
   where
@@ -214,7 +214,7 @@ definition "af_reset_imp s v = do { _ \<leftarrow> out_reset_imp (iout s) v; in_
 text \<open>Fused truncation clean-up: over the top @{term n} (= \<open>m'\<close>) stack vertices --- indices
       @{term i}, @{term \<open>i - 1\<close>}, {\isasymdots} --- in \<^emph>\<open>one\<close> walk set each back
       to @{term Unseen} and reset its iterators. The surviving endpoint just below is not touched.\<close>
-partial_function (heap) af_reset_unsee_seg_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) af_reset_unsee_seg_imp ::
   "('farr, 'sarr, 'g, 'vvit, 'v, 'e) af_impl_state \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap"
   where
   "af_reset_unsee_seg_imp s n i =
@@ -299,7 +299,7 @@ text \<open>The inner loop, threading the stack pointer @{term sp}. An empty sta
       read, the iterator advanced in place, then @{const af_handle_imp} run), then an ingoing one, then backtrack
       --- mark the top @{term Finished} and pop (@{term \<open>sp - 1\<close>}). As soon as @{const af_handle_imp}
       reports unboundedness the loop returns @{term True}.\<close>
-partial_function (heap) AF_DFS_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) AF_DFS_imp ::
   "('farr, 'sarr, 'g, 'vvit, 'v, 'e) af_impl_state \<Rightarrow> nat \<Rightarrow> bool Heap"
   where
   "AF_DFS_imp s sp =
@@ -335,7 +335,7 @@ text \<open>Hand out the vertices one by one through the vertex iterator (advanc
       vertex is still @{term Unseen}, launch the inner DFS from it and thread on. Returns @{term True}
       as soon as an unbounded instance is detected, else @{term False} when the iterator is exhausted;
       the acyclic flow is left in @{term \<open>iflow s\<close>}.\<close>
-partial_function (heap) AF_outer_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) AF_outer_imp ::
   "('farr, 'sarr, 'g, 'vvit, 'v, 'e) af_impl_state \<Rightarrow> bool Heap"
   where
   "AF_outer_imp s =
@@ -509,25 +509,25 @@ lemma af_min_imp_eq: "af_min_imp x y = af_min x y"
   by (simp add: af_min_imp_def af_min_def)
 
 text \<open>Both directional rooms of an arc, from one read of flow and capacity.\<close>
-lemma af_rooms_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> af_rooms_imp_rule [sep_heap_rules]:
   "\<lbrakk>flow_invar Fl; a \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow s) * rd> af_rooms_imp s a
    <\<lambda>r. flow_assn Fl (iflow s) * rd * \<up>(r = af_rooms Fl a)>"
   unfolding af_rooms_imp_def af_rooms_def by (sep_auto simp: Let_def)
 
 text \<open>Marginal cost of pushing one unit along an arc.\<close>
-lemma af_delta_cost_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> af_delta_cost_imp_rule [sep_heap_rules]:
   "a \<in> \<E> \<Longrightarrow> <rd> af_delta_cost_imp a dir <\<lambda>r. rd * \<up>(r = af_delta_cost a dir)>"
   unfolding af_delta_cost_imp_def af_delta_cost_def by (sep_auto simp: Let_def)
 
 text \<open>Saturation test on an already-computed flow value.\<close>
-lemma af_saturated_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> af_saturated_imp_rule [sep_heap_rules]:
   "a \<in> \<E> \<Longrightarrow> <rd> af_saturated_imp f a <\<lambda>r. rd * \<up>(r = af_saturated f a)>"
   unfolding af_saturated_imp_def af_saturated_def by (sep_auto simp: Let_def)
 
 text \<open>Push @{term \<gamma>} on one arc in place, returning the new flow value --- the imperative counterpart of
       @{const af_push_arc} with the flow store mutated in place.\<close>
-lemma af_push_arc_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> af_push_arc_imp_rule [sep_heap_rules]:
   "\<lbrakk>flow_invar Fl; a \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow s)> af_push_arc_imp \<gamma> a dir s
    <\<lambda>r. flow_assn (prod.fst (af_push_arc \<gamma> a dir Fl)) (iflow s)
@@ -588,7 +588,7 @@ lemma dfs_rel_ht:
       rule ht_extract_pre_pure(1), elim conjE)
      (rule ht_cons_pre[OF _ assms]; (assumption | sep_auto))
 
-lemma outer_rel_ht:
+lemma \<^marker>\<open>provenance ai_human\<close> outer_rel_ht:
   assumes "\<And>vl el dl. \<lbrakk>card \<V> \<le> length vl; card \<V> \<le> length el; card \<V> \<le> length dl;
              length vl = Lvst; length el = Lest; length dl = Ldst\<rbrakk>
            \<Longrightarrow> <flow_assn (aff_flow st) (iflow s) * state_assn (aff_state st) (istate s)
@@ -617,7 +617,7 @@ lemma rev_drop_take_Suc:
 
 text \<open>First cancellation pass: @{const af_scan_imp} walking the stack arrays from index @{term i}
       downwards refines @{const af_scan} on the corresponding stack sub-lists.\<close>
-lemma af_scan_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_scan_imp_rule:
   "\<lbrakk>flow_invar Fl; i < length vl; i < length el; i < length dl;
     set (drop (Suc 0) (take (Suc i) el)) \<subseteq> \<E>; x \<in> set (take i vl)\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el
@@ -645,7 +645,7 @@ text \<open>General induction over the walked prefix: seeded with arbitrary @{te
       imperative pass mirrors @{const af_push} on @{term \<open>rev (take (Suc i) vl)\<close>}, mutating the flow in
       place and returning @{term best} when nothing is saturated, else @{term \<open>dep\<close>} offset by the
       functional drop count.\<close>
-lemma af_push_imp_gen:
+lemma \<^marker>\<open>provenance ai_human\<close> af_push_imp_gen:
   "\<lbrakk>flow_invar Fl; Suc 0 \<le> i; i < length vl; i < length el; i < length dl;
     set (drop (Suc 0) (take (Suc i) el)) \<subseteq> \<E>; x \<in> set (take i vl)\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el
@@ -684,7 +684,7 @@ proof(induction i arbitrary: Fl dep best)
        (sep_auto simp: eqs, sep_auto simp: eqs heap: IH)
 qed simp
 
-lemma af_push_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_push_imp_rule:
   "\<lbrakk>flow_invar Fl; Suc 0 \<le> i; i < length vl; i < length el; i < length dl;
     set (drop (Suc 0) (take (Suc i) el)) \<subseteq> \<E>; x \<in> set (take i vl)\<rbrakk> \<Longrightarrow>
    <flow_assn Fl (iflow s) * ivstack s \<mapsto>\<^sub>a vl * iestack s \<mapsto>\<^sub>a el
@@ -697,7 +697,7 @@ lemma af_push_imp_rule:
   by (rule ht_cons_post_prec[OF af_push_imp_gen]; (assumption | sep_auto simp: case_prod_beta))
 
 text \<open>Whole tagged-cycle cancellation, mutating the flow and returning drop count + unbounded flag.\<close>
-lemma af_cancel_seg_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_cancel_seg_imp_rule:
   assumes "flow_invar Fl" "a \<in> \<E>" "Suc 0 \<le> sp" "sp \<le> length vl" "sp \<le> length el"
           "sp \<le> length dl" "set (drop (Suc 0) (take sp el)) \<subseteq> \<E>" "x \<in> set (take (sp - Suc 0) vl)"
   shows
@@ -737,7 +737,7 @@ proof -
 qed
 
 text \<open>Reset one vertex's two edge iterators in place.\<close>
-lemma af_reset_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_reset_imp_rule:
   "\<lbrakk>out_invar OG; in_invar IG; v \<in> \<V>\<rbrakk> \<Longrightarrow>
    <out_assn OG (iout s) * in_assn IG (iin s)> af_reset_imp s v
    <\<lambda>_. out_assn (out_reset OG v) (iout s) * in_assn (in_reset IG v) (iin s)>"
@@ -746,7 +746,7 @@ lemma af_reset_imp_rule:
 text \<open>Generalised fused truncation clean-up over the top @{term n} stack vertices, the walked list given
       directly as @{term \<open>rev (take sp vl)\<close>} so the induction on @{term n} can rethread the
       state.\<close>
-lemma af_reset_unsee_seg_imp_gen:
+lemma \<^marker>\<open>provenance ai_human\<close> af_reset_unsee_seg_imp_gen:
   "\<lbrakk>st_invar (af_state st); out_invar (af_out_arr st); in_invar (af_in_arr st);
     n \<le> sp; sp \<le> length vl; set (take sp vl) \<subseteq> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn (af_state st) (istate s) * out_assn (af_out_arr st) (iout s) *
@@ -770,7 +770,7 @@ proof(induction n arbitrary: st sp)
 qed (subst af_reset_unsee_seg_imp.simps, sep_auto)
 
 text \<open>Fused truncation clean-up over the top @{term n} stack vertices.\<close>
-lemma af_reset_unsee_seg_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_reset_unsee_seg_imp_rule:
   "\<lbrakk>st_invar (af_state st); out_invar (af_out_arr st); in_invar (af_in_arr st);
     n \<le> sp; sp \<le> length vl; set (take sp vl) \<subseteq> \<V>;
       af_vstack st = rev (take sp vl)\<rbrakk> \<Longrightarrow>
@@ -783,7 +783,7 @@ lemma af_reset_unsee_seg_imp_rule:
   by (simp add: af_reset_unsee_seg_imp_gen)
 
 text \<open>Self-loop normalisation, mutating the flow and returning the unbounded flag.\<close>
-lemma af_selfloop_handle_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_selfloop_handle_imp_rule:
   "\<lbrakk>flow_invar (af_flow st); a \<in> \<E>; \<not> af_unbounded st\<rbrakk> \<Longrightarrow>
    <flow_assn (af_flow st) (iflow s) * rd> af_selfloop_handle_imp s a
    <\<lambda>r. flow_assn (af_flow (af_selfloop_handle st a)) (iflow s) * rd *
@@ -814,7 +814,7 @@ text \<open>OnStack cycle-closing case of @{const af_handle}: cancel the tagged 
       then truncate the stacks to the bottleneck and unmark the popped segment. Bundled premise
       @{term \<open>AF_inv st\<close>} supplies the distinctness / trail invariants; the extra pure postcondition
       exposes the new pointer @{term sp'} and the unbounded flag for @{const af_handle}'s caller.\<close>
-lemma af_close_cycle_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_close_cycle_imp_rule:
   assumes "AF_inv st" "a \<in> \<E>" "\<not> af_unbounded st" "st_lookup (af_state st) x = OnStack"
              "x \<in> \<V>" "x \<noteq> hd (af_vstack st)" "Suc 0 \<le> sp"
   shows
@@ -949,7 +949,7 @@ text \<open>Fresh-vertex case of @{const af_handle}: push the new vertex. Needs
       @{term \<open>Suc 0 \<le> sp\<close>} (the DFS stack is non-empty --- the root is always on it) so the estack
       / dstack encoding shifts correctly; that premise is discharged at the call site from the @{const AF_DFS} loop
       condition.\<close>
-lemma af_push_vertex_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_push_vertex_imp_rule:
   assumes "st_invar (af_state st)" "x \<in> \<V>" "sp < card \<V>" "Suc 0 \<le> sp"
   shows "<dfs_rel st s sp> af_push_vertex_imp s x a dir sp
    <\<lambda>r. case r of (sp', ubd) \<Rightarrow>
@@ -982,7 +982,7 @@ text \<open>Processing one incident arc: refines @{const af_handle}, threading t
       the current stack top --- all discharged at the @{const AF_DFS} call site (@{thm af_current_out_endpoint} /
       the @{text \<open>v # vs\<close>} pattern), so none weakens the final
       \<open>make_acyclic_imp_rule\<close>.\<close>
-lemma af_handle_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> af_handle_imp_rule:
   assumes "AF_inv st" "a \<in> \<E>" "\<not> af_unbounded st" "af_vstack st \<noteq> []"
              "(if dir then fst_exec a else snd_exec a) = hd (af_vstack st)"
   shows "<dfs_rel st s sp> af_handle_imp s a dir sp
@@ -1110,7 +1110,7 @@ text \<open>The inner DFS loop refines @{const AF_DFS_impl}, by \<^emph>\<open>f
       genuinely represent the graph); it is what @{thm AF_inv_holds_1} etc. require and is threaded to
       the top. The functional side varies over @{term st} / @{term sp}; the imperative state @{term s}
       is threaded unchanged, matching the in-place recursion @{term \<open>f s sp'\<close>}.\<close>
-lemma AF_DFS_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> AF_DFS_imp_rule:
   assumes "multigraph_inv out_arr in_arr" and "AF_inv st" "\<not> af_unbounded st" "sp = length (af_vstack st)"
   shows "<dfs_rel st s sp> AF_DFS_imp s sp <\<lambda>r. (\<exists>\<^sub>A sp'. dfs_rel (AF_DFS_impl st) s sp')
            * \<up>(r = af_unbounded (AF_DFS_impl st))>"
@@ -1335,7 +1335,7 @@ text \<open>The outer loop over vertices refines @{const AF_outer_impl}. The add
       @{term \<open>multigraph_inv out_arr in_arr\<close>} is the standing correctness precondition threaded from the
       top (as for @{thm AF_DFS_imp_rule}); it is exactly what @{thm AFF_inv_holds_1} / @{thm AFF_inv_holds_2}
       require and is discharged at @{const make_acyclic_imp} via @{thm AFF_inv_initial}.\<close>
-lemma AF_outer_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> AF_outer_imp_rule:
   assumes "multigraph_inv out_arr in_arr" and "AFF_inv st" "\<not> aff_unbounded st"
   shows "<outer_rel st s> AF_outer_imp s <\<lambda>r. outer_rel (AF_outer_impl st) s
            * \<up>(r = aff_unbounded (AF_outer_impl st))>"

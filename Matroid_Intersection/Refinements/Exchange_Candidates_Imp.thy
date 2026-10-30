@@ -36,7 +36,7 @@ text \<open>The merge of the entries \<open>i..<a\<close> and \<open>j..<b\<clos
     writing them
   into an array from position \<open>p\<close> on, returning the position after them.\<close>
 
-partial_function (heap) merge_cnt ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) merge_cnt ::
   "(nat \<Rightarrow> nat Heap) \<Rightarrow> (nat \<Rightarrow> nat Heap) \<Rightarrow> nat \<Rightarrow> nat
     \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "merge_cnt q1 q2 a b i j c =
@@ -50,7 +50,7 @@ partial_function (heap) merge_cnt ::
         else return (c + (a - i))
       else return (c + (b - j)))"
 
-partial_function (heap) merge_wr ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) merge_wr ::
   "(nat \<Rightarrow> nat Heap) \<Rightarrow> (nat \<Rightarrow> nat Heap) \<Rightarrow> nat \<Rightarrow> nat
     \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow>
    nat Heap" where
@@ -117,7 +117,7 @@ lemma mem_cand_list:
 
 text \<open>The merging loops, for any two lists read through two queries.\<close>
 
-lemma merge_cnt_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> merge_cnt_rule:
   assumes "\<And> k. k < length xs \<Longrightarrow> <F> q1 k <\<lambda> r. F * \<up>(r = xs ! k)>"
     and "\<And> k. k < length ys \<Longrightarrow> <F> q2 k <\<lambda> r. F * \<up>(r = ys ! k)>"
   shows "\<lbrakk>i \<le> length xs; j \<le> length ys\<rbrakk> \<Longrightarrow>
@@ -154,7 +154,7 @@ proof(induction "length xs - i + (length ys - j)" arbitrary: i j c rule: less_in
   qed
 qed
 
-lemma merge_wr_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> merge_wr_rule:
   assumes "\<And> k. k < length xs \<Longrightarrow> <F> q1 k <\<lambda> r. F * \<up>(r = xs ! k)>"
     and "\<And> k. k < length ys \<Longrightarrow> <F> q2 k <\<lambda> r. F * \<up>(r = ys ! k)>"
   shows "\<lbrakk>i \<le> length xs; j \<le> length ys;
@@ -266,17 +266,17 @@ abbreviation "es0 \<equiv> cand_list pts1 pts2 n"
 lemma nbrs_es0: "u < n \<Longrightarrow> nbrs es0 u = merge_uniq (pts1 u) (pts2 u)"
   by (simp add: nbrs_cand_list)
 
-lemma pt1_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pt1_rule:
   "\<lbrakk>k < length (pts1 u); u < n\<rbrakk> \<Longrightarrow>
    <pst1 H1 * pst2 H2> pt1_imp H1 u k <\<lambda> r. pst1 H1 * pst2 H2 * \<up>(r = pts1 u ! k)>"
   by (sep_auto heap: p1.pt_imp)
 
-lemma pt2_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pt2_rule:
   "\<lbrakk>k < length (pts2 u); u < n\<rbrakk> \<Longrightarrow>
    <pst1 H1 * pst2 H2> pt2_imp H2 u k <\<lambda> r. pst1 H1 * pst2 H2 * \<up>(r = pts2 u ! k)>"
   by (sep_auto heap: p2.pt_imp)
 
-lemma cnt_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> cnt_rule:
   assumes "u < n"
   shows "<pst1 H1 * pst2 H2>
            merge_cnt (pt1_imp H1 u) (pt2_imp H2 u) (length (pts1 u)) (length (pts2 u)) 0 0 c
@@ -286,7 +286,7 @@ lemma cnt_rule:
       OF pt1_rule[OF _ assms] pt2_rule[OF _ assms]]
   by (simp add: nbrs_es0 assms)
 
-lemma wr_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> wr_rule:
   assumes "u < n" and "p + length (nbrs es0 u) \<le> length g"
   shows "<G \<mapsto>\<^sub>a g * (pst1 H1 * pst2 H2)>
            merge_wr (pt1_imp H1 u) (pt2_imp H2 u) (length (pts1 u)) (length (pts2 u)) G 0 0 p
@@ -297,7 +297,7 @@ lemma wr_rule:
       and G = G, OF pt1_rule[OF _ assms(1)] pt2_rule[OF _ assms(1)]] assms(2)
   by (simp add: nbrs_es0 assms(1))
 
-lemma cand_csr_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> cand_csr_rule:
   "<pst1 H1 * pst2 H2> cand_csr_imp npts1_imp pt1_imp npts2_imp pt2_imp H1 H2 n
    <\<lambda> (Ba, Ga). pst1 H1 * pst2 H2 * Ba \<mapsto>\<^sub>a map (csr_start (nbrs es0)) [0..<Suc n] *
                 Ga \<mapsto>\<^sub>a csr_entries (nbrs es0) n>"

@@ -28,25 +28,25 @@ definition arr_es_assn ::
 definition arr_it_assn :: "nat set \<Rightarrow> 'n edge_arrays \<Rightarrow> nat list \<Rightarrow> nat \<times> nat \<Rightarrow> assn" where
   "arr_it_assn D p xs it = \<up>(xs = [fst it..<snd it])"
 
-definition arr_memb :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_memb :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "arr_memb = (\<lambda>(Fa, Ta, Wa) e. do { m \<leftarrow> Array.len Fa; return (e < m) })"
 
-definition arr_fst :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_fst :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "arr_fst = (\<lambda>(Fa, Ta, Wa) e. Array.nth Fa e)"
 
-definition arr_snd :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_snd :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "arr_snd = (\<lambda>(Fa, Ta, Wa) e. Array.nth Ta e)"
 
-definition arr_w :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> 'n Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_w :: "'n::heap edge_arrays \<Rightarrow> nat \<Rightarrow> 'n Heap" where
   "arr_w = (\<lambda>(Fa, Ta, Wa) e. Array.nth Wa e)"
 
-definition arr_it_init :: "'n::heap edge_arrays \<Rightarrow> (nat \<times> nat) Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_it_init :: "'n::heap edge_arrays \<Rightarrow> (nat \<times> nat) Heap" where
   "arr_it_init = (\<lambda>(Fa, Ta, Wa). do { m \<leftarrow> Array.len Fa; return (0, m) })"
 
-definition arr_it_has_next :: "nat \<times> nat \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_it_has_next :: "nat \<times> nat \<Rightarrow> bool Heap" where
   "arr_it_has_next it = return (fst it < snd it)"
 
-definition arr_it_next :: "nat \<times> nat \<Rightarrow> (nat \<times> nat \<times> nat) Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> arr_it_next :: "nat \<times> nat \<Rightarrow> (nat \<times> nat \<times> nat) Heap" where
   "arr_it_next it = return (fst it, Suc (fst it), snd it)"
 
 text \<open>The arrays store the edge names below @{term m}.\<close>
@@ -84,14 +84,14 @@ declare cert_arr.feas_loop.simps[code] cert_arr.match_loop.simps[code]
 
 text \<open>The top-level programs allocate the mark sets and run the checks.\<close>
 
-definition certify_arrays ::
+definition \<^marker>\<open>provenance ai_human\<close> certify_arrays ::
   "bool \<Rightarrow> bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> bool Heap" where
   "certify_arrays neg perfect n Fa Ta Wa La Rv Ma Ya = do {
      Ui \<leftarrow> Array.new n False;
      cert_arr_certify neg perfect n (Fa, Ta, Wa) La Rv Ma Ya Ui }"
 
-definition hall_arrays ::
+definition \<^marker>\<open>provenance ai_human\<close> hall_arrays ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "hall_arrays n Fa Ta Wa La Rv Sa = do {
@@ -100,7 +100,7 @@ definition hall_arrays ::
      Ni \<leftarrow> Array.new n False;
      cert_arr_hall n (Fa, Ta, Wa) La Rv Sa Li Si Ni }"
 
-definition certify_mc_arrays ::
+definition \<^marker>\<open>provenance ai_human\<close> certify_mc_arrays ::
   "bool \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "certify_mc_arrays neg n Fa Ta Wa La Rv Ma Ya t Sa = do {
@@ -170,7 +170,7 @@ lemma es_assn_eq: "cert.EA (Fa, Ta, Wa) = Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>
   using ts_length ws_length map_nth[of ts] map_nth[of ws]
   by (simp add: arr_es_assn_def map_nth atLeast0LessThan)
 
-lemma certify_arrays_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> certify_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays neg perfect n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys *
@@ -178,7 +178,7 @@ lemma certify_arrays_rule:
   unfolding certify_arrays_def cert_arr_certify_def
   by (sep_auto heap: cert.mark_empty_rule cert.certify_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
-lemma hall_arrays_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> hall_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Sa \<mapsto>\<^sub>a S>
    hall_arrays n Fa Ta Wa La Rv Sa
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Sa \<mapsto>\<^sub>a S *
@@ -186,7 +186,7 @@ lemma hall_arrays_rule:
   unfolding hall_arrays_def cert_arr_hall_def
   by (sep_auto heap: cert.mark_empty_rule cert.hall_imp_rule[where p = "(Fa, Ta, Wa)", unfolded es_assn_eq])
 
-lemma certify_mc_arrays_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> certify_mc_arrays_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * Sa \<mapsto>\<^sub>a S>
    certify_mc_arrays neg n Fa Ta Wa La Rv Ma Ya t Sa
    <\<lambda>r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys *
@@ -203,42 +203,42 @@ text \<open>If the checkers accept, the candidate @{term "{{fs ! i, ts ! i} | i.
 abbreviation "arrays_assn Fa Ta Wa La Rv \<equiv>
   Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs"
 
-lemma certify_arrays_post:
+lemma \<^marker>\<open>provenance ai_human\<close> certify_arrays_post:
   assumes "cert.certify neg perfect ms ys \<Longrightarrow> P"
   shows "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
          certify_arrays neg perfect n Fa Ta Wa La Rv Ma Ya
          <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true * \<up>(r \<longrightarrow> P)>"
   by (rule ht_cons_post_prec[OF certify_arrays_rule]) (sep_auto intro: assms)
 
-lemma min_weight_perfect_matching_arrays:
+lemma \<^marker>\<open>provenance ai_human\<close> min_weight_perfect_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays False True n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> min_weight_perfect_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.min_weight_perfect_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-lemma max_weight_perfect_matching_arrays:
+lemma \<^marker>\<open>provenance ai_human\<close> max_weight_perfect_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays True True n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> max_weight_perfect_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.max_weight_perfect_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-lemma min_weight_matching_arrays:
+lemma \<^marker>\<open>provenance ai_human\<close> min_weight_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays False False n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> min_weight_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.min_weight_matching_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-lemma max_weight_matching_arrays:
+lemma \<^marker>\<open>provenance ai_human\<close> max_weight_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys>
    certify_arrays True False n Fa Ta Wa La Rv Ma Ya
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Ma \<mapsto>\<^sub>a ms * Ya \<mapsto>\<^sub>a ys * true *
         \<up>(r \<longrightarrow> max_weight_matching G cert.wG {{fs ! i, ts ! i} | i. i \<in> set ms})>"
   by (rule certify_arrays_post) (use cert.max_weight_matching_certified in \<open>simp add: G_eq Mat_eq\<close>)
 
-lemma no_perfect_matching_arrays:
+lemma \<^marker>\<open>provenance ai_human\<close> no_perfect_matching_arrays:
   "<arrays_assn Fa Ta Wa La Rv * Sa \<mapsto>\<^sub>a S>
    hall_arrays n Fa Ta Wa La Rv Sa
    <\<lambda>r. arrays_assn Fa Ta Wa La Rv * Sa \<mapsto>\<^sub>a S * true * \<up>(r \<longrightarrow> (\<nexists>M. perfect_matching G M))>"

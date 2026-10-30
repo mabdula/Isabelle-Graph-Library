@@ -183,12 +183,12 @@ subsection \<open>Allocation and Initialisation\<close>
 text \<open>The vertex set, the endpoints of the edges, is collected in a Boolean array by one pass
       over the edges, which also counts the vertices.\<close>
 
-definition pr_vertex_count_step :: "bool array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> pr_vertex_count_step :: "bool array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "pr_vertex_count_step Vi u c = do {
      b \<leftarrow> Array.nth Vi u;
      if b then return c else do { bool_array_set_insert_imp u Vi; return (Suc c) } }"
 
-definition pr_vertex_set_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> pr_vertex_set_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "pr_vertex_set_imp Fa Ta Vi m =
      foldl_range_imp (\<lambda> i c. do {
        u \<leftarrow> Array.nth Fa i;
@@ -198,7 +198,7 @@ definition pr_vertex_set_imp :: "nat array \<Rightarrow> nat array \<Rightarrow>
 
 text \<open>A CSR collection with its position and cursor arrays, built by \<open>build\<close> from the edges.\<close>
 
-definition pr_csr_setup :: "(nat \<Rightarrow> nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> (nat array \<times> nat array) Heap) \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> pr_csr_setup :: "(nat \<Rightarrow> nat array \<times> nat array \<Rightarrow> nat \<Rightarrow> (nat array \<times> nat array) Heap) \<Rightarrow>
    nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat csr_rt_imp Heap" where
   "pr_csr_setup build n Fa Ta m = do {
      (Ba, Ea) \<leftarrow> build n (Fa, Ta) 0;
@@ -212,7 +212,7 @@ text \<open>Everything the three strategies share: the outgoing and the ingoing 
       excesses, the labels with their buckets (initialised), the counts and the references for
       the minimum of a relabelling scan. The capacity array of the input is used in place.\<close>
 
-definition push_relabel_setup :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_setup :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow>
    (('n array, 'n array, nat array \<times> abki \<times> nat ref, nat array, nat csr_rt_imp,
      nat array \<times> nat array, nat) pr_imp \<times>
     bool array \<times> nat) Heap" where
@@ -241,7 +241,7 @@ text \<open>The three programs take the bound \<open>n\<close> on the vertices, 
       and the arrays of the first endpoints, the second endpoints and the capacities. They
       return the array of the flow by edge number.\<close>
 
-definition push_relabel_fifo_run ::
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_fifo_run ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> 'n array Heap" where
   "push_relabel_fifo_run n s t Fa Ta Ca = do {
      (Si, Vi, nv) \<leftarrow> push_relabel_setup n Fa Ta Ca;
@@ -251,7 +251,7 @@ definition push_relabel_fifo_run ::
      pr_fifo_main s t nv (Qi, Cf, Cu, Vi) Si;
      return (pi_bwd Si) }"
 
-definition push_relabel_rtf_run ::
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_rtf_run ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> 'n array Heap" where
   "push_relabel_rtf_run n s t Fa Ta Ca = do {
      (Si, Vi, nv) \<leftarrow> push_relabel_setup n Fa Ta Ca;
@@ -262,7 +262,7 @@ definition push_relabel_rtf_run ::
      pr_rtf_main s t nv (Ls, Cf, Cu, Rr, Vi) Si;
      return (pi_bwd Si) }"
 
-definition push_relabel_hl_run ::
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_hl_run ::
   "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> 'n array Heap" where
   "push_relabel_hl_run n s t Fa Ta Ca = do {
      (Si, Vi, nv) \<leftarrow> push_relabel_setup n Fa Ta Ca;
@@ -273,11 +273,11 @@ definition push_relabel_hl_run ::
      pr_hl_main s t nv (Bi, Br, Cf, Cu, Vi) Si;
      return (pi_bwd Si) }"
 
-definition push_relabel_fifo_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap"
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_fifo_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap"
   where "push_relabel_fifo_run_int = push_relabel_fifo_run"
-definition push_relabel_rtf_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap"
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_rtf_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap"
   where "push_relabel_rtf_run_int = push_relabel_rtf_run"
-definition push_relabel_hl_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap"
+definition \<^marker>\<open>provenance ai_human\<close> push_relabel_hl_run_int :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap"
   where "push_relabel_hl_run_int = push_relabel_hl_run"
 
 text \<open>In the generated code, the loops contain no allocation. All allocations are in the run
@@ -656,7 +656,7 @@ lemma E_spec_length: "length out.inp.E_spec = length fs" "length inc.inp.E_spec 
         out.E_spec_edges inc.E_spec_edges
   by (simp_all add: edges_def)
 
-lemma out_setup_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> out_setup_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> pr_csr_setup csr_build_edges n Fa Ta (length fs)
    <\<lambda> Oi. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts *
          out_rt.csr_rt_assn (\<lambda> v. out.inp.B_spec ! v) Oi>"
@@ -677,7 +677,7 @@ proof-
     by (sep_auto heap: build pos out.graph.csr_cursor_init_rule)
 qed
 
-lemma in_setup_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> in_setup_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> pr_csr_setup csr_build_edges_tgt n Fa Ta (length fs)
    <\<lambda> Ii. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts *
          in_rt.csr_rt_assn (\<lambda> v. inc.inp.B_spec ! v) Ii>"
@@ -698,7 +698,7 @@ proof-
     by (sep_auto heap: build pos inc.graph.csr_cursor_init_rule)
 qed
 
-lemma pr_vertex_count_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pr_vertex_count_step_rule:
   assumes "u < n" "finite W"
   shows "<bool_array_set_assn n W Vi> pr_vertex_count_step Vi u (card W)
          <\<lambda> r. bool_array_set_assn n (insert u W) Vi * \<up>(r = card (insert u W))>"
@@ -716,7 +716,7 @@ next
     by (sep_auto heap: bool_array_set_memb_rule bool_array_set_upd_rule)
 qed
 
-lemma pr_vertex_set_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pr_vertex_set_imp_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n {} Vi>
      pr_vertex_set_imp Fa Ta Vi (length fs)
    <\<lambda> r. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * bool_array_set_assn n (verts fs ts) Vi *
@@ -754,11 +754,11 @@ lemma caps_assn: "Ca \<mapsto>\<^sub>a cs \<Longrightarrow>\<^sub>A ea.arr_assn 
   unfolding ea.arr_assn_def using cs_length
   by (sep_auto simp: cap_of_def)
 
-lemma la_new_rule: "<emp> Array.new n 0 <la.arr_assn (\<lambda> _. 0)>"
+lemma \<^marker>\<open>provenance ai_human\<close> la_new_rule: "<emp> Array.new n 0 <la.arr_assn (\<lambda> _. 0)>"
   using la.arr_new_rule[of 0]
   by simp
 
-lemma pr_lb_init_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pr_lb_init_rule:
   "<bool_array_set_assn n (verts fs ts) Vi *
     (la.arr_assn (\<lambda> _. 0) La * abk_assn n nV abk_empty Lb * Dr \<mapsto>\<^sub>r d0)>
      pr_lb_init (bool_array_set_fold_imp Vi) (La, Lb, Dr)
@@ -776,7 +776,7 @@ definition "setup_assn Si =
    in_rt.csr_rt_assn (\<lambda> v. inc.inp.B_spec ! v) (pi_in Si) * ends_assn fs ts (pi_ends Si) *
    pr.min_scratch_assn Si"
 
-lemma push_relabel_setup_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_setup_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_setup n Fa Ta Ca
    <\<lambda>(Si, Vi, nv). setup_assn Si * bool_array_set_assn n (verts fs ts) Vi *
      \<up>(nv = nV \<and> pi_caps Si = Ca \<and> pi_ends Si = (Fa, Ta))>"
@@ -804,7 +804,7 @@ text \<open>Each program leaves the input arrays and returns an array holding, b
 
 text \<open>The part shared by the three proofs: running a strategy after the setup, and the result.\<close>
 
-lemma setup_bind_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> setup_bind_rule:
   assumes "\<And> Si Vi. \<lbrakk>pi_caps Si = Ca; pi_ends Si = (Fa, Ta)\<rbrakk> \<Longrightarrow>
              <setup_assn Si * bool_array_set_assn n (verts fs ts) Vi> body Si Vi nV <Q>"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs>
@@ -836,7 +836,7 @@ proof-
     by (rule ent_star_mono[OF ent_star_mono[OF ent_refl] ent_refl])
 qed
 
-lemma push_relabel_fifo_run_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_fifo_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_fifo_run n s t Fa Ta Ca
    <\<lambda> Bw. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
          (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true>"
@@ -875,7 +875,7 @@ proof-
   qed
 qed
 
-lemma push_relabel_rtf_run_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_rtf_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_rtf_run n s t Fa Ta Ca
    <\<lambda> Bw. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
          (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true>"
@@ -915,7 +915,7 @@ proof-
   qed
 qed
 
-lemma push_relabel_hl_run_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> push_relabel_hl_run_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ca \<mapsto>\<^sub>a cs> push_relabel_hl_run n s t Fa Ta Ca
    <\<lambda> Bw. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ea.arr_assn cap_of Ca *
          (\<exists>\<^sub>A f. ea.arr_assn f Bw * \<up>(is_max_flow s t f)) * true>"

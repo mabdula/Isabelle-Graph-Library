@@ -92,7 +92,7 @@ definition "odds_memb_imp v Fi = (case Fi of (ei, oi, pai) \<Rightarrow> vset_is
 definition "forest_it_init p Fi = (case Fi of (ei, oi, pai) \<Rightarrow>
   (case p of Evens \<Rightarrow> it_init ei | Odds \<Rightarrow> it_init oi))"
 
-partial_function (heap) get_path_imp_loop :: "'pi \<Rightarrow> 'v array \<Rightarrow> nat \<Rightarrow> 'v \<Rightarrow> nat Heap" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) get_path_imp_loop :: "'pi \<Rightarrow> 'v array \<Rightarrow> nat \<Rightarrow> 'v \<Rightarrow> nat Heap" where
   "get_path_imp_loop pai Ra k v = do {
      _ \<leftarrow> Array.upd k v Ra;
      u \<leftarrow> parent_get_imp pai v;
@@ -113,13 +113,13 @@ lemma extend_forest_parts[simp]:
   "parents (extend_forest_even_unclassified F x y z) = parent_upd (parent_upd (parents F) y x) z y"
   by (auto simp: extend_forest_even_unclassified_def)
 
-lemma forest_empty_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_empty_imp_rule:
   "\<lbrakk>vset_invar R; vset_to_set R = {}\<rbrakk> \<Longrightarrow>
    <emp> forest_empty_imp <forest_assn (empty_forest R)>"
   unfolding forest_empty_imp_def forest_assn_def vs_assn_def
   by (sep_auto simp: vset.fixed_univ_set_empty parent(1))
 
-lemma forest_clear_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_clear_imp_rule:
   "\<lbrakk>vset_invar R; vset_to_set R = {}\<rbrakk> \<Longrightarrow>
    <forest_assn F Fi> forest_clear_imp Fi <forest_assn (empty_forest R)>"
   unfolding forest_clear_imp_def forest_assn_def vs_assn_def
@@ -130,7 +130,7 @@ lemma forest_empty_cong:
    forest_assn (empty_forest R) = forest_assn (empty_forest R')"
   by (auto simp: forest_assn_def vs_assn_def fun_eq_iff)
 
-lemma forest_add_root_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_add_root_imp_rule:
   "\<lbrakk>vset_invar R; vset_invar R'; vset_to_set R' = insert v (vset_to_set R)\<rbrakk> \<Longrightarrow>
    <forest_assn (empty_forest R) Fi> forest_add_root_imp v Fi <forest_assn (empty_forest R')>"
   unfolding forest_add_root_imp_def forest_assn_def vs_assn_def
@@ -143,7 +143,7 @@ lemma forest_extension_precond_in_K:
         invar_basicD(18)[OF forest_invarD(1)[OF forest_extension_precondD(1)[OF assms]]]
   by (auto simp: Vs_def)
 
-lemma forest_extend_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_extend_imp_rule:
   assumes "forest_extension_precond F M x y z"
   shows "<forest_assn F Fi> forest_extend_imp x y z Fi
          <forest_assn (extend_forest_even_unclassified F x y z)>"
@@ -151,14 +151,14 @@ lemma forest_extend_imp_rule:
   unfolding forest_extend_imp_def forest_assn_def vs_assn_def
   by (sep_auto split: prod.splits simp: vset.fixed_univ_set_insert parent_map.fixed_univ_map_upd_invar)
 
-lemma evens_memb_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> evens_memb_imp_rule:
   "v \<in> K \<Longrightarrow>
    <forest_assn F Fi> evens_memb_imp v Fi
    <\<lambda>r. forest_assn F Fi * \<up>(r \<longleftrightarrow> v \<in> vset_to_set (evens F))>"
   unfolding evens_memb_imp_def forest_assn_def vs_assn_def
   by (sep_auto split: prod.splits simp: vset.fixed_univ_set_isin)
 
-lemma odds_memb_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> odds_memb_imp_rule:
   "v \<in> K \<Longrightarrow>
    <forest_assn F Fi> odds_memb_imp v Fi
    <\<lambda>r. forest_assn F Fi * \<up>(r \<longleftrightarrow> v \<in> vset_to_set (odds F))>"
@@ -168,12 +168,12 @@ lemma odds_memb_imp_rule:
 text \<open>The iterator of a vertex set refers to its abstraction only, so it iterates the vertex
       set whichever representation the existential in @{term vs_assn} chooses.\<close>
 
-lemma vs_it_init_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> vs_it_init_rule:
   "<vs_assn V Vi> it_init Vi <\<lambda>it. vs_assn V Vi * is_it (vset_to_set V) Vi (lst (vset_to_set V)) it>"
   unfolding vs_assn_def
   by (sep_auto heap: vit.it_init_rule)
 
-lemma vs_it_next_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> vs_it_next_rule:
   "<vs_assn V Vi * is_it (vset_to_set V) Vi (x # xs) it> it_next it
    <\<lambda>(y, it'). vs_assn V Vi * is_it (vset_to_set V) Vi xs it' * \<up>(y = x)>"
 proof-
@@ -187,7 +187,7 @@ proof-
     by sep_auto
 qed
 
-lemma vs_it_has_next_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> vs_it_has_next_rule:
   "<vs_assn V Vi * is_it (vset_to_set V) Vi xs it> it_has_next it
    <\<lambda>r. vs_assn V Vi * is_it (vset_to_set V) Vi xs it * \<up>(r \<longleftrightarrow> xs \<noteq> [])>"
 proof-
@@ -218,7 +218,7 @@ proof(rule ent_ex_preI, goal_cases)
   qed
 qed
 
-lemma forest_it_init_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_it_init_rule:
   "<forest_assn F Fi> forest_it_init p Fi
    <\<lambda>it. forest_assn F Fi *
          forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi
@@ -226,7 +226,7 @@ lemma forest_it_init_rule:
   unfolding forest_it_init_def forest_assn_def forest_is_it_def
   by (cases p) (sep_auto split: prod.splits heap: vs_it_init_rule)+
 
-lemma forest_it_next_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_it_next_rule:
   "<forest_assn F Fi *
     forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi (x # xs) it>
    it_next it
@@ -237,7 +237,7 @@ lemma forest_it_next_rule:
   by (cases p) (sep_auto split: prod.splits heap: vs_it_next_rule[of "evens F"],
                 sep_auto split: prod.splits heap: vs_it_next_rule[of "odds F"])
 
-lemma forest_it_has_next_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_it_has_next_rule:
   "<forest_assn F Fi *
     forest_is_it p (vset_to_set (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)) Fi xs it>
    it_has_next it
@@ -257,7 +257,7 @@ lemma forest_quit_iteration:
      ((sep_frame_fwd rule: vs_quit_iteration[of "evens F"], sep_auto),
       (sep_frame_fwd rule: vs_quit_iteration[of "odds F"], sep_auto))
 
-lemma get_path_imp_loop_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> get_path_imp_loop_rule:
   assumes "parent_spec_i.follow_dom (parent_lookup P) v"
   shows "\<lbrakk>parent_invar P; set (follow (parent_lookup P) v) \<subseteq> K;
           k + length (follow (parent_lookup P) v) \<le> length xs\<rbrakk> \<Longrightarrow>
@@ -307,7 +307,7 @@ proof-
                   parents_here.follow_impl_is_follow[folded follow_def follow_impl_def])
 qed
 
-lemma get_path_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> get_path_imp_rule:
   assumes "forest_invar M F" "v \<in> vset_to_set (evens F)" "k + length (get_path F v) \<le> length xs"
   shows "<forest_assn F Fi * Ra \<mapsto>\<^sub>a xs> get_path_imp Fi Ra k v
          <\<lambda>k'. forest_assn F Fi * Ra \<mapsto>\<^sub>a (take k xs @ get_path F v @ drop k' xs) *

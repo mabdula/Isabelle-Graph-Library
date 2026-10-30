@@ -31,7 +31,7 @@ locale Disjoint_Paths_Search_Imperative_spec =
     and stack_pop_imp :: "'irs \<Rightarrow> unit Heap"
 begin
 
-partial_function (heap) Disjoint_Paths_Search_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) Disjoint_Paths_Search_imp ::
   "('irs, 'imp_av, 'imp_ex, 'ips) Disjoint_Paths_Search_state_imp \<Rightarrow>
    ('irs, 'imp_av, 'imp_ex, 'ips) Disjoint_Paths_Search_state_imp Heap"
   where
@@ -87,17 +87,17 @@ subsection \<open>The roots\<close>
 
 definition "roots_assn xs Ri = (\<exists>\<^sub>A R. stack_assn R Ri * \<up>(stack_invar R \<and> stack_abstract R = xs))"
 
-lemma roots_is_empty_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> roots_is_empty_rule:
   "<roots_assn xs Ri> stack_is_empty_imp Ri <\<lambda>r. roots_assn xs Ri * \<up>(r \<longleftrightarrow> xs = [])>"
   unfolding roots_assn_def
   by (sep_auto heap: rts.stack_is_empty_rule simp: rts.stack_is_empty)
 
-lemma roots_top_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> roots_top_rule:
   "xs \<noteq> [] \<Longrightarrow> <roots_assn xs Ri> stack_top_imp Ri <\<lambda>r. roots_assn xs Ri * \<up>(r = hd xs)>"
   unfolding roots_assn_def
   by (sep_auto heap: rts.stack_top_rule simp: rts.stack_top)
 
-lemma roots_pop_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> roots_pop_rule:
   "xs \<noteq> [] \<Longrightarrow> <roots_assn xs Ri> stack_pop_imp Ri <\<lambda>_. roots_assn (tl xs) Ri>"
   unfolding roots_assn_def
   by (sep_auto heap: rts.stack_pop_rule simp: rts.stack_pop)
@@ -109,7 +109,7 @@ definition "state_assn s si =
   explored_assn (explored s) (i_explored si) * paths_assn (paths s) (i_paths si) *
   \<up>(invar_1 s \<and> invar_within_graph s)"
 
-lemma Disjoint_Paths_Search_imp_refine:
+lemma \<^marker>\<open>provenance ai_human\<close> Disjoint_Paths_Search_imp_refine:
   "<step_assn None * state_assn s si> Disjoint_Paths_Search_imp si
    <\<lambda>si'. step_assn None * state_assn (Disjoint_Paths_Search_impl s) si'>"
 proof(induction arbitrary: s si rule: Disjoint_Paths_Search_imp.fixp_induct)
@@ -208,7 +208,7 @@ qed
 
 subsection \<open>Correctness\<close>
 
-theorem Disjoint_Paths_Search_run_imp_rule:
+theorem \<^marker>\<open>provenance ai_human\<close> Disjoint_Paths_Search_run_imp_rule:
   "<step_assn None * roots_assn initial_roots Ri * avoided_assn vset_empty Ai *
     explored_assn vset_empty Ei * paths_assn [] Psi>
      Disjoint_Paths_Search_run_imp Ri Ai Ei Psi
@@ -228,7 +228,7 @@ text \<open>The paths found by the imperative search are those of the functional
       @{thm [source] Disjoint_Paths_Search_correct_1}, @{thm [source] Disjoint_Paths_Search_correct_2}
       and @{thm [source] Disjoint_Paths_Search_correct_3}. All roots have been consumed.\<close>
 
-theorem Disjoint_Paths_Search_run_imp_correct:
+theorem \<^marker>\<open>provenance ai_human\<close> Disjoint_Paths_Search_run_imp_correct:
   "<step_assn None * roots_assn initial_roots Ri * avoided_assn vset_empty Ai *
     explored_assn vset_empty Ei * paths_assn [] Psi>
      Disjoint_Paths_Search_run_imp Ri Ai Ei Psi

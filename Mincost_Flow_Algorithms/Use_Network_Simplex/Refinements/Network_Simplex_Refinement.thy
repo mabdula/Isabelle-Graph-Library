@@ -135,7 +135,7 @@ text \<open>Scan a path-array prefix @{term \<open>[0..<ptr]\<close>} bottom-up.
       arguments\<close> --- no option, no per-step pair --- with @{term \<open>m = - 1\<close>} as the ``nothing seen yet''
       sentinel (so @{term best}, seeded with the dummy @{term r}, is meaningful only once
       @{term \<open>m \<noteq> - 1\<close>}). No intermediate list is built.\<close>
-partial_function (heap) scan_up_loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_up_loop_imp ::
   "('farr, 'parr, 'arbor, 'pearr, 'darr, 'earr, 'sel, 'a) ns_impl_state
      \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'a \<Rightarrow> ('n \<times> 'a) Heap" where
   "scan_up_loop_imp s pa i ptr m best =
@@ -149,7 +149,7 @@ partial_function (heap) scan_up_loop_imp ::
          else scan_up_loop_imp s pa (i + 1) ptr m best)
       })"
 
-partial_function (heap) scan_down_loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_down_loop_imp ::
   "('farr, 'parr, 'arbor, 'pearr, 'darr, 'earr, 'sel, 'a) ns_impl_state
      \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> 'a \<Rightarrow> ('n \<times> 'a) Heap" where
   "scan_down_loop_imp s pa i ptr m best =
@@ -198,7 +198,7 @@ text \<open>Augment the flow by @{term \<delta>} along the fundamental circuit, 
       over a path-array prefix; rather than take a sign \<^emph>\<open>closure\<close> (a per-vertex indirect call) it takes
       the value @{term \<delta>} and a flag @{term on_up} (whether this is the up-path pass) and computes the
       per-vertex sign inline as @{term \<open>if up = on_up then \<delta> else - \<delta>\<close>}.\<close>
-partial_function (heap) aug_loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) aug_loop_imp ::
   "('farr, 'parr, 'arbor, 'pearr, 'darr, 'earr, 'sel, 'a) ns_impl_state
      \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool \<Rightarrow> unit Heap" where
   "aug_loop_imp s pa i ptr \<delta> on_up =
@@ -238,7 +238,7 @@ text \<open>Re-parenting after a swap, walking a path-array prefix from @{term \
       into @{term \<open>(olde, oldup)\<close>} before the current vertex is overwritten --- rather than re-reading
       them; the @{term first} flag marks the initial step (where @{term pe}, @{term pup} are unused
       dummies), replacing what was an option.\<close>
-partial_function (heap) reparent_walk_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) reparent_walk_imp ::
   "('farr, 'parr, 'arbor, 'pearr, 'darr, 'earr, 'sel, 'a) ns_impl_state
      \<Rightarrow> 'edge \<Rightarrow> 'a \<Rightarrow> bool \<Rightarrow> 'edge \<Rightarrow> bool \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "reparent_walk_imp s e v first pe pup pa i ptr =
@@ -285,7 +285,7 @@ text \<open>One iteration: select an entering edge (@{const None} {\isasymLongri
       @{const unbounded}); otherwise flip or pivot in place and recurse. The state handles are threaded
       unchanged --- all changes are in-place mutations --- so the loop is genuinely tail-recursive and
       MLton compiles it to an in-place loop.\<close>
-partial_function (heap) ns_loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) ns_loop_imp ::
   "('farr, 'parr, 'arbor, 'pearr, 'darr, 'earr, 'sel, 'a) ns_impl_state \<Rightarrow> return Heap" where
   "ns_loop_imp s =
      do {
@@ -456,35 +456,35 @@ lemma mininf_imp_eq: "mininf_imp x y = mininf x y"
   by (simp add: mininf_imp_def mininf_def)
 
 text \<open>Forward residual of a graph edge --- one read of capacity and, if finite, of flow.\<close>
-lemma res_fwd_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> res_fwd_imp_rule [sep_heap_rules]:
   "\<lbrakk>flow_invar (current_flow s); a \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn (current_flow s) (iflow si) * rd> res_fwd_imp si a
    <\<lambda>x. flow_assn (current_flow s) (iflow si) * rd * \<up>(x = res_fwd s a)>"
   unfolding res_fwd_imp_def res_fwd_def by (sep_auto simp: Let_def)
 
 text \<open>Backward residual --- the current flow on the edge.\<close>
-lemma res_bwd_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> res_bwd_imp_rule [sep_heap_rules]:
   "\<lbrakk>flow_invar (current_flow s); a \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn (current_flow s) (iflow si)> res_bwd_imp si a
    <\<lambda>x. flow_assn (current_flow s) (iflow si) * \<up>(x = res_bwd s a)>"
   unfolding res_bwd_imp_def res_bwd_def by sep_auto
 
 text \<open>The parent graph edge of a non-root vertex.\<close>
-lemma par_edge_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> par_edge_imp_rule [sep_heap_rules]:
   "\<lbrakk>parent_invar (parent_edge s); v \<in> \<V> - {r}\<rbrakk> \<Longrightarrow>
    <parent_assn (parent_edge s) (iparent si)> par_edge_imp si v
    <\<lambda>x. parent_assn (parent_edge s) (iparent si) * \<up>(x = par_edge s v)>"
   unfolding par_edge_imp_def par_edge_def by sep_auto
 
 text \<open>The orientation flag of a non-root vertex's parent edge.\<close>
-lemma par_up_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> par_up_imp_rule [sep_heap_rules]:
   "\<lbrakk>dir_invar (edge_dir s); v \<in> \<V> - {r}\<rbrakk> \<Longrightarrow>
    <dir_assn (edge_dir s) (idir si)> par_up_imp si v
    <\<lambda>x. dir_assn (edge_dir s) (idir si) * \<up>(x = par_up s v)>"
   unfolding par_up_imp_def par_up_def by sep_auto
 
 text \<open>Residual of a vertex's parent edge traversed upward --- reads direction, parent edge and flow.\<close>
-lemma res_up_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> res_up_imp_rule [sep_heap_rules]:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
     v \<in> \<V> - {r}; par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
@@ -495,7 +495,7 @@ lemma res_up_imp_rule [sep_heap_rules]:
   unfolding res_up_imp_def res_up_def by sep_auto
 
 text \<open>Residual of a vertex's parent edge traversed downward.\<close>
-lemma res_down_imp_rule [sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> res_down_imp_rule [sep_heap_rules]:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
     v \<in> \<V> - {r}; par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
    <flow_assn (current_flow s) (iflow si) * parent_assn (parent_edge s) (iparent si)
@@ -507,7 +507,7 @@ lemma res_down_imp_rule [sep_heap_rules]:
 
 text \<open>Run the entering-edge selector --- reads potentials and edge tags, mutates the selector in place
       and returns the value part of @{const ns_select} (the functional @{term sel'} is dropped).\<close>
-lemma ns_select_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_select_imp_rule:
   "\<lbrakk>sel_invar (edge_sel s); pot_invar (potentials s); es_invar (edge_state s)\<rbrakk> \<Longrightarrow>
    <sel_assn (edge_sel s) (isel si) * pot_assn (potentials s) (ipot si)
       * es_assn (edge_state s) (iestate si) * rd>
@@ -576,7 +576,7 @@ text \<open>@{const scan_up_loop_imp} walking the path-array prefix @{term \<ope
       @{const fold} of the @{const scan_up} step over the corresponding vertex sub-list
       @{term \<open>drop i (take ptr l)\<close>} (where @{term l} is the buffer content). Each scanned vertex must
       be a non-root vertex whose parent edge lies in @{term \<E>} (so @{const res_up_imp} is specified).\<close>
-lemma scan_up_loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> scan_up_loop_imp_rule:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
     ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
       v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
@@ -605,7 +605,7 @@ qed (subst scan_up_loop_imp.simps, sep_auto simp: drop_take)
 
 text \<open>The downward scan is the mirror image, using @{const res_down} and a \<^emph>\<open>strict\<close>
       comparison.\<close>
-lemma scan_down_loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> scan_down_loop_imp_rule:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
     ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
       v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
@@ -634,7 +634,7 @@ qed (subst scan_down_loop_imp.simps, sep_auto simp: drop_take)
 
 text \<open>Seeded at index @{term 0} with @{term \<open>(- 1, r)\<close>}, the loops refine the top-level
       @{const scan_up} / @{const scan_down} on the buffer prefix @{term \<open>take ptr l\<close>}.\<close>
-lemma scan_up_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> scan_up_imp_rule:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
     ptr \<le> length l; \<forall>v \<in> set (take ptr l).
       v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
@@ -646,7 +646,7 @@ lemma scan_up_imp_rule:
   unfolding scan_up_imp_def scan_up_def
   by (sep_auto heap: scan_up_loop_imp_rule[where i = 0])
 
-lemma scan_down_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> scan_down_imp_rule:
   "\<lbrakk>flow_invar (current_flow s); parent_invar (parent_edge s); dir_invar (edge_dir s);
     ptr \<le> length l; \<forall>v \<in> set (take ptr l).
       v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
@@ -704,7 +704,7 @@ text \<open>@{const aug_loop_imp} folds the parent-edge flow updates over a path
       @{term \<open>if par_up s v then \<delta> else - \<delta>\<close>}) and with
       @{term \<open>on_up = False\<close>} (the down-path, opposite sign). The flow value is threaded through
       the induction; @{thm flow_arr.fixed_univ_map_upd_invar} keeps @{term flow_invar} across each update.\<close>
-lemma aug_loop_imp_up_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> aug_loop_imp_up_rule:
   "\<lbrakk>flow_invar Fl; parent_invar (parent_edge s); dir_invar (edge_dir s);
     ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
       v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
@@ -728,7 +728,7 @@ proof(induction "ptr - i" arbitrary: i Fl)
       flow_arr.fixed_univ_map_upd_invar[OF Suc.prems(1) k(7)] heap: Suc.hyps(1)[OF k(1) _ Suc.prems(2-4) k(8)])
 qed (subst aug_loop_imp.simps, sep_auto simp: drop_take)
 
-lemma aug_loop_imp_down_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> aug_loop_imp_down_rule:
   "\<lbrakk>flow_invar Fl; parent_invar (parent_edge s); dir_invar (edge_dir s);
     ptr \<le> length l; \<forall>v \<in> set (drop i (take ptr l)).
       v \<in> \<V> - {r} \<and> par_edge s v \<in> \<E>\<rbrakk> \<Longrightarrow>
@@ -811,7 +811,7 @@ text \<open>@{const reparent_walk_imp} reverses the parent pointers along the sp
       because the spine is @{term distinct}, so each visited vertex leaves the suffix untouched. The reads
       therefore see the original @{term \<open>par_edge s\<close>} / @{term \<open>par_up s\<close>} that
       @{const reparent_walk} threads.\<close>
-lemma reparent_walk_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> reparent_walk_imp_rule:
   "\<lbrakk>parent_invar Pe; dir_invar D; ptr \<le> length l; e \<in> \<E>;
     distinct (drop i (take ptr l));
     \<forall>w \<in> set (drop i (take ptr l)). w \<in> \<V> - {r};
@@ -845,7 +845,7 @@ qed (subst reparent_walk_imp.simps, sep_auto simp: drop_take)
 
 text \<open>At the top level (@{term \<open>i = 0\<close>}) the stores are the frozen originals, so the agreement
       invariant holds by definition of @{const par_edge} / @{const par_up}.\<close>
-lemma reparent_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> reparent_imp_rule:
   "\<lbrakk>parent_invar (parent_edge s); dir_invar (edge_dir s); ptr \<le> length l; e \<in> \<E>;
     distinct (take ptr l); \<forall>w \<in> set (take ptr l). w \<in> \<V> - {r}\<rbrakk> \<Longrightarrow>
    <rd * parent_assn (parent_edge s) (iparent si) * dir_assn (edge_dir s) (idir si) * pa \<mapsto>\<^sub>a l>
@@ -923,7 +923,7 @@ subsection \<open>Refinement of the whole loop\<close>
 
 text \<open>A triple from @{const ns_rel} also holds with the two path buffers opened, for any concrete
       buffers that are long enough.\<close>
-lemma ns_rel_cont:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_rel_cont:
   "\<lbrakk><ns_rel t si> c <Q>; card \<V> - 1 \<le> length l1; card \<V> - 1 \<le> length l2\<rbrakk>
    \<Longrightarrow> <rd * flow_assn (current_flow t) (iflow si) * pot_assn (potentials t) (ipot si)
       * tree_assn (spanning_tree t) (itree si) * parent_assn (parent_edge t) (iparent si)
@@ -1015,7 +1015,7 @@ qed
 
 text \<open>The rest of an iteration once the two paths sit in the buffers: run the bottleneck scan and
       take the unbounded, flip or pivot branch, handing the new state to the continuation @{term c}.\<close>
-lemma loop_step_tail:
+lemma \<^marker>\<open>provenance ai_human\<close> loop_step_tail:
   assumes "ptr1 \<le> length l1" "ptr2 \<le> length l2" "take ptr1 l1 = p1" "take ptr2 l2 = p2"
     "card \<V> - 1 \<le> length l1" "card \<V> - 1 \<le> length l2" "u = fst e" "v = snd e"
     "\<And>t. ns_invar t \<Longrightarrow> <ns_rel t si> c
@@ -1099,7 +1099,7 @@ end
 
 text \<open>One iteration of @{const ns_loop_imp}, with the recursive call abstracted to @{term c}: if
       @{term c} refines @{const ns_loop_impl} on every invariant state, so does the loop body.\<close>
-lemma ns_loop_step:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_loop_step:
   assumes "ns_invar s"
     "\<And>t. ns_invar t \<Longrightarrow> <ns_rel t si> c
        <\<lambda>res. ns_rel_weak (ns_loop_impl t) si * \<up>(res = network_simplex_state.return (ns_loop_impl t))>"
@@ -1157,7 +1157,7 @@ text \<open>The imperative loop @{const ns_loop_imp} refines the functional @{co
       lemmas above supply everything each iteration needs; here we only assemble them. Under partial
       correctness a diverging run makes the triple hold vacuously, so no termination argument is needed.\<close>
 
-lemma ns_loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_loop_imp_rule:
   "ns_invar s \<longrightarrow> <ns_rel s si> ns_loop_imp si
      <\<lambda>res. ns_rel_weak (ns_loop_impl s) si * \<up>(res = network_simplex_state.return (ns_loop_impl s))>"
 proof(induction arbitrary: s rule: ns_loop_imp.fixp_induct)
@@ -1173,7 +1173,7 @@ text \<open>The refinement above is stated against the heap @{command partial_fu
       so the two agree (@{text ns_loop_dom_impl_same}); transferring along that equality lands the
       imperative result on the \<^emph>\<open>final functional state\<close> @{term \<open>ns_loop s\<close>}.\<close>
 
-lemma ns_loop_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_loop_imp_correct:
   assumes "ns_invar s"
   shows "<ns_rel s si> ns_loop_imp si
            <\<lambda>res. ns_rel_weak (ns_loop s) si * \<up>(res = network_simplex_state.return (ns_loop s))>"
@@ -1199,7 +1199,7 @@ text \<open>Specialised to the initial basis built by @{locale network_simplex_i
       @{term \<open>ns_loop init_state\<close>} --- the state on which @{text network_simplex_correct} states
       optimality / unboundedness.\<close>
 
-lemma ns_loop_imp_init:
+lemma \<^marker>\<open>provenance ai_human\<close> ns_loop_imp_init:
   "<ns_rel init_state si> ns_loop_imp si
      <\<lambda>res. ns_rel_weak (ns_loop init_state) si
               * \<up>(res = network_simplex_state.return (ns_loop init_state))>"

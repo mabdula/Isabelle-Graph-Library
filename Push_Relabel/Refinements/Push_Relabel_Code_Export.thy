@@ -40,7 +40,7 @@ text \<open>A network on the vertices \<open>0\<close> to \<open>3\<close> with 
   \<open>3\<close>. Its maximum flow has value \<open>5\<close>: the edges leaving the source are saturated,
   and so are the edges entering the sink. The program returns the flow by edge number.\<close>
 
-definition pr_test :: "(nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap) \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> pr_test :: "(nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> int array Heap) \<Rightarrow>
   int list Heap" where
   "pr_test prog = do {
      Fa \<leftarrow> Array.of_list [0, 0, 1, 1, 2];

@@ -35,12 +35,12 @@ subsection \<open>The Program\<close>
 
 text \<open>Whether all elements of an array are in a set.\<close>
 
-definition all_in_step :: "nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> all_in_step :: "nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> bool \<Rightarrow> bool Heap" where
   "all_in_step La Cv i b = do { v \<leftarrow> Array.nth La i; c \<leftarrow> Array.nth Cv v; return (b \<and> c) }"
 
 text \<open>Selecting the edges of a matching given by buddies.\<close>
 
-definition sel_step :: "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> sel_step :: "nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> unit \<Rightarrow>
     unit Heap" where
   "sel_step Fa Ta Mi Sel i _ = do {
      u \<leftarrow> Array.nth Fa i;
@@ -51,7 +51,7 @@ definition sel_step :: "nat array \<Rightarrow> nat array \<Rightarrow> nat arra
 
 text \<open>Checking the oracle's answer.\<close>
 
-definition asn_check ::
+definition \<^marker>\<open>provenance ai_human\<close> asn_check ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
    nat array \<Rightarrow> 'n asn_answer \<Rightarrow> bool Heap" where
   "asn_check n Fa Ta Wa La Rv a = (case a of
@@ -61,14 +61,14 @@ definition asn_check ::
 
 text \<open>Reporting an accepted answer.\<close>
 
-definition asn_accept :: "'n::heap asn_answer \<Rightarrow> bool array \<Rightarrow> (bool \<times> bool array) Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> asn_accept :: "'n::heap asn_answer \<Rightarrow> bool array \<Rightarrow> (bool \<times> bool array) Heap" where
   "asn_accept a Sel = (case a of
      Asn_opt Ma Ya \<Rightarrow> do { k \<leftarrow> Array.len Ma; bool_array_set_insert_all Ma 0 k Sel; return (True, Sel) }
    | _ \<Rightarrow> return (False, Sel))"
 
 text \<open>Reporting the result of the Hungarian method.\<close>
 
-definition asn_select :: "result \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> asn_select :: "result \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool array \<Rightarrow>
     (bool \<times> bool array) Heap" where
   "asn_select r Fa Ta Mi Sel = (if r = result.success then do {
        m \<leftarrow> Array.len Fa;
@@ -79,7 +79,7 @@ definition asn_select :: "result \<Rightarrow> nat array \<Rightarrow> nat array
 text \<open>The cleanup: the Hungarian method with the shortcut on until the end (the threshold is the
       number of left vertices) and at most two rematches per chain.\<close>
 
-definition asn_cleanup ::
+definition \<^marker>\<open>provenance ai_human\<close> asn_cleanup ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
    nat array \<Rightarrow> bool array \<Rightarrow> (bool \<times> bool array) Heap" where
   "asn_cleanup n Fa Ta Wa La Rv Sel = do {
@@ -89,7 +89,7 @@ definition asn_cleanup ::
 
 text \<open>Checking the oracle's answer and falling back on the Hungarian method.\<close>
 
-definition asn_finish ::
+definition \<^marker>\<open>provenance ai_human\<close> asn_finish ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
    nat array \<Rightarrow> 'n asn_answer \<Rightarrow> bool array \<Rightarrow> (bool \<times> bool array) Heap" where
   "asn_finish n Fa Ta Wa La Rv a Sel = do {
@@ -98,7 +98,7 @@ definition asn_finish ::
 
 text \<open>Whether every vertex is on an edge.\<close>
 
-definition asn_covered :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> asn_covered :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> bool Heap" where
   "asn_covered n Fa Ta La Rv = do {
      m \<leftarrow> Array.len Fa;
      cL \<leftarrow> Array.len La;
@@ -113,7 +113,7 @@ definition asn_covered :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \
 text \<open>The whole program. Every vertex must be on an edge; otherwise there is no perfect matching
       and the oracle is not asked.\<close>
 
-definition asn_solve ::
+definition \<^marker>\<open>provenance ai_human\<close> asn_solve ::
   "(nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n asn_answer Heap) \<Rightarrow>
    nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> 'n::{linordered_idom, heap} array \<Rightarrow> nat array \<Rightarrow>
    nat array \<Rightarrow> (bool \<times> bool array) Heap" where
@@ -128,7 +128,7 @@ definition asn_solve ::
 
 subsection \<open>The Loops\<close>
 
-lemma all_in_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> all_in_step_rule:
   "\<lbrakk>set xs \<subseteq> {..<n}; j < length xs\<rbrakk> \<Longrightarrow>
    <La \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv * \<up>(b \<longleftrightarrow> set (take j xs) \<subseteq> S)>
    all_in_step La Cv j b
@@ -136,7 +136,7 @@ lemma all_in_step_rule:
   unfolding all_in_step_def
   by (sep_auto heap: bool_array_set_memb_rule simp: take_Suc_conv_app_nth nth_below)
 
-lemma all_in_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> all_in_rule:
   "set xs \<subseteq> {..<n} \<Longrightarrow>
    <La \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv> fold_imp 0 (length xs) (all_in_step La Cv) True
    <\<lambda>b. La \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv * \<up>(b \<longleftrightarrow> set xs \<subseteq> S)>"
@@ -146,7 +146,7 @@ lemma all_in_rule:
         all_in_step_rule
   by simp
 
-lemma sel_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> sel_step_rule:
   "\<lbrakk>set fs \<subseteq> {..<n}; set ts \<subseteq> {..<n}; length ts = length fs; j < length fs\<rbrakk> \<Longrightarrow>
    <Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi *
     bool_array_set_assn (length fs) {i. i < j \<and> (M (fs ! i) = ts ! i \<or> M (ts ! i) = fs ! i)} Sel>
@@ -157,7 +157,7 @@ lemma sel_step_rule:
   unfolding sel_step_def bool_array_set_insert_imp_def
   by (sep_auto heap: array_fun_lookup_rule bool_array_set_upd_rule simp: Collect_less_Suc nth_below)
 
-lemma sel_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> sel_rule:
   "\<lbrakk>set fs \<subseteq> {..<n}; set ts \<subseteq> {..<n}; length ts = length fs\<rbrakk> \<Longrightarrow>
    <Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi * bool_array_set_assn (length fs) {} Sel>
    fold_imp 0 (length fs) (sel_step Fa Ta Mi Sel) ()
@@ -172,7 +172,7 @@ lemma sel_rule:
         sel_step_rule
   by simp
 
-lemma insert_all_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> insert_all_rule:
   "\<lbrakk>set xs \<subseteq> {..<n}; S \<subseteq> {..<n}; m = length xs\<rbrakk> \<Longrightarrow>
    <Xa \<mapsto>\<^sub>a xs * bool_array_set_assn n S Cv> bool_array_set_insert_all Xa 0 m Cv
    <\<lambda>_. Xa \<mapsto>\<^sub>a xs * bool_array_set_assn n (S \<union> set xs) Cv>"
@@ -241,7 +241,7 @@ lemma covered_iff: "covered \<longleftrightarrow> Vs Gi = set ls \<union> set rs
   using fs_ls ts_rs
   by (auto simp: Vs_Gi)
 
-lemma covered_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> covered_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs> asn_covered n Fa Ta La Rv
    <\<lambda>b. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * La \<mapsto>\<^sub>a ls * Rv \<mapsto>\<^sub>a rs * true * \<up>(b \<longleftrightarrow> covered)>"
   unfolding asn_covered_def
@@ -346,7 +346,7 @@ qed
 lemma failure_post: "\<nexists>M. perfect_matching hi.G M \<Longrightarrow> asn_post False S"
   by (simp add: asn_post_def hi_G)
 
-lemma select_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> select_rule:
   "min_weight_perfect_matching hi.G hi.wfun (aug_csr.\<M> n M) \<Longrightarrow>
    <Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * array_fun_assn n M Mi * bool_array_set_assn (length fs) {} Sel>
    fold_imp 0 (length fs) (sel_step Fa Ta Mi Sel) ()
@@ -355,7 +355,7 @@ lemma select_rule:
   using fs_below ts_below ts_length
   by (sep_auto heap: sel_rule simp: hungarian_post)
 
-lemma asn_select_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> asn_select_rule:
   assumes "(r = result.success \<and> min_weight_perfect_matching hi.G hi.wfun (aug_csr.\<M> n M)) \<or>
            (r = result.failure \<and> (\<nexists>M'. perfect_matching hi.G M'))"
   shows "<arrays_assn Fa Ta Wa La Rv * array_fun_assn n M Mi *
@@ -377,7 +377,7 @@ next
     by (sep_auto simp: failure_post)
 qed
 
-lemma cleanup_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> cleanup_rule:
   "<arrays_assn Fa Ta Wa La Rv * bool_array_set_assn (length fs) {} Sel>
    asn_cleanup n Fa Ta Wa La Rv Sel
    <\<lambda>(b, Sel'). arrays_assn Fa Ta Wa La Rv *
@@ -399,7 +399,7 @@ lemma hall_post: "bp.cert.hall_check S \<Longrightarrow> asn_post False S'"
   using bp.cert.hall_sound[of S]
   by (simp add: asn_post_def bp.G_eq bp_G)
 
-lemma finish_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> finish_rule:
   "<arrays_assn Fa Ta Wa La Rv * asn_answer_assn a * bool_array_set_assn (length fs) {} Sel>
    asn_finish n Fa Ta Wa La Rv a Sel
    <\<lambda>(b, Sel'). arrays_assn Fa Ta Wa La Rv *
@@ -431,7 +431,7 @@ begin
 
 text \<open>The only assumption on the oracle: it leaves the input alone and returns fresh arrays.\<close>
 
-lemma asn_solve_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> asn_solve_rule:
   assumes "<arrays_assn Fa Ta Wa La Rv> orc n Fa Ta Wa La Rv
            <\<lambda>a. arrays_assn Fa Ta Wa La Rv * asn_answer_assn a>"
   shows "<arrays_assn Fa Ta Wa La Rv> asn_solve orc n Fa Ta Wa La Rv
@@ -473,7 +473,7 @@ text \<open>The program with integer weights, as exported. Its correctness is st
       some vertex has no perfect partner, i.e. when a vertex is on no edge or there is no perfect
       matching.\<close>
 
-definition asn_solve_int ::
+definition \<^marker>\<open>provenance ai_human\<close> asn_solve_int ::
   "(nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int asn_answer Heap) \<Rightarrow>
    nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
    (bool \<times> bool array) Heap" where

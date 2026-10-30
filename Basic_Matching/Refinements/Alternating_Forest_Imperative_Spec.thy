@@ -89,7 +89,7 @@ definition "part_set F p = vset_to_set (case p of Evens \<Rightarrow> evens F | 
 definition "forest_fold p Fi f c =
   do { it \<leftarrow> forest_it_init p Fi; iter_fold forest_it_has_next forest_it_next f it c }"
 
-lemma forest_fold_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> forest_fold_rule:
   assumes "vset_invar (case p of Evens \<Rightarrow> evens F | Odds \<Rightarrow> odds F)"
       and "\<And>x b c. P x b \<Longrightarrow> <A b c> f x c <A (g b x)>"
       and "fold_pre P g b (lst (part_set F p))"

@@ -79,7 +79,7 @@ sublocale m: unweighted_intersection_exchange_imp where n = n and smemb_imp = sm
 
 text \<open>The whole program.\<close>
 
-lemma mi_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> mi_imp_correct:
   "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2> mi_imp H1 H2 Si
    <\<lambda> _. \<exists>\<^sub>A X. sol_assn X Si * ost1 * ost2 * pst1 H1 * pst2 H2 * true * \<up>(is_max X)>"
 proof-
@@ -308,7 +308,7 @@ next
     by (auto simp: exch_ids_def prep_ids_def pull_def)
 qed
 
-lemma ids_oracle_imp:
+lemma \<^marker>\<open>provenance ai_human\<close> ids_oracle_imp:
   "exchange_oracle_imp n prep_ids ins_ids exch_ids (sol_ids sol_assn)
      (\<lambda> Si i. ins_imp Si (elt i)) (\<lambda> Si i j. exch_imp Si (elt i) (elt j)) ost"
 proof(intro exchange_oracle_imp.intro, goal_cases)
@@ -457,7 +457,7 @@ lemma ids_is_max:
   using o1.pull_max[of indep1 I indep2] o1.indep_subset_carrier
   by (auto simp: o1.pull_def is_max_def)
 
-lemma mi_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> mi_imp_correct:
   "<(sol_assn {} Si) * ost1 * ost2 * pst1 H1 * pst2 H2> mi_imp H1 H2 Si
    <\<lambda> _. \<exists>\<^sub>A X. sol_assn X Si * ost1 * ost2 * pst1 H1 * pst2 H2 * true * \<up>(is_max X)>"
 proof-

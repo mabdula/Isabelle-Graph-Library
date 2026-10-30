@@ -96,7 +96,7 @@ definition "relax_imp Pti Qi Bi l pl ml r c = do {
    (if b = nil then relax_new_imp Qi Bi l r (c - pl - pr + ml)
     else relax_old_imp Qi Bi l r (c - pl - pr + ml)) }"
 
-partial_function (heap) scan_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) scan_imp ::
   "'ci \<Rightarrow> 'pi \<Rightarrow> 'qi \<Rightarrow> 'bi \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> 'n \<Rightarrow> unit Heap" where
   "scan_imp Ci Pti Qi Bi l pl ml = do {
      b \<leftarrow> has_imp Ci l;
@@ -143,7 +143,7 @@ text \<open>The main loop of the search. The key of the extracted vertex is the 
       On success, the path is written into @{term Ra}, starting at position 0, and its length is
       returned.\<close>
 
-partial_function (heap) loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) loop_imp ::
   "'ci \<Rightarrow> 'qi \<Rightarrow> 'pi \<Rightarrow> 'bdi \<Rightarrow> 'v array \<Rightarrow> 'bi \<Rightarrow> 'mi \<Rightarrow> 'fi \<Rightarrow>
    (imp_search_result \<times> 'n \<times> 'fi) Heap" where
   "loop_imp Ci Qi Pti Bdi Ra Bi Mi Fi = do {
@@ -304,13 +304,13 @@ begin
 
 subsection \<open>Reading and Writing the Best Even Neighbours\<close>
 
-lemma ben_get_rule[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> ben_get_rule[sep_heap_rules]:
   "\<lbrakk>ben_invar B; r \<in> K\<rbrakk> \<Longrightarrow>
    <ben_assn B Bi> ben_get_imp Bi r <\<lambda>x. ben_assn B Bi * \<up>(x = ben_get B r)>"
   using ben.fixed_univ_map_lookup_rule[of B r Bi]
   by simp
 
-lemma ben_upd_rule[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> ben_upd_rule[sep_heap_rules]:
   "\<lbrakk>ben_invar B; r \<in> K\<rbrakk> \<Longrightarrow>
    <ben_assn B Bi> ben_upd_imp Bi r l <\<lambda>_. ben_assn (ben_upd B r l) Bi>"
   using ben.fixed_univ_map_upd_rule[of B r Bi l]
@@ -338,14 +338,14 @@ lemma relax_queue_key:
   using assms scan_invD(4,6,7) w\<^sub>\<pi>_code_is[of l' r] relax_neighbour_Some(2)[OF assms]
   by fastforce+
 
-lemma relax_new_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> relax_new_rule:
   "\<lbrakk>heap_invar queue; ben_invar ben; r \<in> Vs G; \<nexists>k. (r, k) \<in> heap_abstract queue\<rbrakk> \<Longrightarrow>
    <queue_assn queue Qi * ben_assn ben Bi> code.relax_new_imp Qi Bi l r key
    <\<lambda>_. queue_assn (heap_insert queue r (h key)) Qi * ben_assn (ben_upd ben r l) Bi>"
   unfolding code.relax_new_imp_def
   by (sep_auto heap: queue.queue_insert_rule simp: in_K(3))
 
-lemma relax_old_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> relax_old_rule:
   assumes "heap_invar queue" "ben_invar ben" "r \<in> Vs G"
       and "\<And>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> k = K'"
       and "\<nexists>k. (r, k) \<in> heap_abstract queue \<Longrightarrow> \<not> h key < K'"
@@ -370,7 +370,7 @@ lemma rneighb_in_K:
   using assms scan_invD(3)[of off l ben queue] rneighbs_in_G[of l r] in_K(3)
   by (auto intro: edges_are_Vs_2)
 
-lemma relax_old_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> relax_old_imp_rule:
   assumes "scan_inv off l ben queue" "r \<in> rneighbs l" "ben_lookup ben r = Some l'"
           "h key = w\<^sub>\<pi>_code l r + off l"
   shows "<queue_assn queue Qi * ben_assn ben Bi> code.relax_old_imp Qi Bi l r key
@@ -380,7 +380,7 @@ lemma relax_old_imp_rule:
   using scan_invD(1,2)[OF assms(1)] rneighb_in_K(1)[OF assms(1,2)] relax_queue_key[OF assms(1-3)] assms(3,4)
   by (auto simp: relax_neighbour_view split: if_splits intro: ent_refl_true)
 
-lemma relax_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> relax_imp_rule:
   assumes "scan_inv off l ben queue" "r \<in> rneighbs l" "h c = edge_costs_code l r" "h pl = \<pi> l"
           "h ml = off l"
   shows "<pot_assn initial_pot Pti * queue_assn queue Qi * ben_assn ben Bi>
@@ -423,7 +423,7 @@ lemma scan_move_props:
         card_Diff1_less[of "rnb_remaining C l" "rnb_current C l"]
   by (auto simp: fun_eq_iff)
 
-lemma scan_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> scan_imp_rule:
   assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
       and "scan_inv off l ben queue" "h pl = \<pi> l" "h ml = off l"
   shows "<nb_assn C Ci * pot_assn initial_pot Pti * queue_assn queue Qi * ben_assn ben Bi>
@@ -461,7 +461,7 @@ lemma scan_reset_props:
   using assms rnb.idx_reset_invar rnb.idx_reset_abstract
   by (auto simp: fun_eq_iff)
 
-lemma update_ben_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> update_ben_imp_rule:
   assumes "rnb_invar C" "l \<in> L" "rnb_abstract C = rnb_abstract rnb_init"
       and "missed_invar M" "scan_inv (missed_get M) l ben queue"
   shows "<nb_assn C Ci * pot_assn initial_pot Pti * missed_assn M Mi *
@@ -522,7 +522,7 @@ definition "scratch_assn Ci Qi Fi Bi Mi =
                  \<up>(rnb_invar C \<and> (\<forall>i\<in>L. rnb_abstract C i = rnb_abstract rnb_init i) \<and>
                    ben_invar B \<and> missed_invar M))"
 
-lemma clear_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> clear_imp_rule:
   "<scratch_assn Ci Qi Fi Bi Mi> code.clear_imp Ci Qi Fi Bi Mi
    <\<lambda>Fi'. nb_assn rnb_init Ci * queue_assn heap_empty Qi *
           forest_assn (empty_forest vset_empty) Fi' *
@@ -615,7 +615,7 @@ lemma init_fold_result:
 
 subsection \<open>The Initial State: Imperative Part\<close>
 
-lemma add_root_insert:
+lemma \<^marker>\<open>provenance ai_human\<close> add_root_insert:
   "\<lbrakk>vset_invar Rs; v \<in> K\<rbrakk> \<Longrightarrow>
    <forest_assn (empty_forest Rs) Fi> forest_add_root_imp v Fi
    <forest_assn (empty_forest (vset_insert v Rs))>"
@@ -634,7 +634,7 @@ lemma init_P_props:
   using assms in_K(1)
   by (auto simp: init_P_def init_ok_def missed(2))
 
-lemma init_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> init_step_rule:
   assumes "init_P v b"
   shows "<init_A Ci Pti Mi Qi Bi Bdi b c> code.init_step Ci Pti Mi Qi Bi Bdi v c
          <init_A Ci Pti Mi Qi Bi Bdi (init_g b v)>"
@@ -664,7 +664,7 @@ lemma forest_roots_cong:
   using forest.forest_empty_cong[of Rs forest_roots] unmatched_lefts(2)
   by (simp add: forest_roots_def)
 
-lemma init_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> init_imp_rule:
   "<vset_assn left Li * forest_assn (empty_forest vset_empty) Fi * nb_assn rnb_init Ci *
     queue_assn heap_empty Qi * ben_assn ben_empty Bi * pot_assn initial_pot Pti *
     missed_assn missed_empty Mi * buddy_assn Bdi>
@@ -739,7 +739,7 @@ proof-
     by auto
 qed
 
-lemma extract_min_key_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> extract_min_key_rule:
   assumes "search_invars state" "heap_extract_min (heap state) = (queue0, Some r)"
   shows "<queue_assn (heap state) Qi> queue_extract_min_imp Qi
          <\<lambda>x. \<exists>\<^sub>Ak. queue_assn queue0 Qi *
@@ -856,7 +856,7 @@ lemma length_path_array:
    length (take 1 (xs[0 := r]) @ p @ drop k' (xs[0 := r])) = length xs"
   by (cases xs) auto
 
-lemma loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> loop_imp_rule:
   assumes "search_invars state" "card (L \<union> R) \<le> length xs"
   shows "<loop_assn state Ci Qi Fi Bi Mi * pot_assn initial_pot Pti * buddy_assn Bdi *
           Ra \<mapsto>\<^sub>a xs>
@@ -951,7 +951,7 @@ lemma fold_pre_pot:
   by (induction xs arbitrary: p)
      (auto simp: pot_pre_def potential_map.fixed_univ_map_upd_invar potential_map.fixed_univ_map_upd)
 
-lemma pot_step_even_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pot_step_even_rule:
   assumes "pot_pre v p" "h av = a" "missed_invar M"
   shows "<pot_assn p Pti * missed_assn M Mi> code.pot_step_even Pti Mi av v u
          <\<lambda>_. pot_assn (potential_upd p v (\<pi> v + a - missed_get M v)) Pti * missed_assn M Mi>"
@@ -959,7 +959,7 @@ lemma pot_step_even_rule:
   using assms
   by (sep_auto simp: pot_pre_def h_add)
 
-lemma pot_step_odd_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> pot_step_odd_rule:
   assumes "pot_pre v p" "h av = a" "missed_invar M"
   shows "<pot_assn p Pti * missed_assn M Mi> code.pot_step_odd Pti Mi av v u
          <\<lambda>_. pot_assn (potential_upd p v (\<pi> v - a + missed_get M v)) Pti * missed_assn M Mi>"
@@ -994,7 +994,7 @@ lemma new_pot_pre:
         foldl_pot_upd[OF potential, of "lst (aevens st)" "\<lambda>v. \<pi> v + acc st - missed_at st v"]
   by (auto intro!: fold_pre_pot simp: potential)
 
-lemma new_pot_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> new_pot_imp_rule:
   assumes "forest_invar \<M> (forest st)" "h av = acc st" "missed_invar (missed st)"
   shows "<forest_assn (forest st) Fi * missed_assn (missed st) Mi * pot_assn initial_pot Pti>
          code.new_pot_imp Fi Mi av Pti
@@ -1072,7 +1072,7 @@ lemma initial_state_fields:
   "missed initial_state = missed_empty"
   by (simp_all add: initial_state_def)
 
-lemma search_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> search_imp_rule:
   assumes "card (L \<union> R) \<le> length xs"
   shows "<scratch_assn Ci Qi Fi Bi Mi * vset_assn left Li * buddy_assn Bdi *
           pot_assn initial_pot Pti * Ra \<mapsto>\<^sub>a xs>

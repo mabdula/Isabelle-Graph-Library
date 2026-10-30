@@ -59,7 +59,7 @@ text \<open>The final program takes the arrays \<open>Fa\<close>, \<open>Ta\<clo
       builds the CSR representation, allocates and initialises all other data structures and runs
       the refined Dijkstra. It returns the final state and the target found.\<close>
 
-definition dijkstra_csr_run where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_csr_run where
   "dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al = do {
      (Ba, Ea) \<leftarrow> csr_build_edges n (Fa, Ta) 0;
      Ca \<leftarrow> csr_cursor_init n Ba;
@@ -78,7 +78,7 @@ text \<open>On the full graph, every edge is allowed. The program with the edge 
       succeeds is specialised by code equations: the test and its branch disappear from the
       relaxation, and the loop and the relaxation no longer read the test from the state.\<close>
 
-definition all_edges_imp :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> all_edges_imp :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool Heap" where
   "all_edges_imp u v e we = return True"
 
 definition "dijkstra_csr_run_all n unreached early_stop Fa Ta Wa Sa Tg =
@@ -191,7 +191,7 @@ lemma csr_abstract_delta:
   using csr_abstract_key[OF assms]
   by (auto simp: multigraph_spec.delta_plus_def)
 
-lemma csr_build_edges_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> csr_build_edges_rule:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_edges n (Fa, Ta) 0
    <\<lambda>(Ba, Ea). Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Ba \<mapsto>\<^sub>a inp.B_spec * Ea \<mapsto>\<^sub>a inp.E_spec>"
   unfolding csr_build_edges_src[symmetric]
@@ -220,7 +220,7 @@ begin
 
 text \<open>The target array is the Boolean array of the target predicate below the vertex bound.\<close>
 
-lemma target_isin_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> target_isin_rule:
   "v \<in> verts fs ts \<Longrightarrow>
    <bool_array_set_assn n {v. v < n \<and> target v} Ti> bool_array_set_isin_imp Ti v
    <\<lambda>b. bool_array_set_assn n {v. v < n \<and> target v} Ti * \<up>(b = target v)>"
@@ -325,7 +325,7 @@ qed
 text \<open>The code part of this interpretation is the instance of @{locale dijkstra_impl_spec} that is
       globally interpreted, so the correctness of the refined algorithm holds for the global code.\<close>
 
-lemma dijkstra_imp_code_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_imp_code_correct:
   "<dij.state_assn (dij.initial_state :: (nat, _, _, _, _, _, _) dij_state) si>
      dijkstra_imp_code unreached early_stop si
    <\<lambda>r. dij.state_assn dij.dijkstra_compute si * \<up>(r = dij_target dij.dijkstra_compute)>"
@@ -367,7 +367,7 @@ qed
 
 text \<open>The whole program computes @{const dij.dijkstra_compute}: the state returned refines it.\<close>
 
-lemma dijkstra_csr_run_compute:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_csr_run_compute:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
      dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
    <\<lambda>(si, t). dij.state_assn dij.dijkstra_compute si * \<up>(t = dij_target dij.dijkstra_compute)>"
@@ -404,7 +404,7 @@ text \<open>The final correctness theorem for the distances: without early stopp
       computes the shortest distances from the sources in the subgraph @{term dij.Ea}
       of allowed edges.\<close>
 
-lemma dijkstra_csr_run_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_csr_run_correct:
   assumes "\<not> early_stop"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
            dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
@@ -437,7 +437,7 @@ text \<open>The path reconstruction of the global code, @{const dijkstra_path_co
       the path to \<open>v\<close> reversed into the first \<open>k\<close> cells and returns \<open>k\<close>. If \<open>v\<close> is reachable from a
       source, this is a shortest path.\<close>
 
-lemma dijkstra_path_code_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_path_code_correct:
   assumes "\<not> early_stop" "v \<in> verts fs ts" "n \<le> length r"
   shows "<dij.state_assn dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r>
            dijkstra_path_code si Ra v
@@ -477,7 +477,7 @@ lemma parent_compute_tight:
 
 text \<open>Without early stopping, the parent array of the final state is tight.\<close>
 
-lemma dijkstra_csr_run_parents:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_csr_run_parents:
   assumes "\<not> early_stop"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
            dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
@@ -490,7 +490,7 @@ subsection \<open>Early stopping\<close>
 text \<open>With early stopping, a target returned is a vertex reachable from a source, and no target is
       closer to the sources. If none is returned, no target is reachable from a source.\<close>
 
-lemma dijkstra_csr_run_target:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_csr_run_target:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tg \<mapsto>\<^sub>a map target [0..<n] * allowed_assn Al>
      dijkstra_csr_run n unreached early_stop Fa Ta Wa Sa Tg Al
    <\<lambda>(si, t). dij.state_assn dij.dijkstra_compute si * \<up>(t = dij_target dij.dijkstra_compute \<and>
@@ -511,7 +511,7 @@ qed
 text \<open>For the target returned, the path reconstruction gives a shortest path from a source, and no
       simple path from a source to any target is shorter.\<close>
 
-lemma dijkstra_path_code_target:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_path_code_target:
   assumes "dij_target dij.dijkstra_compute = Some u" "n \<le> length r"
   shows "<dij.state_assn dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r>
            dijkstra_path_code si Ra u
@@ -574,13 +574,13 @@ text \<open>A test harness. \<open>dijkstra_prepare\<close> copies the input lis
       length. The \<open>code\<close> antiquotation compiles both into the running ML session; applying a
       @{typ "'a Heap"} computation to \<open>()\<close> runs it.\<close>
 
-definition dijkstra_prepare where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_prepare where
   "dijkstra_prepare n fs ts (ws :: int list) sl early_stop tgs = do {
      Fa \<leftarrow> Array.of_list fs; Ta \<leftarrow> Array.of_list ts;
      Wa \<leftarrow> Array.of_list ws; Sa \<leftarrow> Array.of_list sl; Tg \<leftarrow> Array.of_list tgs;
      dijkstra_csr_run_all n (-1) early_stop Fa Ta Wa Sa Tg }"
 
-definition dijkstra_query where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_query where
   "dijkstra_query si Ra v = do {
      d \<leftarrow> Array.nth (dimp_dist si) v;
      k \<leftarrow> dijkstra_path_code si Ra v;
@@ -630,10 +630,10 @@ ML_val \<open>
 text \<open>A run on a subgraph. The edge test allows exactly the edges with an even index; it is passed
       to the general program @{const dijkstra_csr_run}.\<close>
 
-definition even_edges_imp :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> even_edges_imp :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'n \<Rightarrow> bool Heap" where
   "even_edges_imp u v e we = return (even e)"
 
-definition dijkstra_prepare_even where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_prepare_even where
   "dijkstra_prepare_even n fs ts (ws :: int list) sl early_stop tgs = do {
      Fa \<leftarrow> Array.of_list fs; Ta \<leftarrow> Array.of_list ts;
      Wa \<leftarrow> Array.of_list ws; Sa \<leftarrow> Array.of_list sl; Tg \<leftarrow> Array.of_list tgs;
@@ -691,7 +691,7 @@ subsection \<open>The programs\<close>
 text \<open>The target predicate tabulated over the vertex bound: the entries of the targets are set in
       an array of \<open>False\<close>.\<close>
 
-partial_function (heap) dijkstra_mark_targets :: "nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) dijkstra_mark_targets :: "nat array \<Rightarrow> bool array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dijkstra_mark_targets Tv Tg i = do {
      l \<leftarrow> Array.len Tv;
      if i < l then do {
@@ -703,7 +703,7 @@ partial_function (heap) dijkstra_mark_targets :: "nat array \<Rightarrow> bool a
 text \<open>The path reconstruction writes the edges of the path reversed into the first \<open>k\<close> cells of
       \<open>Ra\<close>. They are copied into a fresh array of length \<open>k\<close>, in the order of the path.\<close>
 
-partial_function (heap) dijkstra_edge_ids :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) dijkstra_edge_ids :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "dijkstra_edge_ids Ra Pa k i =
      (if i < k then do {
         e \<leftarrow> Array.nth Ra (k - Suc i);
@@ -711,14 +711,14 @@ partial_function (heap) dijkstra_edge_ids :: "nat array \<Rightarrow> nat array 
         dijkstra_edge_ids Ra Pa k (Suc i) }
       else return ())"
 
-definition dijkstra_path_ids where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_path_ids where
   "dijkstra_path_ids si Ra v = do {
      k \<leftarrow> dijkstra_path_code si Ra v;
      Pa \<leftarrow> Array.new k 0;
      dijkstra_edge_ids Ra Pa k 0;
      return Pa }"
 
-definition dijkstra_shortest_path where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_shortest_path where
   "dijkstra_shortest_path n unreached Fa Ta Wa Sa Tv = do {
      Tg \<leftarrow> Array.new n False;
      Ra \<leftarrow> Array.new n 0;
@@ -728,14 +728,14 @@ definition dijkstra_shortest_path where
         None \<Rightarrow> return None
       | Some u \<Rightarrow> do { Pa \<leftarrow> dijkstra_path_ids si Ra u; return (Some Pa) }) }"
 
-definition dijkstra_sp_compute where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_compute where
   "dijkstra_sp_compute n unreached Fa Ta Wa Sa = do {
      Tg \<leftarrow> Array.new n False;
      Ra \<leftarrow> Array.new n 0;
      (si, _) \<leftarrow> dijkstra_csr_run_all n unreached False Fa Ta Wa Sa Tg;
      return (si, Ra) }"
 
-definition dijkstra_sp_query where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_query where
   "dijkstra_sp_query unreached th v = (case th of (si, Ra) \<Rightarrow> do {
      d \<leftarrow> Array.nth (dimp_dist si) v;
      if d = unreached then return None
@@ -745,7 +745,7 @@ declare dijkstra_mark_targets.simps[code] dijkstra_edge_ids.simps[code]
 
 subsection \<open>The loops\<close>
 
-lemma dijkstra_mark_targets_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_mark_targets_rule:
   assumes "set gs \<subseteq> {..<length bs}" "i \<le> length gs"
   shows "<Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a bs> dijkstra_mark_targets Tv Tg i
          <\<lambda>_. Tv \<mapsto>\<^sub>a gs * Tg \<mapsto>\<^sub>a map (\<lambda>v. bs ! v \<or> v \<in> set (drop i gs)) [0..<length bs]>"
@@ -775,7 +775,7 @@ next
     by (subst dijkstra_mark_targets.simps) (sep_auto heap: IH)
 qed
 
-lemma dijkstra_edge_ids_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_edge_ids_rule:
   assumes "k \<le> length r" "i \<le> k" "length xs = k"
   shows "<Ra \<mapsto>\<^sub>a r * Pa \<mapsto>\<^sub>a xs> dijkstra_edge_ids Ra Pa k i
          <\<lambda>_. Ra \<mapsto>\<^sub>a r * Pa \<mapsto>\<^sub>a (take i xs @ map (\<lambda>j. r ! (k - Suc j)) [i..<k])>"
@@ -807,7 +807,7 @@ qed
 text \<open>The indices of a path written by @{const dijkstra_path_code}, for any property @{term A}
       of the path length and the path array that the path reconstruction guarantees.\<close>
 
-lemma dijkstra_path_ids_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_path_ids_rule:
   assumes "<X * Ra \<mapsto>\<^sub>a r> dijkstra_path_code si Ra v <\<lambda>k. X * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(A k p))>"
     and "\<And>k p. A k p \<Longrightarrow> k \<le> length p"
   shows "<X * Ra \<mapsto>\<^sub>a r> dijkstra_path_ids si Ra v
@@ -848,7 +848,7 @@ qed
 
 text \<open>The indices of the path to the target found.\<close>
 
-lemma dijkstra_path_ids_target:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_path_ids_target:
   assumes "dij_target all.dij.dijkstra_compute = Some u" "n \<le> length r"
   shows "<all.dij.state_assn all.dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r> dijkstra_path_ids si Ra u
          <\<lambda>Pa. all.dij.state_assn all.dij.dijkstra_compute si * (\<exists>\<^sub>Ar'. Ra \<mapsto>\<^sub>a r' * \<up>(length r' = length r)) *
@@ -875,7 +875,7 @@ qed
 
 text \<open>Without early stopping, the indices of a path to a reachable vertex.\<close>
 
-lemma dijkstra_path_ids_reached:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_path_ids_reached:
   assumes "\<not> early_stop" "v \<in> verts fs ts" "n \<le> length r" "\<exists>s \<in> set sl. mg.reachable s v"
   shows "<all.dij.state_assn all.dij.dijkstra_compute si * Ra \<mapsto>\<^sub>a r> dijkstra_path_ids si Ra v
          <\<lambda>Pa. all.dij.state_assn all.dij.dijkstra_compute si * (\<exists>\<^sub>Ar'. Ra \<mapsto>\<^sub>a r' * \<up>(length r' = length r)) *
@@ -915,7 +915,7 @@ text \<open>With early stopping and the targets given by an array, @{const dijks
       returns a shortest path from a source to a target, of weight at most that of any simple
       path from a source to a target, if any target is reachable.\<close>
 
-lemma dijkstra_shortest_path_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_shortest_path_rule:
   assumes "early_stop" "set gs \<subseteq> {..<n}" "\<And>v. target v \<longleftrightarrow> v \<in> set gs"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tv \<mapsto>\<^sub>a gs>
            dijkstra_shortest_path n unreached Fa Ta Wa Sa Tv
@@ -962,7 +962,7 @@ definition sp_assn where
   "sp_assn th = (case th of (si, Ra) \<Rightarrow>
      all.dij.state_assn all.dij.dijkstra_compute si * (\<exists>\<^sub>Ar. Ra \<mapsto>\<^sub>a r * \<up>(length r = n)))"
 
-lemma dijkstra_sp_compute_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_compute_rule:
   assumes "\<not> early_stop" "\<And>v. \<not> target v"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl>
            dijkstra_sp_compute n unreached Fa Ta Wa Sa <sp_assn>"
@@ -983,7 +983,7 @@ qed
 text \<open>A query for a vertex of the graph returns a shortest path from a source to it if it is
       reachable, and nothing otherwise. The state is preserved.\<close>
 
-lemma dijkstra_sp_query_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_query_rule:
   assumes "\<not> early_stop" "v \<in> verts fs ts"
   shows "<sp_assn th> dijkstra_sp_query unreached th v
          <\<lambda>r. sp_assn th * (case r of
@@ -1043,21 +1043,21 @@ type_synonym dijkstra_sp_state =
     nat array \<times> nat ref, int array, nat array \<times> nat array, bool array,
     nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> int \<Rightarrow> bool Heap) dij_impl_state \<times> nat array"
 
-definition dijkstra_shortest_path_int ::
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_shortest_path_int ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array option Heap" where
   "dijkstra_shortest_path_int n = dijkstra_shortest_path n (-1)"
 
-definition dijkstra_sp_compute_int ::
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_compute_int ::
   "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> int array \<Rightarrow> nat array \<Rightarrow> dijkstra_sp_state Heap" where
   "dijkstra_sp_compute_int n = dijkstra_sp_compute n (-1)"
 
-definition dijkstra_sp_query_int :: "dijkstra_sp_state \<Rightarrow> nat \<Rightarrow> nat array option Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_query_int :: "dijkstra_sp_state \<Rightarrow> nat \<Rightarrow> nat array option Heap" where
   "dijkstra_sp_query_int = dijkstra_sp_query (-1)"
 
 definition dijkstra_sp_int_assn :: "nat \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> int list \<Rightarrow> nat list \<Rightarrow> dijkstra_sp_state \<Rightarrow> assn" where
   "dijkstra_sp_int_assn n fs ts ws sl = dijkstra_csr_all.sp_assn of_int n fs ts ws sl (\<lambda>_. False) False"
 
-lemma dijkstra_shortest_path_int_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_shortest_path_int_correct:
   assumes "dijkstra_int_input n fs ts ws sl" "set gs \<subseteq> {..<n}"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl * Tv \<mapsto>\<^sub>a gs>
            dijkstra_shortest_path_int n Fa Ta Wa Sa Tv
@@ -1079,7 +1079,7 @@ proof-
     by (rule dijkstra_shortest_path_rule[unfolded w]) (use assms(2) in simp_all)
 qed
 
-lemma dijkstra_sp_compute_int_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_compute_int_correct:
   assumes "dijkstra_int_input n fs ts ws sl"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Wa \<mapsto>\<^sub>a ws * Sa \<mapsto>\<^sub>a sl>
            dijkstra_sp_compute_int n Fa Ta Wa Sa <dijkstra_sp_int_assn n fs ts ws sl>"
@@ -1091,7 +1091,7 @@ proof-
     by (rule dijkstra_sp_compute_rule) simp_all
 qed
 
-lemma dijkstra_sp_query_int_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_sp_query_int_correct:
   assumes "dijkstra_int_input n fs ts ws sl" "v \<in> verts fs ts"
   shows "<dijkstra_sp_int_assn n fs ts ws sl th> dijkstra_sp_query_int th v
          <\<lambda>r. dijkstra_sp_int_assn n fs ts ws sl th * (case r of

@@ -16,18 +16,18 @@ text \<open>Elements are the nats below \<open>n\<close>, blocks the nats below 
 
 subsection \<open>Code\<close>
 
-definition part_cnt_ins :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> part_cnt_ins :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "part_cnt_ins Bl C i = do { b \<leftarrow> Array.nth Bl i; c \<leftarrow> Array.nth C b; Array.upd b (Suc c) C;
     return () }"
 
-definition part_cnt_del :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> part_cnt_del :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "part_cnt_del Bl C i = do { b \<leftarrow> Array.nth Bl i; c \<leftarrow> Array.nth C b; Array.upd b (c - 1) C;
     return () }"
 
-definition part_ins_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> part_ins_imp :: "nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "part_ins_imp Bl C y = do { b \<leftarrow> Array.nth Bl y; c \<leftarrow> Array.nth C b; return (c = 0) }"
 
-definition part_exch_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> part_exch_imp :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
   "part_exch_imp Bl x y = do { a \<leftarrow> Array.nth Bl x; b \<leftarrow> Array.nth Bl y; return (a = b) }"
 
 subsection \<open>Correctness\<close>
@@ -53,11 +53,11 @@ lemma bcount_delete:
 lemma bcount_zero: "finite X \<Longrightarrow> (bcount bl X b = 0) = (b \<notin> (\<lambda> i. bl ! i) ` X)"
   by (auto simp: bcount_def)
 
-lemma cnt_assn_new: "<emp> Array.new nb 0 <cnt_assn nb bl {}>"
+lemma \<^marker>\<open>provenance ai_human\<close> cnt_assn_new: "<emp> Array.new nb 0 <cnt_assn nb bl {}>"
   unfolding cnt_assn_def bcount_def
   by (sep_auto simp: map_replicate_const)
 
-lemma part_cnt_ins_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_cnt_ins_rule:
   "<cnt_assn nb bl X C * blocks_assn n nb bl Bl * \<up>(i < n \<and> i \<notin> X)> part_cnt_ins Bl C i
    <\<lambda> _. cnt_assn nb bl (insert i X) C * blocks_assn n nb bl Bl>"
 proof-
@@ -70,7 +70,7 @@ proof-
     by (sep_auto simp: upd)
 qed
 
-lemma part_cnt_del_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_cnt_del_rule:
   "<cnt_assn nb bl X C * blocks_assn n nb bl Bl * \<up>(i < n \<and> i \<in> X)> part_cnt_del Bl C i
    <\<lambda> _. cnt_assn nb bl (X - {i}) C * blocks_assn n nb bl Bl>"
 proof-
@@ -83,14 +83,14 @@ proof-
     by (sep_auto simp: upd)
 qed
 
-lemma part_ins_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_ins_imp_rule:
   "<cnt_assn nb bl X C * blocks_assn n nb bl Bl * \<up>(y < n)> part_ins_imp Bl C y
    <\<lambda> r. cnt_assn nb bl X C * blocks_assn n nb bl Bl *
          \<up>(finite X \<and> r = (bl ! y \<notin> (\<lambda> i. bl ! i) ` X))>"
   unfolding part_ins_imp_def cnt_assn_def blocks_assn_def
   by (sep_auto simp: bcount_zero)
 
-lemma part_exch_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_exch_imp_rule:
   "<blocks_assn n nb bl Bl * \<up>(x < n \<and> y < n)> part_exch_imp Bl x y
    <\<lambda> r. blocks_assn n nb bl Bl * \<up>(r = (bl ! x = bl ! y))>"
   unfolding part_exch_imp_def blocks_assn_def
@@ -122,11 +122,11 @@ definition part_pst :: "nat \<Rightarrow> nat list \<Rightarrow> part_hnd \<Righ
      \<exists>\<^sub>A os ss es. Oa \<mapsto>\<^sub>a os * Sa \<mapsto>\<^sub>a ss * Ea \<mapsto>\<^sub>a es *
        \<up>(part_hnd_ok n bl os ss es))"
 
-definition part_npts_imp :: "part_hnd \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> part_npts_imp :: "part_hnd \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "part_npts_imp H x = (case H of (Oa, Sa, Ea) \<Rightarrow> do {
      s \<leftarrow> Array.nth Sa x; e \<leftarrow> Array.nth Ea x; return (e - s) })"
 
-definition part_pt_imp :: "part_hnd \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> part_pt_imp :: "part_hnd \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "part_pt_imp H x k = (case H of (Oa, Sa, Ea) \<Rightarrow> do { s \<leftarrow> Array.nth Sa x; Array.nth Oa (s + k)
     })"
 
@@ -177,7 +177,7 @@ lemma es: "cs.es = [0..<n]"
 lemma blk_bucket: "cs.blk k = bucket bl k"
   by (simp add: cs.blk_def es bucket_def bl_len)
 
-lemma bounds_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bounds_rule:
   "<B \<mapsto>\<^sub>a cs.B_spec * Bl \<mapsto>\<^sub>a bl * Sa \<mapsto>\<^sub>a replicate n 0>
      copy_range_imp (\<lambda> i. do { k \<leftarrow> Array.nth Bl i; Array.nth B (f k) }) n Sa
    <\<lambda> _. Sa \<mapsto>\<^sub>a map (\<lambda> i. cs.B_spec ! f (bl ! i)) [0..<n] * (B \<mapsto>\<^sub>a
@@ -207,7 +207,7 @@ lemma handle_ok:
                               (map (\<lambda> i. cs.B_spec ! Suc (bl ! i)) [0..<n])"
   by (auto simp: part_hnd_ok_def part_pts_def dest!: bl_bound block_ok)
 
-lemma handle_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> handle_rule:
   "<Bl \<mapsto>\<^sub>a bl> part_handle_imp n nb Bl <\<lambda> H. Bl \<mapsto>\<^sub>a bl * part_pst n bl H * true>"
 proof-
   note b1 = bounds_rule[where f = "\<lambda> k. k", OF less_imp_le]
@@ -220,7 +220,7 @@ qed
 
 end
 
-lemma part_handle_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_handle_rule:
   "<blocks_assn n nb bl Bl> part_handle_imp n nb Bl <\<lambda> H. blocks_assn n nb bl Bl * part_pst n bl H * true>"
 proof-
   have "length bl = n \<and> (\<forall> i < n. bl ! i < nb) \<Longrightarrow>
@@ -244,13 +244,13 @@ lemma part_hnd_nth:
 lemma part_hnd_lens: "part_hnd_ok n bl os ss es \<Longrightarrow> length ss = n \<and> length es = n"
   by (simp add: part_hnd_ok_def)
 
-lemma part_npts_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_npts_rule:
   "<part_pst n bl H * \<up>(x < n)> part_npts_imp H x <\<lambda> r. part_pst n bl H * \<up>(r = length (part_pts bl
     x))>"
   by (cases H rule: prod_cases3)
      (sep_auto simp: part_pst_def part_npts_imp_def part_hnd_len dest: part_hnd_lens)
 
-lemma part_pt_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> part_pt_rule:
   "<part_pst n bl H * \<up>(x < n \<and> k < length (part_pts bl x))> part_pt_imp H x k
    <\<lambda> r. part_pst n bl H * \<up>(r = part_pts bl x ! k)>"
   by (cases H rule: prod_cases3)
@@ -275,16 +275,16 @@ text \<open>A solution for two partition oracles: the Boolean array of the solut
 
 type_synonym bm_sol = "bool array \<times> nat array \<times> nat array \<times> nat array \<times> nat array"
 
-definition bm_memb :: "nat \<Rightarrow> bm_sol \<Rightarrow> bool Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> bm_memb :: "nat \<Rightarrow> bm_sol \<Rightarrow> bool Heap" where
   "bm_memb x Si = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> Array.nth Xi x)"
 
-definition bm_ins :: "nat \<Rightarrow> bm_sol \<Rightarrow> unit Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> bm_ins :: "nat \<Rightarrow> bm_sol \<Rightarrow> unit Heap" where
   "bm_ins x Si = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> do {
      b \<leftarrow> Array.nth Xi x;
      if b then return ()
      else do { Array.upd x True Xi; part_cnt_ins Bl C1 x; part_cnt_ins Br C2 x } })"
 
-definition bm_del :: "nat \<Rightarrow> bm_sol \<Rightarrow> unit Heap" where
+definition \<^marker>\<open>provenance ai_human\<close> bm_del :: "nat \<Rightarrow> bm_sol \<Rightarrow> unit Heap" where
   "bm_del x Si = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> do {
      b \<leftarrow> Array.nth Xi x;
      if b then do { Array.upd x False Xi; part_cnt_del Bl C1 x; part_cnt_del Br C2 x }
@@ -296,18 +296,18 @@ fun bm_sol_assn :: "nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> n
      bool_array_set_assn m X Xi * cnt_assn nb bl X C1 * cnt_assn nb br X C2 *
      blocks_assn m nb bl Bl * blocks_assn m nb br Br"
 
-lemma bm_memb_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bm_memb_rule:
   "<bm_sol_assn m nb bl br X Si * \<up>(x < m)> bm_memb x Si
    <\<lambda> r. bm_sol_assn m nb bl br X Si * \<up>(r = (x \<in> X))>"
   by (cases Si rule: prod_cases5) (sep_auto simp: bm_memb_def heap: bool_array_set_memb_rule)
 
-lemma bm_ins_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bm_ins_rule:
   "<bm_sol_assn m nb bl br X Si * \<up>(x < m)> bm_ins x Si
    <\<lambda> _. bm_sol_assn m nb bl br (Set.insert x X) Si>"
   by (cases Si rule: prod_cases5)
      (sep_auto simp: bm_ins_def insert_absorb heap: bool_array_set_memb_rule bool_array_set_upd_rule part_cnt_ins_rule)
 
-lemma bm_del_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> bm_del_rule:
   "<bm_sol_assn m nb bl br X Si * \<up>(x < m)> bm_del x Si
    <\<lambda> _. bm_sol_assn m nb bl br (X - {x}) Si>"
 proof-

@@ -136,7 +136,7 @@ definition "winit_imp Co C1 C2 = do { ccopy_imp Co C1; czero_imp C2 }"
 
 text \<open>The counterpart of @{const weighted_intersection_path_loop_spec.weighted_matroid_intersection}.\<close>
 
-partial_function (heap) wmi_loop_imp :: "'si \<Rightarrow> 'ci \<Rightarrow> 'ci \<Rightarrow> nat array \<Rightarrow>
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) wmi_loop_imp :: "'si \<Rightarrow> 'ci \<Rightarrow> 'ci \<Rightarrow> nat array \<Rightarrow>
     unit Heap" where
   "wmi_loop_imp Si C1 C2 Ra = do {
      tight_ctx_imp Si C1 C2;
@@ -226,7 +226,7 @@ lemma rev_take_ends:
   unfolding assms(2)[symmetric]
   by (simp_all add: hd_rev last_rev last_conv_nth hd_conv_nth) (arith)
 
-lemma gain_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> gain_imp_rule:
   assumes "length ps = n" "k \<le> n" "rev (take k ps) = p" "p \<noteq> []" "set p \<subseteq> {..<n}"
   shows "<wmap_assn c1 C1 * wmap_assn c2 C2 * Ra \<mapsto>\<^sub>a ps> gain_imp C1 C2 Ra k
          <\<lambda> g. wmap_assn c1 C1 * wmap_assn c2 C2 * Ra \<mapsto>\<^sub>a ps *
@@ -245,7 +245,7 @@ proof-
     by (sep_auto heap: lookup simp: ends(3,4) hs)
 qed
 
-lemma reweight_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> reweight_imp_rule:
   assumes "finite X" "X \<subseteq> carrier" "indep1 X" "indep2 X" "matroid1.local_opt c1 X"
     "matroid2.local_opt c2 X" "tight_path (tight_ctx X c1 c2) = None"
   shows "<ctx_assn (tight_ctx X c1 c2) * wmap_assn c1 C1 * wmap_assn c2 C2> reweight_imp e C1 C2
@@ -255,7 +255,7 @@ lemma reweight_imp_rule:
   unfolding reweight_imp_def
   by (sep_auto heap: shift_rule[OF assms, where e = "- e", simplified] shift_rule[OF assms])
 
-lemma winit_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> winit_imp_rule:
   "<wmap_assn c Co * (\<exists>\<^sub>A d. wmap_assn d C1) * (\<exists>\<^sub>A d. wmap_assn d C2)> winit_imp Co C1 C2
    <\<lambda> _. wmap_assn c Co * wmap_assn c C1 * wmap_assn (\<lambda> _. 0) C2>"
   unfolding winit_imp_def
@@ -284,13 +284,13 @@ qed
 
 text \<open>Path results, as preconditions.\<close>
 
-lemma path_None_pre:
+lemma \<^marker>\<open>provenance ai_human\<close> path_None_pre:
   assumes "r = None \<Longrightarrow> <A * parr_assn n Ra> f r <Q>"
   shows "<A * path_assn n None r Ra> f r <Q>"
   by (rule ht_cons_pre[rotated], rule ht_pure_pre, rule assms, assumption)
      (unfold path_assn_def parr_assn_def, sep_auto)
 
-lemma path_Some_pre:
+lemma \<^marker>\<open>provenance ai_human\<close> path_Some_pre:
   assumes "\<And> k ps. \<lbrakk>length ps = n; r = Some k; k \<le> n; rev (take k ps) = p\<rbrakk> \<Longrightarrow>
              <A * Ra \<mapsto>\<^sub>a ps> f r <Q>"
   shows "<A * path_assn n (Some p) r Ra> f r <Q>"
@@ -303,7 +303,7 @@ proof-
     by (rule ht_cons_pre[rotated]) (unfold path_assn_def option.case(2), sep_auto)
 qed
 
-lemma wmi_loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> wmi_loop_imp_rule:
   assumes "weighted_matroid_intersection_dom s" "w_invar s"
   shows "<wstate_assn s Si C1 C2 * ws * st * parr_assn n Ra> wmi_loop_imp Si C1 C2 Ra
          <\<lambda> _. wstate_assn (weighted_matroid_intersection s) Si C1 C2 * ws * st * parr_assn n Ra>"
@@ -430,7 +430,7 @@ next
   qed
 qed
 
-lemma wmi_run_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> wmi_run_imp_correct:
   "<sol_assn {} Si * wmap_assn c Co * (\<exists>\<^sub>A d. wmap_assn d C1) * (\<exists>\<^sub>A d. wmap_assn d C2) *
     ws * st * parr_assn n Ra>
      wmi_run_imp Si Co C1 C2 Ra

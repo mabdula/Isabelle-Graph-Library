@@ -260,7 +260,7 @@ definition "block_copy_imp CVi Ai x =
   do { b \<leftarrow> set_isin_imp CVi x;
        if b then set_insert_imp x Ai else return () }"
 
-partial_function (heap) commit_loop :: "'si \<Rightarrow> 'stki \<Rightarrow> 'si \<Rightarrow> 'ips \<Rightarrow> ('si \<times> 'ips) Heap" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) commit_loop :: "'si \<Rightarrow> 'stki \<Rightarrow> 'si \<Rightarrow> 'ips \<Rightarrow> ('si \<times> 'ips) Heap" where
   "commit_loop CVi Si Ai Psi =
      do { e \<leftarrow> stack_is_empty_imp Si;
           if e then return (Ai, Psi)
@@ -351,33 +351,33 @@ subsubsection \<open>The stack\<close>
 
 definition "stk_assn xs Si = (\<exists>\<^sub>A S. stack_assn S Si * \<up>(stack_invar S \<and> stack_abstract S = xs))"
 
-lemma stk_empty_rule: "<emp> stack_empty_imp <stk_assn []>"
+lemma \<^marker>\<open>provenance ai_human\<close> stk_empty_rule: "<emp> stack_empty_imp <stk_assn []>"
   unfolding stk_assn_def
   by (sep_auto heap: stk.stack_empty_rule simp: stk.stack_empty)
 
-lemma stk_is_empty_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> stk_is_empty_rule:
   "<stk_assn xs Si> stack_is_empty_imp Si <\<lambda>r. stk_assn xs Si * \<up>(r \<longleftrightarrow> xs = [])>"
   unfolding stk_assn_def
   by (sep_auto heap: stk.stack_is_empty_rule simp: stk.stack_is_empty)
 
-lemma stk_top_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> stk_top_rule:
   "xs \<noteq> [] \<Longrightarrow> <stk_assn xs Si> stack_top_imp Si <\<lambda>r. stk_assn xs Si * \<up>(r = hd xs)>"
   unfolding stk_assn_def
   by (sep_auto heap: stk.stack_top_rule simp: stk.stack_top)
 
-lemma stk_push_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> stk_push_rule:
   "length xs < cap \<Longrightarrow> <stk_assn xs Si> stack_push_imp Si x <\<lambda>_. stk_assn (x # xs) Si>"
   unfolding stk_assn_def
   by (sep_auto heap: stk.stack_push_rule simp: stk.stack_push)
 
-lemma stk_pop_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> stk_pop_rule:
   "xs \<noteq> [] \<Longrightarrow> <stk_assn xs Si> stack_pop_imp Si <\<lambda>_. stk_assn (tl xs) Si>"
   unfolding stk_assn_def
   by (sep_auto heap: stk.stack_pop_rule simp: stk.stack_pop)
 
 subsubsection \<open>The sources\<close>
 
-lemma free_sources_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> free_sources_step_rule:
   assumes "v \<in> univ"
   shows "<(case acc of (b, S) \<Rightarrow> \<lambda>(bi, Si). imp_src_assn S Si * \<up>(bi = b)) acci * mate_assn m Mi>
            free_sources_step Mi v acci
@@ -387,7 +387,7 @@ lemma free_sources_step_rule:
   by (cases acc; cases acci)
      (sep_auto heap: mate_get_rule src_insert_rule simp: free_sources_step_def)
 
-lemma free_sources_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> free_sources_imp_rule:
   assumes "set vs \<subseteq> univ"
   shows "<Vi \<mapsto>\<^sub>a vs * mate_assn m Mi> free_sources_imp Vi Mi
          <\<lambda>(b, Fi). Vi \<mapsto>\<^sub>a vs * mate_assn m Mi * imp_src_assn (free_vertex_set vs m) Fi *
@@ -411,7 +411,7 @@ qed
 
 subsubsection \<open>The matching and the non-matching graph\<close>
 
-lemma alt_graphs_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> alt_graphs_step_rule:
   assumes "e \<in> univ \<times> univ"
   shows "<(case acc of (M, U) \<Rightarrow> \<lambda>(Mgi, Ugi). graph_assn M Mgi * graph_assn U Ugi) acci *
           mate_assn m Mi>
@@ -423,7 +423,7 @@ lemma alt_graphs_step_rule:
   by (cases e; cases acc; cases acci)
      (sep_auto heap: mate_get_rule g_add_edge_rule simp: alt_graphs_step_def)
 
-lemma alt_graphs_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> alt_graphs_imp_rule:
   assumes "set edges \<subseteq> univ \<times> univ"
   shows "<Ei \<mapsto>\<^sub>a edges * mate_assn m Mi> alt_graphs_imp Ei Mi
          <\<lambda>(Mgi, Ugi). Ei \<mapsto>\<^sub>a edges * mate_assn m Mi *
@@ -452,7 +452,7 @@ qed
 
 subsubsection \<open>The graph of copies\<close>
 
-lemma copies_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> copies_step_rule:
   assumes "e \<in> univ \<times> univ" "vset_inv VE" "vset_inv VO"
   shows "<(case acc of (H, C) \<Rightarrow> \<lambda>(Gi, CVi). cgraph_assn H Gi * set_assn C CVi * \<up>(C \<subseteq> vtx -` univ))
             acci *
@@ -467,7 +467,7 @@ lemma copies_step_rule:
                      c_add_edge_rule
                simp: copies_step_def add_copy_imp_def copy_edge_def add_copies_def)
 
-lemma copies_graph_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> copies_graph_imp_rule:
   assumes "set edges \<subseteq> univ \<times> univ" "vset_inv VE" "vset_inv VO"
   shows "<Ei \<mapsto>\<^sub>a edges * mate_assn m Mi * imp_vis_assn VE VEi * imp_vis_assn VO VOi *
           imp_dist_assn D Di>
@@ -505,14 +505,14 @@ qed
 
 subsubsection \<open>The roots\<close>
 
-lemma root_cond_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> root_cond_imp_rule:
   assumes "vset_inv VO" "t \<in> univ"
   shows "<mate_assn m Mi * imp_vis_assn VO VOi> root_cond_imp Mi VOi t
          <\<lambda>r. mate_assn m Mi * imp_vis_assn VO VOi * \<up>(r \<longleftrightarrow> root_cond m (t_set VO) t)>"
   using assms
   by (sep_auto heap: mate_get_rule vis_isin_rule simp: root_cond_imp_def root_cond_def)
 
-lemma min_level_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> min_level_step_rule:
   assumes "vset_inv VO" "t \<in> univ"
   shows "<\<up>(ki = k) * (mate_assn m Mi * imp_vis_assn VO VOi * imp_dist_assn D Di)>
            min_level_step Mi VOi Di t ki
@@ -521,7 +521,7 @@ lemma min_level_step_rule:
   using assms
   by (sep_auto heap: root_cond_imp_rule dist_lookup_rule simp: min_level_step_def min_step_def)
 
-lemma push_roots_step_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> push_roots_step_rule:
   assumes "vset_inv VO" "t \<in> univ" "length S < cap"
   shows "<stk_assn S Ri * (mate_assn m Mi * imp_vis_assn VO VOi * imp_dist_assn D Di)>
            push_roots_step Mi VOi Di k t Ri
@@ -531,7 +531,7 @@ lemma push_roots_step_rule:
   by (sep_auto heap: root_cond_imp_rule dist_lookup_rule stk_push_rule
                simp: push_roots_step_def push_step_def)
 
-lemma phase_roots_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> phase_roots_imp_rule:
   assumes "set vs \<subseteq> univ" "length vs \<le> cap" "vset_inv VO"
   shows "<Vi \<mapsto>\<^sub>a vs * mate_assn m Mi * imp_vis_assn VO VOi * imp_dist_assn D Di>
            phase_roots_imp Vi Mi VOi Di
@@ -578,14 +578,14 @@ qed
 
 subsubsection \<open>The test of the level\<close>
 
-lemma level_zero_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> level_zero_imp_rule:
   "vtx w \<in> univ \<Longrightarrow>
    <imp_dist_assn D Di> level_zero_imp Di w <\<lambda>r. imp_dist_assn D Di * \<up>(r \<longleftrightarrow> dist_lookup D w = 0)>"
   by (sep_auto heap: dist_lookup_rule simp: level_zero_imp_def)
 
 subsubsection \<open>The commitment of a path\<close>
 
-lemma block_copy_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> block_copy_imp_rule:
   assumes "C \<subseteq> vtx -` univ" "A \<subseteq> vtx -` univ" "x \<in> vtx -` univ"
   shows "<set_assn C Ci * set_assn A Ai> block_copy_imp Ci Ai x
          <\<lambda>_. set_assn C Ci * set_assn (block_copy C x A) Ai>"
@@ -596,7 +596,7 @@ lemma block_copy_imp_rule:
 lemma block_copy_subset: "\<lbrakk>A \<subseteq> S; x \<in> S\<rbrakk> \<Longrightarrow> block_copy C x A \<subseteq> S"
   by (simp add: block_copy_def)
 
-lemma commit_loop_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> commit_loop_rule:
   assumes "C \<subseteq> vtx -` univ" "A \<subseteq> vtx -` univ" "set p \<subseteq> vtx -` univ"
   shows "<set_assn C Ci * stk_assn p Si * set_assn A Ai * paths_assn (q # ps) Psi>
            commit_loop Ci Si Ai Psi
@@ -620,7 +620,7 @@ next
                  simp: block_copy_subset)
 qed
 
-lemma commit_path_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> commit_path_imp_rule:
   assumes "C \<subseteq> vtx -` univ" "A \<subseteq> vtx -` univ" "set p \<subseteq> vtx -` univ"
   shows "<set_assn C Ci * stk_assn p Si * set_assn A Ai * paths_assn ps Psi>
            commit_path_imp Ci Si Ai Psi

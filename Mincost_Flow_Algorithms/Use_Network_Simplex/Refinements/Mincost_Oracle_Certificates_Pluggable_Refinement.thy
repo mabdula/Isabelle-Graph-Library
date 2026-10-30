@@ -24,7 +24,7 @@ locale mcf_oracle_heap_pluggable_checker_spec =
        \<Rightarrow> verdict_flag option Heap"
 begin
 
-definition decide_imp' ::
+definition \<^marker>\<open>provenance ai_human\<close> decide_imp' ::
   "checker_mode \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n answer_imp
    \<Rightarrow> verdict_flag Heap" where
@@ -34,7 +34,7 @@ definition decide_imp' ::
        case co of Some r \<Rightarrow> return r
                 | None \<Rightarrow> do { _ \<leftarrow> rectify_imp ca fla 0 m; cleanup_imp fa sa ca oa ba fla } }"
 
-definition solve_imp' ::
+definition \<^marker>\<open>provenance ai_human\<close> solve_imp' ::
   "checker_mode \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> verdict_flag Heap" where
   "solve_imp' cm M fa sa ca oa ba fla =
@@ -76,7 +76,7 @@ subsection \<open>The pipeline is correct\<close>
 text \<open>As \<open>decide_imp_correct\<close>, with the option split of \<open>checker_imp_rule\<close> in place of the Boolean
       split of \<open>check_answer_imp_rule\<close>.\<close>
 
-lemma decide_imp'_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> decide_imp'_correct:
   assumes "answer_wf a" "0 < M"
   shows "<inst_assn fa sa ca oa ba * answer_assn fla a ai>
            decide_imp' cm M fa sa ca oa ba fla ai
@@ -90,7 +90,7 @@ lemma decide_imp'_correct:
   apply (sep_auto simp: answer_assn_def assms[unfolded answer_wf_def])
   done
 
-lemma solve_imp'_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> solve_imp'_correct:
   "\<lbrakk>length fl = m; answer_wf orc_answer; 0 < M\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * fla \<mapsto>\<^sub>a fl>
      solve_imp' cm M fa sa ca oa ba fla
@@ -109,7 +109,7 @@ text \<open>\<open>check_answer_imp\<close> composed with \<open>flag_of\<close>
 context mcf_oracle_heap_pipeline_spec
 begin
 
-definition current_checker_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> current_checker_imp ::
   "checker_mode \<Rightarrow> nat \<Rightarrow>
    nat array \<Rightarrow> nat array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n array \<Rightarrow> 'n answer_imp
    \<Rightarrow> verdict_flag option Heap" where
@@ -123,7 +123,7 @@ end
 context mcf_oracle_heap_pipeline
 begin
 
-lemma current_checker_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> current_checker_imp_rule:
   "\<lbrakk>answer_wf a; 0 < M\<rbrakk> \<Longrightarrow>
    <inst_assn fa sa ca oa ba * answer_assn fla a ai>
      current_checker_imp cm M fa sa ca oa ba fla ai

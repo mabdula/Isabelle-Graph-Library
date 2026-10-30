@@ -25,7 +25,7 @@ locale Hopcroft_Karp_Augment_Imperative_spec =
     and paths_drop_imp :: "'ips \<Rightarrow> 'ips Heap"
 begin
 
-partial_function (heap) augment_path_imp :: "'mi \<Rightarrow> 'ips \<Rightarrow> ('mi \<times> 'ips) Heap" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) augment_path_imp :: "'mi \<Rightarrow> 'ips \<Rightarrow> ('mi \<times> 'ips) Heap" where
   "augment_path_imp Mi Psi =
      do { e \<leftarrow> path_is_empty_imp Psi;
           if e then return (Mi, Psi)
@@ -114,12 +114,12 @@ definition "hopcroft_karp_imp Ei Vi = loop.Hopcroft_Karp_Loop_run_imp Ei Vi"
 
 subsubsection \<open>The augmentation along a path\<close>
 
-lemma path_pop_rule':
+lemma \<^marker>\<open>provenance ai_human\<close> path_pop_rule':
   "<paths_assn ((w # q) # ps) Psi> path_pop_imp Psi <\<lambda>r. paths_assn (q # ps) (snd r) * \<up>(fst r = w)>"
   using path_pop_rule[of w q ps Psi]
   by (simp add: case_prod_beta')
 
-lemma augment_path_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> augment_path_imp_rule:
   "set (map vtx q) \<subseteq> univ \<Longrightarrow>
    <mate_assn M Mi * paths_assn (q # ps) Psi> augment_path_imp Mi Psi
    <\<lambda>(Mi', Psi'). mate_assn (mate_augment M (map vtx q)) Mi' * paths_assn ([] # ps) Psi'>"
@@ -138,7 +138,7 @@ next
        (sep_auto heap: path_is_empty_rule path_pop_rule' mate_update_rule 3(1) simp: Let_def)
 qed
 
-lemma augment_first_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> augment_first_imp_rule:
   "set (map vtx q) \<subseteq> univ \<Longrightarrow>
    <mate_assn M Mi * paths_assn (q # ps) Psi> augment_first_imp Mi Psi
    <\<lambda>(Mi', Psi'). mate_assn (mate_augment M (map vtx q)) Mi' * paths_assn ps Psi'>"
@@ -260,7 +260,7 @@ qed
 text \<open>The imperative algorithm computes the matching and the number of phases of the functional
   algorithm @{const Hopcroft_Karp_Loop.Hopcroft_Karp_Loop_run_impl}.\<close>
 
-theorem hopcroft_karp_imp_refine:
+theorem \<^marker>\<open>provenance ai_human\<close> hopcroft_karp_imp_refine:
   "<Ei \<mapsto>\<^sub>a edges * Vi \<mapsto>\<^sub>a vs> hopcroft_karp_imp Ei Vi
    <\<lambda>si. Ei \<mapsto>\<^sub>a edges * Vi \<mapsto>\<^sub>a vs *
          mate_assn (current_matching hk_loop.Hopcroft_Karp_Loop_run_impl) (i_matching si) *
@@ -271,7 +271,7 @@ theorem hopcroft_karp_imp_refine:
 
 text \<open>The imperative algorithm computes a maximum cardinality matching of the input graph.\<close>
 
-theorem hopcroft_karp_imp_correct:
+theorem \<^marker>\<open>provenance ai_human\<close> hopcroft_karp_imp_correct:
   "<Ei \<mapsto>\<^sub>a edges * Vi \<mapsto>\<^sub>a vs> hopcroft_karp_imp Ei Vi
    <\<lambda>si. \<exists>\<^sub>AM. Ei \<mapsto>\<^sub>a edges * Vi \<mapsto>\<^sub>a vs * mate_assn M (i_matching si) *
               \<up>(mate_invar (hk_input.ugraph_abs Gin) M \<and>

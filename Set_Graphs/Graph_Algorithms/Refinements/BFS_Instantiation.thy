@@ -96,7 +96,7 @@ text \<open>The final program takes the number of vertices, the arrays of tails 
       sources into the first frontier array and runs the BFS. The distance and the parent array are
       initialised with the identity. It returns the visited set, the distances and the parents.\<close>
 
-definition bfs_csr_run :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> bfs_csr_run :: "nat \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow>
                             (bool array \<times> nat array \<times> nat array) Heap" where
   "bfs_csr_run n Fa Ta Sa = do {
      Gi \<leftarrow> csr_build_heads n (Fa, Ta) 0;
@@ -120,7 +120,7 @@ text \<open>The BFS on preallocated arrays with an arbitrary iterator. The visit
 lemma len_intro: "length l = m \<Longrightarrow> a \<mapsto>\<^sub>a l \<Longrightarrow>\<^sub>A len_assn m a"
   unfolding len_assn_def by (rule ent_ex_postI[where x = l]) simp
 
-lemma pull_len:
+lemma \<^marker>\<open>provenance ai_human\<close> pull_len:
   assumes "\<And> l. length l = m \<Longrightarrow> <a \<mapsto>\<^sub>a l * Fm> c <Q>"
   shows "<len_assn m a * Fm> c <Q>"
   unfolding len_assn_def
@@ -309,7 +309,7 @@ text \<open>The BFS on the arrays allocated by the caller: the visited array @{t
       the visited array, the distances and the parents are those of the final state @{const fin};
       the frontier and the buffer keep their lengths and can be reused.\<close>
 
-lemma bfs_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> bfs_rule[bfs_heap_rules]:
   assumes "length fl = Suc n" "take (length ss) fl = ss" "length bl = Suc n"
   shows "<bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] *
           len_assn n Pa * ga Gh>
@@ -361,7 +361,7 @@ qed
 text \<open>The path from the sources to a visited vertex @{term t}, reversed, is written into the
       first cells of an array with room for the vertices of the graph.\<close>
 
-lemma path_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> path_rule[bfs_heap_rules]:
   assumes "t \<in> set (BFS_dist_state.visited fin)" "card (dVs nbs_edges) \<le> length rl"
   shows "<parent_array.pa_parent_assn n (BFS_par_state.parent fin) Pa * Ra \<mapsto>\<^sub>a rl>
            bfs_path Pa Ra t
@@ -454,7 +454,7 @@ lemma edges_E[simp]: "{(u, v). v \<in> set (case nbs_map u of None \<Rightarrow>
 text \<open>The neighbours of a vertex are folded over by @{const csr_fold_imp} in the order of its
       block.\<close>
 
-lemma nbs_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> nbs_rule[bfs_heap_rules]:
   assumes "u < n"
     and "\<And>acc acci x. x \<in> set (case nbs_map u of None \<Rightarrow> [] | Some vs \<Rightarrow> vs) \<Longrightarrow>
            <A acc acci> fi x acci <\<lambda>r. A (f x acc) r>"
@@ -593,7 +593,7 @@ lemma bfs_arrays_ent:
       rule arrays_ent, rule bfs_arrays_intro_par[OF _ _ _ _ assms],
       (assumption | erule conjunct1 | erule conjunct2)+)
 
-lemma bfs_csr_build_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> bfs_csr_build_rule[bfs_heap_rules]:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> csr_build_heads n (Fa, Ta) 0
    <\<lambda>Gi. Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi>"
   by (rule ht_cons_post[OF ei.csr_build_heads_rule[of Fa Ta, unfolded csr_build_heads]])
@@ -602,7 +602,7 @@ lemma bfs_csr_build_rule[bfs_heap_rules]:
 text \<open>The allocations of @{const bfs_csr_run} establish the precondition of the BFS on the
       instance.\<close>
 
-lemma bfs_csr_run_rule[bfs_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> bfs_csr_run_rule[bfs_heap_rules]:
   assumes "\<And>Gi Vi Fr Bf Da Pa fl bl. \<lbrakk>length fl = Suc n; take (length ss) fl = ss; length bl = Suc n\<rbrakk> \<Longrightarrow>
      <bool_array_set_assn n {} Vi * Fr \<mapsto>\<^sub>a fl * Bf \<mapsto>\<^sub>a bl * Da \<mapsto>\<^sub>a map id [0..<n] * len_assn n Pa *
       ei.heads.csr_blocks_assn (\<lambda>v. ei.inp.B_spec ! v) Gi>
@@ -636,7 +636,7 @@ text \<open>The final correctness theorem: the program returns a visited, a dist
 
 lemmas fin_correct = it.fin_correct[OF srcs, unfolded edges_E, folded \<S>_def]
 
-theorem bfs_csr_run_correct[bfs_heap_rules]:
+theorem \<^marker>\<open>provenance ai_human\<close> bfs_csr_run_correct[bfs_heap_rules]:
   "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Sa \<mapsto>\<^sub>a ss> bfs_csr_run n Fa Ta Sa
    <\<lambda>(Vi, Da, Pa). \<exists>\<^sub>A vs ds ps. Vi \<mapsto>\<^sub>a vs * Da \<mapsto>\<^sub>a ds * Pa \<mapsto>\<^sub>a ps * \<up>(bfs_arrays vs ds ps) * true>"
   by (rule ht_cons_post[OF bfs_csr_run_rule[
@@ -652,14 +652,14 @@ text \<open>Path reconstruction: after the BFS, @{const bfs_path} writes a short
       sources to any reachable vertex @{term v}, reversed, into the first cells of an array with
       at least @{term n} cells and returns its length.\<close>
 
-lemma run_then_path:
+lemma \<^marker>\<open>provenance ai_human\<close> run_then_path:
   assumes "<P> m <\<lambda>r. (\<exists>\<^sub>A g1 g2 g3 g4 g5 g6. Q g1 g2 g3 g4 g5 g6 r) * F * true>"
     and "\<And>g1 g2 g3 g4 g5 g6 a b d. <Q g1 g2 g3 g4 g5 g6 (a, b, d) * Ra \<mapsto>\<^sub>a r> m' b d
            <\<lambda>k. \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(q k ps) * true>"
   shows "<P * Ra \<mapsto>\<^sub>a r> do { (a, b, d) \<leftarrow> m; m' b d } <\<lambda>k. \<exists>\<^sub>A ps. Ra \<mapsto>\<^sub>a ps * \<up>(q k ps) * true>"
   by (sep_auto heap: assms(1,2))
 
-theorem bfs_csr_path_correct[bfs_heap_rules]:
+theorem \<^marker>\<open>provenance ai_human\<close> bfs_csr_path_correct[bfs_heap_rules]:
   assumes "\<exists>u \<in> \<S>. \<exists>q. vwalk_bet \<E> u q v" and "n \<le> length r"
   shows "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts * Sa \<mapsto>\<^sub>a ss * Ra \<mapsto>\<^sub>a r>
            do { (Vi, Da, Pa) \<leftarrow> bfs_csr_run n Fa Ta Sa; bfs_path Pa Ra v }
@@ -696,7 +696,7 @@ text \<open>A test harness. \<open>bfs_query\<close> asks the arrays for a verte
       compiles both into the running ML session; applying a @{typ "'a Heap"} computation to
       \<open>()\<close> runs it.\<close>
 
-definition bfs_query :: "bool array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow>
+definition \<^marker>\<open>provenance ai_human\<close> bfs_query :: "bool array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat array \<Rightarrow> nat \<Rightarrow>
                          (nat \<times> nat) option Heap" where
   "bfs_query Vi Da Pa Ra v = do {
      b \<leftarrow> Array.nth Vi v;

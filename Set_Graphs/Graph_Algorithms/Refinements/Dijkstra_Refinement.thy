@@ -79,7 +79,7 @@ text \<open>Relax the edge @{term e} leaving the vertex @{term u} being scanned,
       @{term du}. Mirrors @{const dijkstra.relax_edge}. The edge test @{term allowed_imp} is made
       after the seen test and sees the tail, the head, the edge and its weight.\<close>
 
-definition relax_edge_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> relax_edge_imp ::
   "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> 'e \<Rightarrow> unit Heap" where
   "relax_edge_imp s u du e =
      do { v \<leftarrow> snd_imp (dimp_ends s) e;
@@ -104,7 +104,7 @@ definition relax_edge_imp ::
 
 text \<open>Register one source. Mirrors @{const dijkstra.insert_source}.\<close>
 
-definition insert_source_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> insert_source_imp ::
   "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> unit Heap" where
   "insert_source_imp s v =
      do { dist_upd_imp (dimp_dist s) v 0;
@@ -112,7 +112,7 @@ definition insert_source_imp ::
 
 text \<open>The target test on a settled vertex. It is only made with early stopping.\<close>
 
-definition target_test_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> target_test_imp ::
   "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v \<Rightarrow> bool Heap" where
   "target_test_imp s u = (if early_stop then target_imp (dimp_target s) u else return False)"
 
@@ -120,7 +120,7 @@ text \<open>The main loop, one step of the functional @{const dijkstra.dijkstra}
       argument @{term cur} is the vertex currently being scanned; the result is the target found
       (@{const None} if the queue ran empty).\<close>
 
-partial_function (heap) dijkstra_loop_imp ::
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) dijkstra_loop_imp ::
   "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'v option \<Rightarrow> 'v option Heap" where
   "dijkstra_loop_imp s cur =
      (case cur of
@@ -166,7 +166,7 @@ text \<open>Path reconstruction on the final state: going back from @{term v} al
       @{term k} on. The path thus ends up reversed in the array. The result is the position after
       the last edge written. Mirrors @{const dijkstra.build_path}.\<close>
 
-partial_function (heap) path_rev_imp :: "'ei \<Rightarrow> 'pi \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat \<Rightarrow> nat Heap" where
+partial_function \<^marker>\<open>provenance ai_human\<close> (heap) path_rev_imp :: "'ei \<Rightarrow> 'pi \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "path_rev_imp Ei Pa Ra v k =
      do { p \<leftarrow> parent_lookup_imp Pa v;
           (case p of
@@ -176,7 +176,7 @@ partial_function (heap) path_rev_imp :: "'ei \<Rightarrow> 'pi \<Rightarrow> 'e 
                u \<leftarrow> fst_imp Ei e;
                path_rev_imp Ei Pa Ra u (Suc k) }) }"
 
-definition path_imp ::
+definition \<^marker>\<open>provenance ai_human\<close> path_imp ::
   "('di, 'si, 'pi, 'hi, 'gi, 'srci, 'wi, 'ei, 'ti, 'ai) dij_impl_state \<Rightarrow> 'e array \<Rightarrow> 'v \<Rightarrow> nat Heap" where
   "path_imp s Ra v = path_rev_imp (dimp_ends s) (dimp_parent s) Ra v 0"
 
@@ -357,73 +357,73 @@ text \<open>Following @{text DFS_Imperative}, we do not unfold the state asserti
       the one updated by the corresponding functional operation. Only these proofs unfold
       @{const state_assn}.\<close>
 
-lemma weight_lookup_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> weight_lookup_imp_rule:
   "e \<in> \<E> \<Longrightarrow> <weight_assn W Wi> weight_lookup_imp Wi e <\<lambda>x. weight_assn W Wi * \<up>(h x = w e)>"
   by (sep_auto simp: W_invar W_weights)
 
-lemma snd_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> snd_state[sep_heap_rules]:
   "e \<in> \<E> \<Longrightarrow>
    <state_assn st si> snd_imp (dimp_ends si) e <\<lambda>v. state_assn st si * \<up>(v = snd e)>"
   unfolding state_assn_def
   by sep_auto
 
-lemma dist_lookup_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> dist_lookup_state[sep_heap_rules]:
   "\<lbrakk>dist_invar (dij_dist st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> dist_lookup_imp (dimp_dist si) u
    <\<lambda>d. state_assn st si * \<up>(h d = dist_lookup (dij_dist st) u)>"
   unfolding state_assn_def
   by sep_auto
 
-lemma out_has_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> out_has_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_has_imp (dimp_graph si) u
    <\<lambda>b. state_assn st si * \<up>(b = out_has (dij_graph st) u)>"
   unfolding state_assn_def
   by sep_auto
 
-lemma out_current_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> out_current_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>; out_has (dij_graph st) u\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_current_imp (dimp_graph si) u
    <\<lambda>e. state_assn st si * \<up>(e = out_current (dij_graph st) u)>"
   unfolding state_assn_def
   by (sep_auto simp: out_has_remaining)
 
-lemma out_move_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> out_move_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>; out_has (dij_graph st) u\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_move_imp (dimp_graph si) u
    <\<lambda>_. state_assn (st\<lparr>dij_graph := out_move (dij_graph st) u\<rparr>) si>"
   unfolding state_assn_def
   by (sep_auto simp: out_has_remaining)
 
-lemma out_reset_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> out_reset_state[sep_heap_rules]:
   "\<lbrakk>out_invar (dij_graph st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> out_reset_imp (dimp_graph si) u
    <\<lambda>_. state_assn (st\<lparr>dij_graph := out_reset (dij_graph st) u\<rparr>) si>"
   unfolding state_assn_def
   by sep_auto
 
-lemma src_has_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> src_has_state[sep_heap_rules]:
   "src_invar (dij_srcs st) \<Longrightarrow>
    <state_assn st si> src_has_imp (dimp_srcs si)
    <\<lambda>b. state_assn st si * \<up>(b = src_has (dij_srcs st))>"
   unfolding state_assn_def
   by sep_auto
 
-lemma src_current_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> src_current_state[sep_heap_rules]:
   "\<lbrakk>src_invar (dij_srcs st); src_has (dij_srcs st)\<rbrakk> \<Longrightarrow>
    <state_assn st si> src_current_imp (dimp_srcs si)
    <\<lambda>v. state_assn st si * \<up>(v = src_current (dij_srcs st))>"
   unfolding state_assn_def
   by (sep_auto simp: sources.has_current)
 
-lemma src_move_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> src_move_state[sep_heap_rules]:
   "\<lbrakk>src_invar (dij_srcs st); src_has (dij_srcs st)\<rbrakk> \<Longrightarrow>
    <state_assn st si> src_move_imp (dimp_srcs si)
    <\<lambda>_. state_assn (st\<lparr>dij_srcs := src_move (dij_srcs st)\<rparr>) si>"
   unfolding state_assn_def
   by (sep_auto heap: src_imp.move_on_rule simp: sources.has_current[symmetric])
 
-lemma extract_min_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> extract_min_state[sep_heap_rules]:
   "queue_invar (dij_heap st) \<Longrightarrow>
    <state_assn st si> queue_extract_min_imp (dimp_heap si)
    <\<lambda>r. state_assn (st\<lparr>dij_heap := Product_Type.fst (queue_extract_min (dij_heap st))\<rparr>) si 
@@ -432,21 +432,21 @@ lemma extract_min_state[sep_heap_rules]:
   unfolding state_assn_def
   by (sep_auto split: option.split)
 
-lemma seen_isin_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> seen_isin_state[sep_heap_rules]:
   "\<lbrakk>seen_invar (dij_seen st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> seen_isin_imp (dimp_seen si) u
    <\<lambda>b. state_assn st si * \<up>(b = seen_isin (dij_seen st) u)>"
   unfolding state_assn_def
   by sep_auto
 
-lemma seen_insert_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> seen_insert_state[sep_heap_rules]:
   "\<lbrakk>seen_invar (dij_seen st); u \<in> \<V>\<rbrakk> \<Longrightarrow>
    <state_assn st si> seen_insert_imp u (dimp_seen si)
    <\<lambda>_. state_assn (st\<lparr>dij_seen := seen_insert u (dij_seen st)\<rparr>) si>"
   unfolding state_assn_def
   by sep_auto
 
-lemma target_test_state[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> target_test_state[sep_heap_rules]:
   "u \<in> \<V> \<Longrightarrow>
    <state_assn st si> target_test_imp si u <\<lambda>b. state_assn st si * \<up>(b = (early_stop \<and> target u))>"
   unfolding target_test_imp_def state_assn_def
@@ -459,7 +459,7 @@ text \<open>Relaxing an edge preserves the relation. Its preconditions are those
       invariants that the Hoare triples of the accessed data structures demand; in particular the
       queue--distance coupling of @{const invar_2} decides between insertion and key decrease.\<close>
 
-lemma relax_edge_imp_rule[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> relax_edge_imp_rule[sep_heap_rules]:
   assumes "dist_invar (dij_dist st)" "parent_invar (dij_parent st)" "invar_2 st" "e \<in> \<E>" "fst e = u"
   shows "<state_assn st si> relax_edge_imp si u du e
          <\<lambda>_. state_assn (relax_edge u (h du) e st) si>"
@@ -478,7 +478,7 @@ qed
 
 text \<open>Registering a source preserves the relation.\<close>
 
-lemma insert_source_imp_rule[sep_heap_rules]:
+lemma \<^marker>\<open>provenance ai_human\<close> insert_source_imp_rule[sep_heap_rules]:
   assumes "dist_invar (dij_dist st)" "invar_2 st" "v \<in> \<V>" "dist_lookup (dij_dist st) v = -1"
   shows "<state_assn st si> insert_source_imp si v
          <\<lambda>_. state_assn (insert_source v st) si>"
@@ -533,7 +533,7 @@ text \<open>The imperative loop preserves the refinement relation: started on a 
       fixpoint induction on the heap @{command partial_function}, as for the imperative DFS. Each
       branch of the functional loop is matched by the corresponding branch of the imperative one.\<close>
 
-lemma dijkstra_loop_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_loop_imp_rule:
   "dij_imp_invar st \<longrightarrow>
    <state_assn st si> dijkstra_loop_imp si (dij_curr st)
    <\<lambda>r. state_assn (dijkstra_impl st) si * \<up>(r = dij_target (dijkstra_impl st))>"
@@ -637,7 +637,7 @@ text \<open>Under the invariants the functional loop terminates, so the executab
       and the @{command function} @{const dijkstra}, about which the correctness theorems are
       stated, coincide.\<close>
 
-lemma dijkstra_loop_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_loop_imp_correct:
   assumes "dij_imp_invar st"
   shows "<state_assn st si> dijkstra_loop_imp si (dij_curr st)
          <\<lambda>r. state_assn (dijkstra st) si * \<up>(r = dij_target (dijkstra st))>"
@@ -658,7 +658,7 @@ text \<open>Started on handles representing the initial state -- the distance ar
       components. The result is the target found. The correctness theorems of @{locale dijkstra} about
       @{const dijkstra_compute} therefore carry over.\<close>
 
-lemma dijkstra_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_imp_correct:
   "<state_assn (initial_state :: ('v, _, _, _, _, _, _) dij_state) si> dijkstra_imp si
    <\<lambda>r. state_assn dijkstra_compute si * \<up>(r = dij_target dijkstra_compute)>"
   using dijkstra_loop_imp_correct[OF dij_imp_invar_initial, of si]
@@ -989,7 +989,7 @@ lemma parent_invar_compute: "parent_invar (dij_parent dijkstra_compute)"
   using invar_1_compute
   by (simp add: invar_1_def)
 
-lemma path_rev_imp_rule:
+lemma \<^marker>\<open>provenance ai_human\<close> path_rev_imp_rule:
   "\<lbrakk>v \<in> \<V>; k + length (reconstruct_path dijkstra_compute v) \<le> length r\<rbrakk> \<Longrightarrow>
    <ends_assn Ei * parent_assn (dij_parent dijkstra_compute) Pa * Ra \<mapsto>\<^sub>a r> path_rev_imp Ei Pa Ra v k
    <\<lambda>k'. ends_assn Ei * parent_assn (dij_parent dijkstra_compute) Pa *
@@ -1017,7 +1017,7 @@ text \<open>Given the final state and an array of at least @{term "card \<V>"} c
       into the first cells of the array and returns its length. If @{term v} was reached, this is
       a path from a source whose weight is the distance computed.\<close>
 
-lemma path_imp_correct:
+lemma \<^marker>\<open>provenance ai_human\<close> path_imp_correct:
   assumes "v \<in> \<V>" "card \<V> \<le> length r"
   shows "<state_assn dijkstra_compute si * Ra \<mapsto>\<^sub>a r> path_imp si Ra v
          <\<lambda>k. state_assn dijkstra_compute si * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(length p = length r \<and>
@@ -1052,7 +1052,7 @@ qed
 
 text \<open>Without early stopping, the parent array of the final state is a tree of tight edges.\<close>
 
-lemma dijkstra_imp_tight_parents:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_imp_tight_parents:
   assumes "\<not> early_stop"
   shows "<state_assn (initial_state :: ('v, _, _, _, _, _, _) dij_state) si> dijkstra_imp si
          <\<lambda>_. state_assn dijkstra_compute si * \<up>(tight_parents (dij_parent dijkstra_compute))>"
@@ -1066,7 +1066,7 @@ qed
 text \<open>A target returned by early stopping is a reached target with the shortest distance, and no
       target is closer to the sources. If early stopping returns none, no target is reachable.\<close>
 
-lemma dijkstra_imp_target:
+lemma \<^marker>\<open>provenance ai_human\<close> dijkstra_imp_target:
   "<state_assn (initial_state :: ('v, _, _, _, _, _, _) dij_state) si> dijkstra_imp si
    <\<lambda>r. state_assn dijkstra_compute si * \<up>(r = dij_target dijkstra_compute \<and>
       (\<forall>u. r = Some u \<longrightarrow> target u \<and> u \<in> \<V> \<and> dist_lookup (dij_dist dijkstra_compute) u \<noteq> -1 \<and>
@@ -1086,7 +1086,7 @@ text \<open>For the target found, @{const dijkstra_impl_spec.path_imp} gives a s
       the sources, which is a shortest path between its source and the target, and no simple path
       from a source to a target is shorter.\<close>
 
-lemma path_imp_target:
+lemma \<^marker>\<open>provenance ai_human\<close> path_imp_target:
   assumes "dij_target dijkstra_compute = Some u" "card \<V> \<le> length r"
   shows "<state_assn dijkstra_compute si * Ra \<mapsto>\<^sub>a r> path_imp si Ra u
          <\<lambda>k. state_assn dijkstra_compute si * (\<exists>\<^sub>Ap. Ra \<mapsto>\<^sub>a p * \<up>(length p = length r \<and>
