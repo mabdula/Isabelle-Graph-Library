@@ -1294,7 +1294,15 @@ lemma face_int_polyhedron_int_matrix:
   shows "((A' @\<^sub>r (-A')) @\<^sub>r A) \<in> \<int>\<^sub>m" "((b' @\<^sub>v (-b')) @\<^sub>v b) \<in> \<int>\<^sub>v"
 proof -
   have "A' \<in> \<int>\<^sub>m" 
-    by (metis assms(4) assms(6) prod.simps(1) sub_system_def submatrix_int_mat)
+  proof -
+    have "A' = fst (sub_system A b I')"
+      by (simp add: assms(4)[symmetric])
+    also have "fst (sub_system A b I') = submatrix A I' UNIV"
+      unfolding sub_system_def by simp
+    finally have "A' = submatrix A I' UNIV" .
+    then show "A' \<in> \<int>\<^sub>m"
+      using assms(6) submatrix_int_mat by simp
+  qed
   then show "((A' @\<^sub>r (-A')) @\<^sub>r A) \<in> \<int>\<^sub>m" 
     by (metis assms(1) assms(4) assms(6) b carrier_mat_triv gram_schmidt.append_int_mat_is_int gram_schmidt.face_is_polyhedron'(3) minus_in_Ints_mat_iff uminus_carrier_iff_mat)
   have "b' \<in> \<int>\<^sub>v" 
