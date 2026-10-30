@@ -2,6 +2,9 @@ theory Matroid_Intersection_Imp_Loop
   imports Matroid_Intersection_Path_Loop Data_Structures.More_Arith "Data_Structures.Imp_Bool_Set"
 begin
 
+provenance ai
+
+
 section \<open>The Augmentation Loop in Imperative HOL\<close>
 
 text \<open>The imperative counterpart of @{locale unweighted_intersection_path_loop}. Elements are the

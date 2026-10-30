@@ -2,6 +2,9 @@ theory DFS_DirCycle
   imports DFS_Skeleton Directed_Set_Graphs.Component_Defs
 begin
 
+provenance ai
+
+
 text \<open>Directed-graph cycle detection as an instance of the DFS skeleton. The state extends the
 skeleton spine (stack/seen) with a finished set and a cycle flag. A directed cycle is detected
 when the current vertex has an out-neighbour that is currently on the stack, i.e. seen but not
@@ -12,7 +15,7 @@ record ('ver, 'vset) DFS_dircycle_state = "('ver, 'vset) DFS_skel_state" +
   finished :: "'vset"
   cycle    :: bool
 
-locale DFS_dircycle =
+locale \<^marker>\<open>provenance ai_human\<close> DFS_dircycle =
   Graph: Pair_Graph_Specs where lookup = lookup +
  set_ops: Set2 vset_empty vset_delete _ t_set vset_inv insert
 for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
@@ -48,7 +51,7 @@ abbreviation "find_dircycle \<equiv> dc.DFS_skel_impl"
 
 end
 
-locale DFS_dircycle_thms = DFS_dircycle +
+locale \<^marker>\<open>provenance ai_human\<close> DFS_dircycle_thms = DFS_dircycle +
   assumes dircycle_axioms: DFS_dircycle_axioms
 begin
 
@@ -398,7 +401,7 @@ qed
 lemma initial_fin[simp,intro]: "invar_fin dircycle_initial_state"
   by (auto simp: invar_fin_def dircycle_initial_state_def)
 
-theorem DFS_dircycle_sound:
+theorem \<^marker>\<open>provenance ai_human\<close> DFS_dircycle_sound:
   assumes "cycle (dc.DFS_skel dircycle_initial_state)"
   shows "\<exists>c. Awalk_Defs.cycle (Graph.digraph_abs G) c"
 proof -
@@ -670,7 +673,7 @@ proof(induction rule: dc.DFS_skel_induct[OF assms(1)])
   qed
 qed
 
-theorem DFS_dircycle_complete:
+theorem \<^marker>\<open>provenance ai_human\<close> DFS_dircycle_complete:
   assumes "\<not> cycle (dc.DFS_skel dircycle_initial_state)"
   shows "\<nexists>c. Awalk_Defs.cycle (Graph.digraph_abs G \<downharpoonright> t_set (seen (dc.DFS_skel dircycle_initial_state))) c"
 proof -

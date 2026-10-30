@@ -4,6 +4,9 @@ theory Push_Relabel_Discharge_Imperative
     Push_Relabel_Discharge
 begin
 
+provenance ai
+
+
 section \<open>Imperative Refinement of the Discharge Step\<close>
 
 text \<open>The discharge step only reads the data structures: it looks at the current residual edge

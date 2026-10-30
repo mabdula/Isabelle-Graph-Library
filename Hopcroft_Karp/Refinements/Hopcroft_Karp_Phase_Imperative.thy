@@ -3,6 +3,9 @@ theory Hopcroft_Karp_Phase_Imperative
           Micali_Vazirani.IDFS_Imperative Disjoint_Paths_Search_Imperative
 begin
 
+provenance ai
+
+
 section \<open>Imperative Refinement of the Phase\<close>
 
 text \<open>The imperative phase composes the imperative alternating BFS

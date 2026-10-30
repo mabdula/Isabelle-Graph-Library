@@ -5,7 +5,7 @@ theory Index_26_Other_Methodological_Points
     "Matroid_Intersection.Max_Bipartite_Matching_Matroid"
     "Mincost_Flow_Algorithms.Orlins_Time"
     "Mincost_Flow_Algorithms.Path_Aug_Opt"
-    "Spanning_Trees.Kruskal_Greedy"
+    "Spanning_Trees.Kruskal_Functional"
 begin
 
 section \<open>Section 2.6: Other Methodological Points\<close>
@@ -15,12 +15,9 @@ text \<open>Index of the paper's listings for: Section 2.6: Other Methodological
   entity still exists in the library.\<close>
 
 text \<open>\<^bold>\<open>Listing 107. global_interpretation Kruskal_Greedy: BestInGreedy_exec (Kruskal_Functional.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Greedy.thy\<close> (line 119).
-  Note: paper: Kruskal_Functional.thy; in this snapshot: Kruskal_Greedy.thy. The locale
-  \<open>BestInGreedy_exec\<close> of the listing is called @{locale Best_In_Greedy'} here, and the constant
-  defined as \<open>kruskal'\<close> is \<open>Kruskal_Greedy.BestInGreedy'\<close>.
-  global_interpretation @{text \<open>Kruskal_Greedy: Best_In_Greedy'\<close>}.
-  Checked reference: @{locale Best_In_Greedy'}.\<close>
+  In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Functional.thy\<close> (line 235).
+  global_interpretation @{text \<open>Kruskal_Greedy: BestInGreedy_exec\<close>}.
+  Checked reference: @{locale BestInGreedy_exec}.\<close>
 
 text \<open>\<^bold>\<open>Listing 108. theorem solution (Max_Bipartite_Matching_Matroid.thy)\<close>
   In this snapshot: \<^file>\<open>../../Matroid_Intersection/Applications/Max_Bipartite_Matching_Matroid.thy\<close> (line 1545, in an unnamed context).
@@ -28,7 +25,8 @@ text \<open>\<^bold>\<open>Listing 108. theorem solution (Max_Bipartite_Matching
   Checked reference: @{thm Max_Bipartite_Matching_Matroid.solution}.\<close>
 
 text \<open>\<^bold>\<open>Listing 109. definition local_indep_oracle (Kruskal_Greedy.thy)\<close>
-  In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Greedy.thy\<close> (line 102, locale Oracle).
+  In this snapshot: \<^file>\<open>../../Spanning_Trees/Kruskal_Functional.thy\<close> (line 218, locale Oracle).
+  Note: paper: Kruskal_Greedy.thy; in this snapshot: Kruskal_Functional.thy.
   Checked reference: @{const Oracle.local_indep_oracle}.\<close>
 
 text \<open>\<^bold>\<open>Listing 110. theorem reduction_of_min_cost_flow_to_hitchcock_general (Hitchcock_Reduction.thy)\<close>

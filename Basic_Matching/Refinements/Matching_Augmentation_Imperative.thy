@@ -4,6 +4,9 @@ theory Matching_Augmentation_Imperative
     Basic_Matching.Matching_Augmentation_Executable
 begin
 
+provenance ai
+
+
 section \<open>Imperative Augmentation of Matchings\<close>
 
 text \<open>This is the imperative counterpart of @{locale Matching_Augmentation_Specs}. It is generic in

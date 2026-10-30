@@ -2,6 +2,9 @@ theory Disjoint_Paths_Search_Imperative
   imports Hopcroft_Karp.Disjoint_Paths_Search Data_Structures.Bounded_Stack_Specs_Imp
 begin
 
+provenance ai
+
+
 section \<open>Imperative Refinement of the Disjoint-Paths Search\<close>
 
 text \<open>The imperative program mirrors @{const Disjoint_Paths_Search.Disjoint_Paths_Search_impl}.

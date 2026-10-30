@@ -3,6 +3,9 @@ theory Push_Relabel_Discharge
     Push_Relabel_Generic
 begin
 
+provenance ai
+
+
 section \<open>The Discharge Step\<close>
 
 text \<open>The step shared by all strategies when working on an active vertex \<open>u\<close>: if the current

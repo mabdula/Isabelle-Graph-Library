@@ -2,6 +2,9 @@ theory Matroid_Weighted_Intersection_Exchange_Graph_CSR
   imports Matroid_Weighted_Intersection_Exchange_Graph Matroid_Intersection_Exchange_Graph_CSR
 begin
 
+provenance ai
+
+
 section \<open>The Weighted Exchange Graph Search on the CSR BFS\<close>
 
 text \<open>Glue only, as @{theory Matroid_Intersection.Matroid_Intersection_Exchange_Graph_CSR}: the

@@ -3,6 +3,9 @@ theory Hopcroft_Karp_Imperative
           Basic_Matching.Matching_Augmentation_Executable
 begin
 
+provenance ai
+
+
 section \<open>The Imperative Hopcroft-Karp Algorithm\<close>
 
 text \<open>The imperative top loop (@{locale Hopcroft_Karp_Loop_Imperative}) with the imperative phase

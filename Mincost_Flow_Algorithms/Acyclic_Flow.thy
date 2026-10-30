@@ -5,6 +5,9 @@ theory Acyclic_Flow
        Data_Structures.Real_Embedding
 begin
 
+provenance ai
+
+
 context
   cost_flow_network
 begin
@@ -121,7 +124,7 @@ text \<open>The executable specification locale: fixes the graph-iterator / arra
       ADT operations and the program constants, with NO assumptions, and holds every executable
       definition of the acyclic-flow procedure.\<close>
 
-locale acyclic_flow_impl_spec =
+locale \<^marker>\<open>provenance ai_human\<close> acyclic_flow_impl_spec =
   fixes out_current   :: "'g \<Rightarrow> 'v \<Rightarrow> 'e" and out_has       :: "'g \<Rightarrow> 'v
     \<Rightarrow> bool"
     and out_move      :: "'g \<Rightarrow> 'v \<Rightarrow> 'g" and out_reset     :: "'g \<Rightarrow> 'v
@@ -151,7 +154,7 @@ text \<open>The proof locale: re-imposes the cost-flow network, the two edge ite
       and the vertex iterator as genuine ADT contracts, plus the capacity/endpoint/initial-state
       assumptions. All invariants and correctness proofs live here.\<close>
 
-locale acyclic_flow_impl =
+locale \<^marker>\<open>provenance ai_human\<close> acyclic_flow_impl =
   cost_flow_network where fst = "fst :: 'e \<Rightarrow> 'v" and snd = snd+
   real_embedding where h = "h :: 'n \<Rightarrow> real" +
   acyclic_flow_impl_spec where out_current = out_current and flow_lookup = flow_lookup
@@ -262,7 +265,7 @@ text \<open>Fused first pass over the cancellation cycle -- \emph{scan-until-@{t
       @{term \<open>- 1\<close>} as ``unbounded'' (the neutral element for the two room minima). The closing arc is
       folded into the seed by the caller.\<close>
 
-fun af_scan :: "'farr \<Rightarrow> 'v \<Rightarrow> 'v list \<Rightarrow> 'e list \<Rightarrow> bool list
+fun \<^marker>\<open>provenance ai_human\<close> af_scan :: "'farr \<Rightarrow> 'v \<Rightarrow> 'v list \<Rightarrow> 'e list \<Rightarrow> bool list
     \<Rightarrow> 'n \<times> 'n \<times> 'n \<Rightarrow> 'n \<times> 'n \<times> 'n" where
   "af_scan fl x (_ # v1 # vs) (a # es) (d # ds) (k, ra, rf) =
      (let (up, dn) = af_rooms fl a;
@@ -278,7 +281,7 @@ text \<open>Fused second pass -- push @{term \<gamma>} around the same cycle \em
       @{term 0} if none did (only the closing arc). This subsumes the old separate bottleneck-locate
       scan.\<close>
 
-fun af_push :: "'n \<Rightarrow> 'v \<Rightarrow> 'v list \<Rightarrow> 'e list \<Rightarrow> bool list \<Rightarrow>
+fun \<^marker>\<open>provenance ai_human\<close> af_push :: "'n \<Rightarrow> 'v \<Rightarrow> 'v list \<Rightarrow> 'e list \<Rightarrow> bool list \<Rightarrow>
     bool \<Rightarrow> 'farr \<Rightarrow> 'farr \<times> nat" where
   "af_push \<gamma> x (_ # v1 # vs) (a # es) (d # ds) flip fl =
      (let (fl1, f) = af_push_arc \<gamma> a (d \<noteq> flip) fl
@@ -348,7 +351,7 @@ text \<open>Fused truncation clean-up: over the first @{term n} (= @{term \<open
       separate bounded folds. The surviving endpoint (at index @{term \<open>m'\<close>}) is not touched -- it
       resumes.\<close>
 
-fun af_reset_unsee_seg where
+fun \<^marker>\<open>provenance ai_human\<close> af_reset_unsee_seg where
   "af_reset_unsee_seg (Suc n) (v # vs) st =
      af_reset_unsee_seg n vs (af_reset v (st \<lparr> af_state := st_upd (af_state st) v Unseen \<rparr>))"
 | "af_reset_unsee_seg _ _ st = st"
@@ -401,7 +404,7 @@ definition af_handle where
                      af_estack := a # af_estack st,
                      af_dstack := dir # af_dstack st \<rparr>)))"
 
-function (domintros) AF_DFS where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) AF_DFS where
   "AF_DFS st =
      (if af_unbounded st then st else
       case af_vstack st of
@@ -421,7 +424,7 @@ function (domintros) AF_DFS where
                            af_dstack := tl (af_dstack st) \<rparr>))"
   by pat_completeness auto
 
-partial_function (tailrec) AF_DFS_impl where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) AF_DFS_impl where
   "AF_DFS_impl st =
      (if af_unbounded st then st else
       case af_vstack st of
@@ -503,7 +506,7 @@ text \<open>Hand out the vertices one by one through the vertex iterator; whenev
       been explored, launch the inner DFS-like procedure from it, threading the (updated) flow and
       seen set on.\<close>
 
-function (domintros) AF_outer where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) AF_outer where
   "AF_outer st =
      (if aff_unbounded st then st
       else if has_vertex (aff_vit st) then
@@ -518,7 +521,7 @@ function (domintros) AF_outer where
       else st)"
   by pat_completeness auto
 
-partial_function (tailrec) AF_outer_impl where
+partial_function \<^marker>\<open>provenance ai_human\<close> (tailrec) AF_outer_impl where
   "AF_outer_impl st =
      (if aff_unbounded st then st
       else if has_vertex (aff_vit st) then
@@ -4221,7 +4224,7 @@ text \<open>A ghost \emph{finish clock}: \<open>AF_DFS_i\<close> runs exactly li
       it succeeds where the seen/tree structure fails. The base component of \<open>AF_DFS_i\<close> coincides
       with @{const AF_DFS}, so results about the rank transfer to the real run.\<close>
 
-function (domintros) AF_DFS_i where
+function \<^marker>\<open>provenance ai_human\<close> (domintros) AF_DFS_i where
   "AF_DFS_i st rk c =
      (if af_unbounded st then (st, rk, c) else
       case af_vstack st of
@@ -5443,7 +5446,7 @@ lemma make_acyclic_correct_unconditional:
 text \<open>The user-facing correctness theorem strengthened to a genuine @{term b}-flow: from a feasible
       @{term b}-flow input the algorithm returns a feasible @{term b}-flow of no greater cost, and acyclic.\<close>
 
-lemma make_acyclic_correct_unconditional_bflow:
+lemma \<^marker>\<open>provenance ai_human\<close> make_acyclic_correct_unconditional_bflow:
   "\<lbrakk>multigraph_inv out_arr in_arr; flow_invar f0; af_feasible b f0; vit_invar all_vertices; vit_abstract
     all_vertices = \<V>; vit_iterated all_vertices = {}; \<forall>u. out_iterated out_arr u = {} \<and> in_iterated
     in_arr u = {}; make_acyclic f0 = Some f'\<rbrakk> \<Longrightarrow> af_feasible b f' \<and> \<C> (h \<circ>

@@ -3,6 +3,9 @@ theory Hungarian_CSR_Example
     Hungarian_CSR_Variants
 begin
 
+provenance ai
+
+
 section \<open>The Example of  \<open>Hungarian_Example.thy\<close> with Integer Weights\<close>
 
 text \<open>The graph of  \<open>Hungarian_Example.thy\<close>, with the weights multiplied by 1000 and

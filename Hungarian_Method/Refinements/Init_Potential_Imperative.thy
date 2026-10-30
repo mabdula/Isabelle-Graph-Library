@@ -7,6 +7,9 @@ theory Init_Potential_Imperative
     Data_Structures.Real_Embedding
 begin
 
+provenance ai
+
+
 section \<open>Imperative Computation of the Initial Potential\<close>
 
 text \<open>The imperative counterpart of @{locale init_potential_coll}. The weights are read at the

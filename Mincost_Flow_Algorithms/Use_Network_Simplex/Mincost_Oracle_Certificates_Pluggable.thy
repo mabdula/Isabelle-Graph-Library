@@ -8,9 +8,12 @@ theory Mincost_Oracle_Certificates_Pluggable
   imports Mincost_Oracle_Certificates
 begin
 
+provenance ai
+
+
 subsection \<open>The pipeline, generic in the checker\<close>
 
-locale mcf_oracle_pluggable_checker =
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle_pluggable_checker =
   mcf_oracle_cleanup_spec where capacity_list = capacity_list
   for capacity_list :: "('n :: linordered_idom) list" +
   fixes checker :: "'n oracle_answer \<Rightarrow> 'n solver_verdict option"
@@ -26,7 +29,7 @@ end
 
 text \<open>An accepted verdict is true of the instance, the shape of \<open>checked_verdict_sound\<close>.\<close>
 
-locale mcf_oracle_pluggable_checker_proof =
+locale \<^marker>\<open>provenance ai_human\<close> mcf_oracle_pluggable_checker_proof =
   mcf_oracle + mcf_oracle_pluggable_checker +
   assumes cleanup_correct: "\<And>g. verdict_ok (cleanup orc_input g)"
       and checker_correct: "\<And>a r. checker a = Some r \<Longrightarrow> verdict_ok r"

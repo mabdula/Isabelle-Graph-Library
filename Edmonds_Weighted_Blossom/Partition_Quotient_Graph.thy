@@ -2,6 +2,8 @@ theory Partition_Quotient_Graph
   imports Basic_Matching.Matching
 begin
 
+provenance human
+
 section \<open>Quotienting Graphs by a Partition\<close>
 
 text \<open>We can partition a graph's vertices into equivalence classes.

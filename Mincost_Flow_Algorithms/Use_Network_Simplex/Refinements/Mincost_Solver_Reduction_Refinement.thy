@@ -3,6 +3,9 @@ theory Mincost_Solver_Reduction_Refinement
            Separation_Logic_Imperative_HOL_Partial.Array_Blit
 begin
 
+provenance ai
+
+
 section \<open>Imperative refinement of the DIMACS reduction\<close>
 
 text \<open>The fold of \<open>Mincost_Solver_Reduction\<close> becomes a pass over the caller's six arrays; nothing

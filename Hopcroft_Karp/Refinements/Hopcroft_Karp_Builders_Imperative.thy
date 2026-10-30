@@ -2,6 +2,9 @@ theory Hopcroft_Karp_Builders_Imperative
   imports Hopcroft_Karp_Phase_Imperative Imperative.Array_Folds
 begin
 
+provenance ai
+
+
 section \<open>Imperative Builders of the Phase\<close>
 
 text \<open>The builders of the phase, implemented imperatively. As in the functional phase, the

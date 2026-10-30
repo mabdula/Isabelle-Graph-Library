@@ -2,6 +2,9 @@ theory Multigraph_Weighted_Paths
   imports Directed_Set_Graphs.Multigraph
 begin
 
+provenance ai
+
+
 section \<open>Weighted Paths and Distances in a Multigraph\<close>
 
 text \<open>This theory develops, for a directed multigraph presented \<^emph>\<open>via\<close> the @{locale

@@ -4,6 +4,9 @@ theory Matching_Certificate_Arrays
     Data_Structures.Imp_Array_Fun
 begin
 
+provenance ai
+
+
 section \<open>Certificate Checkers for Extremal Bipartite Matchings on Arrays\<close>
 
 text \<open>The instance is given by the arrays of the left endpoints, the right endpoints and the

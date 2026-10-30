@@ -5,6 +5,9 @@ theory Init_Potential_Collection
     Data_Structures.More_Arith
 begin
 
+provenance ai
+
+
 section \<open>The Initial Potential over a Collection of Neighbourhoods\<close>
 
 text \<open>The initial potential of the Hungarian method assigns to every left vertex @{term u} the

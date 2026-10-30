@@ -2,6 +2,8 @@ theory Spanning_Tree_Flow
   imports Flow_Theory.Cost_Optimality Spanning_Trees.Arborescense
 begin
 
+provenance human
+
 context
 cost_flow_network
 begin

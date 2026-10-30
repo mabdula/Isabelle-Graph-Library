@@ -1,0 +1,11 @@
+(* Based on: Stevens & Ghidini (2025),
+   https://doi.org/10.5281/zenodo.15557955
+   License of original: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+   This file has been modified from the original. *)
+
+session Union_Find = HOL +
+  sessions
+    "List-Index"
+    Collections
+  theories
+    Union_Find_Size_Int_Quotient
