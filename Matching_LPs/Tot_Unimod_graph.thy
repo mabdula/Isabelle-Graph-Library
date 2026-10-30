@@ -688,8 +688,16 @@ proof(induct "dim_row B" arbitrary: B I J rule: less_induct)
             by simp        
           have 11: "dim_row ( submatrix (incidence_mat ) (I - {pick I i}) (J - {pick J j})) < 
                     dim_row B" 
-            by (metis "9" bot_nat_0.not_eq_extremum diff_less i_j less_nat_zero_code 
-                less_one mat_delete_dim(1))
+            proof -
+              have i_lt: "i < dim_row B"
+                using i_j by blast
+              have "dim_row (mat_delete B i j) = dim_row B - 1"
+                using mat_delete_dim(1) by blast
+              moreover have "dim_row B - 1 < dim_row B"
+                using i_lt by simp
+              ultimately show ?thesis
+                using 9 by simp
+            qed
           have "det (submatrix (incidence_mat ) (I - {pick I i}) (J - {pick J j})) \<in> {-1, 0, 1}" 
             using 11 less(1) by presburger
           then have "det (mat_delete B i j) \<in> {-1, 0, 1}" 
