@@ -3,8 +3,8 @@ this evaluation), one directory per benchmark; setup/export_files.txt lists ever
 
 campaign/      the exports the paper's numbers were measured with (--old-generated-code)
 pregenerated/  the exports generated from the current library and shipped (the smoke test's default); the AFP
-               push-relabel export and the Kruskal export (the library has no Kruskal export theory yet) are
-               only supplied this way and are measured in every mode that does not use campaign/
+               push-relabel export is only supplied this way and is measured in every mode that does not use
+               campaign/
 built/         not shipped: setup/isabelle.sh generates the exports with Isabelle (the default of the 8h and
                full modes) and setup/exports.sh collects them into work/exports/current
 
