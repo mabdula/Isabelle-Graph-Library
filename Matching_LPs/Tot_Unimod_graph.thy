@@ -951,8 +951,19 @@ qed
                     using i_j(1) by simp
                 qed
               then have 23: "Vs_enum_inv (pick I i) \<in> G_enum_inv (pick J t)" 
-                by (metis (full_types) \<open>pick J t < m\<close> dim_row_incidence_mat dim_submatrix(1) i_j(3) less(2)
-                    one_then_in_edge pick_le)
+                proof -
+                  assume eq: "incidence_mat $$ (pick I i, pick J t) = 1"
+                  have i_lt: "i < dim_row (submatrix (incidence_mat) I J)"
+                    using i_j(3) less(2) by simp
+                  have pick_bound: "pick I i < dim_row (incidence_mat)"
+                    using i_lt[unfolded dim_submatrix(1)] by (rule pick_le)
+                  hence i_bound: "pick I i < card (Vs E)"
+                    by (simp add: dim_row_incidence_mat)
+                  have t_bound: "pick J t < card E"
+                    using \<open>pick J t < m\<close> by simp
+                  show ?thesis
+                    using i_bound t_bound eq one_then_in_edge by blast
+                qed
               have "incidence_mat  $$ (pick I j, pick J t) = 1"
                 proof -
                   have j_lt: "j < card {i. i < dim_row incidence_mat \<and> i \<in> I}"
