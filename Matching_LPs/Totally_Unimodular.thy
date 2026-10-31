@@ -2858,12 +2858,54 @@ proof rule
                 (-1)^((dim_row B - 1)+j) * det (mat_delete B (dim_row B - 1) j)" 
               by (meson Determinant.cofactor_def)
             have 9:"mat_delete B (dim_row B - 1) j = submatrix A I (J - {pick J j})"
-              using mat_delete_last_row_submatrix 
-              by (smt (z3) "5" A Collect_cong One_nat_def Suc_eq_plus1 10 22 19 append_rows_def 
-                  carrier_matD(2) diff_add_inverse dim_submatrix(2) dim_vec vec_carrier
-                  submatrix_one_row_mat_of_rows index_mat_four_block(2) index_row(2) 
-                  index_unit_vec(3) index_zero_mat(2) j list.size(3) list.size(4) 
-                  mat_of_rows_carrier(1) mat_of_rows_carrier(2) plus_1_eq_Suc unit_vec_carrier )
+              proof -
+              define B0 where "B0 = submatrix A I J"
+              define bvec :: "'a vec" where "bvec = vec_of_list (nths (list_of_vec (unit_vec n i)) J)"
+              have dimcolB0: "dim_col B0 = card ({0..<n} \<inter> J)"
+              proof -
+                have "dim_col B0 = card {k. k < dim_col A \<and> k \<in> J}"
+                  unfolding B0_def using dim_submatrix(2) by blast
+                moreover have "dim_col A = n"
+                  using A carrier_matD(2) by blast
+                moreover have "{k. k < n \<and> k \<in> J} = {0..<n} \<inter> J"
+                  by auto
+                ultimately show ?thesis
+                  by simp
+              qed
+              have B0_carr: "B0 \<in> carrier_mat (dim_row B0) (card ({0..<n} \<inter> J))"
+                using dimcolB0 by (intro carrier_matI) auto
+              have row_carr: "mat_of_rows (card ({0..<n} \<inter> J)) [bvec] \<in> carrier_mat 1 (card ({0..<n} \<inter> J))"
+                using mat_of_rows_carrier(1)[of "card ({0..<n} \<inter> J)" "[bvec]"] by auto
+              have Beq: "B = B0 @\<^sub>r mat_of_rows (card ({0..<n} \<inter> J)) [bvec]"
+                unfolding B0_def bvec_def using 21 by simp
+              have dims: "B \<in> carrier_mat (dim_row B0 + 1) (card ({0..<n} \<inter> J))"
+                unfolding Beq using carrier_append_rows[OF B0_carr row_carr] .
+              have dim_row_B: "dim_row B - 1 = dim_row B0"
+                using carrier_matD(1)[OF dims] by simp
+              have dim_col_B: "dim_col B = card ({0..<n} \<inter> J)"
+                using carrier_matD(2)[OF dims] by simp
+              have bvec_dim: "dim_vec bvec = card ({0..<n} \<inter> J)"
+              proof -
+                have "dim_vec bvec = card {ia. ia < dim_vec (unit_vec n i) \<and> ia \<in> J}"
+                  unfolding bvec_def using 5 by (simp add: length_nths)
+                moreover have "dim_vec (unit_vec n i) = n"
+                  using index_unit_vec(3) by blast
+                moreover have "{ia. ia < n \<and> ia \<in> J} = {0..<n} \<inter> J"
+                  by auto
+                ultimately show ?thesis
+                  by simp
+              qed
+              have bvec_carr: "bvec \<in> carrier_vec (dim_col B0)"
+                using carrier_vec_dim_vec[of bvec] bvec_dim dimcolB0 by simp
+              have j_less: "j < dim_col B0"
+                using j dim_col_B dimcolB0 by auto
+              have "mat_delete B (dim_row B - 1) j =
+                    mat_delete (B0 @\<^sub>r mat_of_rows (dim_col B0) [bvec]) (dim_row B0) j"
+                using Beq dimcolB0 dim_row_B by simp
+              also have "\<dots> = submatrix A I (J - {pick J j})"
+                using mat_delete_last_row_submatrix[OF A bvec_carr B0_def j_less] .
+              finally show ?thesis .
+              qed
             have "det (submatrix A I (J - {pick J j})) \<in> {-1, 0, 1}" 
               using assms(2) unfolding tot_unimodular_def 
               by blast
