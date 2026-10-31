@@ -1290,12 +1290,16 @@ proof -
       assume asmi: "i < dim_vec (vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr}))"
       then have asmi': "i < dim_vec b" 
         using 4 by presburger
+      have dim_eq: "dim_row (A @\<^sub>r - 1\<^sub>m n) = dim_vec (b @\<^sub>v 0\<^sub>v n)"
+        using 2 \<open>dim_vec (b @\<^sub>v 0\<^sub>v n) = nr + n\<close> by (simp add: carrier_matD)
+      have i_lt: "i < dim_vec (snd (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) {0..<nr}))"
+        using asmi by (simp add: sub_system_snd)
       obtain k where k: "k < dim_vec (b @\<^sub>v 0\<^sub>v n) \<and> k \<in> {0..<nr} \<and> 
           row (fst (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) {0..<nr})) i = row (A @\<^sub>r - 1\<^sub>m n) k 
           \<and> (snd (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) {0..<nr})) $ i = (b @\<^sub>v 0\<^sub>v n) $ k \<and> 
       k = pick {0..<nr} i"
-        using exist_index_in_A[of "(A @\<^sub>r - 1\<^sub>m n)" "(b @\<^sub>v 0\<^sub>v n)" i "{0..<nr}"] 2 3
-        by (metis \<open>dim_vec (b @\<^sub>v 0\<^sub>v n) = nr + n\<close> asmi carrier_matD(1) sub_system_snd)
+        using exist_index_in_A[of "(A @\<^sub>r - 1\<^sub>m n)" "(b @\<^sub>v 0\<^sub>v n)" i "{0..<nr}"] dim_eq i_lt
+        by blast
       
       have 6: "(vec_of_list (nths (list_of_vec (b @\<^sub>v 0\<^sub>v n)) {0..<nr})) $v i = (b @\<^sub>v 0\<^sub>v n) $ k"
       proof -
