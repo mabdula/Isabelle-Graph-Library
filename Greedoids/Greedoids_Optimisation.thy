@@ -990,8 +990,80 @@ definition "unique P = (\<forall> x y. P x \<longrightarrow> P y \<longrightarro
 lemma injective_predicate_unique_split:
   "distinct xs \<Longrightarrow> unique P \<Longrightarrow> xs = xs11@[xx]@xs12 \<Longrightarrow> xs = xs21@[yy]@xs22
          \<Longrightarrow> P xx \<Longrightarrow> P yy \<Longrightarrow> xs11=xs21 \<and> xx = yy \<and> xs12 = xs22"
-  by (smt (verit, del_insts) Cons_eq_appendI append.left_neutral append_Cons_eq_iff distinct.simps(2)
-      distinct_append in_set_conv_decomp unique_def inj_on_eq_iff not_distinct_conv_prefix)
+proof -
+  assume dist: "distinct xs"
+     and uniq: "unique P"
+     and split1: "xs = xs11 @ [xx] @ xs12"
+     and split2: "xs = xs21 @ [yy] @ xs22"
+     and Pxx: "P xx"
+     and Pyy: "P yy"
+  have xy_eq: "xx = yy"
+    using uniq Pxx Pyy unfolding unique_def by blast
+  have split2': "xs = xs21 @ [xx] @ xs22"
+    using split2 by (simp add: xy_eq[symmetric])
+  have dist1: "distinct (xs11 @ [xx] @ xs12)"
+    using dist split1 by simp
+  have dist2: "distinct (xs21 @ [xx] @ xs22)"
+    using dist split2' by simp
+  have not_in1: "xx \<notin> set xs11"
+    using dist1 by (auto simp add: distinct_append)
+  have not_in3: "xx \<notin> set xs21"
+    using dist2 by (auto simp add: distinct_append)
+  have eq_lists: "xs11 @ [xx] @ xs12 = xs21 @ [xx] @ xs22"
+    using split1 split2' by simp
+  obtain us where us_prop:
+      "xs11 = xs21 @ us \<and> [xx] @ xs22 = us @ [xx] @ xs12 \<or>
+       xs21 = xs11 @ us \<and> [xx] @ xs12 = us @ [xx] @ xs22"
+    using eq_lists by (force simp: append_eq_append_conv2)
+  have main: "xs11 = xs21 \<and> xs12 = xs22"
+  proof (cases "us = []")
+    case True
+    { assume asm: "xs11 = xs21 @ us \<and> [xx] @ xs22 = us @ [xx] @ xs12"
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using asm True by simp }
+    moreover
+    { assume asm: "xs21 = xs11 @ us \<and> [xx] @ xs12 = us @ [xx] @ xs22"
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using asm True by simp }
+    ultimately show ?thesis
+      using us_prop by blast
+  next
+    case False
+    then obtain u us' where us_split: "us = u # us'"
+      using neq_Nil_conv[of us] by auto
+    { assume asm: "xs11 = xs21 @ us \<and> [xx] @ xs22 = us @ [xx] @ xs12"
+      have eq2: "[xx] @ xs22 = us @ [xx] @ xs12"
+        using asm by simp
+      have cons_eq: "xx # xs22 = u # (us' @ [xx] @ xs12)"
+        using eq2 us_split by simp
+      have xx_u: "xx = u"
+        using cons_eq by simp
+      have xx_in_us: "xx \<in> set us"
+        using us_split xx_u by simp
+      have xx_in_xs11: "xx \<in> set xs11"
+        using asm xx_in_us by auto
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using not_in1 xx_in_xs11 by blast }
+    moreover
+    { assume asm: "xs21 = xs11 @ us \<and> [xx] @ xs12 = us @ [xx] @ xs22"
+      have eq2: "[xx] @ xs12 = us @ [xx] @ xs22"
+        using asm by simp
+      have cons_eq: "xx # xs12 = u # (us' @ [xx] @ xs22)"
+        using eq2 us_split by simp
+      have xx_u: "xx = u"
+        using cons_eq by simp
+      have xx_in_us: "xx \<in> set us"
+        using us_split xx_u by simp
+      have xx_in_xs21: "xx \<in> set xs21"
+        using asm xx_in_us by auto
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using not_in3 xx_in_xs21 by blast }
+    ultimately show ?thesis
+      using us_prop by blast
+  qed
+  show "xs11 = xs21 \<and> xx = yy \<and> xs12 = xs22"
+    using main xy_eq by auto
+qed
 
 definition "last_in_list P xs y = (y \<in> set xs \<and> P y \<and> (\<nexists> xs1 xs2 z. xs = xs1@[y]@xs2 \<and> z \<in> set xs2 \<and> P z))"
 
