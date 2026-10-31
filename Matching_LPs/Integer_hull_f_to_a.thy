@@ -2923,7 +2923,18 @@ qed
                                              F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}"
     using F_def min_face_min_subsyst[of ?fullA "(nr + 2*n)" ?fullb F]  
     using 2 3
-    by (smt (verit, ccfv_SIG))
+    proof -
+      have F_min: "min_face ?P' F" using F_def by (rule conjunct1)
+      show thesis
+      proof (rule min_face_min_subsyst[of ?fullA "(nr + 2*n)" ?fullb F, OF 2 3 F_min])
+        fix A' b' I
+        assume p1: "(A', b') = sub_system ?fullA ?fullb I"
+          and p2: "F = {x. x \<in> carrier_vec n \<and> A' *\<^sub>v x = b'}"
+          and p3: "dim_vec b' = Min {dim_vec d| C d Ia. (C, d) = sub_system ?fullA ?fullb Ia \<and>
+                                             F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}"
+        show thesis using that[OF p2 p1 p3] .
+      qed
+    qed
   have 9: "(\<forall>x\<in>local.polyhedron (A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n) (0\<^sub>v nr @\<^sub>v 1\<^sub>v n @\<^sub>v 1\<^sub>v n).
         \<forall>i<n. x $v i \<le> 1) \<or>
     (\<forall>x\<in>local.polyhedron (A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n) (0\<^sub>v nr @\<^sub>v 1\<^sub>v n @\<^sub>v 1\<^sub>v n).
