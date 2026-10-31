@@ -3769,9 +3769,32 @@ next
   hence b:"make_pair ee \<in> forst"
     using 2 by (fastforce simp add: make_pairs_are )
   hence c:"conv (make_pair ee) =  F ee"
-    using 2(2)[of "fst ee" "snd ee" ee] assms(3)[of "make_pair ee"] a 2(1,4,5)
-  by (metis assms(1) cost_flow_network.fstv.simps(2) cost_flow_network.sndv.simps(2) image_iff
-      local.algo.consist_fstv local.algo.consist_sndv make_pair_fst_snd surjective_pairing)
+  proof -
+    from 2(5) 2(4) have "B ee \<in> conv ` forst" by simp
+    then obtain p where pf: "p \<in> forst" and pc: "conv p = B ee"
+      by (force simp add: image_iff)
+    from surjective_pairing[of p] pf have pq: "(prod.fst p, prod.snd p) \<in> forst" by simp
+    from surjective_pairing[of p] pc have ce: "conv (prod.fst p, prod.snd p) = B ee" by simp
+    have fp: "prod.fst p = snd ee"
+      using local.algo.consist_fstv[OF assms(1) pq] ce
+            cost_flow_network.fstv.simps(2)
+      by simp
+    have sp: "prod.snd p = fst ee"
+      using local.algo.consist_sndv[OF assms(1) pq] ce
+            cost_flow_network.sndv.simps(2)
+      by simp
+    from surjective_pairing[of p] fp sp have peq: "p = (snd ee, fst ee)" by simp
+    have cb: "conv (snd ee, fst ee) = B ee"
+      using peq pc by simp
+    have prev: "(fst ee, snd ee) \<in> forst"
+      using b make_pair_fst_snd[of ee] by simp
+    have ne: "fst ee \<noteq> snd ee"
+      using assms(3)[of "make_pair ee"] b by (simp add: make_pair_fst_snd)
+    have iff: "(conv (fst ee, snd ee) = F ee) = (conv (snd ee, fst ee) = B ee)"
+      using prev ne 2(2)[of "fst ee" "snd ee" ee] by blast
+    show ?thesis
+      using iff cb make_pair_fst_snd[of ee] by simp
+  qed
   then show ?case 
     using 2(5) b by force
 next
