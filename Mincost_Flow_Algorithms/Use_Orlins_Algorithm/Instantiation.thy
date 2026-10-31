@@ -3758,9 +3758,34 @@ proof(rule cost_flow_network.consistE[OF assms(1)], rule symmetric_digraphE[OF a
   hence b:"prod.swap (make_pair ee) \<in> forst"
     using 1 by (fastforce simp add: make_pairs_are )
   hence c:"conv (prod.swap (make_pair ee)) =  B ee"
-    using 1(2)[of "fst ee" "snd ee" ee] assms(3)[of "make_pair ee"] a 1(1,4,5)
-    by (metis (no_types, lifting) "1"(2) Redge.distinct(1) Redge.inject(1) imageE 
-         make_pairs_are(1) prod.swap_def surjective_pairing)
+  proof -
+    from "1"(5) "1"(4) have "F ee \<in> conv ` forst" by simp
+    then obtain p where pf: "p \<in> forst" and pc: "conv p = F ee"
+      by (force simp add: image_iff)
+    from surjective_pairing[of p] pf have pq: "(prod.fst p, prod.snd p) \<in> forst" by simp
+    from surjective_pairing[of p] pc have ce: "conv (prod.fst p, prod.snd p) = F ee" by simp
+    have fp: "prod.fst p = fst ee"
+      using local.algo.consist_fstv[OF assms(1) pq] ce
+            cost_flow_network.fstv.simps(1)
+      by simp
+    have sp: "prod.snd p = snd ee"
+      using local.algo.consist_sndv[OF assms(1) pq] ce
+            cost_flow_network.sndv.simps(1)
+      by simp
+    from surjective_pairing[of p] fp sp have peq: "p = (fst ee, snd ee)" by simp
+    have cf: "conv (fst ee, snd ee) = F ee"
+      using peq pc by simp
+    have prev: "(fst ee, snd ee) \<in> forst"
+      using a make_pair_fst_snd[of ee] by simp
+    have ne: "fst ee \<noteq> snd ee"
+      using assms(3)[of "make_pair ee"] a by (simp add: make_pair_fst_snd)
+    have iff: "(conv (fst ee, snd ee) = F ee) = (conv (snd ee, fst ee) = B ee)"
+      using prev ne "1"(2)[of "fst ee" "snd ee" ee] by blast
+    have sw: "prod.swap (make_pair ee) = (snd ee, fst ee)"
+      by (simp add: make_pair_fst_snd prod.swap_def)
+    show ?thesis
+      using sw iff cf by simp
+  qed
   then show ?case 
     using "1"(5) b by force
 next
