@@ -6981,9 +6981,23 @@ qed
         ultimately show "M \<oplus> set (edges_of_path (stem @ [hd C])) \<subseteq> E"
           by blast
       qed
-      ultimately obtain p_M' where "matching_augmenting_path M' p_M'" "path E p_M'" "distinct p_M'"
-        using Berge[OF M'_finite] graph
-        by metis
+      have "\<exists>p. matching_augmenting_path M' p \<and> path E p \<and> distinct p"
+      proof -
+        have dblE: "dblton_graph E"
+          using graph graph_invar_dblton by blast
+        have finVsE: "finite (Vs E)"
+          using graph graph_invar_finite_Vs by blast
+        have "card M' < card M_large"
+          using cardM'_eq_cardM \<open>card M_large > card M\<close> by linarith
+        then have rhs: "\<exists>M''\<subseteq>E. matching M'' \<and> card M' < card M''"
+          using \<open>matching M_large\<close> \<open>M_large \<subseteq> E\<close> by blast
+        from Berge[OF M'_finite M'_matching M'_subset_G dblE finVsE] and rhs
+        have "\<exists>p. matching_augmenting_path M' p \<and> path E p \<and> distinct p"
+          by (rule iffD2)
+        then show ?thesis .
+      qed
+      then obtain p_M' where "matching_augmenting_path M' p_M'" "path E p_M'" "distinct p_M'"
+        by blast
 
       moreover have lastC_nin_M': "last C \<notin> Vs M'"
       proof-
