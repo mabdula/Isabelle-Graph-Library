@@ -3422,8 +3422,29 @@ qed
               by simp
             then have "vec_of_list (nths (list_of_vec (- unit_vec n i)) J) \<in> 
                        carrier_vec (dim_col (submatrix A I J))"
-              by (smt (verit) A Collect_cong carrier_dim_vec carrier_matD(2) dim_submatrix(2)
-                  dim_vec nths_list_pick_vec_same)
+            proof -
+              have uv: "(- unit_vec n i :: 'a vec) \<in> carrier_vec n"
+                by simp
+              have dimv: "dim_vec (- unit_vec n i :: 'a vec) = n"
+                using uv carrier_dim_vec by blast
+              have dimA: "dim_col A = n"
+                using A carrier_matD(2) by blast
+              have set_eq: "{ia. ia < dim_vec (- unit_vec n i :: 'a vec) \<and> ia \<in> J} =
+                            {ia. ia < dim_col A \<and> ia \<in> J}"
+                using dimv dimA by simp
+              have card_eq: "card {ia. ia < dim_vec (- unit_vec n i :: 'a vec) \<and> ia \<in> J} =
+                            dim_col (submatrix A I J)"
+                using set_eq dim_submatrix(2)[of A I J] by simp
+              have "vec_of_list (nths (list_of_vec (- unit_vec n i :: 'a vec)) J) =
+                    vec (card {ia. ia < dim_vec (- unit_vec n i :: 'a vec) \<and> ia \<in> J})
+                        (\<lambda> ia. (- unit_vec n i :: 'a vec) $ (pick J ia))"
+                using nths_list_pick_vec_same[of "- unit_vec n i :: 'a vec" J] by blast
+              then have "vec_of_list (nths (list_of_vec (- unit_vec n i :: 'a vec)) J) \<in>
+                         carrier_vec (card {ia. ia < dim_vec (- unit_vec n i :: 'a vec) \<and> ia \<in> J})"
+                using vec_carrier_vec by simp
+              show ?thesis
+                by (simp add: nths_list_pick_vec_same card_eq uv dimv dim_submatrix(2)[of A I J] dimA)
+            qed
             have 9: "mat_delete B (dim_row B - 1) j = submatrix A I (J - {pick J j})"
             proof -
               have dimA_col: "dim_col A = n"
