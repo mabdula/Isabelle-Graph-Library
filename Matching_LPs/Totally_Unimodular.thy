@@ -3015,7 +3015,13 @@ qed
         then have 11: "submatrix (mat_of_rows n [unit_vec n i]) {} J  = 
               0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J))"
           using empty_set_submatrix_iz_zero_mat 
-          by (smt (verit) Collect_cong dim_submatrix(2) mat_of_rows_carrier(3))
+          proof -
+          have dim_eq: "\<And>A K. dim_col (submatrix A {} J) = dim_col (submatrix A K J)"
+            by (simp add: dim_submatrix(2))
+          show ?thesis
+            using empty_set_submatrix_iz_zero_mat[of "mat_of_rows n [unit_vec n i]" J]
+            by (simp add: dim_submatrix(2))
+        qed
         have "B = submatrix A I J" 
           apply rule
             apply (simp add: "10" "30" "11" append_rows_def index_mat_four_block(1) index_zero_mat(1))
