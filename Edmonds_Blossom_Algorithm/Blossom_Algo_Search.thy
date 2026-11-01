@@ -708,9 +708,74 @@ proof-
     using invars
     unfolding flabel_invar_2_def
     apply safe
-    subgoal 
-      by (smt dblton_graph_def Pair_inject doubleton_eq_iff graph in_mono map_upd_Some_unfold 
-              matching(2))
+    subgoal premises prems for va vb
+    proof -
+      have mem: "{va, vb} \<in> M"
+        using prems by blast
+      obtain ra where va_even: "(flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) va = Some (ra, Even)"
+        using prems by blast
+      have uniq: "\<And>a b c. {a, b} \<in> M \<Longrightarrow> {a, c} \<in> M \<Longrightarrow> b = c"
+        using doubleton_in_matching[OF matching(1)]
+        by blast
+      have v2_ne_v3: "v2 \<noteq> v3"
+        using graph \<open>{v2, v3} \<in> M\<close> matching(2)
+        by (fastforce elim: dblton_graphE)
+      show ?thesis
+      proof (cases "va = v3")
+        case True
+        then have "{v3, vb} \<in> M"
+          using mem by simp
+        moreover have "{v3, v2} \<in> M"
+          using \<open>{v2, v3} \<in> M\<close> by (simp add: insert_commute)
+        ultimately have "vb = v2"
+          using uniq by blast
+        then have "(flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) vb = Some (r, Odd)"
+          using v2_ne_v3 by simp
+        then show ?thesis
+          by blast
+      next
+        case False
+        note va_ne_v3 = False
+        show ?thesis
+        proof (cases "va = v2")
+          case True
+          then have "(flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) va = Some (r, Odd)"
+            using v2_ne_v3 by simp
+          with va_even have False
+            by simp
+          then show ?thesis
+            by simp
+        next
+          case False
+          note va_ne_v2 = False
+          from va_even have flabel_va: "flabel va = Some (ra, Even)"
+            using va_ne_v2 va_ne_v3 by simp
+          then obtain rb where vb_odd: "flabel vb = Some (rb, Odd)"
+            using mem invars[unfolded flabel_invar_2_def] by blast
+          have vb_ne_v2: "vb \<noteq> v2"
+          proof
+            assume "vb = v2"
+            with vb_odd \<open>flabel v2 = None\<close> show False by simp
+          qed
+          have vb_ne_v3: "vb \<noteq> v3"
+          proof
+            assume "vb = v3"
+            then have "{v3, va} \<in> M"
+              using mem by (simp add: insert_commute)
+            moreover have "{v3, v2} \<in> M"
+              using \<open>{v2, v3} \<in> M\<close> by (simp add: insert_commute)
+            ultimately have "va = v2"
+              using uniq by blast
+            with va_ne_v2 show False
+              by simp
+          qed
+          have upd_odd: "(flabel(v2 := Some (r, Odd), v3 := Some (r, Even))) vb = Some (rb, Odd)"
+            using vb_ne_v2 vb_ne_v3 vb_odd by simp
+          then show ?thesis
+            by blast
+        qed
+      qed
+    qed
     subgoal premises prems for va vb
     proof -
       have mem: "{va, vb} \<in> M"
