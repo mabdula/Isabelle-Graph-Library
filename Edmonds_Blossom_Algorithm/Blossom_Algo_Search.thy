@@ -1825,7 +1825,23 @@ proof-
           using c \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close> by simp
       qed
       then have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) \<notin> Vs M"
-        by (metis "*"(1) "*"(2))
+      proof(cases "v1 = v2")
+        case True
+        then show ?thesis
+          using \<open>last (parent_spec.follow (par(v2 \<mapsto> v1)) v1) \<notin> Vs M\<close>
+          by simp
+      next
+        case False
+        have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) = last (parent_spec.follow par v1)"
+          using *(1)[OF False] .
+        moreover have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v1) = last (parent_spec.follow par v1)"
+          using *(2)[OF False] .
+        ultimately have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) = last (parent_spec.follow (par(v2 \<mapsto> v1)) v1)"
+          by simp
+        then show ?thesis
+          using \<open>last (parent_spec.follow (par(v2 \<mapsto> v1)) v1) \<notin> Vs M\<close>
+          by simp
+      qed
       then show ?thesis
         using True by simp
     next
