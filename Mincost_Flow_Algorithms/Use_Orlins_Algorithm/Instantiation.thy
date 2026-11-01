@@ -1318,8 +1318,8 @@ lemma get_edge_and_costs_backward_not_MInfty:
               find_cheapest_backward_props[OF prod.collapse refl, 
                           of f nb _ "create_edge u v" PInfty]],
                  of prod.snd, simplified image_def, simplified]
-  by(auto split: if_split prod.split option.split)
-    (metis MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv)+
+  using get_edge_and_costs_forward_not_MInfty get_edge_and_costs_forward_def
+  by auto
 
 lemma realising_edges_general_result_None_and_Some:
   assumes "(case realising_edges_lookup (realising_edges_general list) (u, v) 
