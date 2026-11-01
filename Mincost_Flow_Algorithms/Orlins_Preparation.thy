@@ -2322,7 +2322,27 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
                                 "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
-      by (metis (mono_tags, lifting) Un_iff cnt_P_0)
+      proof -
+        have cnt_nonzero: "cnt_P p (\<lambda>e. e \<notin> allowed_edges) \<noteq> 0"
+          using False less(13,14) by simp
+        have "\<exists> e \<in> set p. e \<notin> allowed_edges"
+        proof (rule ccontr)
+          assume "\<not> (\<exists> e \<in> set p. e \<notin> allowed_edges)"
+          hence "cnt_P p (\<lambda>e. e \<notin> allowed_edges) = 0"
+            using cnt_P_0[of p "\<lambda>e. e \<notin> allowed_edges"] by blast
+          thus False
+            using cnt_nonzero by simp
+        qed
+        then obtain e where e_in_p: "e \<in> set p" and e_not_allowed: "e \<notin> allowed_edges"
+          by blast
+        have e_not_in_union: "e \<notin> actives_state' \<union> \<F>_state"
+          using e_not_allowed less(13) by simp
+        have e_notF: "e \<notin> \<F>_redges state"
+          using e_not_in_union less(11) by auto
+        have e_notactive: "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
+          using e_not_in_union less(12) by auto
+        from that[OF e_in_p e_notF e_notactive] show thesis .
+      qed
     hence "oedge e \<in> \<E> - to_set (actives state)"
       using allowed_edges_sub less(5) less  o_edge_res by auto
     hence "connected_component (to_graph (\<FF> state)) (fst (oedge e)) 
