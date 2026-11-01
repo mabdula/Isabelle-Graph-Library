@@ -295,15 +295,73 @@ proof(induction ES)
    by(auto split: hitchcock_wrapper.split)
 next
   case (Cons a ES)
-  then show ?case 
-  apply simp
-  apply(subst bal_map.map_update)
-  subgoal
-    by(auto intro: bal_invar_fold)
-  by(auto split: hitchcock_wrapper.split) 
-    (((subst sym[OF minus_distr], subst add.commute, subst sym[OF sum.insert]);
-      (force intro!: cong[of uminus, OF refl] cong[of "sum _", OF refl] simp add: )+),
-      metis)
+  define T where "T = foldr
+     (\<lambda>xy tree.
+         let u = the (flow_lookup \<u>_impl xy)
+         in bal_update (vertex (fst xy))
+             (the (bal_lookup tree (vertex (fst xy))) - real_of_ereal u) tree)
+         ES bs"
+  have prem_x: "x \<in> dom (bal_lookup bs)" and prem_inv: "bal_invar bs"
+    using Cons.prems by auto
+  have distinct_ES: "distinct ES" and a_notin_ES: "a \<notin> set ES"
+    using Cons.prems by auto
+  have invar_T: "bal_invar T"
+    unfolding T_def Let_def using prem_inv by (rule bal_invar_fold)
+  have IH: "bal_lookup T x =
+      (case x of vertex u \<Rightarrow>
+          Some (the (bal_lookup bs (vertex u))
+              - sum (\<lambda>e. real_of_ereal (the (flow_lookup \<u>_impl e))) {e. e \<in> set ES \<and> u = fst e})
+        | _ \<Rightarrow> bal_lookup bs x)"
+    using Cons.IH[OF prem_x prem_inv distinct_ES] T_def
+    by presburger
+  have fold_Cons: "foldr
+     (\<lambda>xy tree.
+         let u = the (flow_lookup \<u>_impl xy)
+         in bal_update (vertex (fst xy))
+             (the (bal_lookup tree (vertex (fst xy))) - real_of_ereal u) tree)
+         (a # ES) bs
+       = bal_update (vertex (fst a))
+             (the (bal_lookup T (vertex (fst a))) - real_of_ereal (the (flow_lookup \<u>_impl a))) T"
+    by (simp add: T_def Let_def)
+  show ?case
+  proof (cases x)
+    case (edge e)
+    show ?thesis
+      using edge IH fold_Cons bal_map.map_update[OF invar_T]
+      by simp
+  next
+    case (vertex u)
+    show ?thesis
+    proof (cases "u = fst a")
+      case False
+      have x_ne: "x \<noteq> vertex (fst a)"
+        using vertex False by simp
+      have set_eq: "{e. e \<in> set (a # ES) \<and> u = fst e} = {e. e \<in> set ES \<and> u = fst e}"
+        using False by auto
+      show ?thesis
+        using vertex IH x_ne set_eq fold_Cons bal_map.map_update[OF invar_T]
+        by simp
+    next
+      case True
+      have finite_S: "finite {e. e \<in> set ES \<and> u = fst e}"
+      proof -
+        have "{e. e \<in> set ES \<and> u = fst e} \<subseteq> set ES" by auto
+        thus ?thesis using finite_subset finite_set by blast
+      qed
+      have a_notin_S: "a \<notin> {e. e \<in> set ES \<and> u = fst e}"
+        using a_notin_ES by auto
+      have set_eq: "{e. e \<in> set (a # ES) \<and> u = fst e}
+                   = Set.insert a {e. e \<in> set ES \<and> u = fst e}"
+        using True by auto
+      have IH_at: "bal_lookup T (vertex u) =
+          Some (the (bal_lookup bs (vertex u))
+              - sum (\<lambda>e. real_of_ereal (the (flow_lookup \<u>_impl e))) {e. e \<in> set ES \<and> u = fst e})"
+        using IH vertex by simp
+      show ?thesis
+        using vertex True IH_at fold_Cons bal_map.map_update[OF invar_T] set_eq a_notin_S
+        by (simp add: sum.insert finite_S algebra_simps)
+    qed
+  qed
 qed
 
 lemma bal_invar_b_lifted: "bal_invar b_lifted"
