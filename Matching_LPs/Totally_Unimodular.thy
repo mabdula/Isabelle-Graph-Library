@@ -3633,8 +3633,23 @@ qed
           using 31 unfolding 30 by simp
         then have 11: "submatrix (mat_of_rows n [- unit_vec n i]) {} J = 
           0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [- unit_vec n i]) (?f ` (I - {0..<nr})) J))"
-          using empty_set_submatrix_iz_zero_mat 
-          by (smt (verit) Collect_cong dim_submatrix(2) mat_of_rows_carrier(3))
+          proof -
+            have c1: "dim_col (submatrix (mat_of_rows n [- unit_vec n i]) {} J) =
+                  card {k. k < dim_col (mat_of_rows n [- unit_vec n i]) \<and> k \<in> J}"
+              using dim_submatrix(2)[of "mat_of_rows n [- unit_vec n i]" "{}" J] by simp
+            have c2: "dim_col (submatrix (mat_of_rows n [- unit_vec n i])
+                                      ((\<lambda> i. i - nr) ` (I - {0..<nr})) J) =
+                  card {k. k < dim_col (mat_of_rows n [- unit_vec n i]) \<and> k \<in> J}"
+              using dim_submatrix(2)[of "mat_of_rows n [- unit_vec n i]"
+                                        "(\<lambda> i. i - nr) ` (I - {0..<nr})" J] by simp
+            have pr: "0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [- unit_vec n i]) {} J)) =
+                  0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [- unit_vec n i])
+                                      ((\<lambda> i. i - nr) ` (I - {0..<nr})) J))"
+              by (rule arg_cong[OF trans[OF c1 sym[OF c2]]])
+            show ?thesis
+              using empty_set_submatrix_iz_zero_mat[of "mat_of_rows n [- unit_vec n i]" J] pr
+              by (rule trans)
+          qed
         have "B = submatrix A I J" 
         proof
           let ?M = "submatrix (mat_of_rows n [(- unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J"
