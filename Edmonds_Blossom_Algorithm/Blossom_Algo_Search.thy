@@ -1799,7 +1799,31 @@ proof-
         using invar(1) ass
         by (auto simp: last_not_matched_invar_def)
       then have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v1) \<notin> Vs M"
-        by (metis "*"(1) "*"(2))
+      proof (cases "\<exists>x::'a. x \<noteq> v2")
+        case True
+        then obtain w where w: "w \<noteq> v2" by blast
+        show ?thesis
+        proof (cases "v1 = v2")
+          case True
+          then show ?thesis
+            using "*"(1)[OF w] \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close>
+            by simp
+        next
+          case False
+          then show ?thesis
+            using "*"(2)[OF False] \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close>
+            by simp
+        qed
+      next
+        case False
+        then have ae: "\<And>x::'a. x = v2" by blast
+        then have c: "last (parent_spec.follow (par(v2 \<mapsto> v1)) v1) = v2"
+          using ae by blast
+        then have d: "last (parent_spec.follow par v1) = v2"
+          using ae by blast
+        then show ?thesis
+          using c \<open>last (parent_spec.follow par v1) \<notin> Vs M\<close> by simp
+      qed
       then have "last (parent_spec.follow (par(v2 \<mapsto> v1)) v2) \<notin> Vs M"
         by (metis "*"(1) "*"(2))
       then show ?thesis
