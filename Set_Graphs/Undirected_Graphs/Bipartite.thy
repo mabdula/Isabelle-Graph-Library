@@ -123,7 +123,7 @@ lemma bipartite_unionI:
 lemma bipartite_reduced_to_vs:
   "bipartite G X Y \<Longrightarrow> bipartite G (X \<inter> Vs G) (Y \<inter> Vs G)"
   unfolding bipartite_def
-  by auto (metis edges_are_Vs insert_commute)
+  by (fastforce simp: Vs_def insert_commute)
 
 lemma bipartite_In_singletons:
   assumes "bipartite G U V"
@@ -258,15 +258,23 @@ proof -
     proof
       fix x
       assume "x \<in> Vs G - A"
-      then obtain e where "e \<in> G \<and> x \<in> e" 
-        using DiffD1 vs_member_elim  by metis
-      then obtain u  where 2:"e = {u, x} \<and> (u \<in> A \<and> x \<in> Vs G - A) \<and> u \<noteq> x" 
+      then have "x \<in> Vs G" by blast
+      then obtain e where "e \<in> G \<and> x \<in> e" by (auto simp: Vs_def)      then obtain u  where 2:"e = {u, x} \<and> (u \<in> A \<and> x \<in> Vs G - A) \<and> u \<noteq> x" 
         using partition \<open>x \<in> Vs G - A\<close> by fastforce
       then have "u \<in> e" 
         by blast
-      then show "x \<in> neighbours_of_Vs G A" 
-        unfolding neighbours_of_Vs_def 
-        by (smt (verit) "2" \<open>e \<in> G \<and> x \<in> e\<close> mem_Collect_eq)
+      then show "x \<in> neighbours_of_Vs G A"
+      proof -
+        have "x \<noteq> u" using "2" by blast
+        have "u \<in> A" using "2" by blast
+        have "e \<in> G" using \<open>e \<in> G \<and> x \<in> e\<close> by blast
+        have "u \<in> e" using \<open>u \<in> e\<close> by blast
+        have "x \<in> e" using \<open>e \<in> G \<and> x \<in> e\<close> by blast
+        then show ?thesis
+          unfolding neighbours_of_Vs_def
+          using \<open>x \<noteq> u\<close> \<open>u \<in> A\<close> \<open>e \<in> G\<close> \<open>u \<in> e\<close> \<open>x \<in> e\<close>
+          by fastforce
+      qed
     qed
   qed
 qed
@@ -283,7 +291,17 @@ proof safe
   fix X x
   assume "X \<subseteq> A" "x \<in> neighbours_of_Vs G X" "x \<in> X"
   then show "x \<in> {}" 
-    by (metis Diff_iff assms in_mono neighbours_of_Vs_subset neighbours_of_Vs_bipartite)
+  proof -
+    have "neighbours_of_Vs G X \<subseteq> neighbours_of_Vs G A"
+      using neighbours_of_Vs_subset[OF \<open>X \<subseteq> A\<close>] .
+    hence "x \<in> neighbours_of_Vs G A"
+      using \<open>x \<in> neighbours_of_Vs G X\<close> by blast
+    hence "x \<in> Vs G - A"
+      using neighbours_of_Vs_bipartite[OF assms] by simp
+    hence "x \<notin> A" by simp
+    thus "x \<in> {}"
+      using \<open>X \<subseteq> A\<close> \<open>x \<in> X\<close> by blast
+  qed
 qed
 
 lemma part_bipartite_diff:
@@ -292,9 +310,11 @@ lemma part_bipartite_diff:
 proof -
   let ?A' = "(A \<inter> Vs (G - X))" 
   have 2: "graph_invar (G - X)" 
-    by (metis Diff_subset assms graph_invar_subset partitioned_bipartite_def)
+    by (rule graph_invar_subset[OF assms(2) Diff_subset])
   have  "A \<subseteq> Vs G" 
-    by (metis assms partitioned_bipartite_def)
+    using assms(1)
+    unfolding partitioned_bipartite_def
+    by blast
   have 3: "?A' \<subseteq> Vs (G - X)" by blast 
   have "( \<forall> e \<in> G - X. \<exists> u v.  e = {u, v} \<and> (u \<in> ?A' \<and> v \<in> Vs (G - X) - ?A'))"
   proof 
@@ -302,7 +322,7 @@ proof -
     assume "e \<in> G - X"
     then obtain u v where u'_v': "e = {u, v} \<and> u \<noteq> v \<and> (u \<in> A \<and> v \<in> Vs G - A)"
       using `partitioned_bipartite G A` unfolding partitioned_bipartite_def 
-      by (metis (no_types, lifting) Diff_iff \<open>e \<in> G - X\<close>)
+      by blast
 
     then have "u \<in> ?A'" 
       using UnionI u'_v' \<open>e \<in> G - X\<close> by auto

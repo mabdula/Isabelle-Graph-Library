@@ -28,15 +28,45 @@ proof-
     case 1
     from \<open>i < length l\<close> \<open>l ! i = x\<close>
       have "l = (take i l) @ [x] @ (drop (i + 1) l)"
-      by (metis Suc_eq_plus1 append.assoc append_take_drop_id hd_drop_conv_nth take_hd_drop)
+      proof -
+        have "drop i l = l ! i # drop (Suc i) l"
+          using \<open>i < length l\<close> by (simp add: Cons_nth_drop_Suc)
+        hence "drop i l = [x] @ drop (Suc i) l"
+          using \<open>l ! i = x\<close> by simp
+        moreover have "l = take i l @ drop i l"
+          by (simp add: append_take_drop_id)
+        ultimately have "l = take i l @ [x] @ drop (Suc i) l"
+          by simp
+        then show "l = (take i l) @ [x] @ (drop (i + 1) l)"
+          by simp
+      qed
 
     have "j \<ge> i + 1" using \<open>i < j\<close> by auto
     with \<open>j < length l\<close> have "y \<in> set (drop (i + 1) l)"
       using \<open>l ! j = y\<close>
-      by (metis Cons_nth_drop_Suc list.set_intros(1) set_drop_subset_set_drop subsetD)
+    proof -
+      have len_le: "i + 1 \<le> length l"
+        using \<open>j \<ge> i + 1\<close> \<open>j < length l\<close> by linarith
+      have sum_eq: "(i + 1) + (j - (i + 1)) = j"
+        using \<open>j \<ge> i + 1\<close> by (simp add: le_add_diff_inverse2)
+      have idx: "j - (i + 1) < length (drop (i + 1) l)"
+      proof -
+        have "length (drop (i + 1) l) = length l - (i + 1)" by simp
+        then show ?thesis
+          using \<open>j \<ge> i + 1\<close> \<open>j < length l\<close> by linarith
+      qed
+      have eq: "drop (i + 1) l ! (j - (i + 1)) = l ! j"
+        using len_le sum_eq by (simp add: nth_drop)
+      have "drop (i + 1) l ! (j - (i + 1)) \<in> set (drop (i + 1) l)"
+        using idx by (rule nth_mem)
+      with eq \<open>l ! j = y\<close> show ?thesis by simp
+    qed
     from \<open>l ! j = y\<close>
       have "\<exists>xs ys. (drop (i + 1) l) = xs @ [y] @ ys"
-      by (metis \<open>y \<in> set (drop (i + 1) l)\<close> append_Cons append_Nil in_set_conv_decomp_last)
+      proof -
+        from \<open>y \<in> set (drop (i + 1) l)\<close> show ?thesis
+          by (auto simp add: in_set_conv_decomp)
+      qed
     then obtain xs ys where "(drop (i + 1) l) = xs @ [y] @ ys" by blast
     
     with \<open>l = (take i l) @ [x] @ (drop (i + 1) l)\<close>
@@ -45,15 +75,49 @@ proof-
     case 2
     from \<open>j < length l\<close> \<open>l ! j = y\<close>
       have "l = (take j l) @ [y] @ (drop (j + 1) l)"
-      by (metis Suc_eq_plus1 append.assoc append_take_drop_id hd_drop_conv_nth take_hd_drop)
+      proof -
+        have drop_eq: "drop j l = l ! j # drop (j + 1) l"
+          using Cons_nth_drop_Suc[OF \<open>j < length l\<close>, symmetric] by simp
+        with drop_eq \<open>l ! j = y\<close> have "drop j l = y # drop (j + 1) l"
+          by (simp only: drop_eq)
+        moreover have "l = take j l @ drop j l"
+          by (simp add: append_take_drop_id)
+        ultimately show "l = (take j l) @ [y] @ (drop (j + 1) l)"
+          by simp
+      qed
 
     have "i \<ge> j + 1" using \<open>j < i\<close> by auto
     with \<open>i < length l\<close> have "x \<in> set (drop (j + 1) l)"
       using \<open>l ! i = x\<close>
-      by (metis Cons_nth_drop_Suc list.set_intros(1) set_drop_subset_set_drop subsetD)
+      proof -
+        have len_le: "j + 1 \<le> length l"
+          using \<open>j < i\<close> \<open>i < length l\<close> by simp
+        have idx_eq: "(j + 1) + (i - (j + 1)) = i"
+          using \<open>i \<ge> j + 1\<close> by simp
+        have "drop (j + 1) l ! (i - (j + 1)) = l ! ((j + 1) + (i - (j + 1)))"
+          by (rule nth_drop[OF len_le])
+        also have "\<dots> = l ! i"
+          by (rule arg_cong[OF idx_eq])
+        also have "\<dots> = x"
+          using \<open>l ! i = x\<close> .
+        finally have eq: "drop (j + 1) l ! (i - (j + 1)) = x" .
+        have "i - (j + 1) < length l - (j + 1)"
+          using \<open>i < length l\<close> \<open>i \<ge> j + 1\<close> len_le by linarith
+        then have "i - (j + 1) < length (drop (j + 1) l)"
+          by simp
+        then have "drop (j + 1) l ! (i - (j + 1)) \<in> set (drop (j + 1) l)"
+          by (rule nth_mem)
+        with eq show "x \<in> set (drop (j + 1) l)"
+          by simp
+      qed
     from \<open>l ! i = x\<close>
       have "\<exists>xs ys. (drop (j + 1) l) = xs @ [x] @ ys"
-      by (metis \<open>x \<in> set (drop (j + 1) l)\<close> append_Cons append_Nil in_set_conv_decomp_last)
+    proof -
+      from \<open>x \<in> set (drop (j + 1) l)\<close> obtain xs ys
+        where "drop (j + 1) l = xs @ [x] @ ys"
+        by (auto simp: in_set_conv_decomp)
+      then show ?thesis by blast
+    qed
     then obtain xs ys where "(drop (j + 1) l) = xs @ [x] @ ys" by blast
 
     with \<open>l = (take j l) @ [y] @ (drop (j + 1) l)\<close>
@@ -489,8 +553,16 @@ proof (intro invar_props_intros, goal_cases)
       by blast
 
     have "\<forall>e \<in> (Graph.digraph_abs G). prod.swap e \<in> (Graph.digraph_abs G)" by auto
-    with awalk_rev no_path_to_w
-      have "\<nexists>p. awalk (Graph.digraph_abs G) w p v" by metis
+      have "\<nexists>p. awalk (Graph.digraph_abs G) w p v"
+      proof (rule notI)
+        assume "\<exists>p. awalk (Graph.digraph_abs G) w p v"
+        then obtain p where p_awalk: "awalk (Graph.digraph_abs G) w p v" by blast
+        have sym_edges: "\<forall>e \<in> Graph.digraph_abs G. prod.swap e \<in> Graph.digraph_abs G"
+          by auto
+        from awalk_rev[OF sym_edges p_awalk]
+          have "awalk (Graph.digraph_abs G) v (rev (map prod.swap p)) w" .
+        with no_path_to_w show False by blast
+      qed
 
     with no_path_to_w show ?thesis by blast
   qed
@@ -769,13 +841,37 @@ proof (intro invar_props_intros, goal_cases)
       then obtain xs ys zs where "c = xs @ [e1] @ ys @ [e2] @ zs" by blast
       with c_awalk awalk_append_iff
         have "awalk ?G_seen_new u (xs @ [e1]) (awlast u (xs @ [e1]))"
-        by (metis append.assoc)
+      proof -
+        have c_eq: "c = (xs @ [e1]) @ (ys @ [e2] @ zs)"
+          using \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> by simp
+        have "awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u"
+          unfolding c_eq[symmetric] by (rule c_awalk)
+        then show ?thesis
+          by (rule awalk_append_iff[THEN iffD1, THEN conjunct1])
+      qed
 
       have "awlast u (xs @ [e1]) = snd e1"
         by (auto simp add: awalk_verts_conv)
       with \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> c_awalk awalk_append_iff
         have "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
-        by (smt (verit, best) awalkE)
+      proof -
+        from \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> c_awalk
+          have "awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u"
+          by simp
+        from \<open>awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u\<close>
+          have "awalk ?G_seen_new u (xs @ [e1]) (awlast u (xs @ [e1]))"
+            by (rule awalk_append_iff[THEN iffD1, THEN conjunct1])
+        from \<open>awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u\<close>
+          have "awalk ?G_seen_new (awlast u (xs @ [e1])) (ys @ [e2] @ zs) u"
+            by (rule awalk_append_iff[THEN iffD1, THEN conjunct2])
+        with \<open>awlast u (xs @ [e1]) = snd e1\<close>
+          have step: "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) u"
+          by simp
+        from step have "u = awlast (snd e1) (ys @ [e2] @ zs)"
+          by (auto elim: awalkE)
+        with step show "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
+          by simp
+      qed
       with awalk_append_iff
         have "awalk ?G_seen_new (snd e1) ys (awlast (snd e1) ys)"
         "awalk ?G_seen_new (awlast (snd e1) ys) ([e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
@@ -799,13 +895,26 @@ proof (intro invar_props_intros, goal_cases)
       then obtain xs ys zs where "c = xs @ [e2] @ ys @ [e1] @ zs" by blast
       with c_awalk awalk_append_iff
         have "awalk ?G_seen_new u (xs @ [e2]) (awlast u (xs @ [e2]))"
-        by (metis append.assoc)
+      proof -
+        have c_eq: "c = (xs @ [e2]) @ (ys @ [e1] @ zs)"
+          using \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> by simp
+        from awalk_append_iff[THEN iffD1, THEN conjunct1, OF c_awalk[unfolded c_eq]]
+          show ?thesis by simp
+      qed
       
       have "awlast u (xs @ [e2]) = snd e2"
         by (auto simp add: awalk_verts_conv)
       with \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> c_awalk awalk_append_iff
         have "awalk ?G_seen_new (snd e2) (ys @ [e1] @ zs) (awlast (snd e2) (ys @ [e1] @ zs))"
-        by (smt (verit, best) awalkE)
+      proof -
+        have c_eq: "c = (xs @ [e2]) @ (ys @ [e1] @ zs)"
+          using \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> by simp
+        from awalk_append_iff[THEN iffD1, THEN conjunct2, OF c_awalk[unfolded c_eq]]
+          have H: "awalk ?G_seen_new (awlast u (xs @ [e2])) (ys @ [e1] @ zs) u" .
+        from H have "u = awlast (awlast u (xs @ [e2])) (ys @ [e1] @ zs)"
+          by (auto elim: awalkE)
+        with H \<open>awlast u (xs @ [e2]) = snd e2\<close> show ?thesis by simp
+      qed
       with awalk_append_iff
         have "awalk ?G_seen_new (snd e2) ys (awlast (snd e2) ys)"
         "awalk ?G_seen_new (awlast (snd e2) ys) ([e1] @ zs) (awlast (snd e2) (ys @ [e1] @ zs))"

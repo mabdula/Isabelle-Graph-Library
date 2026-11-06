@@ -124,7 +124,46 @@ lemma max_subgraph_imp_max_subgraph:
   shows "max_subgraph G P H"
   using assms
   unfolding max_subgraph_def pre_digraph.max_subgraph_def
-  by (metis comp_apply ddfs.arcs_eq subgraph_iff)
+proof -
+  have sub: "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of G)"
+    using assms unfolding pre_digraph.max_subgraph_def by blast
+  have P_arcs: "(P \<circ> arcs) (ddfs.digraph_of H)"
+    using assms unfolding pre_digraph.max_subgraph_def by blast
+  have max: "\<And>H''. H'' \<noteq> ddfs.digraph_of H \<Longrightarrow> subgraph_digraph (ddfs.digraph_of H) H'' \<Longrightarrow>
+               subgraph_digraph H'' (ddfs.digraph_of G) \<Longrightarrow> (P \<circ> arcs) H'' \<Longrightarrow> False"
+    using assms unfolding pre_digraph.max_subgraph_def by blast
+  have subGH: "subgraph H G"
+    using sub by (simp add: subgraph_iff)
+  have PH: "P H"
+    using P_arcs by (simp add: comp_apply ddfs.arcs_eq)
+  have maxH: "False" if asm: "H' \<noteq> H" "subgraph H H'" "subgraph H' G" "P H'" for H'
+  proof -
+    have neq: "ddfs.digraph_of H' \<noteq> ddfs.digraph_of H"
+    proof
+      assume eq: "ddfs.digraph_of H' = ddfs.digraph_of H"
+      have "arcs (ddfs.digraph_of H') = arcs (ddfs.digraph_of H)"
+        by (simp add: eq)
+      hence "H' = H"
+        by (simp add: ddfs.arcs_eq)
+      with asm(1) show False by blast
+    qed
+    have sub1: "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of H')"
+      using asm(2) by (simp add: subgraph_iff)
+    have sub2: "subgraph_digraph (ddfs.digraph_of H') (ddfs.digraph_of G)"
+      using asm(3) by (simp add: subgraph_iff)
+    have P_arcs': "(P \<circ> arcs) (ddfs.digraph_of H')"
+      using asm(4) by (simp add: comp_apply ddfs.arcs_eq)
+    from max[OF neq sub1 sub2 P_arcs'] show False .
+  qed
+  from subGH PH maxH show
+    "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of G) \<and>
+     (P \<circ> arcs) (ddfs.digraph_of H) \<and>
+     (\<forall>H'. H' \<noteq> ddfs.digraph_of H \<and> subgraph_digraph (ddfs.digraph_of H) H' \<longrightarrow>
+            \<not> (subgraph_digraph H' (ddfs.digraph_of G) \<and> (P \<circ> arcs) H'))
+     \<Longrightarrow> subgraph H G \<and> P H \<and>
+     (\<forall>H'. H' \<noteq> H \<and> subgraph H H' \<longrightarrow> \<not> (subgraph H' G \<and> P H'))"
+    by blast
+qed
 
 lemma max_subgraph_imp_max_subgraph_all_verts:
   assumes "max_subgraph G P H"
@@ -169,10 +208,18 @@ proof-
         by auto
     next
       case False
+      have arcs_eq: "arcs (digraph_of_all_verts H G) = H"
+        by (simp add: digraph_of_all_verts_def pre_digraph.arcs_add_verts ddfs.arcs_eq)
+      have "arcs (digraph_of_all_verts H G) \<subseteq> arcs H'"
+        using that(2) by (auto simp: Digraph_Component.subgraph_def)
+      hence subgraph1: "subgraph H (arcs H')"
+        using arcs_eq by (auto simp: Component_Defs.subgraph_def)
+      have "arcs H' \<subseteq> G"
+        using that(3) by (auto simp: Digraph_Component.subgraph_def)
+      hence subgraph2: "subgraph (arcs H') G"
+        by (auto simp: Component_Defs.subgraph_def)
       show ?thesis
-        using Digraph_Component.subgraphE G_max_sg_H(3)[OF False] Component_Defs.subgraphI
-              ddfs.arcs_eq digraph_of_all_verts_def pre_digraph.arcs_add_verts that(2-4)
-        by metis
+        using G_max_sg_H(3)[OF False subgraph1 subgraph2 that(4)] .
     qed
   ultimately show ?thesis
     unfolding pre_digraph.max_subgraph_def
@@ -194,10 +241,49 @@ lemma max_subgraph_arcs_eq':
   assumes "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) H'"
   shows "arcs H' = H"
   using assms pre_digraph.subgraphI_max_subgraph[OF assms(3)] pre_digraph.max_subgraph_prop[OF assms(3)]
-  by (metis (no_types, lifting) Digraph_Component.subgraphE Digraph_Component.subgraphI
-            compatible_def ddfs.arcs_eq digraph_of_all_verts_def max_subgraph_P_arcs_verts
-            max_subgraph_imp_max_subgraph_all_verts pre_digraph.arcs_add_verts
-            pre_digraph.max_subgraph_subg_eq pre_digraph.subgraphI_max_subgraph)
+proof -
+  from assms(3) have H'_subgraph_G: "subgraph_digraph H' (ddfs.digraph_of G)"
+    by (rule pre_digraph.subgraphI_max_subgraph)
+  from assms(3) have H'_prop: "(P \<circ> arcs) H'"
+    by (rule pre_digraph.max_subgraph_prop)
+  have H'_arcs_prop: "P (arcs H')"
+    using H'_prop by simp
+  from assms(1) have all_verts_max:
+    "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (digraph_of_all_verts H G)"
+    by (rule max_subgraph_imp_max_subgraph_all_verts)
+  have arcs_all_verts: "arcs (digraph_of_all_verts H G) = H"
+    by (simp add: digraph_of_all_verts_def pre_digraph.arcs_add_verts ddfs.arcs_eq)
+  have verts_dVsG_subset: "dVs G \<subseteq> verts (digraph_of_all_verts H G)"
+    by (simp add: digraph_of_all_verts_def pre_digraph.verts_add_verts)
+  have all_verts_subgraph_G: "subgraph_digraph (digraph_of_all_verts H G) (ddfs.digraph_of G)"
+    using all_verts_max by (rule pre_digraph.subgraphI_max_subgraph)
+  have verts_H'_subset: "verts H' \<subseteq> verts (digraph_of_all_verts H G)"
+  proof -
+    from H'_subgraph_G have "verts H' \<subseteq> verts (ddfs.digraph_of G)"
+      by (rule Digraph_Component.subgraph_imp_subverts)
+    then show "verts H' \<subseteq> verts (digraph_of_all_verts H G)"
+      using verts_dVsG_subset by (simp add: ddfs.verts_eq)
+  qed
+  have arcs_H'_subset: "arcs H' \<subseteq> arcs (digraph_of_all_verts H G)"
+    using assms(2) arcs_all_verts by simp
+  have wf_H': "wf_digraph H'"
+    using H'_subgraph_G by (auto elim: Digraph_Component.subgraphE)
+  have wf_all_verts: "wf_digraph (digraph_of_all_verts H G)"
+    using all_verts_subgraph_G by (auto elim: Digraph_Component.subgraphE)
+  have compat: "compatible H' (digraph_of_all_verts H G)"
+    using H'_subgraph_G
+    by (auto elim!: Digraph_Component.subgraphE
+             simp: compatible_def digraph_of_all_verts_def pre_digraph.add_verts_simps)
+  have compat': "compatible (digraph_of_all_verts H G) H'"
+    using compat by (rule compatible_sym)
+  have H'_subgraph_all_verts: "subgraph_digraph H' (digraph_of_all_verts H G)"
+    using verts_H'_subset arcs_H'_subset compat' wf_H' wf_all_verts
+    by (rule Digraph_Component.subgraphI)
+  have "H' = digraph_of_all_verts H G"
+    using pre_digraph.max_subgraph_subg_eq[OF assms(3) all_verts_max H'_subgraph_all_verts] .
+  then show "arcs H' = H"
+    using arcs_all_verts by simp
+qed
 
 lemma max_subgraph_digraph_of_additional_verts_disconnected:
   fixes H' :: "('a, 'a \<times> 'a) pre_digraph"
@@ -206,9 +292,28 @@ lemma max_subgraph_digraph_of_additional_verts_disconnected:
   assumes "u \<in> verts H'" "u \<notin> dVs H"
   assumes "H \<subseteq> arcs H'" \<comment> \<open>a max subgraph is not unique, therefore we have to enforce that we are talking about the "same" max subgraph in both worlds\<close>
   shows "\<nexists>v. (u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u)"
-  using assms
-  by (auto dest!: max_subgraph_arcs_eq;
-      metis Digraph_Component.subgraphE compatible_digraph_of_arcs_ends dVsI pre_digraph.subgraphI_max_subgraph subgraph_digraph_of_arcs)+
+proof -
+  have arcs_H': "arcs H' = H"
+    using max_subgraph_arcs_eq[OF assms(1) assms(5) assms(2)] .
+  have "subgraph_digraph H' (ddfs.digraph_of G)"
+    using pre_digraph.subgraphI_max_subgraph[OF assms(2)] .
+  hence compat: "compatible H' (ddfs.digraph_of G)"
+    by (auto simp: Digraph_Component.subgraph_def intro: compatible_sym)
+  have arcs_ends_H': "arcs_ends H' = H"
+    using compatible_digraph_of_arcs_ends[OF compat] arcs_H'
+    by simp
+  show ?thesis
+  proof
+    assume "\<exists>v. u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u"
+    then obtain v where "u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u" by blast
+    hence "(u, v) \<in> H \<or> (v, u) \<in> H"
+      using arcs_ends_H' by simp
+    hence "u \<in> dVs H"
+      by (blast intro: Pair_Graph.dVsI)
+    thus False
+      using assms(4) by blast
+  qed
+qed
 
 
 text \<open>
@@ -218,7 +323,17 @@ lemma max_subgraph_iff:
   assumes "ddfs.digraph_of H = digraph_of_all_verts H G"
   shows "max_subgraph G P H \<longleftrightarrow> pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
   using assms max_subgraph_imp_max_subgraph max_subgraph_imp_max_subgraph_all_verts
-  by metis
+proof (intro iffI)
+  assume "max_subgraph G P H"
+  hence "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (digraph_of_all_verts H G)"
+    using max_subgraph_imp_max_subgraph_all_verts by blast
+  thus "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
+    using assms by simp
+next
+  assume "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
+  thus "max_subgraph G P H"
+    using max_subgraph_imp_max_subgraph by blast
+qed
 
 lemma dVs_arcs_subset_verts: 
   "wf_digraph H \<Longrightarrow> compatible H (ddfs.digraph_of G)\<Longrightarrow> dVs (arcs H) \<subseteq> verts H"
@@ -228,12 +343,55 @@ lemma dVs_arcs_subset_verts:
 lemma strongly_connected_induced_is_digraph_of_verts:
   assumes "induced_subgraph_digraph H (ddfs.digraph_of G)" "u \<in> verts H" "strongly_connected_digraph H" "verts H \<noteq> {u}"
   shows "verts H = dVs (arcs H)"
-  using assms
-  unfolding dVs_def
-  apply (auto elim!: Digraph_Component.induced_subgraphE Digraph_Component.strongly_connectedE)
-  by (metis (no_types, lifting) Digraph_Component.subgraph_def compatible_digraph_of_arcs_ends
-            insertI1 mem_Collect_eq pre_digraph.converse_reachable_cases snd_conv
-            subgraph_digraph_of_arcs)
+proof -
+  from assms(1) have sub: "subgraph_digraph H (ddfs.digraph_of G)"
+    by (auto elim: Digraph_Component.induced_subgraphE)
+  from assms(3) have reach: "\<And>a b. a \<in> verts H \<Longrightarrow> b \<in> verts H \<Longrightarrow> a \<rightarrow>\<^sup>*\<^bsub>H\<^esub> b"
+    by (auto elim: Digraph_Component.strongly_connectedE)
+  have compat_H: "compatible H (ddfs.digraph_of G)"
+    using sub by (auto simp: Digraph_Component.subgraph_def intro: compatible_sym)
+  have compat: "arcs_ends H = arcs H"
+    using compat_H by (rule compatible_digraph_of_arcs_ends)
+  have "\<not> verts H \<subseteq> {u}"
+  proof
+    assume "verts H \<subseteq> {u}"
+    with assms(2) have "verts H = {u}" by blast
+    with assms(4) show False by simp
+  qed
+  then obtain w where w1: "w \<in> verts H" and w2: "w \<noteq> u"
+    by blast
+  have fwd: "verts H \<subseteq> dVs (arcs H)"
+  proof
+    fix v assume v: "v \<in> verts H"
+    obtain v' where v'1: "v' \<in> verts H" and v'2: "v' \<noteq> v"
+    proof (cases "v = u")
+      case True
+      have "w \<in> verts H" by (rule w1)
+      moreover have "w \<noteq> v" using True w2 by blast
+      ultimately show thesis by (rule that)
+    next
+      case False
+      have "u \<in> verts H" by (rule assms(2))
+      moreover have "u \<noteq> v" using False by blast
+      ultimately show thesis by (rule that)
+    qed
+    have vv': "v \<rightarrow>\<^sup>*\<^bsub>H\<^esub> v'"
+      using reach[OF v v'1] .
+    have "\<exists>x. v \<rightarrow>\<^bsub>H\<^esub> x"
+      using vv' v'2
+      by (auto elim: pre_digraph.converse_reachable_cases)
+    then obtain x where vx: "v \<rightarrow>\<^bsub>H\<^esub> x"
+      by blast
+    have vx': "(v, x) \<in> arcs H"
+      using vx compat by simp
+    show "v \<in> dVs (arcs H)"
+      using vx' by (blast intro: Pair_Graph.dVsI)
+  qed
+  have bwd: "dVs (arcs H) \<subseteq> verts H"
+    using sub by (rule subgraph_digraph_of_dVs_arcs_subset)
+  show ?thesis
+    using fwd bwd by (rule subset_antisym)
+qed
 
 lemma strongly_connected_induced_is_digraph_of:
   assumes "strongly_connected_digraph H"
@@ -241,8 +399,18 @@ lemma strongly_connected_induced_is_digraph_of:
   assumes "u \<in> verts H" "verts H \<noteq> {u}"
   shows "ddfs.digraph_of (arcs H) = H"
   using assms
-  by (metis ddfs.verts_eq induced_eq_verts_imp_eq induced_subgraph_digraph_ofE induced_subgraph_iff
-            strongly_connected_induced_is_digraph_of_verts)
+proof -
+  have verts_eq: "verts H = dVs (arcs H)"
+    using strongly_connected_induced_is_digraph_of_verts[OF assms(2) assms(3) assms(1) assms(4)] .
+  obtain H' where H'_def: "H' = arcs H" and ind_H': "induced_subgraph H' G"
+    using assms(2) induced_subgraph_digraph_ofE by blast
+  hence ind_digraph_of_H': "induced_subgraph_digraph (ddfs.digraph_of (arcs H)) (ddfs.digraph_of G)"
+    using induced_subgraph_iff by blast
+  have "verts (ddfs.digraph_of (arcs H)) = verts H"
+    using verts_eq by (simp add: ddfs.verts_eq)
+  from induced_eq_verts_imp_eq[OF ind_digraph_of_H' assms(2) this]
+  show ?thesis .
+qed
 
 lemma nexistsI: "(\<And>x. P x \<Longrightarrow> False) \<Longrightarrow> (\<nexists>x. P x)"
   by auto
@@ -280,8 +448,22 @@ proof-
     case False
     then show ?thesis
       using that
-      by (metis assms(3) induced_imp_subgraph reachable_vwalk_iff2 singletonD
-                subgraph_digraph_of_dVs_arcs_subset')
+      proof -
+      have H'_subgraph: "subgraph_digraph H' (ddfs.digraph_of G)"
+        using assms(3) induced_imp_subgraph by blast
+      have v1_in_verts: "v1 \<in> verts H'"
+        by (rule subgraph_digraph_of_dVs_arcs_subset'[OF H'_subgraph that(1)])
+      have v2_in_verts: "v2 \<in> verts H'"
+        by (rule subgraph_digraph_of_dVs_arcs_subset'[OF H'_subgraph that(2)])
+      have verts_H': "verts H' = {u}"
+        using False by simp
+      have "v1 = u"
+        using v1_in_verts verts_H' singletonD by blast
+      moreover have "v2 = u"
+        using v2_in_verts verts_H' singletonD by blast
+      ultimately show ?thesis
+        using that(1) reachable_vwalk_iff2 by fastforce
+      qed
   qed
   thus ?thesis
     using assms(1)
@@ -348,13 +530,50 @@ qed
 
 lemma in_sccs_digraph_of_imp_in_sccs:
   "(ddfs.digraph_of c) \<in> pre_digraph.sccs (ddfs.digraph_of G) \<Longrightarrow> c \<in> sccs G"
-  unfolding sccs_def pre_digraph.sccs_def
-  by (simp add: induced_subgraph_iff strongly_connected_iff)
-     (metis ddfs.verts_eq induced_imp_induced' induced_subgraph_dVs_subset_iff)
+proof -
+  assume asm: "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+  have H_c: "induced_subgraph_digraph (ddfs.digraph_of c) (ddfs.digraph_of G)"
+    using asm by (simp add: pre_digraph.sccs_def)
+  have SC_c: "strongly_connected_digraph (ddfs.digraph_of c)"
+    using asm by (simp add: pre_digraph.sccs_def)
+  have max_c: "\<not> verts (ddfs.digraph_of c) \<subset> verts c'"
+    if "induced_subgraph_digraph c' (ddfs.digraph_of G)" "strongly_connected_digraph c'" for c'
+    using asm that by (auto simp: pre_digraph.sccs_def)
+  have ind_c: "induced_subgraph c G"
+    using H_c by (rule induced_imp_induced')
+  have sc_c: "strongly_connected c"
+    using SC_c by (simp add: strongly_connected_iff)
+  have no_superset: "\<not> c \<subset> H'" if H'_ind: "induced_subgraph H' G" and H'_sc: "strongly_connected H'" for H'
+  proof
+    assume c_sub: "c \<subset> H'"
+    have H'_ind_d: "induced_subgraph_digraph (ddfs.digraph_of H') (ddfs.digraph_of G)"
+      using H'_ind by (simp add: induced_subgraph_iff)
+    have H'_sc_d: "strongly_connected_digraph (ddfs.digraph_of H')"
+      using H'_sc by (simp add: strongly_connected_iff)
+    have "dVs c \<subset> dVs H'"
+      using induced_subgraph_dVs_subset_iff[OF ind_c H'_ind] c_sub by simp
+    hence "verts (ddfs.digraph_of c) \<subset> verts (ddfs.digraph_of H')"
+      by (simp add: ddfs.verts_eq)
+    with max_c[OF H'_ind_d H'_sc_d] show False
+      by simp
+  qed
+  have "\<nexists>H'. induced_subgraph H' G \<and> strongly_connected H' \<and> c \<subset> H'"
+    using no_superset by blast
+  with ind_c sc_c show "c \<in> sccs G"
+    by (simp add: sccs_def)
+qed
 
 lemma in_sccs_iff:
   shows "c \<in> sccs G \<longleftrightarrow> ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
-  using in_sccs_digraph_of_imp_in_sccs in_sccs_imp_in_sccs_digraph_of by metis
+proof
+  assume "c \<in> sccs G"
+  then show "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+    by (rule in_sccs_imp_in_sccs_digraph_of)
+next
+  assume "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
+  then show "c \<in> sccs G"
+    by (rule in_sccs_digraph_of_imp_in_sccs)
+qed
 
 lemma sccs_dVs_eq: "sccs_dVs G = pre_digraph.sccs_verts (ddfs.digraph_of G)"
   by (auto simp: sccs_dVs_def pre_digraph.sccs_verts_def ddfs.reachable_iff)

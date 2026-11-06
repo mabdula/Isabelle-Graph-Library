@@ -88,7 +88,21 @@ lemma option_caseE:
   "\<lbrakk>P (case arg of None \<Rightarrow> a | Some x \<Rightarrow> b x);
    \<lbrakk>arg = None; P a\<rbrakk> \<Longrightarrow> Q; \<And> x. \<lbrakk>arg = Some x; P (b x)\<rbrakk> \<Longrightarrow> Q\<rbrakk>
    \<Longrightarrow> Q"
-  by (metis option.case_eq_if option.collapse)
+proof -
+  assume P: "P (case arg of None \<Rightarrow> a | Some x \<Rightarrow> b x)"
+  assume none: "\<lbrakk>arg = None; P a\<rbrakk> \<Longrightarrow> Q"
+  assume some: "\<And>x. \<lbrakk>arg = Some x; P (b x)\<rbrakk> \<Longrightarrow> Q"
+  show Q
+  proof (cases arg)
+    case None
+    then have "P a" using P by simp
+    with None show ?thesis using none by simp
+  next
+    case (Some x)
+    then have "P (b x)" using P by simp
+    with Some show ?thesis using some by simp
+  qed
+qed
 
 lemma option_some_simp: 
   "x = Some a \<Longrightarrow> (case x of Some a \<Rightarrow> z a | None \<Rightarrow> y) = z a"
@@ -104,7 +118,15 @@ lemma option_none_simp:
   by (auto split: option.split)
 
 lemma fst_snd_are_same: "prod.swap e = e \<Longrightarrow> fst e = snd e"  for e
-  by (metis snd_swap)
+proof -
+  assume assm: "prod.swap e = e"
+  have "snd e = snd (prod.swap e)"
+    using assm by simp
+  also have "\<dots> = fst e"
+    by (rule snd_swap)
+  finally show "fst e = snd e"
+    by (rule sym)
+qed
 
 lemma P_of_let_I: "(\<And> x. x = g \<Longrightarrow> P (t x)) \<Longrightarrow>P (let x = g in t x)" 
   by simp
@@ -162,7 +184,12 @@ lemma ex3E: "\<lbrakk>\<exists> x y z.  P x y z; \<And>x y z. P x y z \<Longrigh
   by auto
 
 lemma prod_elim: "\<lbrakk>P p; \<And> a b. \<lbrakk>p = (a,b); P p\<rbrakk> \<Longrightarrow> Q\<rbrakk> \<Longrightarrow> Q"
-  by (metis prod.exhaust_sel)
+proof -
+  assume "P p"
+  assume rule: "\<And>a b. \<lbrakk>p = (a, b); P p\<rbrakk> \<Longrightarrow> Q"
+  have "p = (fst p, snd p)" by simp
+  from rule[OF this \<open>P p\<close>] show "Q" .
+qed
 
 lemma in_insertE: "\<lbrakk>y \<in> insert x X; x = y \<Longrightarrow> P x; \<And> x. y \<in> X \<Longrightarrow> P y\<rbrakk> \<Longrightarrow> P y"
   by auto
@@ -313,7 +340,21 @@ lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<
   by argo
 
 lemma if_PQ_E: "\<lbrakk>if P then False else if Q then False else True; \<not> P \<and> \<not> Q \<Longrightarrow> R\<rbrakk> \<Longrightarrow> R"
-  by metis
+proof -
+  assume h1: "if P then False else if Q then False else True"
+  assume h2: "\<not> P \<and> \<not> Q \<Longrightarrow> R"
+  have notP: "\<not> P"
+  proof
+    assume "P"
+    with h1 show False by simp
+  qed
+  have notQ: "\<not> Q"
+  proof
+    assume "Q"
+    with h1 notP show False by simp
+  qed
+  from notP notQ h2 show R by blast
+qed
 
 lemma image_two_Collect: "{f x y | x y. P x y} = (\<lambda> (x, y). f x y) ` { (x, y) | x y. P x y}"
   by auto

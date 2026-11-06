@@ -45,10 +45,17 @@ lemma dVs_union_distr[simp]: "dVs (G \<union> H) = dVs G \<union> dVs H"
   unfolding dVs_def by blast
 
 lemma dVs_union_big_distr: "dVs (\<Union>G) = \<Union>(dVs ` G)"
-  apply (induction G rule: infinite_finite_induct)
-    apply (auto simp: dVs_union_distr)
-   apply (smt dVs_def mem_Collect_eq mem_simps(9))
-  by (metis Sup_insert UnCI dVs_union_distr mk_disjoint_insert)
+proof -
+  have "dVs (\<Union> G) = {v. \<exists>v1 v2. (v1, v2) \<in> \<Union> G \<and> v \<in> {v1, v2}}"
+    unfolding dVs_def by blast
+  also have "\<dots> = {v. \<exists>g v1 v2. g \<in> G \<and> (v1, v2) \<in> g \<and> v \<in> {v1, v2}}"
+    by blast
+  also have "\<dots> = \<Union> {dVs g | g. g \<in> G}"
+    unfolding dVs_def by blast
+  also have "\<dots> = \<Union> (dVs ` G)"
+    by blast
+  finally show ?thesis .
+qed
 
 lemma dVs_eq: "dVs E = fst ` E \<union> snd ` E"
   by (induction E rule: infinite_finite_induct)

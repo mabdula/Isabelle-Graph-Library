@@ -227,7 +227,18 @@ proof(rule ccontr)
   then obtain cs where cs_def: "augcycle f cs" by auto
   then obtain \<gamma> where gamma_def: "\<gamma> > 0 \<and> ereal \<gamma> \<le> Rcap f (set cs)"
     using augcycle_def augpath_rcap
-    by (metis (no_types, lifting) ereal_dense2 less_ereal.simps(1) order_less_imp_le zero_ereal_def)
+  proof -
+    have Rcap_pos: "0 < Rcap f (set cs)"
+      using cs_def by (auto simp add: augcycle_def intro: augpath_rcap)
+    obtain z where z1: "0 < ereal z" and z2: "ereal z < Rcap f (set cs)"
+      using ereal_dense2[OF Rcap_pos] by auto
+    have z_pos: "0 < z"
+      using z1 by (simp add: zero_ereal_def less_ereal.simps(1))
+    have z_le: "ereal z \<le> Rcap f (set cs)"
+      using z2 order_less_imp_le by blast
+    show thesis
+      using that[OF conjI[OF z_pos z_le]] .
+  qed
   have lst:"\<C> (augment_edges f \<gamma> cs) = \<C> f + \<gamma> * \<CC> cs"
     unfolding \<CC>_def
     using augcycle_def cs_def 
@@ -338,7 +349,8 @@ proof
     using finite_imageI[of "\<delta>\<^sup>- v" F ] delta_minus_finite[of v]
           finite_imageI[of "\<delta>\<^sup>+ v" "\<lambda> e. B e"]   delta_plus_finite[of v]
           finite_imageI[of "\<delta>\<^sup>+ v" F ] finite_imageI[of "\<delta>\<^sup>- v" "\<lambda> e. B e"]
-    by (metis Setcompr_eq_image)+
+    unfolding Setcompr_eq_image
+      by auto
   have 00: "(\<Sum> e \<in> {F e |e. e \<in> \<delta>\<^sup>- v} \<union> {B e |e. e \<in> \<delta>\<^sup>+ v}.  
                                   (difference f' f)  e)                =
                 ((\<Sum> e \<in> {F e |e. e \<in> \<delta>\<^sup>- v}.  (difference f' f)  e) +
@@ -448,7 +460,7 @@ proof-
       by fastforce 
   also have " ... = (\<Sum>e\<in>\<E>. difference f' f (F e) *\<c> e) +
                     (\<Sum>e\<in>\<E>. - difference f' f (B e) * \<c> e) "
-    by (smt (verit) \<cc>.simps(1) \<cc>.simps(2) minus_mult_minus prod.collapse sum.cong)
+    by (simp add: \<cc>.simps(1) \<cc>.simps(2))
   also have "... = (\<Sum>e\<in>\<E>.     difference f' f (F e) *\<c> e
                              - difference f' f (B e) * \<c> e) " 
     using sym[OF sum.distrib[of "\<lambda> e. difference f' f (F e) * \<c> e"_ \<E>]] by simp
@@ -557,7 +569,28 @@ proof(rule ccontr)
     using  f_f'_diff_neg  R_cost_g by fastforce
   then obtain i where i_Def:"i<length css" 
               "(\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0" 
-    by (smt (verit, best) Rcost_sum lessThan_iff sum_nonneg)
+  proof -
+    have neg: "residual_flow.\<C> g < 0"
+      using f_f'_diff_neg R_cost_g by simp
+    have ex_i: "\<exists>i. i < length css \<and>
+                  (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0"
+    proof (rule ccontr)
+      assume "\<nexists>i. i < length css \<and>
+                   (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0"
+      hence all_nonneg: "\<And>i. i < length css \<Longrightarrow>
+                   0 \<le> (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e)"
+        by fastforce
+      have "0 \<le> (\<Sum>i<length css. \<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e)"
+      proof (rule sum_nonneg)
+        fix i assume "i \<in> {..<length css}"
+        thus "0 \<le> (\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e)"
+          using all_nonneg by simp
+      qed
+      thus False
+        using neg Rcost_sum by simp
+    qed
+    then show thesis using that by blast
+  qed
   hence "set (css ! i) \<subseteq> residual_flow.support g"  
      using css_ws_def(4) nth_mem by blast
   hence "set (css ! i) \<subseteq> \<EE> " "\<forall> e \<in> set (css ! i). g e > 0" by(auto simp add: residual_flow.support_def)
@@ -616,7 +649,7 @@ proof(rule ccontr)
   proof-
     have "(\<Sum>e\<in>  set (css ! i). (ws ! i) * \<cc> e) = 
            (ws ! i) * (\<Sum>e\<in>  set (css ! i). \<cc> e)" 
-      by (metis sum.cong sum_distrib_left)
+      by (simp add: sum_distrib_left)
     also have 000:"... = (ws ! i)*(\<CC> (css ! i))" unfolding \<CC>_def by simp
     show "(\<CC> (css ! i)) < 0" 
      using calculation css_ws_def(1) css_ws_def(3) i_Def  sum_weigt_c unfolding \<CC>_def 

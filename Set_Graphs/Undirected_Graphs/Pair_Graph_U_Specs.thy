@@ -117,7 +117,7 @@ lemma pair_graph_u_invar_no_loop:
    "\<lbrakk>pair_graph_u_invar G; x \<in> dom (lookup G); y \<in> t_set (the (lookup G x))\<rbrakk> \<Longrightarrow> x \<noteq> y"
  using  neighbourhood_invars'[of G]   
  by (subst (asm) pair_graph_specs.vset.set.set_isin[of "the (lookup G x)" y, symmetric])
-    (auto simp add: pair_graph_u_invar_def local.neighbourhood_def   option.split, metis option.simps(5))
+    (auto simp add: pair_graph_u_invar_def local.neighbourhood_def option.split, force simp add: pair_graph_u_invar_def local.neighbourhood_def split: option.splits)
 
 context
   fixes G::'adjmap
@@ -177,7 +177,7 @@ proof -
   have "rep (uEdge u v) \<in> uedges G"
     using assms by (auto simp: uedges_def2)
   then consider "uEdge u v \<in> uedges G" | "uEdge v u \<in> uedges G"
-    using is_rep by metis
+    using is_rep(2)[of u v] by auto
   then consider "set_of_uedge (uEdge u v) \<in> set_of_uedge ` uedges G" 
     | "set_of_uedge (uEdge v u) \<in> set_of_uedge ` uedges G"
     by cases (auto intro: imageI)
@@ -195,7 +195,20 @@ lemma rev_vwalk:
   apply simp
   apply simp
   using vwalk_append_single graph_abs_symmetric last_rev
-  by (metis last_rev list.sel(1) rev.simps(2))
+proof -
+  fix v v' vs
+  assume edge: "(v, v') \<in> digraph_abs G"
+    and walk_tail: "Vwalk.vwalk (digraph_abs G) (v' # vs)"
+    and IH: "Vwalk.vwalk (digraph_abs G) (rev (v' # vs))"
+  have last_eq: "last (rev (v' # vs)) = v'"
+    by (simp add: last_rev)
+  have edge': "(v', v) \<in> digraph_abs G"
+    using edge graph_abs_symmetric by blast
+  have "Vwalk.vwalk (digraph_abs G) (rev (v' # vs) @ [v])"
+    using vwalk_append_single[OF IH] last_eq edge' by simp
+  thus "Vwalk.vwalk (digraph_abs G) (rev (v # v' # vs))"
+    by simp
+qed
 
 lemma rev_vwalk_bet:
   "vwalk_bet (digraph_abs G) u P v \<Longrightarrow> vwalk_bet (digraph_abs G) v (rev P) u"
@@ -230,7 +243,16 @@ qed
 lemma rep_elim:
   assumes "rep e = rep (uEdge u v)"
   obtains "e = uEdge u v" | "e = uEdge v u"
-  using assms is_rep by (cases e) (metis uedge.inject)
+proof (cases e)
+  case (uEdge a b)
+  with assms have rep_eq: "rep (uEdge a b) = rep (uEdge u v)"
+    by simp
+  from is_rep(2)[of a b] is_rep(2)[of u v] rep_eq
+  have "uEdge a b = uEdge u v \<or> uEdge a b = uEdge v u"
+    by auto
+  with uEdge show ?thesis
+    by (auto intro: that)
+qed
 
 lemma rep_cases:
   assumes "rep e = rep (uEdge u v)"
@@ -326,8 +348,8 @@ proof -
     using assms using uedges_def2 graph_symmetric by auto
   moreover then consider "e\<^sub>u = uEdge x y" | "e\<^sub>u = uEdge y x"
     using is_rep by auto
-  ultimately consider "{u,v} = set_of_uedge (uEdge x y)" | "{u,v} = set_of_uedge (uEdge y x)"
-    by cases metis+
+  ultimately have "{u,v} = set_of_uedge (uEdge x y) \<or> {u,v} = set_of_uedge (uEdge y x)"
+    using is_rep by (cases "e\<^sub>u = uEdge x y") auto
   hence "{u,v} = {x,y}" 
     by (auto simp: set_of_uedge)
   then consider "u = x" "v = y" | "u = y" "v = x"
@@ -363,7 +385,19 @@ qed
 
 lemma set_edge_isin_vsetorhood_iff:
   "e \<in> set_of_uedge ` uedges G \<longleftrightarrow> (\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u))"
-  using isin_vsetorhood_set_edge set_edge_isin_vsetorhood_elim by metis
+proof
+  assume "e \<in> set_of_uedge ` uedges G"
+  then obtain u v where "e = {u,v}" and "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+    by (rule set_edge_isin_vsetorhood_elim)
+  thus "\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+    by blast
+next
+  assume "\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+  then obtain u v where "e = {u,v}" and "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
+    by blast
+  thus "e \<in> set_of_uedge ` uedges G"
+    using isin_vsetorhood_set_edge by simp
+qed
 
 lemma inj_set_of_uedge:
   "inj_on set_of_uedge (uedges G)"

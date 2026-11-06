@@ -136,14 +136,51 @@ proof-
        "[next_frontier frontier vis]\<^sub>s =
           [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
     using fold_vset[OF assms(1)]
-    by(auto simp add: next_frontier_def) metis  
+ proof -
+  obtain xs where xs_set: "set xs = [frontier]\<^sub>s"
+    and xs_eq: "fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N =
+                foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N"
+    using fold_vset[OF assms(1)] by blast
+  have p2: "[next_frontier frontier vis]\<^sub>s =
+          [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
+    by (simp add: next_frontier_def xs_eq)
+  show thesis
+    by (rule that[OF xs_set p2])
+qed
   ultimately obtain xs' where xs'_props: 
        "set xs' = [frontier]\<^sub>s"
        "[next_frontier frontier vis]\<^sub>s =
            [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s"
        "distinct xs'"
     using distinct_remdups set_remdups
-    by (metis )
+  proof -
+    have p1: "set (remdups xs) = [frontier]\<^sub>s"
+      using xs_props(1) by (simp add: set_remdups)
+    have p2: "[next_frontier frontier vis]\<^sub>s =
+               [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) (remdups xs) \<emptyset>\<^sub>N]\<^sub>s"
+          proof -
+      have sub_member: "[(\<N>\<^sub>G a -\<^sub>G vis)]\<^sub>s \<subseteq>
+          foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) ys {}" if "a \<in> set ys" for ys a
+        using that
+        by (induction ys) (auto simp add: assms(2) assms(3) goal1_gen in_mono)
+      have eq_rm: "foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) ys {} =
+          foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) (remdups ys) {}" for ys
+        using sub_member
+        by (induction ys) auto
+      have eq_tr: "foldr (\<lambda>u nf. nf \<union> [(\<N>\<^sub>G u -\<^sub>G vis)]\<^sub>s) ys {} =
+          [(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) ys \<emptyset>\<^sub>N)]\<^sub>s" for ys
+        by (induction ys) (simp add: assms(2) assms(3) goal1_gen)+
+      have eqM: "[(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) ys \<emptyset>\<^sub>N)]\<^sub>s =
+          [(foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) (remdups ys) \<emptyset>\<^sub>N)]\<^sub>s" for ys
+        by (rule trans[OF trans[OF sym[OF eq_tr] eq_rm] eq_tr])
+      show ?thesis
+        by (rule trans[OF xs_props(2) eqM])
+    qed
+    have p3: "distinct (remdups xs)"
+      by (simp add: distinct_remdups)
+    show thesis
+      by (rule that[OF p1 p2 p3])
+  qed
   moreover have "[foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s =
                     \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> set xs'} - [vis]\<^sub>s"
     by(induction xs')
@@ -156,10 +193,17 @@ proof-
    using assms 
     by (induction xs)(auto split: option.split intro!: Cons)
 
-  thus "vset_inv (next_frontier frontier vis)"
-    apply (subst next_frontier_def)
-    using fold_vset[OF assms(1)]
-    by metis
+  show "vset_inv (next_frontier frontier vis)"
+    unfolding next_frontier_def
+    using fold_vset[where f="\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)" and acc="\<emptyset>\<^sub>N", OF assms(1)]
+  proof (elim exE conjE)
+    fix xs
+    assume "set xs = [frontier]\<^sub>s"
+      and h2: "fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N = foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N"
+    show "vset_inv (fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N)"
+      unfolding h2
+      by (rule goal1_gen)
+  qed
 qed
 
 definition expand_tree::"'adjmap \<Rightarrow> 'vset \<Rightarrow> 'vset \<Rightarrow> 'adjmap" where

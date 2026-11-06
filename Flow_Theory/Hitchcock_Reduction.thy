@@ -285,7 +285,17 @@ proof-
           have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
             using "1" vertex by blast
           then obtain a b d where "d \<in> \<E>'" "make_pair' d = (a, b)" "a = vertex x1 \<or> b = vertex x1"
-            by(auto simp add: dVs_def) metis+
+          proof -
+            have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
+              using "1" vertex by blast
+            then obtain d where
+              d_in: "d \<in> \<E>'" and
+              d_endpoint: "fst (make_pair' d) = vertex x1 \<or> snd (make_pair' d) = vertex x1"
+              by (auto simp add: Pair_Graph.dVs_eq)
+            show thesis
+              by (rule that[of d "fst (make_pair' d)" "snd (make_pair' d)"])
+                 (use d_in d_endpoint in auto)
+          qed
           thus ?thesis
             using flow_network.infty_edges_in_E[OF assms(1)] 
             by(cases d)
@@ -861,7 +871,7 @@ proof-
         hence ab_where:"e \<in> \<E>1 \<union> \<E>2" 
           using C_inE \<E>'_def by blast
         obtain C1 C2 where C_split: "C = C1@[e]@C2" 
-          by (metis "1"(1) in_set_conv_decomp_first single_in_append)
+          using split_list[OF "1"(1)] by auto
         hence rotated:"closed_w (make_pair' ` \<E>') (map make_pair' ([e]@ C2@C1))" 
           "set (map make_pair' C) = set (map make_pair'([e]@C2@C1))"
           "closed_w (make_pair' ` \<E>') (map make_pair' (C2@C1@[e]))" 
@@ -1399,7 +1409,25 @@ then 0 else undefined)"
       proof(rule ballI, goal_cases)
         case (1 v)
         hence "vertex v \<in> dVs \<E>'"
-          by(auto simp add: \<E>'_def \<E>1_def \<E>2_def dVs_def , blast, metis insertI1 insert_commute)
+          proof -
+            obtain a b where ab: "(a, b) \<in> \<E>" and v_ab: "v = a \<or> v = b"
+              using 1 by (auto simp add: dVs_def)
+            show "vertex v \<in> dVs \<E>'"
+            proof (cases "v = a")
+              case True
+              have "(edge (a, b), vertex a) \<in> \<E>'"
+                using ab by (auto simp add: \<E>'_def \<E>1_def)
+              then show ?thesis
+                using True by (auto simp add: dVs_def)
+            next
+              case False
+              with v_ab have vb: "v = b" by simp
+              have "(edge (a, b), vertex b) \<in> \<E>'"
+                using ab by (auto simp add: \<E>'_def \<E>2_def)
+              then show ?thesis
+                using vb by (auto simp add: dVs_def)
+            qed
+          qed
         hence "- (sum f' (multigraph_spec.delta_minus  \<E>' snd (vertex v)) 
                          - sum f' (multigraph_spec.delta_plus \<E>' fst (vertex v))) =
                     \<b> v - real_of_ereal (sum \<u> (multigraph_spec.delta_plus \<E> fst v))"
@@ -1498,7 +1526,16 @@ then 0 else undefined)"
         using 3 C_in_E' \<E>'_def \<E>1_def \<E>2_def by force
       moreover have "snd e = fst d" 
         using 3
-        by (metis awalk_Cons_iff u_props(1))
+        proof -
+          have C_eq: "C = e # d # rest"
+            using 3 by simp
+          have awalk_C: "awalk \<E>' u (e # d # rest) u"
+            using u_props(1) C_eq by simp
+          hence "awalk \<E>' (snd e) (d # rest) u"
+            by (simp add: awalk_Cons_iff)
+          thus "snd e = fst d"
+            by (simp add: awalk_Cons_iff)
+        qed
       ultimately show False by auto  
     qed
   qed

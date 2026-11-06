@@ -148,8 +148,24 @@ lemma symmetric_digraph_by_def: "symmetric_digraph {(u, v). {u, v} \<in> G}"
   by (simp add: insert_commute symmetric_digraph_def)
 
 lemma UD_inverse_of_D: "dblton_graph G \<Longrightarrow> UD {(u, v). {u, v} \<in> G} = G"
-  unfolding UD_def dblton_graph_def 
-  by auto metis
+proof -
+  assume dblton: "dblton_graph G"
+  show "UD {(u, v). {u, v} \<in> G} = G"
+  proof
+    show "UD {(u, v). {u, v} \<in> G} \<subseteq> G"
+      by (auto simp add: UD_def)
+  next
+    show "G \<subseteq> UD {(u, v). {u, v} \<in> G}"
+    proof
+      fix e
+      assume e: "e \<in> G"
+      then obtain u v where uv: "e = {u, v}" "u \<noteq> v"
+        using dblton[unfolded dblton_graph_def] by blast
+      then show "e \<in> UD {(u, v). {u, v} \<in> G}"
+        using e by (auto simp add: UD_def)
+    qed
+  qed
+qed
 
 lemma distinc_p_dblton_edges: "distinct p \<Longrightarrow> dblton_graph (set (edges_of_path p))"
   using graph_abs_edges_of_distinct_path by blast

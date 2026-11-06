@@ -390,7 +390,7 @@ proof-
   have "\<Union> (connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))) = 
     \<Union> (connected_components X) \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))" by simp  
   also have "... = Vs X \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
-    using Union_connected_components[OF \<open>dblton_graph X\<close>] by metis
+    using Union_connected_components[OF \<open>dblton_graph X\<close>] by simp
   also have "... = Vs X \<union> (V - Vs X)"
     by auto
   also have "... = V"
@@ -413,7 +413,23 @@ lemma connected_component_non_empt: "connected_component A x \<noteq> {}"
 lemma unequal_components_disjoint: 
   "\<lbrakk>connected_component E u \<noteq> connected_component E v; u \<in> X; v \<in> X\<rbrakk> 
   \<Longrightarrow> connected_component E u \<inter> connected_component E v = {}"
-  by (metis Int_emptyI connected_components_member_eq)
+proof -
+  assume "connected_component E u \<noteq> connected_component E v" "u \<in> X" "v \<in> X"
+  show "connected_component E u \<inter> connected_component E v = {}"
+  proof (rule ccontr)
+    assume "connected_component E u \<inter> connected_component E v \<noteq> {}"
+    then obtain w where w1: "w \<in> connected_component E u" and w2: "w \<in> connected_component E v"
+      by blast
+    from w1 have eq1: "connected_component E w = connected_component E u"
+      by (rule connected_components_member_eq)
+    from w2 have eq2: "connected_component E w = connected_component E v"
+      by (rule connected_components_member_eq)
+    from eq1 eq2 have "connected_component E u = connected_component E v"
+      by simp
+    with \<open>connected_component E u \<noteq> connected_component E v\<close> show False
+      by contradiction
+  qed
+qed
 
 lemma same_component_set_mono: 
   "\<lbrakk>A \<subseteq> B; connected_component A x = connected_component A y\<rbrakk>
@@ -664,7 +680,18 @@ proof(safe)
   fix e
   assume "e \<in> G" 
   then obtain C where "e \<subseteq> C" "C \<in> connected_components G"
-    by (metis assms dblton_graphE edge_in_component)
+  proof -
+    from assms \<open>e \<in> G\<close> obtain u v where uv: "e = {u, v}" "u \<noteq> v"
+      by (blast elim: dblton_graphE)
+    have "{u, v} \<in> G"
+      using uv \<open>e \<in> G\<close> by simp
+    from edge_in_component[OF this] obtain C where "C \<in> connected_components G" "{u, v} \<subseteq> C"
+      by auto
+    then have "e \<subseteq> C"
+      using uv by simp
+    then show thesis
+      using \<open>C \<in> connected_components G\<close> by (rule that)
+  qed
   moreover then have "e \<in> component_edges G C" 
     by (simp add: \<open>e \<in> G\<close> assms edge_in_component_edges)
   ultimately show "e \<in> \<Union>{component_edges G C |C.  C \<in> connected_components G}" 
@@ -691,9 +718,22 @@ next
     with in_connected_component_in_edges \<open>v \<in> \<Union> G\<close> \<open>C = connected_component G v\<close>
       have "x \<in> \<Union> G" using Vs_def by fastforce
     then have "\<exists>e. e \<in> G \<and> x \<in> e" by blast
-    with dblton_graphE[OF \<open>dblton_graph G\<close>] have "\<exists>y. x \<noteq> y \<and> {x, y} \<in> G"
-      using insert_absorb
-      by (smt (verit, ccfv_SIG) empty_iff insert_commute insert_iff)
+    then obtain e where e: "e \<in> G" "x \<in> e"
+      by blast
+    obtain u w where uv: "e = {u, w}" "u \<noteq> w"
+      using \<open>dblton_graph G\<close> e(1) by (rule dblton_graphE)
+    have "\<exists>y. x \<noteq> y \<and> {x, y} \<in> G"
+    proof -
+      from e(2) uv(1) consider "x = u" | "x = w" by auto
+      then show ?thesis
+      proof cases
+        case 1
+        with uv e show ?thesis by (intro exI[of _ w]) auto
+      next
+        case 2
+        with uv e show ?thesis by (intro exI[of _ u]) (auto simp: insert_commute)
+      qed
+    qed
     then obtain y where "x \<noteq> y" "{x, y} \<in> G" by blast
     then have "walk_betw G x [x, y] y" 
       unfolding walk_betw_def by auto
@@ -706,9 +746,17 @@ next
 
   then have "\<forall>x \<in> C. \<exists>y. {x, y} \<subseteq> C \<and> {x, y} \<in> G \<and> x \<in> {x, y}"
      by auto 
-  then show ?case
-    using Complete_Lattices.Union_iff[where ?C = "{{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} \<in> G}"]
-    by (smt (verit) mem_Collect_eq subsetI)
+  note witness = this
+  show ?case
+  proof (rule subsetI)
+    fix x
+    assume "x \<in> C"
+    with witness
+    obtain y where "{x, y} \<subseteq> C" "{x, y} \<in> G" "x \<in> {x, y}"
+      by blast
+    thus "x \<in> \<Union> {{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} \<in> G}"
+      by auto
+  qed
 qed 
 
 lemma components_edges_image_Vs:
@@ -720,7 +768,13 @@ proof-
     {\<Union> (component_edges G C) |C. C \<in> connected_components G}" by blast
   also have "... = 
     {C |C. C \<in> connected_components G}"
-    using Vs_component_edges[OF \<open>dblton_graph G\<close>] by (metis Vs_def)
+  proof -
+    have "\<And>C. C \<in> connected_components G \<Longrightarrow> \<Union> (component_edges G C) = C"
+      using Vs_component_edges[OF \<open>dblton_graph G\<close>]
+      by (simp add: Vs_def)
+    thus ?thesis
+      by auto
+  qed
   finally show "\<Union> ` {component_edges G C |C. C \<in> connected_components G} = connected_components G"
     by auto
 qed 
@@ -1807,7 +1861,45 @@ proof-
     using  connected_components_member_eq[OF v_prop(2)] 
      in_own_connected_component[of v B] same_component_set_mono[OF assms(1)]
       some_value  v_prop(3) f_def  
-    by (metis (no_types, lifting) imageE)
+  proof -
+    assume hx: "connected_component B x \<in> f ` (comps X A)"
+    assume hv: "connected_component B v \<in> f ` (comps X A)"
+    from hx obtain C where C_mem: "C \<in> comps X A" and C_f: "connected_component B x = f C"
+      by (auto elim: imageE)
+    from hv obtain C' where C'_mem: "C' \<in> comps X A" and C'_f: "connected_component B v = f C'"
+      by (auto elim: imageE)
+    define w0 where w0_def: "w0 = (SOME w. C = connected_component A w \<and> w \<in> X)"
+    define w1 where w1_def: "w1 = (SOME w. C' = connected_component A w \<and> w \<in> X)"
+    have C_w0: "C = connected_component A w0"
+      unfolding w0_def using some_value[OF C_mem] by auto
+    have fC_w0: "f C = connected_component B w0"
+      unfolding f_def w0_def by (simp add: Let_def)
+    have C'_w1: "C' = connected_component A w1"
+      unfolding w1_def using some_value[OF C'_mem] by auto
+    have fC'_w1: "f C' = connected_component B w1"
+      unfolding f_def w1_def by (simp add: Let_def)
+    have Bx_eq: "connected_component B w0 = connected_component B x"
+      using C_f fC_w0 by simp
+    have Bv_eq: "connected_component B w1 = connected_component B v"
+      using C'_f fC'_w1 by simp
+    have Ax_eq: "connected_component A w0 = connected_component A x"
+      using same_component_set_mono[OF assms(1) Bx_eq] .
+    have Av_eq: "connected_component A w1 = connected_component A v"
+      using same_component_set_mono[OF assms(1) Bv_eq] .
+    have vx_eq: "connected_component A v = connected_component A x"
+      using connected_components_member_eq[OF v_prop(2)] .
+    have C_is: "C = connected_component A x"
+      using C_w0 Ax_eq by simp
+    have C'_is: "C' = connected_component A x"
+      using C'_w1 Av_eq vx_eq by simp
+    have "C = C'"
+      using C_is C'_is by simp
+    hence "connected_component B x = connected_component B v"
+      using C_f C'_f by simp
+    hence "v \<in> connected_component B x"
+      using in_own_connected_component[of v B] by simp
+    with v_prop(3) show False by blast
+  qed
   hence not_all_b_comp_chosen:"f ` (comps X A) \<subset> (comps X B)"
     using v_prop(1) assms(3) img_subs by(auto simp add: comps_def)
   have "card (comps X A) = card ( f ` (comps X A))"
@@ -1830,9 +1922,24 @@ proof(rule card_inj[where f = "\<lambda> C. (let x = (SOME x. x \<in> C \<and> x
   show ?case
   proof(rule inj_onI, goal_cases)
     case (1 x y)
+    from "1"(1) obtain x0 where x0: "x0 \<in> X" "x = connected_component A x0"
+      by auto
+    from "1"(2) obtain y0 where y0: "y0 \<in> X" "y = connected_component A y0"
+      by auto
+    define xr where "xr = (SOME z. z \<in> x \<and> z \<in> X)"
+    define yr where "yr = (SOME z. z \<in> y \<and> z \<in> X)"
+    have Ax: "connected_component A xr = x"
+      unfolding xr_def x0(2)
+      using same_connected_component_SOME[OF x0(1)] .
+    have Ay: "connected_component A yr = y"
+      unfolding yr_def y0(2)
+      using same_connected_component_SOME[OF y0(1)] .
+    have B_eq: "connected_component B xr = connected_component B yr"
+      using "1"(3) by (simp add: xr_def yr_def Let_def)
+    have A_eq: "connected_component A xr = connected_component A yr"
+      using same_component_set_mono[OF "2"(1) B_eq] .
     thus ?case
-      using sym[OF same_connected_component_SOME[of _ X A]]
-      by (smt (verit, best) "2"(1) Eps_cong image_iff same_component_set_mono)
+      using Ax Ay by simp
   qed 
 qed simp
 
@@ -1844,7 +1951,27 @@ proof(goal_cases)
   then have "dblton_graph X" unfolding dblton_graph_def by simp
   from Union_connected_components[OF this]
   have "connected_components X \<inter> ((\<lambda>v. {v}) ` (V - (Vs X))) = {}"
-    by (smt (verit) DiffD2 UnionI disjoint_iff imageE singletonI)
+  proof -
+    have Union_eq: "\<Union> (connected_components X) = Vs X"
+      by fact
+    show ?thesis
+    proof (intro equals0I)
+      fix C
+      assume "C \<in> connected_components X \<inter> ((\<lambda>v. {v}) ` (V - (Vs X)))"
+      then obtain v where C_comp: "C \<in> connected_components X"
+        and v_in: "v \<in> V - Vs X" and C_eq: "C = {v}"
+        by auto
+      have v_notin: "v \<notin> Vs X"
+        using v_in by simp
+      have "C \<subseteq> \<Union> (connected_components X)"
+        using C_comp by (rule Union_upper)
+      also have "\<dots> = Vs X"
+        using Union_eq .
+      finally have "C \<subseteq> Vs X" .
+      with C_eq have "v \<in> Vs X" by auto
+      with v_notin show False by simp
+    qed
+  qed
   have "card ((\<lambda>v. {v}) ` (V - (Vs X))) = card (V - Vs X)"
     by (simp add: card_image)
   have "finite (connected_components X)"
@@ -1894,12 +2021,11 @@ proof(cases "u = v")
 next
   obtain w where w: "w \<in> Vs G" "C = connected_component G w"
     using C_in_comp
-    by (smt connected_components_def mem_Collect_eq)
+    by (fastforce simp add: connected_components_def)
+  have w_in_C: "w \<in> C" using w(2) by (simp add: in_own_connected_component)
   then obtain pwu where pwu: "pwu \<noteq> []" "path G pwu" "hd pwu = w" "last pwu = u"
-    using uC C_in_comp
-    unfolding connected_components_def connected_component_def
-    apply simp
-    by (metis (no_types, lifting) C_in_comp in_own_connected_component same_con_comp_path uC w(2))
+    using same_con_comp_path[OF C_in_comp w_in_C uC]
+    by auto
   moreover case False
   ultimately have "path G (pwu @ (tl puv))" "hd (pwu @ (tl puv)) = w" "last (pwu @ (tl puv)) = v"
     apply(intro path_append connected pwu tl_path_is_path; simp)
@@ -1907,7 +2033,17 @@ next
     by fastforce+
   then show ?thesis
     using w
-    by (metis Nil_is_append_conv contra_subsetD last_in_set path_subset_conn_comp pwu(1))
+  proof -
+    assume facts: "path G (pwu @ tl puv)" "hd (pwu @ tl puv) = w" "last (pwu @ tl puv) = v" "w \<in> Vs G" "C = connected_component G w"
+    have "set (pwu @ tl puv) \<subseteq> connected_component G w"
+      using facts path_subset_conn_comp[of G "pwu @ tl puv"] by auto
+    moreover have "v \<in> set (pwu @ tl puv)"
+      using facts(3) pwu(1) by (blast intro: last_in_set)
+    ultimately have "v \<in> connected_component G w"
+      by blast
+    thus ?thesis
+      using w(2) by simp
+  qed
 qed
 
 lemma component_has_path_no_cycle:
@@ -1917,9 +2053,23 @@ proof-
   obtain p where p: "path G p" "C = (set p)"
     using assms component_has_path'
     by auto
-  then show ?thesis
-    using remove_cycle_pfx_works_card_ge_2
-    by (metis assms(3) path_suff remove_cycle_pfx_works)
+  have card_ge_2: "2 \<le> card (set p)"
+    using assms(3) p(2) by simp
+  from remove_cycle_pfx_works[of p "last p"] obtain pfx
+    where pfx: "p = pfx @ remove_cycle_pfx (last p) p" by blast
+  have pfx_path: "path G (pfx @ remove_cycle_pfx (last p) p)"
+    using p(1) pfx[symmetric] by simp
+  have path_suffix: "path G (remove_cycle_pfx (last p) p)"
+    using pfx_path path_suff by blast
+  have set_hd_last:
+    "hd (remove_cycle_pfx (last p) p) \<noteq> last (remove_cycle_pfx (last p) p)"
+    "set (remove_cycle_pfx (last p) p) = set p"
+    using remove_cycle_pfx_works_card_ge_2 card_ge_2 by blast+
+  have set_eq: "C = set (remove_cycle_pfx (last p) p)"
+    using p(2) set_hd_last(2) by simp
+  show ?thesis
+    using path_suffix set_eq set_hd_last(1)
+    by (intro exI[where x="remove_cycle_pfx (last p) p"]) simp
 qed
 
 lemma path_in_comp_edges:
@@ -2305,8 +2455,27 @@ proof-
   proof(cases "degree C u", goal_cases)
     case (1 nat)
     moreover have "enat nn + 1 + 1 + 1 \<le> 2  \<Longrightarrow> False" for nn
-      by (metis enat_ord_simps(1) iless_Suc_eq le_add2 linorder_not_le one_add_one one_enat_def
-          plus_1_eSuc(2) plus_enat_simps(1))
+    proof -
+      assume assm: "enat nn + 1 + 1 + 1 \<le> 2"
+      have lhs: "enat nn + 1 + 1 + 1 = enat (nn + 3)"
+      proof -
+        have bin: "nn + 1 + 1 + 1 = nn + 3"
+          by simp
+        have "enat nn + 1 + 1 + 1 = enat (nn + 1 + 1 + 1)"
+          by (simp only: one_enat_def plus_enat_simps(1))
+        also have "\<dots> = enat (nn + 3)"
+          by (simp only: bin)
+        finally show ?thesis .
+      qed
+      have rhs: "(2::enat) = enat 2"
+        by (simp add: enat_numeral)
+      from assm have "enat (nn + 3) \<le> enat 2"
+        by (simp only: lhs rhs)
+      hence "nn + 3 \<le> 2"
+        by (simp add: enat_ord_simps(1))
+      thus False
+        by simp
+    qed
     ultimately show ?case 
       using degree_in_p_leq_2[OF uv_in_p(1)] degree_p[OF uv_in_p(1)] 
       by(cases nat rule: nat_cases_up_to_3 )
@@ -2320,8 +2489,19 @@ proof-
   proof(cases "degree C v", goal_cases)
     case (1 nat)
     moreover have "enat nn + 1 + 1 + 1 \<le> 2  \<Longrightarrow> False" for nn
-      by (metis enat_ord_simps(1) iless_Suc_eq le_add2 linorder_not_le one_add_one one_enat_def
-          plus_1_eSuc(2) plus_enat_simps(1))
+    proof -
+      assume assm: "enat nn + 1 + 1 + 1 \<le> 2"
+      have eq1: "enat nn + 1 + 1 + 1 = enat (nn + 3)"
+        by (simp only: one_enat_def plus_enat_simps(1), rule arg_cong, simp)
+      have eq2: "(2::enat) = enat 2"
+        by (simp add: enat_numeral)
+      from assm eq1 eq2 have "enat (nn + 3) \<le> enat 2"
+        by simp
+      hence "nn + 3 \<le> 2"
+        by (simp add: enat_ord_simps(1))
+      thus False
+        by simp
+    qed
     ultimately show ?case 
       using degree_in_p_leq_2[OF uv_in_p(2)] degree_p[OF uv_in_p(2)] 
       by(cases nat rule: nat_cases_up_to_3 )
@@ -2332,10 +2512,22 @@ proof-
       using degree_in_p_leq_2[OF uv_in_p(2)] by simp
   qed
   moreover have "enat (2 * (length p - 2)) + 1 + 2 =  enat (2* (length p -2) + 3)" 
-    by (metis add.commute add_numeral_left mult_2 numeral_Bit1_eq_inc_double numeral_One numeral_plus_one
-        of_nat_add of_nat_eq_enat one_add_one one_enat_def)
+  proof -
+    have "enat (2 * (length p - 2)) + 1 + 2 = enat (2 * (length p - 2) + 1 + 2)"
+      by (simp only: numeral_eq_enat one_enat_def plus_enat_simps(1))
+    also have "\<dots> = enat (2 * (length p - 2) + 3)"
+      by (rule arg_cong) simp
+    finally show ?thesis .
+  qed
   moreover have "enat (2 * (length p - 2)) + 2 + 1 = enat (2* (length p -2) + 3)"
-    by (metis add.assoc calculation(4) one_add_one)
+  proof -
+    note calc4 = calculation(4)
+    have "enat (2 * (length p - 2)) + 2 + 1 = enat (2 * (length p - 2)) + 1 + 2"
+      by (simp add: ac_simps)
+    also have "... = enat (2 * (length p - 2) + 3)"
+      by (rule calc4)
+    finally show ?thesis .
+  qed
   moreover have "(2 * card C) \<noteq> (2 * (length p - 2) + 3)" 
     by(cases "even (2 * card C)", all \<open>cases "even (2 * (length p - 2) + 3)"\<close>)
       (force+, auto)

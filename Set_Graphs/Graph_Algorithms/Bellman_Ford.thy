@@ -26,7 +26,13 @@ lemma unique_path_backward_determ_acyclic:
 proof(rule ccontr, goal_cases)
   case 1
   have same_lasts: " last p = last q"
-    by(metis assms(2) assms(3) last_of_vwalk_bet)
+  proof -
+    have "v = last p"
+      using assms(2) by (rule last_of_vwalk_bet)
+    moreover have "v = last q"
+      using assms(3) by (rule last_of_vwalk_bet)
+    ultimately show ?thesis by simp
+  qed
   obtain ys p' q' where props:"p = p'@ys" "q = q'@ys"
                                 "\<And>  ys' p' q'. p = p'@ys' \<Longrightarrow> q = q'@ys' \<Longrightarrow> length ys' \<le> length ys"
     using assms(5)  assms(6)  same_lasts
@@ -295,8 +301,11 @@ lemma bellman_ford_upd_one:
 
 lemma finite_of_V: "finite {f xs | xs. P xs \<and> length xs \<le> l \<and> set xs \<subseteq> set vs}"
 proof-
-  have "finite {xs. length xs \<le> l \<and> set xs \<subseteq> set vs}"
-    by (metis (no_types, lifting) Collect_cong List.finite_set finite_lists_length_le)
+  have "finite (set vs)" by simp
+  hence "finite {xs. set xs \<subseteq> set vs \<and> length xs \<le> l}"
+    by (rule finite_lists_length_le)
+  hence "finite {xs. length xs \<le> l \<and> set xs \<subseteq> set vs}"
+    by (rule rev_finite_subset, auto)
   thus ?thesis by simp
 qed
 
@@ -307,7 +316,13 @@ lemma finite_weight_set:
 
 lemma finite_lists_length_le1: "finite {xs. length xs \<le> i \<and> set xs \<subseteq> set vs}" for i
   using finite_lists_length_le[ of _ i] 
-  by (metis (no_types, lifting) Collect_cong List.finite_set)
+proof -
+  have eq: "{xs. length xs \<le> i \<and> set xs \<subseteq> set vs} = {xs. set xs \<subseteq> set vs \<and> length xs \<le> i}"
+    by auto
+  show ?thesis
+    unfolding eq
+    by (rule finite_lists_length_le) simp
+qed
 
 lemma finite_lists_length_le2: "finite {xs. length xs + 1 \<le> i \<and> set xs \<subseteq> set vs }" for i
   by (auto intro: finite_subset[OF _ finite_lists_length_le1[of "i"]])
@@ -484,7 +499,7 @@ next
       apply(rule connection_inver_fold_pres[OF assms(1)])
       apply simp
       using Cons[of v] 
-      by (smt (z3) Collect_cong snd_conv)
+      by (auto simp: prod_eq_iff)
   next
     case 1 
     have Cons_applied: 
@@ -501,7 +516,14 @@ next
          (insert (OPT l s (fst e) + edge_costs (fst e) v) 
          (insert (OPT l s v) {OPT l s u + edge_costs u v |u. (u, v) \<in> set es}))" 
       using sym[OF 1] 
-      by (auto, metis fst_conv) 
+    proof -
+      obtain a b where e_eq: "e = (a, b)"
+        by (rule prod.exhaust)
+      have b_eq: "b = v"
+        using e_eq "1" by simp
+      show ?thesis
+        using e_eq b_eq by auto
+    qed
     from 1 show ?case 
       apply simp
       apply(subst effect_of_relax(1)[of " (foldr (\<lambda>(x, y) done. relax done x y) es connections)" ])
@@ -634,7 +656,20 @@ lemma same_domain_bellman_ford[invar_lemmas]:
 proof(induction l)
   case (Suc l)
  have "set (map snd es) \<subseteq> set vs" 
-    by (smt (verit, best) dVsI'(2) image_iff image_set subset_code(1) vs_and_es)
+  proof (rule subsetI)
+    fix x
+    assume "x \<in> set (map snd es)"
+    then obtain e where e_es: "e \<in> set es" and x_eq: "x = snd e"
+      by auto
+    obtain u v where e_pair: "e = (u, v)"
+      by (cases e) auto
+    have uv_in: "(u, v) \<in> set es"
+      using e_es e_pair by simp
+    have "v \<in> dVs (set es)"
+      using dVsI'(2)[OF uv_in] by simp
+    thus "x \<in> set vs"
+      using vs_and_es x_eq e_pair by simp
+  qed
   hence map_snd_subs:"set (map snd es) \<subseteq> dom (connection_lookup (bellman_ford_init s))"
     using invar_after_Folds vs_is_dom
     by (auto simp add:  connection_axioms(2) bellman_ford_init_def dom_def)
@@ -1388,9 +1423,12 @@ proof(rule, goal_cases)
         using a_p_prop(1)[simplified 1 p1p2_prop, simplified]  1(2)  vwalk_bet_nonempty_vwalk(3) 
               vwalk_bet_nonempty_vwalk(4) 
         by (intro vwalk_rotate[of _ u Nil v "butlast p2"])fastforce
-      thus ?case 
-        using 1 
-        by (metis append.assoc append_vwalk_pref single_in_append)
+      hence pref: "Vwalk.vwalk (pred_graph (relax connections u v))
+                ((v # butlast p2 @ [u]) @ [v])"
+        by simp
+      thus ?case
+        using 1 pref
+        by (fastforce intro: append_vwalk_pref)
     qed simp
     moreover have "\<lbrakk>p1 = b#pp1; p2= []\<rbrakk> 
          \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v  ([v]@tl p1@[u]) u"
@@ -1412,7 +1450,7 @@ proof(rule, goal_cases)
       by auto
     ultimately obtain q where  "vwalk_bet (pred_graph (relax connections u v)) v ([v]@q@[u]) u" 
       using append_Nil[of "[u]"] 
-      by(cases p1)( cases p2, metis, simp, cases p2, fast+)
+      by(cases p1)( cases p2, fastforce intro: that[of "[]"], simp, cases p2, fast+)
     then obtain r where  r_prop:"vwalk_bet (pred_graph (relax connections u v)) v r u" "distinct r"
       by (meson distinct_vwalk_bet_def vwalk_bet_to_distinct_is_distinct_vwalk_bet)
     hence lengthr: "length r \<ge> 2"
@@ -1445,10 +1483,60 @@ proof(rule, goal_cases)
     hence "snd (the (connection_lookup connections u))
             > snd (the (connection_lookup connections u)) + edge_costs u v + weight r"
       using True 
-      by (smt (verit, del_insts) MInfty_eq_minfinity add.commute weight_not_MInfty
-          ereal_add_le_add_iff2 ereal_plus_eq_PInfty nless_le order.strict_trans2)
+    proof -
+      have dominates: "snd (the (connection_lookup connections v)) + weight r
+                        \<le> snd (the (connection_lookup connections u))"
+        using r_walk_in_old weight_pred_path[OF lengthr assms(5)] by simp
+      have A_not_PInf: "snd (the (connection_lookup connections u)) \<noteq> PInfty"
+      proof
+        assume "snd (the (connection_lookup connections u)) = PInfty"
+        hence "snd (the (connection_lookup connections u)) + edge_costs u v = PInfty"
+          by simp
+        with True show False by simp
+      qed
+      consider (Real) w where "weight r = ereal w"
+        | (PInf) "weight r = PInfty" | (MInf) "weight r = MInfty"
+        by (cases "weight r") auto
+      then show ?thesis
+      proof cases
+        case Real
+        have strict_add: "x < y \<Longrightarrow> x + ereal w < y + ereal w" for x y :: ereal
+          by (cases y; cases x; auto)
+        have "snd (the (connection_lookup connections u)) + edge_costs u v + weight r
+            < snd (the (connection_lookup connections v)) + weight r"
+          using strict_add[OF True] unfolding Real by simp
+        also have "... \<le> snd (the (connection_lookup connections u))"
+          using dominates by simp
+        finally show ?thesis .
+      next
+        case PInf
+        have "PInfty \<le> snd (the (connection_lookup connections u))"
+          using dominates PInf by simp
+        with A_not_PInf show ?thesis by fastforce
+      next
+        case MInf
+        with weight_not_MInfty[of r] show ?thesis by simp
+      qed
+    qed
     hence weight_sum:"edge_costs u v + weight r < 0"
-      by (metis ab_semigroup_add_class.add_ac(1) ereal_le_add_self leD leI)
+    proof -
+      assume big: "snd (the (connection_lookup connections u)) + edge_costs u v + weight r
+                   < snd (the (connection_lookup connections u))"
+      show "edge_costs u v + weight r < 0"
+      proof (rule ccontr)
+        assume "\<not> edge_costs u v + weight r < 0"
+        hence h0: "0 \<le> edge_costs u v + weight r"
+          by (simp add: not_less)
+        have "snd (the (connection_lookup connections u))
+              \<le> snd (the (connection_lookup connections u)) + (edge_costs u v + weight r)"
+          using h0 by (rule ereal_le_add_self)
+        hence "snd (the (connection_lookup connections u))
+               \<le> snd (the (connection_lookup connections u)) + edge_costs u v + weight r"
+          by (simp add: ac_simps)
+        from this big show False
+          by simp
+      qed
+    qed
     have lastr:"last r = u" 
       using r_prop(1) by fastforce
     have "edge_costs u v + weight r = weight (r@[v])"
@@ -1651,10 +1739,36 @@ proof(cases "OPT (length vs - 1) s v")
   hence P_length:"length P \<le> length vs" 
     using sym[OF distinct_card[OF distinct_vs]]  sym[OF distinct_card[OF P_prop(4)]]
     by (auto simp add: card_mono)
-  obtain pp where pp_is:"P = [s]@pp@[v]"  
-    using  assms(2) calculation(2) calculation(3) hd_Nil_eq_last 
-    by(cases P) 
-     (auto, smt (verit, ccfv_SIG) append_butlast_last_id)
+  have "\<exists>pp. P = [s]@pp@[v]"
+  proof(cases P)
+    case Nil
+    hence False
+      using calculation(2) calculation(3) assms(2) hd_Nil_eq_last by force
+    thus ?thesis by blast
+  next
+    case (Cons a list)
+    have a_eq_s: "a = s"
+      using calculation(2) Cons by simp
+    show ?thesis
+    proof(cases "list = []")
+      case True
+      hence "v = a"
+        using calculation(3) Cons by simp
+      hence False
+        using a_eq_s assms(2) by simp
+      thus ?thesis by blast
+    next
+      case False
+      hence last_eq: "last list = v"
+        using calculation(3) Cons by simp
+      have list_eq: "butlast list @ [last list] = list"
+        using False append_butlast_last_id by blast
+      have "P = [s] @ butlast list @ [v]"
+        using Cons a_eq_s last_eq list_eq by simp
+      thus ?thesis by blast
+    qed
+  qed
+  then obtain pp where pp_is:"P = [s]@pp@[v]" by blast
   have "length ([s]@pp@[v]) \<le> length vs"
     using P_length pp_is by blast
   moreover have "weight ([s]@pp@[v]) < PInfty" 
@@ -1706,9 +1820,34 @@ next
     using sym[OF distinct_card[OF distinct_vs]]  sym[OF distinct_card[OF P_prop(4)]]
     by (auto simp add: card_mono)
   obtain pp where pp_is:"P = [s]@pp@[v]"  
-    using  assms(2) calculation(2) calculation(3) hd_Nil_eq_last 
-    by(cases P) 
-     (auto, smt (verit, ccfv_SIG) append_butlast_last_id)
+  proof -
+    have "\<exists>pp. P = [s] @ pp @ [v]"
+    proof(cases P)
+      case Nil
+      then have "hd P = last P" using hd_Nil_eq_last by simp
+      with calculation(2) calculation(3) have "s = v" by simp
+      with assms(2) show ?thesis by simp
+    next
+      case (Cons a list)
+      with calculation(2) have a_eq_s: "a = s" by simp
+      show ?thesis
+      proof(cases "list = []")
+        case True
+        with Cons have "last P = a" by simp
+        with a_eq_s calculation(3) have "s = v" by simp
+        with assms(2) show ?thesis by simp
+      next
+        case False
+        with Cons have "last P = last list" by simp
+        with calculation(3) have last_list: "last list = v" by simp
+        from append_butlast_last_id[OF False] last_list
+        have "list = butlast list @ [v]" by simp
+        with Cons a_eq_s have "P = [s] @ butlast list @ [v]" by simp
+        then show ?thesis by blast
+      qed
+    qed
+    then show thesis using that by blast
+  qed
   have "length ([s]@pp@[v]) \<le> length vs"
     using P_length pp_is by blast
   moreover have "weight ([s]@pp@[v]) \<ge> OPT (length vs - 1) s v" 
@@ -2247,8 +2386,16 @@ proof-
    proof-
      have "weight (rev (search_rev_path s connections pred)@[v])
           = weight (butlast (rev (search_rev_path s connections pred))@[pred, v])"
-       apply(rule  vwalk_bet_props[OF vwalk_s_pred])
-       by(metis append_butlast_last_cancel)
+      proof(rule vwalk_bet_props[OF vwalk_s_pred], goal_cases)
+        case 1
+        have "rev (search_rev_path s connections pred) @ [v]
+              = (butlast (rev (search_rev_path s connections pred))
+                  @ [last (rev (search_rev_path s connections pred))]) @ [v]"
+          using 1 by (subst append_butlast_last_cancel) auto
+        also have "\<dots> = butlast (rev (search_rev_path s connections pred)) @ [pred, v]"
+          using 1 by auto
+        finally show ?case by simp
+      qed
      also have "... = weight (butlast (rev (search_rev_path s connections pred))@[pred]) 
                            +  edge_costs pred v"
        using  weight_append_last[of _ pred v, simplified] by simp

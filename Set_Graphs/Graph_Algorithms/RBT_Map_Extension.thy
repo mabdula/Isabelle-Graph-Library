@@ -327,14 +327,34 @@ next
   case (2 l a uu r)
   have inter_empty:"set (Tree2.inorder l) \<inter> Set.insert a (set (Tree2.inorder r)) = {}"
     using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]]
-    by (metis (no_types, lifting) Int_emptyI insert_iff not_less_iff_gr_or_eq t_inv_def)
+  proof -
+    have bstX: "bst \<langle>l, (a, uu), r\<rangle>"
+      using 2(3) by (auto simp add: t_inv_def)
+    have l_less: "\<forall>x\<in>set (Tree2.inorder l). x < a"
+      and r_greater: "\<forall>x\<in>set (Tree2.inorder r). a < x"
+      using bstX bst.simps(2)[simplified Tree2.set_inorder[symmetric]] by auto
+    {
+      fix z assume z_mem: "z \<in> set (Tree2.inorder l) \<inter> Set.insert a (set (Tree2.inorder r))"
+      have "z < a" using z_mem l_less by auto
+      moreover have "z = a \<or> a < z" using z_mem r_greater by auto
+      ultimately have False by auto
+    }
+    thus ?thesis by auto
+  qed
   have t_inv_l: "t_inv l" 
     using "2.prems"  bst.simps(2) by(simp add: t_inv_def) 
   have t_inv_r: "t_inv r" 
     using "2.prems"  bst.simps(2) by(simp add: t_inv_def)
   have a_not_down: "a \<notin> set (Tree2.inorder r)" 
     using 2(3) bst.simps(2)[simplified Tree2.set_inorder[symmetric]] 
-    by (metis not_less_iff_gr_or_eq t_inv_def)
+    proof -
+      from 2(3) have "bst \<langle>l, (a, uu), r\<rangle>"
+        by (simp add: t_inv_def)
+      hence "\<forall>x\<in>set (Tree2.inorder r). a < x"
+        by (simp add: bst.simps(2)[simplified Tree2.set_inorder[symmetric]])
+      thus ?thesis
+        by auto
+    qed
   show ?case 
     using a_not_down inter_empty 
     by(auto  simp add: card_Un_disjoint card_insert_if  2(1)[OF t_inv_l] 2(2)[OF t_inv_r])
@@ -394,7 +414,7 @@ proof(subst rbt_map_fold_revinorder, rule exI[of _ "map fst (rev (inorder G))"],
     foldr (\<lambda>x. f x (the (lookup G x))) (map fst (rev (Tree2.inorder G))) S"
   proof-
     have "distinct (map fst list')" 
-      by (metis distinct_list distinct_rev list'_def rev_map)
+      by (simp add: list'_def distinct_list rev_map[symmetric] distinct_rev)
     hence same_fold:"foldr (\<lambda>(x, y). f x y) list' S =
     foldr (\<lambda>x. f x (the (AList_Upd_Del.map_of list' x))) (map fst list') S"
     proof(induction list')
@@ -439,7 +459,7 @@ proof(subst rbt_map_fold_revinorder, rule exI[of _ "map fst (rev (inorder G))"],
       by(simp add:  lookup_map_of map_of_rev[OF distinct_list, symmetric] list'_def[symmetric] same_fold)+  
   qed
   ultimately show ?case 
-    by (metis distinct_rev rev_map set_rev)
+    by (simp add: rev_map[symmetric] distinct_rev set_rev)
 qed
 
 lemma bst_distinct_inorder:"bst T \<Longrightarrow> distinct (inorder T)"

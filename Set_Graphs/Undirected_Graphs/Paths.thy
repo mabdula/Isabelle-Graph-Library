@@ -250,7 +250,19 @@ qed
 
 lemma walk_betw_Cons_first:
   "\<lbrakk>walk_betw G v p w; {u, v} \<in> G\<rbrakk> \<Longrightarrow> walk_betw G u (u#p) w"
-  by (metis last_ConsR list.collapse list.distinct(1) list.sel(1) path_2 walk_betw_def)
+proof -
+  assume walk: "walk_betw G v p w" and edge: "{u, v} \<in> G"
+  from walk have p_ne: "p \<noteq> []" and path_p: "path G p" and hd_p: "hd p = v" and last_p: "last p = w"
+    by (auto simp: walk_betw_def)
+  obtain vs where p_def: "p = v # vs"
+    using p_ne hd_p by (cases p) auto
+  have path_up: "path G (u # p)"
+    unfolding p_def using edge path_p[unfolded p_def] by auto
+  have last_up: "last (u # p) = w"
+    using last_p by (simp add: p_def)
+  show ?thesis
+    using path_up last_up by (simp add: walk_betw_def)
+qed
 
 lemma walk_betw_length_2_is: 
   "\<lbrakk>walk_betw G v p u; length p = 2\<rbrakk> \<Longrightarrow> p = [v, u]"
@@ -338,9 +350,21 @@ next
   next
     case (5 p' v3)
     then show ?case
-     (*TODO: Lukas*)
-      using walk_transitive[OF \<open>walk_betw G u [u, v3] v3\<close>] walk_endpoints(2)
-      by (metis list.sel(3))
+    proof -
+      note u_v3 = 5(4)
+      note v3_walk_full = 5(5)
+      note p_eq = 5(6)
+      have zs_eq: "zs = v3 # p'"
+        using Cons.prems(1) p_eq by (auto dest: walk_between_nonempty_pathD(3))
+      have v3_walk: "walk_betw (insert {w, x} G) v3 zs v"
+        using v3_walk_full zs_eq by simp
+      have v3_Vs: "v3 \<in> Vs G"
+        using walk_endpoints(2)[OF u_v3] .
+      note IH_inst = Cons.IH[OF v3_walk \<open>w \<in> Vs G\<close> \<open>x \<notin> Vs G\<close>]
+      show ?case
+        using IH_inst walk_transitive[OF u_v3] v3_Vs \<open>x \<notin> Vs G\<close>
+        by blast
+    qed
   qed (auto dest: walk_reflexive)+
 qed
 
@@ -366,7 +390,36 @@ next
     then show ?case
       (*TODO: Lukas*)
       using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
-      by (simp, metis walk_betw_cons walk_endpoints(1))
+      proof -
+        have singleton: "u = w \<or> u = x" "v3 = w \<or> v3 = x"
+          using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
+          by auto
+        have zs_eq: "zs = v3 # p'"
+          using \<open>a # zs = u # v3 # p'\<close> by (fastforce simp: list.inject)
+        have "walk_betw (insert {w, x} G) v3 zs v"
+          using zs_eq \<open>walk_betw (insert {w, x} G) v3 (v3 # p') v\<close> by simp
+        hence "walk_betw G v3 zs v \<or> walk_betw {{w, x}} v3 zs v"
+          using Cons.IH \<open>w \<notin> Vs G\<close> \<open>x \<notin> Vs G\<close> by blast
+        with zs_eq have "walk_betw G v3 (v3 # p') v \<or> walk_betw {{w, x}} v3 (v3 # p') v"
+          by simp
+        then have tail: "walk_betw {{w, x}} v3 (v3 # p') v"
+        proof
+          assume "walk_betw G v3 (v3 # p') v"
+          hence "v3 \<in> Vs G"
+            by (rule walk_endpoints(1))
+          with singleton(2) \<open>w \<notin> Vs G\<close> \<open>x \<notin> Vs G\<close> show ?thesis
+            by blast
+        next
+          assume "walk_betw {{w, x}} v3 (v3 # p') v"
+          thus ?thesis .
+        qed
+        have "walk_betw {{w, x}} u (u # v3 # p') v"
+          using walk_betw_cons[of "{{w, x}}" u u v3 p' v]
+                \<open>walk_betw {{w, x}} u [u, v3] v3\<close> tail
+          by blast
+        thus ?case
+          using \<open>a # zs = u # v3 # p'\<close> by auto
+      qed
   next
     case (5 p' v3)
     then show ?case
@@ -484,7 +537,17 @@ lemma path_repl_edge:
   assumes "path G' p" "p \<noteq> []" "G' = (insert {w,x} G)" "path G puv" "hd puv = w" "last puv = x" "puv \<noteq> []"
   shows "\<exists>p'. p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p"
   using assms
-  by (metis walk_betw_repl_edge walk_betw_def)
+proof -
+  have path_ins: "path (insert {w, x} G) p"
+    using assms(1) assms(3) by simp
+  have walk_puv: "walk_betw G w puv x"
+    using assms(4) assms(5) assms(6) assms(7) by (simp add: walk_betw_def)
+  obtain p' where wp: "walk_betw G (hd p) p' (last p)"
+    using walk_betw_repl_edge[OF path_ins assms(2) walk_puv] by blast
+  have "p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p"
+    using wp by (simp add: walk_betw_def)
+  thus ?thesis by blast
+qed
 
 lemma path_can_be_split:
   assumes "path G' p" "G' = insert {w,x} G" "{w,x} \<subseteq> Vs G" "p \<noteq> []"
@@ -492,19 +555,99 @@ lemma path_can_be_split:
          (\<exists>p1 p2. p1 \<noteq> [] \<and> p2 \<noteq> [] \<and> path G p1 \<and> path G p2 \<and>
                              ((last p1 = w \<and> hd p2 = x) \<or> (last p1 = x \<and> hd p2 = w)) \<and>
                              hd p1 = hd p \<and> last p2 = last p)"
-  using assms
-  using vwalk_betw_can_be_split[OF _ , simplified walk_betw_def, where p = p and u = "hd p" and v = "last p"]
-  apply simp
-  by (smt (verit, ccfv_SIG))
+proof -
+  have pathG': "path (insert {w,x} G) p"
+    using assms(1) by (simp add: assms(2))
+  have walk': "walk_betw (insert {w,x} G) (hd p) p (last p)"
+    by (rule nonempty_path_walk_between[OF pathG' assms(4) refl refl])
+  have wV: "w \<in> Vs G" and xV: "x \<in> Vs G"
+    using assms(3) by auto
+  from vwalk_betw_can_be_split[OF walk' wV xV]
+  consider (whole) q where "walk_betw G (hd p) q (last p)"
+    | (split1) p1 p2 where "walk_betw G (hd p) p1 w" "walk_betw G x p2 (last p)"
+    | (split2) p1 p2 where "walk_betw G (hd p) p1 x" "walk_betw G w p2 (last p)"
+    by blast
+  then show ?thesis
+  proof cases
+    case whole
+    then show ?thesis
+      by (auto dest: walk_between_nonempty_pathD)
+  next
+    case split1
+    then obtain p1 p2
+      where w1: "walk_betw G (hd p) p1 w" and w2: "walk_betw G x p2 (last p)"
+      by blast
+    from w1 have f1: "path G p1 \<and> p1 \<noteq> [] \<and> hd p1 = hd p \<and> last p1 = w"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    from w2 have f2: "path G p2 \<and> p2 \<noteq> [] \<and> hd p2 = x \<and> last p2 = last p"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    then show ?thesis using f1 by blast
+  next
+    case split2
+    then obtain p1 p2
+      where w1: "walk_betw G (hd p) p1 x" and w2: "walk_betw G w p2 (last p)"
+      by blast
+    from w1 have f1: "path G p1 \<and> p1 \<noteq> [] \<and> hd p1 = hd p \<and> last p1 = x"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    from w2 have f2: "path G p2 \<and> p2 \<noteq> [] \<and> hd p2 = w \<and> last p2 = last p"
+      by (auto dest: walk_between_nonempty_pathD(1) walk_between_nonempty_pathD(2)
+                         walk_between_nonempty_pathD(3) walk_between_nonempty_pathD(4))
+    then show ?thesis using f1 by blast
+  qed
+qed
 
 lemma path_can_be_split_2:
   assumes "path (insert {w,x} G) p" "w \<in> Vs G" "x \<notin> Vs G" "p \<noteq> []"
   shows "(\<exists>p'. p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p) \<or>
          (\<exists>p'. path G p' \<and> (p' \<noteq> [] \<longrightarrow> hd p' = w) \<and> ((hd p = last (x # p') \<and> last p = x) \<or> (hd p = x \<and> last p = last (x # p'))))"
-  using vwalk_betw_can_be_split_2[OF _ \<open>w \<in> Vs G\<close> \<open>x \<notin> Vs G\<close>, simplified walk_betw_def, where p = p and u = "hd p" and v = "last p"]
-  using assms
-  apply simp
-  by (smt (verit, del_insts) hd_rev last.simps last_rev path_simps(1) rev_is_Nil_conv rev_path_is_path_iff) 
+proof -
+  have walk: "walk_betw (insert {w,x} G) (hd p) p (last p)"
+    using assms(1) assms(4) by (simp add: walk_betw_def)
+  from vwalk_betw_can_be_split_2[OF walk assms(2) assms(3)]
+  show ?thesis
+  proof (elim disjE exE conjE)
+    fix p'
+    assume "walk_betw G (hd p) p' (last p)"
+    then have "path G p'" "p' \<noteq> []" "hd p' = hd p" "last p' = last p"
+      by (auto dest: walk_between_nonempty_pathD)
+    then show ?thesis
+      by (intro disjI1 exI[of _ p']) auto
+  next
+    fix p'
+    assume w1: "walk_betw G (hd p) p' w" and xlast: "last p = x"
+    have p'path: "path G p'" and p'ne: "p' \<noteq> []"
+      and p'hd: "hd p' = hd p" and p'last: "last p' = w"
+      using w1 by (auto dest: walk_between_nonempty_pathD)
+    note rp_path = rev_path_is_path[OF p'path]
+    have rp_ne: "rev p' \<noteq> []"
+      using p'ne by simp
+    have rp_hd: "hd (rev p') = w"
+      using p'ne p'last by (simp add: hd_rev)
+    have rp_last: "last (x # rev p') = hd p"
+      using rp_ne p'ne p'hd by (simp add: last_rev)
+    show ?thesis
+      using rp_path rp_hd rp_last xlast
+      by (intro disjI2 exI[of _ "rev p'"]) auto
+  next
+    fix p'
+    assume w2: "walk_betw G w p' (last p)" and xhd: "hd p = x"
+    have p'path: "path G p'" and p'ne: "p' \<noteq> []"
+      and p'hd: "hd p' = w" and p'last: "last p' = last p"
+      using w2 by (auto dest: walk_between_nonempty_pathD)
+    have p_last: "last (x # p') = last p"
+      using p'ne p'last by simp
+    show ?thesis
+      using p'path p'hd p_last xhd
+      by (intro disjI2 exI[of _ p']) auto
+  next
+    assume "hd p = x" "last p = x"
+    then show ?thesis
+      by (intro disjI2 exI[of _ "[]"]) auto
+  qed
+qed
 
 lemma path_can_be_split_3:
   assumes "path G' p" "G' = insert {w,x} G" "w \<notin> Vs G" "x \<notin> Vs G" "p \<noteq> []"
@@ -775,11 +918,23 @@ proof(induction l arbitrary: u p v rule: less_induct)
   proof(cases "e \<in> set p'")
     case True
     then obtain p1 p2 where p1p2:"p' = p1 @[e]@p2"
-      by (metis append_Cons append_self_conv2 in_set_conv_decomp_first)
+      by (fastforce dest: split_list)
     have bulast_p1_subst:"butlast (e # p1) @ [last (e # p1)] = e#p1"
       by simp
     have epath_verbose:"epath G u (butlast (e # p1) @ [last (e # p1), e] @ p2) v"
-      by (metis append.assoc append_Cons append_Nil bulast_p1_subst ep' less.prems(1) p1p2)
+    proof -
+      have "butlast (e # p1) @ [last (e # p1), e] @ p2
+          = (butlast (e # p1) @ [last (e # p1)]) @ ([e] @ p2)"
+        by simp
+      also have "... = (e # p1) @ [e] @ p2"
+        using bulast_p1_subst by simp
+      also have "... = e # p'"
+        using p1p2 by simp
+      also have "... = p"
+        using ep' by simp
+      finally show ?thesis
+        using less.prems(1) by simp
+    qed
     obtain x where x_prop:"epath G u (e#p1) x" 
          "epath G x ([e] @ p2) v" "x \<in> last (e # p1) \<inter> e"
       using epath_find_splitter[OF epath_verbose] by (subst (asm) bulast_p1_subst[symmetric])auto
@@ -1073,8 +1228,10 @@ lemma edges_of_path_append_subset_2:
   "set (edges_of_path p) \<subseteq> set (edges_of_path (p @ p'))"
 proof(cases p)
   case (Cons a list)
+  have "set (edges_of_path (rev p)) \<subseteq> set (edges_of_path (rev p' @ rev p))"
+    by (rule edges_of_path_append_subset)
   then show ?thesis 
-   by(metis edges_of_path_append_subset edges_of_path_rev rev_append set_rev)
+    by (simp del: rev_append add: rev_append[symmetric] edges_of_path_rev[symmetric] set_rev)
 qed auto
 
 lemma path_edges_subset:
@@ -1242,7 +1399,13 @@ proof(induction  u p v rule: induct_walk_betw)
 next
   case (path2 v v' vs b)
   hence helper: " vs = Nil \<Longrightarrow> v' = b"  
-    by (metis last_ConsL walk_betw_def)
+  proof -
+    assume "vs = Nil"
+    hence "walk_betw G v' [v'] b"
+      using path2.hyps(2) by simp
+    thus "v' = b"
+      by (simp add: walk_betw_def)
+  qed
   show ?case 
   proof(cases vs)
     case Nil
@@ -1346,7 +1509,15 @@ next
     case True
     then show ?thesis
       using Cons
-      by (metis append_Cons)
+    proof -
+      from Cons.IH[OF True] obtain v1 v2 p1 p2
+        where e_def: "e = {v1, v2}" and p'_def: "p' = p1 @ [v1, v2] @ p2"
+        by blast
+      have "v # p' = (v # p1) @ [v1, v2] @ p2"
+        by (simp add: p'_def)
+      with e_def show ?thesis
+        by blast
+    qed
   next
     case False
     then have "e = {v, hd p'}"
@@ -1356,7 +1527,7 @@ next
       using \<open>p' \<noteq> []\<close>
       by auto
     ultimately show ?thesis
-      by metis
+      by blast
   qed
 qed
 
@@ -1368,13 +1539,32 @@ lemma in_edges_of_path_hd_or_tl:
       assumes "e \<in> set (edges_of_path p)"
       shows "e = hd (edges_of_path p) \<or> e \<in> set (edges_of_path (tl p))"
 proof-
-  obtain v1 v2 p1 p2 where "e = {v1, v2}" "p = p1 @ [v1, v2] @ p2"
+  obtain v1 v2 p1 p2 where e_def: "e = {v1, v2}" and p_def: "p = p1 @ [v1, v2] @ p2"
     using in_edges_of_path_split[OF assms]
     by auto
-  then show ?thesis
-    apply(cases "p1 = []"; simp)
-    using edges_of_path_append_2
-    by (metis edges_of_path.simps(3) in_set_conv_decomp list.distinct(1))
+  show ?thesis
+  proof(cases p1)
+    case Nil
+    hence "p = v1 # v2 # p2"
+      using p_def by simp
+    hence "edges_of_path p = {v1, v2} # edges_of_path (v2 # p2)"
+      by simp
+    thus ?thesis
+      using e_def by simp
+  next
+    case (Cons c p1')
+    hence "p = c # (p1' @ [v1, v2] @ p2)"
+      using p_def by simp
+    hence tl_p: "tl p = p1' @ [v1, v2] @ p2"
+      by simp
+    have "edges_of_path (p1' @ [v1, v2] @ p2)
+            = edges_of_path (p1' @ [v1]) @ [{v1, v2}] @ edges_of_path (v2 # p2)"
+      using edges_of_path_symmetric_split[of p1' v1 v2 p2] by simp
+    hence "{v1, v2} \<in> set (edges_of_path (tl p))"
+      using tl_p by simp
+    thus ?thesis
+      using e_def by simp
+  qed
 qed
 
 lemma where_is_v:
@@ -1387,7 +1577,7 @@ proof-
       "p = p1 @ us \<and> us @ v # p' = v1 # v2 # p2 \<or> p @ us = p1 \<and> v # p' = us @ v1 # v2 # p2"
     using in_edges_of_path_split[OF assms(1)]
     apply(simp add: append_eq_append_conv2)
-    by metis
+    by blast
   moreover have "v1 = v \<or> v2 = v"
     using assms(2) v1v2p1p2us
     by auto
@@ -1400,14 +1590,80 @@ proof-
   then show ?thesis
   proof cases
     case 1
-    then show ?thesis
-      using assms(3-) v1v2p1p2us(1)
-      by (metis \<open>v1 = v \<or> v2 = v\<close> append_eq_Cons_conv in_set_conv_decomp list.sel(1) list.sel(3))
+    note case1 = this
+    have p_def: "p = p1 @ us"
+      using case1 by simp
+    have us_eq: "us @ v # p' = v # v2 # p2"
+      using case1 by simp
+    have us_empty: "us = []"
+    proof (rule ccontr)
+      assume "us \<noteq> []"
+      then obtain u us' where u_def: "us = u # us'"
+        by (cases us) auto
+      have "u = v"
+        using u_def us_eq by simp
+      hence "v \<in> set us"
+        using u_def by simp
+      with p_def assms(3) show False
+        by auto
+    qed
+    with us_eq have p'_eq: "p' = v2 # p2"
+      by simp
+    hence hd_p': "v2 = hd p'"
+      by simp
+    show ?thesis
+    proof (cases "v1 = v")
+      case True
+      with v1v2p1p2us(1) hd_p' show ?thesis
+        by auto
+    next
+      case False
+      with \<open>v1 = v \<or> v2 = v\<close> have "v2 = v"
+        by blast
+      with hd_p' p'_eq have "v \<in> set p'"
+        by simp
+      with assms(4) show ?thesis
+        by blast
+    qed
   next
     case 2
+    then have vp'_eq: "v # p' = us @ v # v2 # p2"
+      by auto
+    have us_empty: "us = []"
+    proof (cases us)
+      case Nil
+      then show ?thesis by simp
+    next
+      case (Cons c cs)
+      with vp'_eq have "p' = cs @ v # v2 # p2"
+        by auto
+      hence "v \<in> set p'"
+        by auto
+      with assms(4) show ?thesis
+        by blast
+    qed
+    with vp'_eq have p'_eq: "p' = v2 # p2"
+      by auto
+    have p'_nonempty: "p' \<noteq> []"
+      using p'_eq by simp
+    have hd_p': "hd p' = v2"
+      using p'_eq by simp
+    have "v2 \<noteq> v"
+    proof
+      assume v2v: "v2 = v"
+      have "hd p' \<in> set p'"
+        using p'_nonempty by (rule hd_in_set)
+      with hd_p' v2v have "v \<in> set p'"
+        by simp
+      with assms(4) show False
+        by blast
+    qed
+    with \<open>v1 = v \<or> v2 = v\<close> have v1_eq: "v1 = v"
+      by blast
+    have "e = {v, hd p'}"
+      using v1v2p1p2us(1) v1_eq hd_p' by simp
     then show ?thesis
-      using assms(3-) v1v2p1p2us(1)
-      by (metis \<open>v1 = v \<or> v2 = v\<close> append.assoc append_Cons_eq_iff list.sel(1) list.set_intros(1))
+      by simp
   next
     case 3
     then have "v \<notin> set us"
@@ -1415,16 +1671,77 @@ proof-
       by auto
     then have "e = {last us, v}"
       using assms(4) v1v2p1p2us(1)
-      by (metis "3" \<open>v1 = v \<or> v2 = v\<close> hd_append2 last_ConsL list.exhaust_sel list.sel(1) list.sel(3) list.set_intros(1) list.set_sel(2) self_append_conv2 tl_append2)
+    proof -
+      have p_eq: "p = p1 @ us" and eq: "us @ v # p' = v1 # v # p2"
+        using "3" by auto
+      have vnus: "v \<notin> set us"
+        using assms(3) p_eq by auto
+      have us_nempty: "us \<noteq> []"
+      proof
+        assume "us = []"
+        with eq have "p' = v # p2"
+          by auto
+        with assms(4) show False
+          by simp
+      qed
+      then obtain a us' where us_eq: "us = a # us'"
+        by (cases us) auto
+      from eq us_eq have a_v1: "a = v1" and eq': "us' @ v # p' = v # p2"
+        by auto
+      have us'_empty: "us' = []"
+      proof (rule ccontr)
+        assume "us' \<noteq> []"
+        then obtain b us'' where us'_eq: "us' = b # us''"
+          by (cases us') auto
+        with eq' have b_v: "b = v"
+          by auto
+        with vnus us_eq us'_eq show False
+          by simp
+      qed
+      have us_single: "us = [v1]"
+        using us_eq a_v1 us'_empty by simp
+      have v1_neq_v: "v1 \<noteq> v"
+        using vnus us_single by simp
+      have v2_v: "v2 = v"
+        using \<open>v1 = v \<or> v2 = v\<close> v1_neq_v by blast
+      show ?thesis
+        using us_single v2_v v1v2p1p2us(1) by simp
+    qed
     then have "e = {last p, v}"
-      by (metis "3" assms(4) last_appendR list.inject list.set_intros(1) self_append_conv2)
+    proof -
+      from "3" have p_eq: "p = p1 @ us" and eq: "us @ v # p' = v1 # v # p2"
+        by auto
+      have "us \<noteq> []"
+      proof
+        assume "us = []"
+        with eq have "p' = v # p2"
+          by auto
+        with assms(4) show False
+          by simp
+      qed
+      with p_eq have "last p = last us"
+        by (simp add: last_appendR)
+      then show ?thesis
+        using \<open>e = {last us, v}\<close> by simp
+    qed
     then show ?thesis
       by simp
   next
     case 4
-    then show ?thesis
-      using assms(3-) v1v2p1p2us(1)
-      by (metis Cons_in_lists_iff append.left_neutral append_in_lists_conv in_listsI list.sel(3) same_append_eq tl_append2)
+    then have "v # p' = us @ v1 # v # p2"
+      by auto
+    then have "v \<in> set p'"
+    proof (cases us)
+      case Nil
+      with \<open>v # p' = us @ v1 # v # p2\<close> show ?thesis
+        by auto
+    next
+      case (Cons u0 us')
+      with \<open>v # p' = us @ v1 # v # p2\<close> show ?thesis
+        by auto
+    qed
+    with assms(4) show ?thesis
+      by blast
   qed
 qed
 
@@ -1596,9 +1913,10 @@ proof-
     assume "set (edges_of_path p) \<subseteq> E"
     hence "path E p" 
       using "12" path_subset by blast
-    hence "reachable E u v"
-      unfolding reachable_def walk_betw_def 
-      by (metis p_prop walk_betw_def)
+    hence "walk_betw E u p v" unfolding walk_betw_def
+      using p_prop by (auto dest: walk_between_nonempty_pathD)
+    hence "reachable E u v" unfolding reachable_def
+      by (rule exI[where x=p])
     thus False using asm by simp
   qed
   hence "{a, b} \<in> set (edges_of_path p)" 
@@ -1829,8 +2147,16 @@ lemma mid_path_deg_ge_2:
     "distinct p"
     "finite G"
   shows "degree G v \<ge> 2"
-  using assms
-  by (metis degree_edges_of_path_ge_2 path_edges_subset subset_edges_less_degree)
+proof -
+  have deg2: "degree (set (edges_of_path p)) v = 2"
+    using degree_edges_of_path_ge_2[OF assms(5) assms(2) assms(3) assms(4)] .
+  have subset: "set (edges_of_path p) \<subseteq> G"
+    using path_edges_subset[OF assms(1)] .
+  have le: "degree (set (edges_of_path p)) v \<le> degree G v"
+    using subset_edges_less_degree[OF subset] .
+  show ?thesis
+    using deg2 le by simp
+qed
 
 lemma degree_edges_of_path_ge_2_all:
   assumes "distinct p" "length p \<ge> 3" "v\<in>set p"

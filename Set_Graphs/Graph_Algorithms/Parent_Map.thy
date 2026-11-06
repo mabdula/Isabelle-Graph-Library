@@ -131,7 +131,7 @@ next
   case cons1: (Cons v' follow_v')
   then have "v' = v"
     using follow_cons
-    by metis
+    by (blast intro: follow_cons sym)
   show ?case
   proof (cases follow_v')
     case nil2: Nil
@@ -145,7 +145,32 @@ next
     case cons2: (Cons v'' follow_v'')
     then show ?thesis
       using cons1
-      by (metis \<open>v' = v\<close> append_eq_Cons_conv follow_cons_2 list.sel(1))
+      proof -
+        have veq: "follow v = v # v'' # follow_v''"
+          using cons1 cons2 \<open>v' = v\<close> by simp
+        have follow_v''_eq: "follow v'' = v'' # follow_v''"
+          using veq follow_cons_2(1) by blast
+        have split: "v # v'' # follow_v'' = p @ u # p'"
+          using veq cons1 by simp
+        show ?thesis
+        proof (cases p)
+          case Nil
+          with split have "v = u" "p' = v'' # follow_v''"
+            by auto
+          then show ?thesis
+            using veq by simp
+        next
+          case (Cons p0 ps)
+          with split have "p0 = v" "v'' # follow_v'' = ps @ u # p'"
+            by auto
+          with follow_v''_eq have follow_v''_split: "follow v'' = ps @ u # p'"
+            by simp
+          have "follow_v' = follow v''"
+            using cons2 follow_v''_eq by simp
+          with cons1 follow_v''_split show ?thesis
+            by fastforce
+        qed
+      qed
   qed
 qed
 
@@ -307,7 +332,14 @@ proof(rule ccontr, goal_cases)
   hence "follow x = [x]@p2@[x]@p3" 
     by (simp add: follow_append)
   moreover have "follow x = [x]@p3"
-    by (metis append.assoc append_Cons calculation follow_append)
+  proof -
+    have "follow v = (p1 @ [x] @ p2) @ x # p3"
+      using split by simp
+    then have "follow x = x # p3"
+      by (rule follow_append)
+    then show "follow x = [x] @ p3"
+      by simp
+  qed
   ultimately show False 
     by simp
 qed
@@ -417,10 +449,18 @@ proof(induction rule: parent_spec.follow.pinduct[OF assms(2)])
   then show ?case
   proof(cases "par v")
     case None
-    then show ?thesis
-      apply( simp add: parent.follow_psimps[OF 1(4)])
-      by (metis (mono_tags, lifting) "1.hyps" "1.prems"(1) assms(1) list.set_intros(1) option.case_eq_if 
-          parent_spec.follow.psimps)
+    then have follow_v: "parent_spec.follow par v = [v]"
+      by (simp add: parent.follow_psimps[OF assms(1)])
+    have v_mem: "v \<in> set (parent_spec.follow par v)"
+      by (simp add: follow_v)
+    have "par v = par' v"
+      using "1.prems"(1) v_mem by blast
+    with None have "par' v = None"
+      by simp
+    then have "parent_spec.follow par' v = [v]"
+      by (simp add: parent.follow_psimps[OF "1.prems"(2)])
+    with follow_v show ?thesis
+      by simp
   next
     case (Some a)
     have "\<forall>v\<in>set (parent_spec.follow par a). par v = par' v"

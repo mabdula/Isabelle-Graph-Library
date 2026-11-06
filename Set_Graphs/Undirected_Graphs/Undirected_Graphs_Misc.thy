@@ -153,7 +153,21 @@ lemma in_singleton: "\<lbrakk>s = {x}; y \<in> s\<rbrakk> \<Longrightarrow> x = 
 
 lemma reverse_pigeonhole:
   "\<lbrakk>finite X; (f ` X) \<subseteq> Y; card X < card Y\<rbrakk> \<Longrightarrow> \<exists>y \<in> Y. \<forall>x \<in> X. y \<noteq> f x"
-  by (metis imageI less_le_not_le subset_eq surj_card_le)
+proof -
+  assume fin: "finite X" and sub: "f ` X \<subseteq> Y" and card_lt: "card X < card Y"
+  show "\<exists>y\<in>Y. \<forall>x\<in>X. y \<noteq> f x"
+  proof (rule ccontr)
+    assume "\<not> (\<exists>y\<in>Y. \<forall>x\<in>X. y \<noteq> f x)"
+    then have Ysub: "Y \<subseteq> f ` X"
+      by blast
+    have "card Y \<le> card (f ` X)"
+      using card_mono[OF finite_imageI[OF fin] Ysub] .
+    also have "\<dots> \<le> card X"
+      using card_image_le[OF fin] .
+    finally show False
+      using card_lt by simp
+  qed
+qed
 
 definition "pair_list_distinct xs = 
 (distinct xs \<and> (\<forall> x \<in> set xs. prod.swap x \<notin> set xs \<or> fst x = snd x))"
@@ -200,7 +214,30 @@ lemma extract_first_x:
   subgoal for a xs
     apply(cases "P a") 
     apply fastforce
-    by (metis append_Cons set_ConsD)
+  proof -
+    assume notPa: "\<not> P a"
+    assume IH: "x \<in> set xs \<Longrightarrow> P x \<Longrightarrow>
+      \<exists>y ys zs. xs = ys @ [y] @ zs \<and> P y \<and> (\<nexists>z. z \<in> set ys \<and> P z)"
+    assume x_mem: "x \<in> set (a # xs)"
+    assume Px: "P x"
+    from x_mem have "x = a \<or> x \<in> set xs" by simp
+    with notPa Px have x_in_xs: "x \<in> set xs" by auto
+    from IH[OF x_in_xs Px] obtain y ys zs where
+      xs_eq: "xs = ys @ [y] @ zs" and
+      Py: "P y" and
+      none: "\<nexists>z. z \<in> set ys \<and> P z"
+      by blast
+    have a_xs_eq: "a # xs = (a # ys) @ [y] @ zs"
+      using xs_eq by simp
+    have none': "\<nexists>z. z \<in> set (a # ys) \<and> P z"
+      using none notPa by auto
+    show ?thesis
+    proof (intro exI conjI)
+      show "a # xs = (a # ys) @ [y] @ zs" using a_xs_eq .
+      show "P y" using Py .
+      show "\<nexists>z. z \<in> set (a # ys) \<and> P z" using none' .
+    qed
+  qed
   done
 
 lemma induct_list012[case_names nil single sucsuc]:
@@ -222,8 +259,12 @@ lemma element_of_list_cases:
  shows P
 proof-
   obtain p1 p2 where "p = p1@[u]@p2" 
-    by (metis append_Cons append_Nil assms(1) in_set_conv_decomp_first)
-  thus P
+  proof -
+    from assms(1) obtain ys zs where "p = ys @ u # zs"
+      by (auto dest: split_list)
+    then show thesis
+      by (simp add: that)
+  qed  thus P
     by(cases p1 rule: rev_cases, all \<open>cases p2\<close>)
       (auto intro: assms(2-))
 qed

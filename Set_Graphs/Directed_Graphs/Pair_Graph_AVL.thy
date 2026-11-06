@@ -28,7 +28,15 @@ lemma dom_map_of_fst: "dom (map_of xs) = set (map fst xs)"
 
 lemma avl_map_dom_inorder: "sorted1 (inorder m) \<Longrightarrow> dom (lookup m) = set (map fst (inorder m))"
   using lookup_map_of
-  by (metis dom_map_of_fst ext)
+proof -
+  assume sorted: "sorted1 (inorder m)"
+  have "lookup m x = map_of (inorder m) x" for x
+    using lookup_map_of[OF sorted] by simp
+  hence "lookup m = map_of (inorder m)"
+    by (rule ext)
+  then show "dom (lookup m) = set (map fst (inorder m))"
+    by (simp add: dom_map_of_fst)
+qed
 
 interpretation S_C: Set_Choose 
 where empty = AVL_Set_Code.empty and insert = insert and delete = AVL_Set_Code.delete and
@@ -52,7 +60,7 @@ interpretation G: Adj_Map_Specs
   subgoal using S_C.Set_Choose_axioms .
 (* subgoal  apply unfold_locales
     apply(simp add: M.invar_def)
-    by (metis avl_fold_works avl_map_dom_inorder)
+    by (simp add: avl_fold_works avl_map_dom_inorder)
   done*)
   done
 *)

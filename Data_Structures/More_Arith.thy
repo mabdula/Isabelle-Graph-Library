@@ -334,7 +334,24 @@ proof(induction )
   moreover have "finite ((\<Union> x \<in> X. f x))" 
     by (simp add: insert.hyps(1) insert.prems(2))
   ultimately show ?case using sum.union_disjoint[of "f xx" "(\<Union> x \<in> X. f x)" g]
-    by (metis inf_commute insert.prems(2) insertCI)
+  proof -
+    have fin_fxx: "finite (f xx)"
+      using insert.prems(2) by blast
+    have fin_union: "finite (\<Union>x\<in>X. f x)"
+      by (simp add: insert.hyps(1) insert.prems(2))
+    have disj_fxx: "f xx \<inter> (\<Union>x\<in>X. f x) = {}"
+      using insert.prems(1) insert.hyps(2) by blast
+    have union_eq: "sum g (f xx \<union> (\<Union>x\<in>X. f x)) = sum g (f xx) + sum g (\<Union>x\<in>X. f x)"
+      using sum.union_disjoint[OF fin_fxx fin_union disj_fxx] .
+    have eq1: "(\<Sum>x\<in>insert xx X. sum g (f x)) = sum g (f xx) + (\<Sum>x\<in>X. sum g (f x))"
+      using insert.hyps(1) insert.hyps(2) by (simp add: sum.insert)
+    have eq2: "(\<Sum>x\<in>X. sum g (f x)) = sum g (\<Union>x\<in>X. f x)"
+      using insert.IH insert.prems insert.hyps(2) by blast
+    have eq3: "(\<Union>x\<in>insert xx X. f x) = f xx \<union> (\<Union>x\<in>X. f x)"
+      by auto
+    show ?case
+      using eq1 eq2 eq3 union_eq by simp
+  qed
 qed simp
 
 lemma sum_inj: "inj f \<Longrightarrow> sum g (f ` X) = sum (g \<circ> f) X"
@@ -380,7 +397,12 @@ lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> 
          using assm insertI by(auto intro: sum.union_disjoint)
        finally show "sum f {xa + k |xa. xa \<in> {x} \<union> X} = (\<Sum>x\<in>insert x X. f (x + k))" by simp
      qed
-   qed (smt (verit, best) Collect_cong insert_absorb)
+    next
+      case True
+      then show ?thesis
+        using insertI.IH by (simp add: insert_absorb)
+    qed
+
  qed simp
 
 lemma distinct_sum: "distinct xs \<Longrightarrow> sum f (set xs)  = foldr (\<lambda> x acc. acc + f x) xs 0"
@@ -404,13 +426,40 @@ qed
 
 lemma sum_except_two: 
   "\<lbrakk>finite X; a \<noteq> b; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> sum f X = sum f (X- {a,b}) +  f a + f b"
-  by (metis DiffI Diff_insert add.commute finite_Diff insert_absorb singletonD sum.insert_remove)
+proof -
+  assume fin: "finite X" and neq: "a \<noteq> b" and ain: "a \<in> X" and bin: "b \<in> X"
+  have Xeq: "X = insert a (insert b (X - {a,b}))"
+    using ain bin neq by auto
+  have fin1: "finite (X - {a,b})" using fin by blast
+  have notin1: "b \<notin> X - {a,b}" by blast
+  have fin2: "finite (insert b (X - {a,b}))" using fin1 by blast
+  have notin2: "a \<notin> insert b (X - {a,b})" using neq by blast
+  have "sum f X = sum f (insert a (insert b (X - {a,b})))" using Xeq by simp
+  also have "... = f a + sum f (insert b (X - {a,b}))"
+    using sum.insert[OF fin2 notin2, of f] by simp
+  also have "... = f a + (f b + sum f (X - {a,b}))"
+    using sum.insert[OF fin1 notin1, of f] by simp
+  also have "... = sum f (X - {a,b}) + f a + f b"
+    by (simp add: ac_simps)
+  finally show ?thesis .
+qed
 
 lemma sum_split_off: "\<lbrakk>A \<subseteq> B; finite B; \<And> x. x \<in> B - A \<Longrightarrow> f x = 0\<rbrakk> \<Longrightarrow> sum f A = sum f B" 
   by (simp add: sum.mono_neutral_cong_right)
 
 lemma sum_filter_zero: "finite X \<Longrightarrow> sum f X = sum f {x|x.   x \<in> X \<and> f x \<noteq>0 }"
-  by (metis (mono_tags, lifting) DiffD1 DiffD2 mem_Collect_eq subsetI sum.mono_neutral_cong_left)
+proof -
+  assume fin: "finite X"
+  define S where "S = {x |x. x \<in> X \<and> f x \<noteq> 0}"
+  have S_sub: "S \<subseteq> X"
+    unfolding S_def by blast
+  have zero: "\<And>i. i \<in> X - S \<Longrightarrow> f i = 0"
+    unfolding S_def by blast
+  have "sum f S = sum f X"
+    by (rule sum.mono_neutral_cong_left[OF fin S_sub]) (auto simp: S_def)
+  then show ?thesis
+    unfolding S_def by simp
+qed
 
 lemma sum_up_leq:
   "\<lbrakk>\<And> j. \<lbrakk>(a::nat) \<le> j; j < i\<rbrakk> \<Longrightarrow>((f j)::nat) \<le> g j; a < i; n = i - a\<rbrakk>
@@ -482,7 +531,14 @@ lemma binary_sum:
 lemma get_least: 
   assumes "P (n::nat)"
   obtains n_min where "P n_min" "\<not> (\<exists> m < n_min. P m)"
-  by (metis assms bot_nat_0.extremum_strict ex_least_nat_le)
+proof -
+  have p: "P (Least P)"
+    using assms by (rule LeastI)
+  have np: "\<not> (\<exists>m<Least P. P m)"
+    using not_less_Least by blast
+  show thesis
+    using that[OF p np] .
+qed
 
 lemma sum_cards_with_life_time:
   assumes "finite \<S>"
@@ -500,18 +556,60 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
     case True
     then obtain j_min where j_min_prop:"j_min < Suc i" "x \<in> S j_min" 
                                        "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min)"
-      using get_least[of "\<lambda> j. j < Suc i \<and> x \<in> S j"] by metis
+    proof -
+      from True obtain j0 where j0: "j0 < Suc i" "x \<in> S j0" by blast
+      have ex_P: "\<exists> j. j < Suc i \<and> x \<in> S j" using j0 by blast
+      define j_min' where "j_min' = (LEAST j. j < Suc i \<and> x \<in> S j)"
+      have j_min'_prop: "j_min' < Suc i \<and> x \<in> S j_min'"
+        unfolding j_min'_def using LeastI_ex[OF ex_P] by blast
+      have j_min'_least: "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min')"
+      proof (rule notI)
+        assume "\<exists> j < Suc i. x \<in> S j \<and> j < j_min'"
+        then obtain j where j_less: "j < Suc i" and j_in: "x \<in> S j" and j_lt: "j < j_min'"
+          by blast
+        from j_lt have j_lt': "j < (LEAST j. j < Suc i \<and> x \<in> S j)"
+          unfolding j_min'_def .
+        have "\<not> (j < Suc i \<and> x \<in> S j)"
+          using not_less_Least[OF j_lt'] .
+        thus False using j_less j_in by blast
+      qed
+      show thesis
+      proof (rule that[of j_min'])
+        show "j_min' < Suc i" using j_min'_prop by blast
+        show "x \<in> S j_min'" using j_min'_prop by blast
+        show "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min')" using j_min'_least by blast
+      qed
+    qed
     hence x_never_after: "j > j_min + life_time \<Longrightarrow> x \<notin> S j" for j
       using 2(5)[of j_min j x] by simp
    have "(\<Sum>j = 0..<Suc i. card (S j)) = (\<Sum>j = 0..< j_min. card (S j)) +
                    (\<Sum>j = j_min..<Suc i. card (S j))" 
-    by (metis j_min_prop(1) le_eq_less_or_eq sum.atLeastLessThan_concat zero_le)
+    proof -
+      have j_min_le: "j_min \<le> Suc i"
+        using j_min_prop(1) by simp
+      have "sum (\<lambda>j. card (S j)) {0..<j_min} + sum (\<lambda>j. card (S j)) {j_min..<Suc i}
+          = sum (\<lambda>j. card (S j)) {0..<Suc i}"
+        using sum.atLeastLessThan_concat[OF zero_le j_min_le] .
+      thus ?thesis by simp
+    qed
   also have "... = (\<Sum>j = 0..<j_min. card (S j)) +
                    ((\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j))+
                    (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j)))"
     apply(rule sum_eq_split, simp)
-    by (metis j_min_prop(1) less_add_Suc1 linorder_not_le min.commute min_absorb1 not_less_eq
-            order_less_imp_le sum.atLeastLessThan_concat)
+  proof -
+    have j_le_i: "j_min \<le> i"
+      using j_min_prop(1) by simp
+    have min_ge: "j_min \<le> min (j_min + life_time) i"
+      using le_add1 j_le_i by simp
+    have le1: "j_min \<le> Suc (min (j_min + life_time) i)"
+      using min_ge by simp
+    have le2: "Suc (min (j_min + life_time) i) \<le> Suc i"
+      using min.cobounded2 by simp
+    show "(\<Sum>j = j_min..< Suc i. card (S j)) =
+          (\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j)) +
+          (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j))"
+      by (rule sym[OF sum.atLeastLessThan_concat[OF le1 le2]])
+  qed
   also have "... = (\<Sum>j = 0..<j_min. card (S j - {x})) +
                    ((\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j))+
                    (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j - {x})))"
@@ -560,10 +658,26 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
     by simp
   also have "... = (\<Sum>j = 0..<j_min. card (S j - {x})) +
   (\<Sum>j = j_min..<Suc i. card (S j - {x})) + (life_time + 1)"
-    by (smt (z3) add.commute group_cancel.add2 j_min_prop(1) le_Suc_eq less_add_Suc1 min.commute 
-            min_def order_less_imp_le sum.atLeastLessThan_concat)
+  proof -
+    have le1: "j_min \<le> Suc (min (j_min + life_time) i)"
+      using min.boundedI[of "j_min" "j_min + life_time" i] j_min_prop(1) by simp
+    have le2: "Suc (min (j_min + life_time) i) \<le> Suc i"
+      by simp
+    have concat: "(\<Sum>j = j_min..<Suc (min (j_min + life_time) i). card (S j - {x})) +
+                  (\<Sum>j = Suc (min (j_min + life_time) i)..<Suc i. card (S j - {x})) =
+                  (\<Sum>j = j_min..<Suc i. card (S j - {x}))"
+      by (rule sum.atLeastLessThan_concat[OF le1 le2])
+    show ?thesis
+      using concat by linarith
+  qed
   also have "... = (\<Sum>j = 0..<Suc i. card (S j - {x})) + (life_time + 1)"
-    by (metis j_min_prop(1) le_eq_less_or_eq sum.atLeastLessThan_concat zero_le)
+  proof -
+    have sum_split: "(\<Sum>j = 0..<j_min. card (S j - {x})) + (\<Sum>j = j_min..<Suc i. card (S j - {x}))
+         = (\<Sum>j = 0..<Suc i. card (S j - {x}))"
+      by (rule sum.atLeastLessThan_concat) (use j_min_prop(1) in simp)+
+    show ?thesis
+      using sum_split by simp
+  qed
   also have "... \<le> (life_time + 1) * card \<S> + (life_time + 1)"
     apply(rule add_right_mono)
     using 2(4) 2(2)  2(5) 2(6) 
@@ -575,7 +689,13 @@ next
   case False
   have "(\<Sum>j = 0..<Suc i. card (S j)) = 
         (\<Sum>j = 0..<Suc i. card (S j - {x}))"
-    by (metis "2.prems"(3) False empty_Diff not_less_eq single_diff_remove)
+  proof (rule sum.cong, rule refl)
+    fix j assume "j \<in> {0..<Suc i}"
+    hence "j < Suc i" by simp
+    hence "x \<notin> S j" using False by blast
+    hence "S j - {x} = S j" by blast
+    thus "card (S j) = card (S j - {x})" by simp
+  qed
   also have "... \<le> (life_time + 1) * (card \<S>) "
     using 2(4) 2(2)  2(5) 2(6) 
     by (intro 2(3)) fastforce+
@@ -637,7 +757,13 @@ lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_er
   by (simp add: ereal_real)
 
 lemma is_multiple_multiple: "(\<exists> n::nat.  y = (real n) * x) \<Longrightarrow> (\<exists> n::nat. y*2 = (real n) * x )"
-  by (metis distrib_left mult.commute mult_2_right of_nat_add)
+proof -
+  assume "\<exists>n::nat. y = real n * x"
+  then obtain n where n_def: "y = real n * x" by blast
+  have "y * 2 = real (n + n) * x"
+    by (simp add: n_def of_nat_add algebra_simps)
+  thus "\<exists>n::nat. y * 2 = real n * x" by blast
+qed
 
 lemma real_of_plus_distrib: "real (a + b) = real a + real b"
  and real_of_minus_distrib: "a \<ge> b \<Longrightarrow> real (a - b) = real a - real b"
@@ -694,8 +820,22 @@ lemma x_in_xs_Min: "\<lbrakk>x \<in> (set xs); a \<le> Min {y . \<exists> x. x \
       hence "Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
                      min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (f z)"
       using  Min_Un[of " {y. \<exists>x. x \<in> set xs \<and> y = f x}" "{f z}"]
-      by (metis (mono_tags, lifting) List.finite_set Min_singleton equals0I list.discI list.simps(15)
-           \<open>finite {y. \<exists>x. x \<in> set xs \<and> y = f x}\<close> empty_Collect_eq  set_empty)
+      proof -
+        have A_finite: "finite {y. \<exists>x. x \<in> set xs \<and> y = f x}"
+          using \<open>finite {y. \<exists>x. x \<in> set xs \<and> y = f x}\<close> .
+        have A_nonempty: "{y. \<exists>x. x \<in> set xs \<and> y = f x} \<noteq> {}"
+        proof -
+          have "b \<in> set xs" using Cons by simp
+          thus ?thesis by blast
+        qed
+        have B_finite: "finite {f z}" by simp
+        have B_nonempty: "{f z} \<noteq> {}" by simp
+        have "Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
+              min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (Min {f z})"
+          by (rule Min_Un[OF A_finite A_nonempty B_finite B_nonempty])
+        also have "Min {f z} = f z" by (rule Min_singleton)
+        finally show ?thesis .
+      qed
     have " Min ({y. \<exists>x. x \<in> set (z#xs) \<and> y = f x}) = min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (f z)"
       using set_img_extract[of xs f z]  
            \<open>Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
@@ -743,7 +883,24 @@ lemma  obtain_min:
 
 lemma Min_bigger: 
   "\<lbrakk>finite X; finite Y; X \<noteq> {}; \<And> a b. \<lbrakk>a \<in> X; b \<in> Y\<rbrakk> \<Longrightarrow> b \<ge> a\<rbrakk> \<Longrightarrow> Min X = Min (X \<union> Y)"
-  by (metis Min_Un Min_in min_def sup_bot_right)
+proof -
+  assume fin_X: "finite X" and fin_Y: "finite Y" and X_ne: "X \<noteq> {}"
+     and ge: "\<And>a b. a \<in> X \<Longrightarrow> b \<in> Y \<Longrightarrow> b \<ge> a"
+  show "Min X = Min (X \<union> Y)"
+  proof (cases "Y = {}")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    have MinX_in: "Min X \<in> X" using fin_X X_ne by (rule Min_in)
+    have MinY_in: "Min Y \<in> Y" using fin_Y False by (rule Min_in)
+    have le: "Min X \<le> Min Y" using ge[OF MinX_in MinY_in] by simp
+    have "Min (X \<union> Y) = min (Min X) (Min Y)"
+      using fin_X fin_Y X_ne False by (simp add: Min_Un)
+    also have "\<dots> = Min X" using le by (simp add: min_def)
+    finally show ?thesis by simp
+  qed
+qed
 
 lemma obtain_Max: "\<lbrakk>finite X; X \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists> x . f x = Max { f x| x. x \<in> X} \<and> x \<in> X"
   apply(induction X rule: finite_induct, simp)
@@ -785,11 +942,31 @@ and P_of_minI_strict1: "\<lbrakk>(a::real) < b \<Longrightarrow> P a; b \<le> a 
 and P_of_minE_strict2: 
   "\<lbrakk>P (min a b);\<lbrakk>(a::real) \<le> b; P a\<rbrakk> \<Longrightarrow> Q; \<lbrakk>b < a; P b\<rbrakk> \<Longrightarrow> Q\<rbrakk> \<Longrightarrow> Q"
   by(linarith+)
-    (smt (verit, best))+
+    (cases a b rule: linorder_cases; force simp: min_def)+
 
 lemma add_non_min_element_Min:
   "\<lbrakk>finite A; A \<noteq> {}; y \<le> x; y \<in> A; B = insert x A\<rbrakk> \<Longrightarrow> Min B = Min A"
-  by (metis Min.boundedE Min.insert_not_elem insert_absorb min_def order_antisym)
+proof -
+  assume fin: "finite A" and ne: "A \<noteq> {}" and yx: "y \<le> x" and yA: "y \<in> A" and B_def: "B = insert x A"
+  have fin_B: "finite B" using fin B_def by simp
+  have MinA_in_A: "Min A \<in> A" using fin ne by (rule Min_in)
+  have MinA_in_B: "Min A \<in> B" using MinA_in_A B_def by simp
+  have MinA_le: "\<And>b. b \<in> B \<Longrightarrow> Min A \<le> b"
+  proof -
+    fix b assume "b \<in> B"
+    then consider (eq) "b = x" | (inA) "b \<in> A" using B_def by auto
+    then show "Min A \<le> b"
+    proof cases
+      case eq
+      have "Min A \<le> y" using fin yA by (rule Min_le)
+      with eq yx show ?thesis by simp
+    next
+      case inA
+      show ?thesis using fin inA by (rule Min_le)
+    qed
+  qed
+  from fin_B MinA_le MinA_in_B show "Min B = Min A" by (rule Min_eqI)
+qed
 
 subsection \<open>Integrality\<close>
 
@@ -808,15 +985,34 @@ lemma integral_Min: "\<lbrakk>finite M; M \<noteq> {}; \<And> x. x \<in> M \<Lon
 
 lemma is_integral_neg: "is_integral x \<Longrightarrow> is_integral (- x)"
   unfolding is_integral_def 
-  by (metis of_int_minus)
+proof -
+  assume "\<exists>n::int. x = real_of_int n"
+  then obtain n where "x = real_of_int n" by blast
+  have "- x = real_of_int (- n)" using \<open>x = real_of_int n\<close> by simp
+  then show "\<exists>n::int. - x = real_of_int n" by blast
+qed
 
 lemma integral_add: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a+b)"
   unfolding is_integral_def 
-  by (metis of_int_add)
+proof -
+  assume "\<exists>n::int. a = n" and "\<exists>n::int. b = n"
+  then obtain na nb :: int where "a = na" and "b = nb" by blast
+  hence "a + b = of_int (na + nb)" by (simp add: of_int_add)
+  thus "\<exists>n::int. a + b = n" by blast
+qed
 
 lemma integral_sub: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a-b)"
-  unfolding is_integral_def 
-  by (metis of_int_diff)
+proof -
+  assume ia: "is_integral a" and ib: "is_integral b"
+  obtain m :: int where a_eq: "a = of_int m"
+    using ia by (rule is_integralE)
+  obtain n :: int where b_eq: "b = of_int n"
+    using ib by (rule is_integralE)
+  have "a - b = of_int (m - n)"
+    unfolding a_eq b_eq by (simp add: of_int_diff)
+  thus "is_integral (a - b)"
+    by (rule is_integralI)
+qed
 
 lemma is_integral_ceiling: "is_integral x \<Longrightarrow> \<lceil> x \<rceil> = x"
   unfolding is_integral_def by simp
@@ -854,8 +1050,28 @@ lemma integer_multiple_sub:
   done
 
 lemma sum_integral: "\<lbrakk>finite A; \<And> x . x\<in> A \<Longrightarrow> is_integral (f x)\<rbrakk> \<Longrightarrow> is_integral (sum f A)"
-  by(induction rule: finite.induct, simp add: is_integral_def) 
-    (metis insert_absorb insert_iff is_integral_def of_int_add sum.insert)
+proof(induction rule: finite.induct)
+  case emptyI
+  then show ?case by (simp add: is_integral_def)
+next
+  case (insertI A x)
+  have IH: "is_integral (sum f A)"
+    using insertI.prems by (intro insertI.IH) simp
+  show ?case
+  proof (cases "x \<in> A")
+    case True
+    hence "insert x A = A" by (rule insert_absorb)
+    thus ?thesis using IH by simp
+  next
+    case False
+    have "is_integral (f x)"
+      using insertI.prems by simp
+    moreover have "sum f (insert x A) = f x + sum f A"
+      using insertI.hyps(1) False by (rule sum.insert)
+    ultimately show ?thesis
+      using IH by (simp add: integral_add)
+  qed
+qed
 
 subsection \<open>Multiples\<close>
 

@@ -487,15 +487,72 @@ lemma vwalk_other_edge_set:
 
 lemma vwalk_bet_other_edge_set:
   "Vwalk.vwalk_bet E u p v \<Longrightarrow> \<not>Vwalk.vwalk_bet E' u p v \<Longrightarrow> \<exists>x \<in> dVs (E - E'). x \<in> set p"
-  using vwalk_bet_def vwalk_other_edge_set by metis 
+proof -
+  assume vb: "Vwalk.vwalk_bet E u p v"
+  assume nvb: "\<not> Vwalk.vwalk_bet E' u p v"
+  show "\<exists>x\<in>dVs (E - E'). x \<in> set p"
+  proof (rule ccontr)
+    assume not_ex: "\<not> (\<exists>x\<in>dVs (E - E'). x \<in> set p)"
+    have vwalk: "Vwalk.vwalk E p" using vb by (auto simp: vwalk_bet_def)
+    have hd_eq: "hd p = u" using vb by (auto simp: vwalk_bet_def)
+    have last_eq: "last p = v" using vb by (auto simp: vwalk_bet_def)
+    have nonempty: "p \<noteq> []" using vb by (auto simp: vwalk_bet_def)
+    have no_verts: "\<forall>x\<in>dVs (E - E'). x \<notin> set p" using not_ex by blast
+    have vwalk': "Vwalk.vwalk E' p" by (rule vwalk_other_edge_set[OF vwalk no_verts])
+    have "Vwalk.vwalk_bet E' u p v" using vwalk' hd_eq last_eq nonempty by (auto simp: vwalk_bet_def)
+    then show False using nvb by contradiction
+  qed
+qed
 
 lemma awalk_other_edge_set:
   "u \<noteq> v \<Longrightarrow> awalk E u p v \<Longrightarrow> \<not>awalk E' u p v \<Longrightarrow> \<exists>e. e \<in> (E - E') \<and> e \<in> set p"
-  by (metis (no_types, lifting) DiffI awalk_def awalk_ends cas_simp dVsI'(1) list.set_sel(1) subset_code(1))
+proof -
+  assume "u \<noteq> v"
+  assume awalk_E: "awalk E u p v"
+  assume not_awalk_E': "\<not> awalk E' u p v"
+  show "\<exists>e. e \<in> E - E' \<and> e \<in> set p"
+  proof (rule ccontr)
+    assume "\<not> (\<exists>e. e \<in> E - E' \<and> e \<in> set p)"
+    then have no_edge: "\<forall>e \<in> set p. e \<notin> E - E'" by blast
+    from awalk_E have subset_E: "set p \<subseteq> E" by blast
+    from awalk_E have cas_u: "cas u p v" by blast
+    have subset_E': "set p \<subseteq> E'"
+    proof
+      fix e assume "e \<in> set p"
+      then have "e \<in> E" using subset_E by blast
+      moreover have "e \<notin> E - E'" using no_edge \<open>e \<in> set p\<close> by blast
+      ultimately show "e \<in> E'" by blast
+    qed
+    have "p \<noteq> []"
+    proof
+      assume "p = []"
+      with awalk_E have "u = v" by (simp add: awalk_Nil_iff)
+      with \<open>u \<noteq> v\<close> show False by blast
+    qed
+    then have hd_mem: "hd p \<in> set p" by simp
+    have "fst (hd p) = u" using cas_simp[OF \<open>p \<noteq> []\<close>] cas_u by auto
+    then have hd_eq: "hd p = (u, snd (hd p))" by (cases "hd p") auto
+    have "hd p \<in> E'" using subset_E' hd_mem by blast
+    then have "(u, snd (hd p)) \<in> E'" using hd_eq by simp
+    then have "u \<in> dVs E'" using dVsI'(1) by blast
+    with subset_E' cas_u have "awalk E' u p v" unfolding awalk_def by blast
+    with not_awalk_E' show False by blast
+  qed
+qed
 
 lemma awalk_hd_in_set:
   "awalk G u p v \<Longrightarrow> p \<noteq> [] \<Longrightarrow> set p \<subseteq> X \<Longrightarrow> u \<in> dVs X"
-  by (metis (mono_tags, lifting) awalkE' cas_simp dVsI'(1) in_mono list.set_sel(1))
+proof -
+  assume "awalk G u p v" "p \<noteq> []" "set p \<subseteq> X"
+  have cas: "cas u p v" using \<open>awalk G u p v\<close> by blast
+  have hd_fst: "fst (hd p) = u" using cas \<open>p \<noteq> []\<close> by (auto simp: cas_simp)
+  have hd_in_p: "hd p \<in> set p" using \<open>p \<noteq> []\<close> by (rule hd_in_set)
+  have hd_in_X: "hd p \<in> X" using hd_in_p \<open>set p \<subseteq> X\<close> by blast
+  have "hd p = (u, snd (hd p))" using hd_fst by (cases "hd p") auto
+  then have "(u, snd (hd p)) \<in> X" using hd_in_X by simp
+  then have "fst (u, snd (hd p)) \<in> dVs X" by (rule dVsI'(1))
+  then show "u \<in> dVs X" by simp
+qed
 
 
 lemma edges_of_vwalk_length_geq_2:
@@ -505,38 +562,114 @@ lemma edges_of_vwalk_length_geq_2:
 
 lemma awalk_vwalk_id:
   "p \<noteq> [] \<Longrightarrow> hd p = x \<Longrightarrow> awalk_verts x (edges_of_vwalk p) = p"
-  apply (induction p arbitrary: x)
-  apply simp
-  by (smt (verit) Pair_inject awalk_verts.elims edges_of_vwalk.elims list.sel(1) list.sel(3) list.simps(3))
+proof (induction p arbitrary: x rule: edges_of_vwalk.induct)
+  case 1
+  then show ?case by simp
+next
+  case (2 v)
+  then show ?case by simp
+next
+  case (3 v v' vs)
+  show ?case using "3.prems" 3(1)[of v'] by simp
+qed
   
 lemma vwalk_rev:
   "\<forall>(x, y) \<in> E. (y, x) \<in> E \<Longrightarrow> Vwalk.vwalk E p \<Longrightarrow> Vwalk.vwalk E (rev p)"
-  apply (induction p)
-  apply simp
-  by (metis append_Nil case_prod_conv last_rev rev.simps(2) rev_is_Nil_conv vwalk_ConsE vwalk_append_single)
+proof (induction p)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a p')
+  show ?case
+  proof (cases "p' = []")
+    case True
+    then show ?thesis using Cons.prems by simp
+  next
+    case False
+    obtain e where e_mem: "e \<in> E" and e_eq: "e = (a, hd p')" and vw': "Vwalk.vwalk E p'"
+      by (rule vwalk_ConsE[OF Cons.prems(2) False])
+    have edge: "(a, hd p') \<in> E" using e_mem e_eq by simp
+    have edge_rev: "(hd p', a) \<in> E" using Cons.prems(1) edge by auto
+    have rev_p': "Vwalk.vwalk E (rev p')" using Cons.IH Cons.prems(1) vw' by simp
+    have last_rev_p': "last (rev p') = hd p'" using False by (simp add: last_rev)
+    have edge_rev': "(last (rev p'), a) \<in> E" using edge_rev last_rev_p' by simp
+    have "Vwalk.vwalk E (rev p' @ [a])"
+      by (rule vwalk_append_single[OF rev_p' edge_rev'])
+    then show ?thesis by simp
+  qed
+qed
   
 lemma awalk_verts_cons:
   "awalk E u ([(x, y)] @ xs) v \<Longrightarrow> awalk_verts u ([(x, y)] @ xs) = [x, y] @ tl (awalk_verts u xs)"
-  by (smt (verit, best) append.left_neutral append_Cons awalkE awalk_verts.elims awalk_verts.simps(2)
-  cas.simps(2) list.sel(3))
+proof -
+  assume asm: "awalk E u ([(x, y)] @ xs) v"
+  then have awalk_cons: "awalk E u ((x, y) # xs) v" by simp
+  have awalk_tl: "awalk E y xs v"
+    using awalk_cons by (auto simp add: awalk_Cons_iff)
+  show "awalk_verts u ([(x, y)] @ xs) = [x, y] @ tl (awalk_verts u xs)"
+  proof (cases xs)
+    case Nil
+    then show ?thesis by simp
+  next
+    case (Cons e es)
+    obtain a b where e_def: "e = (a, b)"
+      by (rule prod.exhaust)
+    have y_eq: "a = y"
+      using awalk_tl Cons e_def by (auto simp add: awalk_Cons_iff)
+    from Cons e_def y_eq show ?thesis by simp
+  qed
+qed
 
 lemma awalk_verts_snoc:
   "l = xs @ [(x, y)] \<Longrightarrow> \<exists>ys. awalk_verts u l = ys @ [x, y]"
-  apply (induction l arbitrary: xs x y u)
-  apply blast
-  by (smt (z3) append.left_neutral append_Cons awalk_verts.simps(1) awalk_verts.simps(2) list.exhaust
-  list.inject old.prod.exhaust)
+proof -
+  assume l_eq: "l = xs @ [(x, y)]"
+  have eq: "awalk_verts u l = map fst xs @ [x, y]"
+    using awalk_verts_conv[of u l] l_eq by simp
+  show "\<exists>ys. awalk_verts u l = ys @ [x, y]"
+    using eq by auto
+qed
 
 lemma awalk_verts_length:
   "awalk E u p v \<Longrightarrow> length (awalk_verts u p) = length p + 1"
-  by (metis Suc_eq_plus1 awalk_def awalk_verts_conv' length_Cons length_map list.size(3))
+proof -
+  assume "awalk E u p v"
+  then have cas: "cas u p v" by (auto simp: awalk_def)
+  show "length (awalk_verts u p) = length p + 1"
+  proof (cases p)
+    case Nil
+    with cas show ?thesis by (simp add: awalk_verts_conv')
+  next
+    case (Cons e es)
+    with cas show ?thesis by (simp add: awalk_verts_conv')
+  qed
+qed
 
 lemma cas_rev:
   "cas u p v \<Longrightarrow> cas v (rev (map prod.swap p)) u"
-  apply (induction p arbitrary: u v)
-  apply simp
-  by (smt (verit, best) awlast_if_cas cas.elims(2) cas.simps(1) cas.simps(2) cas_append_iff
-     list.distinct(1) list.sel(3) list.simps(9) rev.simps(2) swap_simp)
+proof (induction p arbitrary: u v)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons e es)
+  obtain a b where e_ab: "e = (a, b)"
+    by (cases e) auto
+  from Cons.prems have ab_props: "u = a \<and> cas b es v"
+    unfolding e_ab by (simp add: cas.simps(2))
+  hence u_eq: "u = a" and cas_es: "cas b es v"
+    by auto
+  have IH': "cas v (rev (map prod.swap es)) b"
+    using Cons.IH[of b v] cas_es by blast
+  have awlast_eq: "awlast v (rev (map prod.swap es)) = b"
+    using awlast_if_cas[OF IH'] .
+  have last_step: "cas b [(b, a)] a"
+    by (simp add: cas.simps)
+  have "cas v (rev (map prod.swap es) @ [(b, a)]) a"
+    using IH' awlast_eq last_step
+    by (simp add: cas_append_iff)
+  then show ?case
+    unfolding u_eq e_ab by (simp add: awlast_eq)
+qed
 
 lemma awalk_rev:
   "\<forall>e \<in> G. prod.swap e \<in> G \<Longrightarrow> awalk G u p v \<Longrightarrow> awalk G v (rev (map prod.swap p)) u"
@@ -573,14 +706,32 @@ proof-
   assume "cycle' E p" "awalk E u p u"
   from cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] awalk_verts_length[OF \<open>awalk E u p u\<close>]
     have "\<exists>xs. awalk_verts u p = [fst (hd p)] @ xs @ [snd (last p)]"    
-    by (smt (verit) \<open>cycle' E p\<close> append_Cons append_Nil awalk_verts.elims awalk_verts_conv cycle'_def
-      cycle_def fst_conv list.sel(1) list.sel(3) tl_append2)
+  proof -
+    have "length p > 2" using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] .
+    then have p_nonempty: "p \<noteq> []" by (cases p) simp_all
+    then have "awalk_verts u p = map fst p @ [snd (last p)]"
+      by (simp add: awalk_verts_conv)
+    moreover from p_nonempty have "map fst p = fst (hd p) # map fst (tl p)"
+      by (cases p) simp_all
+    ultimately have "awalk_verts u p = [fst (hd p)] @ map fst (tl p) @ [snd (last p)]"
+      by simp
+    then show ?thesis by (intro exI[where x = "map fst (tl p)"]) simp
+  qed
   with \<open>awalk E u p u\<close>
     have "\<exists>xs. awalk_verts u p = [u] @ xs @ [u]" by auto
   then obtain xs where "awalk_verts u p = [u] @ xs @ [u]" by blast
   moreover have "distinct (tl (awalk_verts u p))"
-    using \<open>cycle' E p\<close> cycle'_def cycle_def \<open>awalk E u p u\<close>
-    by (metis awalk_verts_conv)
+  proof -
+    have "\<exists>u'. awalk E u' p u' \<and> distinct (tl (awalk_verts u' p)) \<and> p \<noteq> []"
+      using \<open>cycle' E p\<close> cycle'_def cycle_def by fastforce
+    then obtain u' where u'_awalk: "awalk E u' p u'"
+      and u'_distinct: "distinct (tl (awalk_verts u' p))"
+      and p_nonempty: "p \<noteq> []"
+      by blast
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_awalk] p_nonempty by blast
+    with u'_distinct show "distinct (tl (awalk_verts u p))" by simp
+  qed
   ultimately show
     "distinct (butlast (awalk_verts u p))" by simp
 qed
@@ -597,46 +748,123 @@ proof (cases "(v, w) = last p")
     by simp
   moreover have "awlast u p = w"
     using \<open>awalk E u p u\<close> \<open>(v, w) = last p\<close> awalk_verts_conv
-    by (metis \<open>(v, w) \<in> set p\<close> empty_iff empty_set last_snoc snd_conv)
+  proof -
+    from \<open>(v, w) \<in> set p\<close> have "p \<noteq> []" by auto
+    then have "awalk_verts u p = map fst p @ [snd (last p)]"
+      by (simp add: awalk_verts_conv)
+    then have "awlast u p = snd (last p)"
+      by simp
+    also have "\<dots> = snd (v, w)"
+      using \<open>(v, w) = last p\<close> by simp
+    also have "\<dots> = w" by simp
+    finally show "awlast u p = w" .
+  qed
   ultimately have "u = w" by auto
 
   from \<open>awalk E u p u\<close>
     have "awhd u p = u" by blast
   then have "fst (hd p) = u" 
-    by (metis \<open>awalk E u p u\<close> \<open>cycle' E p\<close> awalkE' cas_simp cycle'_def cycle_def)
+  proof -
+    have cas_pu: "cas u p u" using \<open>awalk E u p u\<close> by (auto elim: awalkE')
+    have p_ne: "p \<noteq> []" using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] by (cases p) auto
+    show "fst (hd p) = u" using cas_simp[OF p_ne] cas_pu by auto
+  qed
 
-  from \<open>v \<noteq> w\<close> \<open>fst (hd p) = u\<close> \<open>u = w\<close>
-    have "(hd p) \<noteq> (v, w)"
-    by (metis fst_conv)
+  have "(hd p) \<noteq> (v, w)"
+  proof (rule notI)
+    assume "hd p = (v, w)"
+    hence "fst (hd p) = v" by simp
+    with \<open>fst (hd p) = u\<close> \<open>u = w\<close> have "v = w" by simp
+    with \<open>v \<noteq> w\<close> show False by simp
+  qed
 
   from \<open>(v, w) = last p\<close> \<open>(hd p) \<noteq> (v, w)\<close>
     have "\<exists>xs. p = [hd p] @ xs @ [(v, w)]" 
-    by (metis (no_types, opaque_lifting) \<open>(v, w) \<in> set p\<close> append.left_neutral append_Cons
-    append_butlast_last_id last_snoc list.distinct(1) list.exhaust_sel split_list)
+  proof -
+    have "p \<noteq> []" using \<open>(v, w) \<in> set p\<close> by auto
+    then have p_eq: "p = butlast p @ [last p]"
+      by (simp add: append_butlast_last_id)
+    with \<open>(v, w) = last p\<close> have p_eq2: "p = butlast p @ [(v, w)]" by simp
+    have "butlast p \<noteq> []"
+    proof
+      assume "butlast p = []"
+      with p_eq2 have "p = [(v, w)]" by simp
+      then have "hd p = (v, w)" by simp
+      with \<open>(hd p) \<noteq> (v, w)\<close> show False by simp
+    qed
+    then obtain y ys where bl_eq: "butlast p = y # ys"
+      by (cases "butlast p") auto
+    have hd_eq: "y = hd p"
+    proof -
+      have "hd p = hd (butlast p @ [(v, w)])" using p_eq2 by (rule arg_cong)
+      moreover have "hd (butlast p @ [(v, w)]) = y"
+        using bl_eq \<open>butlast p \<noteq> []\<close> by (simp add: hd_append2)
+      ultimately show ?thesis by simp
+    qed
+    have "p = [hd p] @ ys @ [(v, w)]"
+    proof -
+      have "p = butlast p @ [(v, w)]" using p_eq2 .
+      also have "\<dots> = (y # ys) @ [(v, w)]" using bl_eq by simp
+      also have "\<dots> = [hd p] @ ys @ [(v, w)]" using hd_eq by simp
+      finally show ?thesis .
+    qed
+    then show "\<exists>xs. p = [hd p] @ xs @ [(v, w)]" by auto
+  qed
   then obtain xs where "p = [(fst (hd p), snd (hd p))] @ xs @ [(v, w)]" by auto
   with awalk_verts_cons \<open>awalk E u p u\<close>
     have awalk_verts_p: "awalk_verts u ([(fst (hd p), snd (hd p))] @ (xs @ [(v, w)])) =
       [fst (hd p), snd (hd p)] @ tl (awalk_verts u (xs @ [(v, w)]))"
-    by metis
+  proof -
+    have "awalk E u ([(fst (hd p), snd (hd p))] @ xs @ [(v, w)]) u"
+      using \<open>awalk E u p u\<close> \<open>p = [(fst (hd p), snd (hd p))] @ xs @ [(v, w)]\<close> by simp
+    then show ?thesis by (rule awalk_verts_cons)
+  qed
   from awalk_verts_snoc
     obtain ys where "awalk_verts u (xs @ [(v, w)]) = ys @ [v, w]" by fastforce
   with awalk_verts_p \<open>p = [(fst (hd p), snd (hd p))] @ xs @ [(v, w)]\<close>
     have "awalk_verts u p = [fst (hd p), snd (hd p)] @ tl (ys @ [v, w])" by auto
   moreover have "ys \<noteq> []"
-    by (metis One_nat_def Suc_eq_plus1 cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] awalk_verts_conv butlast_snoc
-    \<open>awalk_verts u p = [fst (hd p), snd (hd p)] @ tl (ys @ [v, w])\<close>
-    length_map linorder_neq_iff list.sel(3) list.size(3) list.size(4) nat_1_add_1 self_append_conv2)
+  proof (cases ys)
+    case Nil
+    with \<open>awalk_verts u p = [fst (hd p), snd (hd p)] @ tl (ys @ [v, w])\<close>
+      have "awalk_verts u p = [fst (hd p), snd (hd p), w]" by simp
+    then have "length (awalk_verts u p) = 3" by simp
+    moreover have "length (awalk_verts u p) = length p + 1"
+      using awalk_verts_length[OF \<open>awalk E u p u\<close>] .
+    moreover have "length p > 2"
+      using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] .
+    ultimately have False by linarith
+    then show ?thesis ..
+  next
+    case Cons
+    then show ?thesis by simp
+  qed
   ultimately have "awalk_verts u p = [fst (hd p), snd (hd p)] @ tl ys @ [v, w]"
     by auto
   then have "tl (awalk_verts u p) = [snd (hd p)] @ tl ys @ [v, w]" by simp 
   moreover have "distinct (tl (awalk_verts u p))"
     using \<open>cycle' E p\<close> cycle'_def cycle_def
-    by (metis \<open>awalk E u p u\<close> awalk_ends)
+  proof -
+    obtain u' where u'_props: "awalk E u' p u'" "distinct (tl (awalk_verts u' p))" "p \<noteq> []"
+      using \<open>cycle' E p\<close> unfolding cycle'_def cycle_def by blast
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_props(1)] u'_props(3) by blast
+    then show ?thesis
+      using u'_props(2) by simp
+  qed
   ultimately have "snd (hd p) \<noteq> v" by simp
 
   from \<open>fst (hd p) = u\<close> \<open>u = w\<close> \<open>snd (hd p) \<noteq> v\<close>
     show ?thesis
-    by (metis \<open>(v, w) \<in> set p\<close> list.set_cases list.set_sel(1) list.simps(3) prod.collapse)
+    proof -
+    from \<open>(v, w) \<in> set p\<close> have "p \<noteq> []" by auto
+    then have hd_in: "hd p \<in> set p" using hd_in_set by blast
+    obtain a b where hd_eq: "hd p = (a, b)" by (cases "hd p") auto
+    with \<open>fst (hd p) = u\<close> have "a = u" by simp
+    with hd_eq hd_in have "(u, b) \<in> set p" by simp
+    moreover from hd_eq \<open>snd (hd p) \<noteq> v\<close> have "b \<noteq> v" by simp
+    ultimately show ?thesis using \<open>u = w\<close> by blast
+  qed
 next
   case False
   assume "cycle' E p" "v \<noteq> w" "(v, w) \<in> set p"
@@ -644,20 +872,38 @@ next
     obtain u where "awalk E u p u" by blast
 
   have "\<exists>xs ys. p = xs @ [(v, w)] @ ys"
-    by (metis \<open>(v, w) \<in> set p\<close> append_Cons append_Nil in_set_conv_decomp_first)
+  proof -
+    from \<open>(v, w) \<in> set p\<close> obtain xs ys where "p = xs @ (v, w) # ys"
+      by (blast dest: split_list)
+    then have "p = xs @ [(v, w)] @ ys" by simp
+    then show ?thesis by blast
+  qed
   then obtain xs ys where "p = xs @ [(v, w)] @ ys" by blast
   from cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] False this
     have "ys \<noteq> []" by auto
   with \<open>p = xs @ [(v, w)] @ ys\<close>
     obtain x y where "p = xs @ [(v, w), (x, y)] @ tl ys"
-    by (metis append_Cons append_Nil list.collapse prod.collapse)
+  proof -
+    from \<open>ys \<noteq> []\<close> obtain x' y' ys' where "ys = (x', y') # ys'"
+      by (cases ys) auto
+    then have "p = xs @ [(v, w), (x', y')] @ tl ys"
+      using \<open>p = xs @ [(v, w)] @ ys\<close> by simp
+    then show thesis by (rule that)
+  qed
   with \<open>awalk E u p u\<close> awalk_def
     have "cas u (xs @ [(v, w), (x, y)] @ tl ys) u" by blast
   then have "w = x" by simp
 
   have "distinct (tl (awalk_verts u p))"
     using \<open>cycle' E p\<close> cycle'_def cycle_def
-    by (metis \<open>awalk E u p u\<close> awalk_ends)
+  proof -
+    from \<open>cycle' E p\<close> obtain u' where
+      u'_props: "awalk E u' p u'" "distinct (tl (awalk_verts u' p))" "p \<noteq> []"
+      unfolding cycle'_def cycle_def by blast
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_props(1)] u'_props(3) by blast
+    with u'_props(2) show ?thesis by simp
+  qed
 
   have "y \<noteq> v"
   proof (cases "tl ys")
@@ -671,7 +917,15 @@ next
       have "awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y]"
       by auto
     then have "\<exists>zs. tl (awalk_verts u p) = zs @ [v, x, y]"
-      by (metis append.assoc append_Cons append_Nil list.sel(3) tl_append2)
+proof -
+  have ne: "map fst (butlast xs) @ [fst (last xs)] \<noteq> []" by simp
+  have "awalk_verts u p = (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y]"
+    using \<open>awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y]\<close> by simp
+  with ne tl_append2[of "map fst (butlast xs) @ [fst (last xs)]" "[v, x, y]"]
+  have "tl (awalk_verts u p) = tl (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y]"
+    by simp
+  then show ?thesis by auto
+qed
     with \<open>distinct (tl (awalk_verts u p))\<close>
       show ?thesis by auto
   next
@@ -682,7 +936,19 @@ next
       have "cas u (xs @ [(v, w), (x, y), hd_tl_ys] @ zs) u" by blast
     with \<open>p = xs @ [(v, w), (x, y), hd_tl_ys] @ zs\<close> append_assoc
       have "y = fst hd_tl_ys" 
-      by (smt (verit, best) cas.simps(2) cas_append_iff prod.collapse)
+    proof -
+      have list_eq: "(xs @ [(v, w)]) @ (x, y) # hd_tl_ys # zs
+          = xs @ [(v, w), (x, y), hd_tl_ys] @ zs"
+        by simp
+      have "cas u ((xs @ [(v, w)]) @ (x, y) # hd_tl_ys # zs) u"
+        using \<open>cas u (xs @ [(v, w), (x, y), hd_tl_ys] @ zs) u\<close>
+        by (simp only: list_eq)
+      hence "cas (awlast u (xs @ [(v, w)])) ((x, y) # hd_tl_ys # zs) u"
+        using cas_append_iff[THEN iffD1,
+          of u "xs @ [(v, w)]" "(x, y) # hd_tl_ys # zs" u] by blast
+      thus "y = fst hd_tl_ys"
+        by (simp add: cas_simp)
+    qed
     with \<open>p = xs @ [(v, w), (x, y), hd_tl_ys] @ zs\<close>
       have "p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs" by simp
     show ?thesis
@@ -691,10 +957,31 @@ next
       with \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close>
         have "v = awhd u p" by simp
       with \<open>awalk E u p u\<close> have "snd (last p) = v"
-        by (metis \<open>(v, w) \<in> set p\<close> awalkE' awalk_verts_conv empty_iff empty_set last_snoc)
+        proof -
+          have "p \<noteq> []" using \<open>(v, w) \<in> set p\<close> by auto
+          then have "awalk_verts u p = map fst p @ [snd (last p)]"
+            by (simp add: awalk_verts_conv)
+          then have "awlast u p = snd (last p)" by simp
+          moreover have "awlast u p = u" using \<open>awalk E u p u\<close> by simp
+          moreover have "awhd u p = u" using \<open>awalk E u p u\<close> by blast
+          ultimately have "snd (last p) = awhd u p" by simp
+          then show "snd (last p) = v" using \<open>v = awhd u p\<close> by simp
+        qed
       with \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close> awalk_verts_conv Nil
         have "awalk_verts u p = [v, x, y] @ (map fst zs) @ [v]"
-        by (metis (no_types, lifting) append_Cons append_Nil fst_conv list.simps(3) list.simps(9))
+        proof -
+          have p_eq: "p = [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs"
+            using \<open>p = xs @ [(v, w), (x, y), (y, snd hd_tl_ys)] @ zs\<close> Nil by simp
+          have p_nonempty: "p \<noteq> []" using p_eq by simp
+          have "awalk_verts u p = map fst p @ [snd (last p)]"
+            using p_nonempty by (simp add: awalk_verts_conv)
+          also have "\<dots> = map fst p @ [v]"
+            using \<open>snd (last p) = v\<close> by simp
+          also have "\<dots> = [v, x, y] @ map fst zs @ [v]"
+            using p_eq by simp
+          finally show "awalk_verts u p = [v, x, y] @ (map fst zs) @ [v]"
+            by simp
+        qed
       then have "tl (awalk_verts u p) = [x, y] @ (map fst zs) @ [v]" by simp
       with \<open>distinct (tl (awalk_verts u p))\<close>
         show ?thesis by auto
@@ -707,7 +994,14 @@ next
         have "awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y] @ (map fst zs) @ [(snd (last p))]"
         by auto
       then have "\<exists>as. tl (awalk_verts u p) = as @ [v, x, y] @ (map fst zs) @ [(snd (last p))]"
-        by (metis append.assoc append_Cons append_Nil list.sel(3) tl_append2)
+        proof -
+          have "awalk_verts u p = (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y] @ (map fst zs) @ [(snd (last p))]"
+            using \<open>awalk_verts u p = (map fst (butlast xs)) @ [fst (last xs), v, x, y] @ (map fst zs) @ [(snd (last p))]\<close>
+            by simp
+          then have "tl (awalk_verts u p) = tl (map fst (butlast xs) @ [fst (last xs)]) @ [v, x, y] @ (map fst zs) @ [(snd (last p))]"
+            by (cases "map fst (butlast xs)") (auto simp: tl_append2)
+          then show ?thesis by blast
+        qed
       with \<open>distinct (tl (awalk_verts u p))\<close>
         show ?thesis by auto
     qed
@@ -728,46 +1022,131 @@ proof (cases "(w, v) = hd p")
     by simp
   moreover have "awhd u p = w"
     using \<open>awalk E u p u\<close> \<open>(w, v) = hd p\<close>
-    by (metis \<open>(w, v) \<in> set p\<close> awalk_Cons_iff calculation fst_eqD hd_Cons_tl list.distinct(1) list.set_cases)
+  proof -
+    from \<open>(w, v) \<in> set p\<close> have "p \<noteq> []" by auto
+    with \<open>(w, v) = hd p\<close> show ?thesis by (cases p) auto
+  qed
   ultimately have "u = w" by auto
 
   from \<open>awalk E u p u\<close>
     have "awlast u p = u" by blast
   then have "snd (last p) = u" 
-    by (metis \<open>(w, v) \<in> set p\<close> awalk_verts_conv last_snoc length_greater_0_conv length_pos_if_in_set)
+proof -
+  have "p \<noteq> []"
+    using \<open>(w, v) \<in> set p\<close> length_pos_if_in_set length_greater_0_conv by fastforce
+  have verts_eq: "awalk_verts u p = map fst p @ [snd (last p)]"
+    using \<open>p \<noteq> []\<close> by (simp add: awalk_verts_conv)
+  have "awlast u p = last (awalk_verts u p)"
+    by simp
+  also have "\<dots> = snd (last p)"
+    using verts_eq by (simp add: last_snoc)
+  then show "snd (last p) = u"
+    using \<open>awlast u p = u\<close> by simp
+qed
 
   from \<open>v \<noteq> w\<close> \<open>snd (last p) = u\<close> \<open>u = w\<close>
     have "(last p) \<noteq> (w, v)"
-    by (metis snd_conv)
+proof -
+  show "(last p) \<noteq> (w, v)"
+  proof (rule notI)
+    assume "last p = (w, v)"
+    then have "v = snd (last p)" by simp
+    also have "\<dots> = u" using \<open>snd (last p) = u\<close> by simp
+    finally have "v = u" .
+    with \<open>u = w\<close> have "v = w" by simp
+    with \<open>v \<noteq> w\<close> show False by simp
+  qed
+qed
 
   from \<open>(w, v) = hd p\<close> \<open>(last p) \<noteq> (w, v)\<close>
     have "\<exists>xs. p = [(w, v)] @ xs @ [last p]" 
-    by (metis (no_types, opaque_lifting) \<open>(w, v) \<in> set p\<close> append.left_neutral append_Cons
-    append_butlast_last_id last_snoc list.distinct(1) list.exhaust_sel split_list)
+  proof -
+    from \<open>(w, v) \<in> set p\<close> have p_ne: "p \<noteq> []" by auto
+    obtain a as where p_cons: "p = a # as" using p_ne by (cases p) auto
+    have a_eq: "a = (w, v)" using p_cons \<open>(w, v) = hd p\<close> by simp
+    show "\<exists>xs. p = [(w, v)] @ xs @ [last p]"
+    proof (cases as)
+      case Nil
+      with p_cons a_eq have "p = [(w, v)]" by simp
+      then have "last p = (w, v)" by simp
+      with \<open>(last p) \<noteq> (w, v)\<close> show ?thesis by blast
+    next
+      case (Cons y ys)
+      with p_cons a_eq have p_eq: "p = (w, v) # y # ys" by simp
+      have y_ys_ne: "y # ys \<noteq> []" by simp
+      have decomp: "butlast (y # ys) @ [last (y # ys)] = y # ys"
+        using y_ys_ne by (rule append_butlast_last_id)
+      have last_eq: "last (y # ys) = last p" using p_eq by simp
+      from p_eq decomp[symmetric]
+        have "p = (w, v) # (butlast (y # ys) @ [last (y # ys)])" by simp
+      then have p_final: "p = [(w, v)] @ butlast (y # ys) @ [last (y # ys)]" by simp
+      with last_eq have "p = [(w, v)] @ butlast (y # ys) @ [last p]" by simp
+      then show ?thesis ..
+    qed
+  qed
   then obtain xs where "p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]" by auto
   with awalk_verts_cons \<open>awalk E u p u\<close>
     have awalk_verts_p: "awalk_verts u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) =
       [w, v] @ tl (awalk_verts u (xs @ [(fst (last p), snd (last p))]))"
-    by metis
-  from awalk_verts_snoc
-    obtain ys where "awalk_verts u (xs @ [(fst (last p), snd (last p))]) = ys @ [fst (last p), snd (last p)]" by metis
+  proof -
+    have "awalk E u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) u"
+    proof (subst \<open>p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]\<close> [symmetric])
+      show "awalk E u p u" by (fact \<open>awalk E u p u\<close>)
+    qed
+    then show "awalk_verts u ([(w, v)] @ (xs @ [(fst (last p), snd (last p))])) =
+        [w, v] @ tl (awalk_verts u (xs @ [(fst (last p), snd (last p))]))"
+      by (rule awalk_verts_cons)
+  qed
+  from awalk_verts_snoc[of "xs @ [(fst (last p), snd (last p))]" xs "fst (last p)" "snd (last p)" u]
+    obtain ys where "awalk_verts u (xs @ [(fst (last p), snd (last p))]) = ys @ [fst (last p), snd (last p)]"
+    by blast
   with awalk_verts_p \<open>p = [(w, v)] @ xs @ [(fst (last p), snd (last p))]\<close>
     have "awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])" by argo
   moreover have "ys \<noteq> []"
-    by (metis One_nat_def Suc_eq_plus1 cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] awalk_verts_conv butlast_snoc
-    \<open>awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])\<close>
-    length_map linorder_neq_iff list.sel(3) list.size(3) list.size(4) nat_1_add_1 self_append_conv2)
+  proof (rule notI)
+    assume ys_nil: "ys = []"
+    have "awalk_verts u p = [w, v, snd (last p)]"
+      using ys_nil \<open>awalk_verts u p = [w, v] @ tl (ys @ [fst (last p), snd (last p)])\<close> by simp
+    then have "length (awalk_verts u p) = 3" by simp
+    moreover have "length (awalk_verts u p) = length p + 1"
+      using awalk_verts_length[OF \<open>awalk E u p u\<close>] .
+    moreover have "length p > 2"
+      using cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] .
+    ultimately show False by simp
+  qed
   ultimately have "awalk_verts u p = [w, v] @ tl ys @ [fst (last p), snd (last p)]"
     by auto
   then have "tl (awalk_verts u p) = [v] @ tl ys @ [fst (last p), snd (last p)]" by simp 
   moreover have "distinct (tl (awalk_verts u p))"
     using \<open>cycle' E p\<close> cycle'_def cycle_def
-    by (metis \<open>awalk E u p u\<close> awalk_ends)
+  proof -
+    have cycle_and_len: "cycle E p \<and> length p > 2"
+      using \<open>cycle' E p\<close>[unfolded cycle'_def] .
+    have cycle_fact: "cycle E p" using cycle_and_len by (rule conjunct1)
+    have len_gt: "length p > 2" using cycle_and_len by (rule conjunct2)
+    have p_nonempty: "p \<noteq> []" using len_gt by auto
+    from cycle_fact[unfolded cycle_def]
+    obtain u' where u'_awalk: "awalk E u' p u'"
+      and u'_dist: "distinct (tl (awalk_verts u' p))"
+      by auto
+    have "u = u'"
+      using awalk_ends[OF \<open>awalk E u p u\<close> u'_awalk] p_nonempty by auto
+    with u'_dist show "distinct (tl (awalk_verts u p))" by simp
+  qed
   ultimately have "fst (last p) \<noteq> v" by auto
 
   from \<open>snd (last p) = u\<close> \<open>u = w\<close> \<open>fst (last p) \<noteq> v\<close>
     show ?thesis
-    by (metis True \<open>last p \<noteq> (w, v)\<close> hd_Nil_eq_last last_in_set prod.collapse)
+  proof -
+  have p_nonempty: "p \<noteq> []" using \<open>(w, v) \<in> set p\<close> by auto
+  have last_mem: "last p \<in> set p" using p_nonempty by (rule last_in_set)
+  have snd_last_eq: "snd (last p) = w" using \<open>snd (last p) = u\<close> \<open>u = w\<close> by simp
+  have last_eq: "last p = (fst (last p), w)"
+    using snd_last_eq prod.collapse[of "last p"] by simp
+  have "(fst (last p), w) \<in> set p" using last_mem last_eq by simp
+  moreover have "fst (last p) \<noteq> v" using \<open>fst (last p) \<noteq> v\<close> .
+  ultimately show ?thesis by blast
+  qed
 next
   case False
   assume "cycle' E p" "v \<noteq> w" "(w, v) \<in> set p"
@@ -776,13 +1155,18 @@ next
   then have "cas u p u" unfolding awalk_def by auto
 
   have "\<exists>xs ys. p = xs @ [(w, v)] @ ys"
-    by (metis \<open>(w, v) \<in> set p\<close> append_Cons append_Nil in_set_conv_decomp_first)
+  proof -
+    obtain xs ys where "p = xs @ (w, v) # ys"
+      using split_list[OF \<open>(w, v) \<in> set p\<close>] by blast
+    hence "p = xs @ [(w, v)] @ ys" by simp
+    thus "\<exists>xs ys. p = xs @ [(w, v)] @ ys" by blast
+  qed
   then obtain xs ys where "p = xs @ [(w, v)] @ ys" by blast
   from cycle'_imp_length_greater_2[OF \<open>cycle' E p\<close>] False this
     have "xs \<noteq> []" by auto
   with \<open>p = xs @ [(w, v)] @ ys\<close>
     obtain x y where "p = butlast xs @ [(x, y), (w, v)] @ ys"
-    by (metis append_Cons append_butlast_last_cancel prod.exhaust_sel)
+    by (cases xs rule: rev_cases; auto)
   with \<open>awalk E u p u\<close> awalk_def
     have "cas u (butlast xs @ [(x, y), (w, v)] @ ys) u" by blast
   then have "w = y" by simp
@@ -792,7 +1176,7 @@ next
     by blast
 
   consider (Nil) "butlast xs = Nil" | (Snoc) "\<exists>zs l_bl_xs. butlast xs = zs @ [l_bl_xs]"
-    by (metis append_butlast_last_id)
+    by (cases "butlast xs" rule: rev_cases) auto
   then have "x \<noteq> v"
   proof (cases)
     case Nil
@@ -817,7 +1201,21 @@ next
       have "cas u (zs @ [l_bl_xs, (x, y), (w, v)] @ ys) u" by blast
     with \<open>p = zs @ [l_bl_xs, (x, y), (w, v)] @ ys\<close> append_assoc
       have "x = snd l_bl_xs" 
-      by (smt (verit, best) cas.simps(2) cas_append_iff prod.collapse)
+      proof -
+        have "zs @ [l_bl_xs, (x, y), (w, v)] @ ys = zs @ (l_bl_xs # (x, y) # (w, v) # ys)"
+          by simp
+        with \<open>cas u (zs @ [l_bl_xs, (x, y), (w, v)] @ ys) u\<close>
+          have "cas u (zs @ (l_bl_xs # (x, y) # (w, v) # ys)) u"
+          by simp
+        then have "cas (awlast u zs) (l_bl_xs # (x, y) # (w, v) # ys) u"
+          by (simp only: cas_append_iff)
+        then have "cas (snd l_bl_xs) ((x, y) # (w, v) # ys) u"
+          by (cases l_bl_xs) (auto simp: cas.simps(2))
+        then have "fst (x, y) = snd l_bl_xs"
+          by (simp add: cas.simps(2))
+        then show "x = snd l_bl_xs"
+          by simp
+      qed
     with \<open>p = zs @ [l_bl_xs, (x, y), (w, v)] @ ys\<close>
       have "p = zs @ [(fst l_bl_xs, x), (x, y), (w, v)] @ ys" by simp
     
@@ -828,7 +1226,14 @@ next
         have "v = awlast u p"
         by (simp add: awalk_verts_conv)
       with \<open>awalk E u p u\<close> have "fst (hd p) = v"
-        by (metis Nil_is_append_conv \<open>cas u p u\<close> \<open>p = xs @ [(w, v)] @ ys\<close> \<open>xs \<noteq> []\<close> awlast_if_cas cas_simp)
+      proof -
+        have "p \<noteq> []" using \<open>xs \<noteq> []\<close> \<open>p = xs @ [(w, v)] @ ys\<close> by simp
+        have "awlast u p = u" using awlast_if_cas[OF \<open>cas u p u\<close>] .
+        with \<open>v = awlast u p\<close> have "v = u" by simp
+        moreover have "fst (hd p) = u"
+          using \<open>cas u p u\<close> cas_simp[OF \<open>p \<noteq> []\<close>] by blast
+        ultimately show "fst (hd p) = v" by simp
+      qed
       with \<open>p = zs @ [(fst l_bl_xs, x), (x, y), (w, v)] @ ys\<close> awalk_verts_conv'[OF \<open>cas u p u\<close>] Nil
         have "awalk_verts u p = [v] @ (map snd zs) @ [x, y, v]"
         by force
@@ -875,11 +1280,28 @@ proof (rule ccontr, goal_cases)
     have "u \<in> dVs E" "set p \<subseteq> E" "cas u p u" by auto
 
   from \<open>cas u p u\<close> have "u \<in> dVs (set p)"
-    by (metis \<open>p \<noteq> []\<close> cas_simp dVsI'(1) list.set_sel(1))
+  proof -
+    have hd_eq: "fst (hd p) = u"
+      using \<open>cas u p u\<close> \<open>p \<noteq> []\<close> by (simp add: cas_simp)
+    have hd_in: "hd p \<in> set p"
+      using \<open>p \<noteq> []\<close> by (rule list.set_sel(1))
+    then have "fst (hd p) \<in> dVs (set p)"
+      using dVsI'(1) by blast
+    with hd_eq show "u \<in> dVs (set p)"
+      by simp
+  qed
   with \<open>set p \<subseteq> E'\<close> have "u \<in> dVs E'" unfolding dVs_def by auto
   with \<open>set p \<subseteq> E'\<close> \<open>cas u p u\<close> awalk_def \<open>distinct (tl (awalk_verts u p))\<close> \<open>p \<noteq> []\<close>
     \<open>length p > 2\<close> cycle_def cycle'_def
-    have "cycle' E' p" by metis
+    have "cycle' E' p"
+    proof -
+      have "awalk E' u p u"
+        unfolding awalk_def
+        using \<open>u \<in> dVs E'\<close> \<open>set p \<subseteq> E'\<close> \<open>cas u p u\<close> by simp
+      thus ?thesis
+        unfolding cycle'_def Awalk_Defs.cycle_def
+        using \<open>distinct (tl (awalk_verts u p))\<close> \<open>p \<noteq> []\<close> \<open>length p > 2\<close> by blast
+    qed
   with \<open>\<not>cycle' E' p\<close> show ?case by blast
 qed
 
@@ -898,7 +1320,7 @@ lemma awalk_induct:
   shows   " P E u es v"
   using assms apply(induction es arbitrary: u, simp)
   subgoal for a es u
-    by(cases es, simp, metis awalk_Cons_iff awalk_Nil_iff, simp, metis awalk_Cons_iff)
+    by (cases es) (auto simp add: awalk_Cons_iff awalk_Nil_iff assms(3) assms(4))
   done
 
 lemma awalk_inductive_simps: 
@@ -921,7 +1343,7 @@ lemma awalk_inductive_simps:
      a2 = u \<and>
      a3 = e # d # ds \<and>
      a4 = w \<and> e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w))"], simp)
-      by (blast, metis awalk_Cons_iff awalk_intros(1) list.distinct(1))
+      by (blast, fastforce simp: awalk_Cons_iff awalk_Nil_iff intro: awalk_intros(1))
     subgoal
     apply(rule disjE, simp)
       apply (simp add: arc_implies_awalk)
@@ -941,8 +1363,32 @@ lemma awalk_cases:
     a4 = w \<Longrightarrow>
     e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> s = fst d \<Longrightarrow> awalk E v (d # ds) w \<Longrightarrow> P) \<Longrightarrow>
 P"
- using awalk_induct[of a3 a1 a2 a4 ]
-  by (metis awalk_inductive_simps)
+proof -
+  assume ne: "a3 \<noteq> []"
+  assume aw: "awalk a1 a2 a3 a4"
+  assume R1: "\<And>e E u v. a1 = E \<Longrightarrow> a2 = u \<Longrightarrow> a3 = [e] \<Longrightarrow> a4 = v \<Longrightarrow>
+                e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> P"
+  assume R2: "\<And>e E u v s d ds w. a1 = E \<Longrightarrow> a2 = u \<Longrightarrow> a3 = e # d # ds \<Longrightarrow> a4 = w \<Longrightarrow>
+                e \<in> E \<Longrightarrow> u = fst e \<Longrightarrow> v = snd e \<Longrightarrow> s = fst d \<Longrightarrow> awalk E v (d # ds) w \<Longrightarrow> P"
+  from awalk_inductive_simps[OF ne] aw
+  have "(\<exists>e E u v. a1 = E \<and> a2 = u \<and> a3 = [e] \<and> a4 = v \<and> e \<in> E \<and> u = fst e \<and> v = snd e) \<or>
+        (\<exists>e E u v s d ds w. a1 = E \<and> a2 = u \<and> a3 = e # d # ds \<and> a4 = w \<and>
+           e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w)"
+    by simp
+  then show P
+  proof (rule disjE)
+    assume "\<exists>e E u v. a1 = E \<and> a2 = u \<and> a3 = [e] \<and> a4 = v \<and> e \<in> E \<and> u = fst e \<and> v = snd e"
+    then obtain e E u v where "a1 = E" "a2 = u" "a3 = [e]" "a4 = v"
+      "e \<in> E" "u = fst e" "v = snd e" by blast
+    then show P using R1 by blast
+  next
+    assume "\<exists>e E u v s d ds w. a1 = E \<and> a2 = u \<and> a3 = e # d # ds \<and> a4 = w \<and>
+              e \<in> E \<and> u = fst e \<and> v = snd e \<and> s = fst d \<and> awalk E v (d # ds) w"
+    then obtain e E u v s d ds w where "a1 = E" "a2 = u" "a3 = e # d # ds" "a4 = w"
+      "e \<in> E" "u = fst e" "v = snd e" "s = fst d" "awalk E v (d # ds) w" by blast
+    then show P using R2 by blast
+  qed
+qed
 
 lemma subset_mono_awalk:
   assumes "awalk A u es v"
@@ -966,7 +1412,17 @@ lemma awalk_fst_last:
 definition "unconstrained_awalk P = (\<exists> s t. cas s P t)"
 
 lemma unconstrained_awalk_drop_hd:"unconstrained_awalk (x#p) \<Longrightarrow> unconstrained_awalk p"
-  by (metis unconstrained_awalk_def cas.simps(2) surj_pair)
+proof -
+  assume "unconstrained_awalk (x # p)"
+  then obtain s t where st: "cas s (x # p) t"
+    unfolding unconstrained_awalk_def by blast
+  from surj_pair[of x] obtain a b where x_def: "x = (a, b)"
+    by blast
+  from st have "cas s ((a, b) # p) t" by (simp add: x_def)
+  hence "cas b p t" by (simp add: cas.simps(2))
+  thus "unconstrained_awalk p"
+    unfolding unconstrained_awalk_def by blast
+qed
 
 lemma unconstrained_awalk_snd_verts_eq:"unconstrained_awalk ((a, b)#(c, d)# p) \<Longrightarrow>  b = c"
   by (simp add: unconstrained_awalk_def)
@@ -979,7 +1435,7 @@ lemma awalk_UNIV_rev: "awalk UNIV s es t \<Longrightarrow> awalk UNIV t (map pro
   apply(subst rev.simps(2), subst map_append)
     apply(rule awalk_appendI[of _ _ _ "snd x"])
      apply (meson awalk_Cons_iff)
-    by (metis UNIV_I arc_implies_awalk awalk_Cons_iff list.simps(8) list.simps(9) prod.swap_def)
+    by (auto simp: awalk_Cons_iff awalk_Nil_iff)
   done
 
 lemma non_empty_awalk_fixed_vertex_exhange:"xs \<noteq> [] \<Longrightarrow> awalk_verts s xs = awalk_verts t xs"
@@ -1012,7 +1468,7 @@ lemma closed_w_rotate: "closed_w E (c1@c2) \<Longrightarrow> closed_w E (c2@c1)"
   apply(cases c2) apply simp
   subgoal for ys y a list
     apply(rule exI[of _ "fst a"])
-    by (metis Nil_is_append_conv awalk_Cons_iff awalk_appendI awalk_append_iff length_greater_0_conv)
+    by (auto simp: awalk_append_iff awalk_Cons_iff awalk_Nil_iff dest: dVsI')
   done
 
 lemma awalk_map:

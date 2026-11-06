@@ -28,7 +28,7 @@ and decycleD:
 
 lemma decycle_subset:
   "\<lbrakk>decycle G u p; G \<subseteq> G'\<rbrakk> \<Longrightarrow> decycle G' u p"
-  unfolding decycle_def using epath_subset by metis
+  unfolding decycle_def by (auto intro: epath_subset)
 
 lemma decycle_not_subset:
   "\<lbrakk>\<exists>u. decycle G u p; \<nexists>u. decycle G' u p\<rbrakk> \<Longrightarrow> \<not>set p \<subseteq> G'"
@@ -37,12 +37,15 @@ proof (rule ccontr, goal_cases)
   then have "set p \<subseteq> G'" by blast
   from \<open>\<exists>u. decycle G u p\<close> decycle_def
     have "(\<exists>u. epath G u p u \<and> length p > 2 \<and> distinct p)"
-    by metis
+    by (simp add: decycle_def)
   then obtain u where "epath G u p u" "length p > 2" "distinct p"
     by blast
 
   with epath_subset_other_set[OF \<open>epath G u p u\<close> \<open>set p \<subseteq> G'\<close>] decycle_def
-    have "decycle G' u p" by metis
+    have "decycle G' u p"
+      unfolding decycle_def
+      using epath_subset_other_set[OF \<open>epath G u p u\<close> \<open>set p \<subseteq> G'\<close>] \<open>length p > 2\<close> \<open>distinct p\<close>
+      by blast
   with \<open>\<nexists>u. decycle G' u p\<close> show ?case by blast
 qed
 
@@ -64,17 +67,31 @@ lemma has_no_cycle_indep_ex:
 proof-
   have "{} \<subseteq> G" by simp
   moreover have "\<nexists>u c. decycle {} u c"
-    unfolding decycle_def
-    by (metis epath_empty(2) less_zeroE list.size(3))
+    by (fastforce simp: decycle_def dest: epath_empty(2))
   ultimately show "\<exists>X. has_no_cycle X"
     unfolding has_no_cycle_def by auto
 qed
 
 lemma has_no_cycle_indep_subset:
   "\<lbrakk>has_no_cycle X; Y \<subseteq> X\<rbrakk> \<Longrightarrow> has_no_cycle Y"
-  apply (rule ccontr)
-  using has_no_cycle_def decycle_subset
-  by (metis dual_order.trans)
+proof -
+  assume "has_no_cycle X" and "Y \<subseteq> X"
+  have "X \<subseteq> G"
+    using \<open>has_no_cycle X\<close> has_no_cycle_indep_subset_carrier by blast
+  hence "Y \<subseteq> G"
+    using \<open>Y \<subseteq> X\<close> by blast
+  have no_decycle_X: "\<nexists>u c. decycle X u c"
+    using \<open>has_no_cycle X\<close> unfolding has_no_cycle_def by blast
+  have "\<nexists>u c. decycle Y u c"
+  proof (intro notI, elim exE)
+    fix u c
+    assume "decycle Y u c"
+    from decycle_subset[OF this \<open>Y \<subseteq> X\<close>] have "decycle X u c" .
+    with no_decycle_X show False by blast
+  qed
+  with \<open>Y \<subseteq> G\<close> show "has_no_cycle Y"
+    unfolding has_no_cycle_def by blast
+qed
 
 lemmas graph_abs_subset = graph_abs_mono[OF graph_abs_axioms]
 
@@ -176,7 +193,29 @@ proof (induction rule: induct_walk_betw)
   from subset_edges_G[OF \<open>X \<subseteq> G\<close>]
   have "\<And> e. e \<in> X \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v" by simp
   with path1 have "\<exists>u. {u, v} \<in> X \<and> u \<noteq> v" unfolding Vs_def
-    by (smt (verit) Union_iff empty_iff insert_commute insert_iff)
+  proof -
+    have "v \<in> \<Union> X"
+      using path1 unfolding Vs_def by blast
+    then obtain e where e_X: "e \<in> X" and v_e: "v \<in> e"
+      by blast
+    obtain a b where e_ab: "e = {a, b}" and ab: "a \<noteq> b"
+      using subset_edges_G[OF \<open>X \<subseteq> G\<close> e_X] by blast
+    show ?thesis
+    proof (cases "v = a")
+      case True
+      then have "{b, v} \<in> X" using e_X e_ab by (simp add: insert_commute)
+      then show ?thesis using ab True by blast
+    next
+      case False
+      then have "v = b" using v_e e_ab by simp
+      then have vb: "v = b" using v_e e_ab by simp
+      then have av: "{a, v} \<in> X" using e_X e_ab by simp
+      show ?thesis
+      proof (rule exI[where x=a])
+        show "{a, v} \<in> X \<and> a \<noteq> v" using av ab vb by simp
+      qed
+    qed
+  qed
   then obtain u where "{u, v} \<in> X" "u \<noteq> v" by blast
   then consider (1) "{u, v} \<in> Y" | (2) "{u, v} \<in> X - Y" by blast
   then show ?case
@@ -188,9 +227,14 @@ proof (induction rule: induct_walk_betw)
     case 2
     with assms obtain w c where "decycle (insert {u, v} Y) w c" by blast
     with decycle_not_subset assms(4)
-    have "\<not> set c \<subseteq> Y" by metis
+    have decycle_ex: "\<exists>z. decycle (insert {u, v} Y) z c"
+      using \<open>decycle (insert {u, v} Y) w c\<close> by blast
+    have no_decycle_Y: "\<nexists>z. decycle Y z c"
+      using assms(4) by blast
+    have "\<not> set c \<subseteq> Y"
+      using decycle_not_subset[OF decycle_ex no_decycle_Y] .
     moreover have "set c \<subseteq> (insert {u, v} Y)" 
-      using \<open>decycle (insert {u, v} Y) w c\<close> decycle_def epath_edges_subset by metis
+                  by (fact epath_edges_subset[OF decycleD(1)[OF \<open>decycle (insert {u, v} Y) w c\<close>]])
     ultimately have "{u, v} \<in> set c" by blast
     have "(insert {u, v} Y) \<subseteq> G"
       using \<open>{u, v} \<in> X\<close> assms(1) assms(2) by blast
@@ -214,9 +258,23 @@ next
     case 2
     with assms obtain w c where "decycle (insert {v, v'} Y) w c" by blast
     with decycle_not_subset assms(4)
-    have "\<not> set c \<subseteq> Y" by metis
+    have "\<not> set c \<subseteq> Y"
+    proof -
+      have "\<exists>u. decycle (insert {v, v'} Y) u c"
+        using \<open>decycle (insert {v, v'} Y) w c\<close> by blast
+      moreover have "\<nexists>u. decycle Y u c"
+        using assms(4) by blast
+      ultimately show ?thesis
+        by (rule decycle_not_subset)
+    qed
     moreover have "set c \<subseteq> (insert {v, v'} Y)" 
-      using \<open>decycle (insert {v, v'} Y) w c\<close> decycle_def epath_edges_subset by metis
+      proof -
+        have "epath (insert {v, v'} Y) w c w"
+          using \<open>decycle (insert {v, v'} Y) w c\<close>
+          unfolding decycle_def by blast
+        then show "set c \<subseteq> insert {v, v'} Y"
+          by (rule epath_edges_subset)
+      qed
     ultimately have "{v, v'} \<in> set c" by blast
     have "(insert {v, v'} Y) \<subseteq> G"
       using assms(1) assms(2) path2.hyps(1) by blast
@@ -258,7 +316,7 @@ next
     using \<open>e \<notin> F\<close> by auto
   also have "... = 
     component_edges F C \<union> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e}"
-    using component_edges_def by metis
+    unfolding component_edges_def by blast
   finally have edges_expr:
     "component_edges (insert e F) C = component_edges F C \<union> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e}" .
   have edges_disj: "component_edges F C \<inter> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {}"
@@ -277,7 +335,12 @@ next
         by (meson reachable_def \<open>C \<in> connected_components F\<close> insert_subset same_con_comp_reachable) 
       then obtain p where "walk_betw F u p v" by blast
       have "has_no_cycle (component_edges (insert e F) C)"
-        using component_edges_subset has_no_cycle_indep_subset insert(4) by metis
+      proof -
+        have "component_edges (insert e F) C \<subseteq> insert e F"
+          by (rule component_edges_subset)
+        from has_no_cycle_indep_subset[OF \<open>has_no_cycle (insert e F)\<close> this]
+        show ?thesis .
+      qed
       from \<open>has_no_cycle (insert e F)\<close> \<open>e = {u, v}\<close> has_no_cycle_def
       have "(insert {u, v} F) \<subseteq> G" by simp
       from \<open>e = {u, v}\<close> has_no_cycle_ex_unique_path[OF this] \<open>has_no_cycle (insert e F)\<close> \<open>e \<notin> F\<close>
@@ -298,7 +361,20 @@ next
     proof (safe, goal_cases)
       case 1
       have "\<And>x y. {x, y} \<subseteq> C \<Longrightarrow> {x, y} \<notin> F"
-        by (metis "1"(1) "1"(2) "1"(3) bot.extremum_uniqueI insert_not_empty subset_insert vs_member_intro)
+      proof -
+  fix x y
+  assume "{x, y} \<subseteq> C"
+  show "{x, y} \<notin> F"
+  proof
+    assume "{x, y} \<in> F"
+    then have "x \<in> Vs F"
+      unfolding Vs_def by blast
+    moreover have "x \<in> {u, v}"
+      using \<open>{x, y} \<subseteq> C\<close> "1"(3) by auto
+    ultimately show False
+      using "1"(1) "1"(2) by auto
+  qed
+qed
       then have "component_edges F C = {}"
         unfolding component_edges_def by blast
       with edges_expr
@@ -327,7 +403,7 @@ next
       have "component_edges (insert e F) C = insert {u, v} (component_edges F C)"
         by simp
       have "v' \<notin> (connected_component F u')"
-        by (metis "2"(3) "2"(4) in_connected_component_in_edges)
+        using "2"(3) "2"(4) in_connected_component_in_edges by fastforce
       from edges_disj \<open>{{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {{u, v}}\<close>
       have "{u, v} \<notin> component_edges F C"
         by simp
@@ -358,7 +434,31 @@ next
         {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}" by blast
       moreover have "{{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F} =
         {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
-        by (metis (no_types, opaque_lifting) doubleton_eq_iff)
+        proof (intro set_eqI iffI)
+          fix z
+          assume "z \<in> {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}"
+          then obtain x y where z_def: "z = {x, y}" and x_in: "x \<in> connected_component F u'"
+            and y_def: "y = v'" and edge_in: "{x, y} \<in> F"
+            by blast
+          have z_eq: "z = {y, x}"
+            using z_def by (simp add: insert_commute)
+          have edge_in': "{y, x} \<in> F"
+            using edge_in by (simp add: insert_commute)
+          show "z \<in> {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
+            using z_eq y_def x_in edge_in' by blast
+        next
+          fix z
+          assume "z \<in> {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
+          then obtain x y where z_def: "z = {x, y}" and x_def: "x = v'"
+            and y_in: "y \<in> connected_component F u'" and edge_in: "{x, y} \<in> F"
+            by blast
+          have z_eq: "z = {y, x}"
+            using z_def by (simp add: insert_commute)
+          have edge_in': "{y, x} \<in> F"
+            using edge_in by (simp add: insert_commute)
+          show "z \<in> {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}"
+            using z_eq x_def y_in edge_in' by blast
+        qed
       ultimately have "component_edges F C =
         {{x, y} |x y. {x, y} \<subseteq> (connected_component F u') \<and> {x, y} \<in> F} \<union>
         {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}" by simp
@@ -410,14 +510,57 @@ next
       moreover have
         "{{x, y} |x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<and> {x, y} \<in> F} =
          {{x, y} |x y. x \<in> (connected_component F v) \<and> y \<in> (connected_component F u) \<and> {x, y} \<in> F}"
-        by (metis (no_types, opaque_lifting) insert_commute)
+        proof (rule set_eqI)
+          fix e
+          show "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F} \<longleftrightarrow>
+                e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
+          proof
+            assume "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F}"
+            then obtain x y where e_eq: "e = {x, y}" and x_u: "x \<in> connected_component F u" and y_v: "y \<in> connected_component F v" and xyF: "{x, y} \<in> F"
+              by blast
+            then have yxF: "{y, x} \<in> F" by (simp add: insert_commute)
+            from xyF have swap: "{x, y} = {y, x}" by (simp add: insert_commute)
+            then show "e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
+              using e_eq x_u y_v yxF by blast
+          next
+            assume "e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
+            then obtain x y where e_eq: "e = {x, y}" and x_v: "x \<in> connected_component F v" and y_u: "y \<in> connected_component F u" and xyF: "{x, y} \<in> F"
+              by blast
+            then have yxF: "{y, x} \<in> F" by (simp add: insert_commute)
+            from xyF have swap: "{x, y} = {y, x}" by (simp add: insert_commute)
+            then show "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F}"
+              using e_eq x_v y_u yxF by blast
+          qed
+        qed
       ultimately have "component_edges F C =
         {{x, y} |x y. {x, y} \<subseteq> (connected_component F u) \<and> {x, y} \<in> F} \<union>
         {{x, y} |x y. {x, y} \<subseteq> (connected_component F v) \<and> {x, y} \<in> F} \<union>
         {{x, y} |x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<and> {x, y} \<in> F}"
         by simp
       moreover have "\<And>x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<Longrightarrow> {x, y} \<notin> F"
-        by (metis "3"(3) connected_components_member_eq in_con_comp_insert insert_absorb)
+        proof -
+          fix x y
+          assume "x \<in> connected_component F u \<and> y \<in> connected_component F v"
+          then have x_mem: "x \<in> connected_component F u" and y_mem: "y \<in> connected_component F v"
+            by simp_all
+          show "{x, y} \<notin> F"
+          proof
+            assume xy_in: "{x, y} \<in> F"
+            have absorb: "insert {x, y} F = F"
+              using xy_in by (simp add: insert_absorb)
+            have y_in_x_comp: "y \<in> connected_component F x"
+              using in_con_comp_insert[of y x F] absorb by simp
+            have comp_x_u: "connected_component F x = connected_component F u"
+              using connected_components_member_eq[OF x_mem] by simp
+            have comp_y_v: "connected_component F y = connected_component F v"
+              using connected_components_member_eq[OF y_mem] by simp
+            have comp_y_x: "connected_component F y = connected_component F x"
+              using connected_components_member_eq[OF y_in_x_comp] by simp
+            have "connected_component F u = connected_component F v"
+              using comp_x_u comp_y_v comp_y_x by simp
+            with "3"(3) show False by simp
+          qed
+        qed
       ultimately have component_edges_expr: "component_edges F C =
         component_edges F (connected_component F u) \<union>
         component_edges F (connected_component F v)"
@@ -434,10 +577,35 @@ next
         card (component_edges F (connected_component F u)) +
         card (component_edges F (connected_component F v)) + 1"
         (* TODO later: maybe simplify proof *)
-        by (metis (no_types, lifting) "3"(3) One_nat_def \<open>connected_component F u \<in> connected_components F\<close>
-            \<open>connected_component F v \<in> connected_components F\<close> \<open>{{x, y} |x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {{u, v}}\<close>
-            card.empty card.insert card_Un_disjoint component_edges_disj component_edges_expr component_edges_subset
-            edges_disj empty_iff finite.emptyI finite.insertI finite_subset insert.hyps(1))
+      proof-
+  have finite_A: "finite (component_edges F (connected_component F u))"
+    using finite_subset[OF component_edges_subset[of F "connected_component F u"] insert.hyps(1)] .
+  have finite_B: "finite (component_edges F (connected_component F v))"
+    using finite_subset[OF component_edges_subset[of F "connected_component F v"] insert.hyps(1)] .
+  have disj_AB: "component_edges F (connected_component F u) \<inter> component_edges F (connected_component F v) = {}"
+    using component_edges_disj[OF \<open>connected_component F u \<in> connected_components F\<close>
+        \<open>connected_component F v \<in> connected_components F\<close>
+        \<open>connected_component F u \<noteq> connected_component F v\<close>] .
+  have notin_union: "{u, v} \<notin> component_edges F (connected_component F u) \<union> component_edges F (connected_component F v)"
+    using \<open>{u, v} \<notin> (component_edges F (connected_component F u))\<close>
+          \<open>{u, v} \<notin> (component_edges F (connected_component F v))\<close> by simp
+  have eq_insert: "component_edges F (connected_component F u) \<union> component_edges F (connected_component F v) \<union> {{u, v}}
+      = insert {u, v} (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v))"
+    by auto
+  have "card (component_edges (insert e F) C)
+      = card (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v) \<union> {{u, v}})"
+    using \<open>component_edges (insert e F) C = 
+          (component_edges F (connected_component F u)) \<union>
+          (component_edges F (connected_component F v)) \<union> {{u, v}}\<close>
+    by simp
+  also have "... = card (insert {u, v} (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v)))"
+    using eq_insert by simp
+  also have "... = card (component_edges F (connected_component F u) \<union> component_edges F (connected_component F v)) + 1"
+    using card_insert_disjoint[OF finite_UnI[OF finite_A finite_B] notin_union] by simp
+  also have "... = card (component_edges F (connected_component F u)) + card (component_edges F (connected_component F v)) + 1"
+    using card_Un_disjoint[OF finite_A finite_B disj_AB] by simp
+  finally show ?thesis .
+qed
       from connected_component_finite[OF insert(1) \<open>dblton_graph F\<close>] insert(6) 
         \<open>(connected_component F u) \<in> connected_components F\<close>
       have "finite (connected_component F u)" by blast
@@ -476,7 +644,7 @@ proof(goal_cases)
     by (simp add: \<open>dblton_graph X\<close> connected_component_finite connected_components_def)
   then have "\<And> C. C \<in> connected_components X \<Longrightarrow> finite (component_edges X C)"
     unfolding component_edges_def using \<open>finite X\<close>
-    by (smt (verit, best) finite_subset mem_Collect_eq subset_eq)
+    by (auto intro: finite_subset[OF _ \<open>finite X\<close>])
   then have "\<And> A. A \<in> (components_edges X) \<Longrightarrow> finite A"
     unfolding components_edges_def by auto
   have "finite (connected_components X)"
@@ -514,7 +682,17 @@ proof(goal_cases)
     by(auto intro!: card_UN_disjoint[OF \<open>finite (components_edges X)\<close>, of id, simplified])
   also have "... = (\<Sum>C \<in> connected_components X. card (component_edges X C))"
     unfolding components_edges_def using component_edges_distinct
-    by (smt (verit, best) mem_Collect_eq sum.eq_general)
+  proof -
+    have set_eq: "{component_edges X C | C. C \<in> connected_components X}
+                  = component_edges X ` connected_components X"
+      by blast
+    have inj: "inj_on (component_edges X) (connected_components X)"
+      unfolding inj_on_def using component_edges_distinct by blast
+    show "sum card {component_edges X C |C. C \<in> connected_components X}
+          = (\<Sum>C \<in> connected_components X. card (component_edges X C))"
+      unfolding set_eq
+      by (simp add: sum.reindex[OF inj])
+  qed
   also have "... = (\<Sum>C \<in> connected_components X. card C - 1)"
     using cards_CCs by auto
   also have "... = (\<Sum>C \<in> connected_components X. card C) - card (connected_components X)"

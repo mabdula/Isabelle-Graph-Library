@@ -22,7 +22,22 @@ when we have a corresponding inverse element\<close>
 
 lemma var_not_zero:
   shows "((Var\<^sub>0 n) :: ('a \<Rightarrow>\<^sub>0 nat) \<Rightarrow>\<^sub>0 real) \<noteq> 0" unfolding Var\<^sub>0_def 
-  by (smt (z3) lookup_single_eq single_zero)
+proof
+  assume eq: "Poly_Mapping.single (Poly_Mapping.single n (1::nat)) (1::real) = 0"
+  have "(1::real) =
+        Poly_Mapping.lookup
+          (Poly_Mapping.single (Poly_Mapping.single n (1::nat)) (1::real))
+          (Poly_Mapping.single n 1)"
+    by (simp add: lookup_single_eq)
+  also have "\<dots> =
+        Poly_Mapping.lookup (0 :: ('a \<Rightarrow>\<^sub>0 nat) \<Rightarrow>\<^sub>0 real)
+          (Poly_Mapping.single n 1)"
+    by (simp only: eq)
+  also have "\<dots> = 0"
+    by (rule lookup_zero)
+  finally show False
+    by simp
+qed
 
 
 lemma sum_of_values_cancel_out:
@@ -63,10 +78,41 @@ proof(induct "card A" arbitrary: A rule: less_induct)
       then have "a \<noteq> a'" 
         using \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' = f a\<close> by fastforce
       have "card (A - {a, a'}) < card A" 
-        by (metis Diff_insert2 \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' \<in> A\<close> card_Diff2_less less.prems(1))
+        proof -
+          have a_in: "a \<in> A"
+            using \<open>a \<in> A \<and> f a \<noteq> a\<close> by simp
+          have "A - {a, a'} = A - {a} - {a'}"
+            by blast
+          moreover have "card (A - {a} - {a'}) < card A"
+            using less.prems(1) a_in \<open>a' \<in> A\<close> by (rule card_Diff2_less)
+          ultimately show "card (A - {a, a'}) < card A"
+            by simp
+        qed
       have " \<forall>x\<in>(A - {a, a'}). f x \<in> (A - {a, a'})" 
-        by (metis Diff_iff \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' = f a\<close> empty_iff insert_iff 
-            less.prems(2) less.prems(3))
+      proof
+        fix x
+        assume xin: "x \<in> A - {a, a'}"
+        then have "x \<in> A" by blast
+        then have fx: "f x \<in> A" using less.prems(2) by blast
+        have ffx: "f (f x) = x" using \<open>x \<in> A\<close> less.prems(3) by blast
+        have "f x \<noteq> a"
+        proof
+          assume "f x = a"
+          then have "f (f x) = f a" by simp
+          then have "x = a'" using ffx \<open>a' = f a\<close> by simp
+          then show False using xin by blast
+        qed
+        moreover have "f x \<noteq> a'"
+        proof
+          assume "f x = a'"
+          then have "f x = f a" using \<open>a' = f a\<close> by simp
+          then have "f (f x) = f (f a)" by simp
+          moreover have "f (f a) = a" using \<open>a \<in> A \<and> f a \<noteq> a\<close> less.prems(3) by blast
+          ultimately have "x = a" using ffx by simp
+          then show False using xin by blast
+        qed
+        ultimately show "f x \<in> A - {a, a'}" using fx by blast
+      qed
       moreover have  " \<forall>x\<in>(A - {a, a'}). f (f x) = x" 
         by (meson DiffD1 less.prems(3))
       moreover  have " \<forall>x\<in>(A - {a, a'}). val x + val (f x) = 0" 
@@ -118,20 +164,49 @@ lemma univ_is_finite:
 lemma oriented_edges[elim?]:
   assumes "(a, b) \<in> oriented_edges" 
   shows "{a, b} \<in> G" 
-  using assms 
-  unfolding oriented_edges_def  
-  unfolding get_oriented_def
-  by (smt (z3) fst_conv insert_commute mem_Collect_eq prod.sel(2))
+proof -
+  from assms obtain x y where xy: "(a, b) = get_oriented x y" and G: "{x, y} \<in> G"
+    by (auto simp: oriented_edges_def)
+  have "{a, b} = {x, y}"
+  proof (cases "get_oriented x y = (x, y)")
+    case True
+    with xy have "(a, b) = (x, y)" by simp
+    then show ?thesis by simp
+  next
+    case False
+    then have "get_oriented x y = (y, x)"
+      using get_oriented_either_direction[of x y] by blast
+    with xy have "(a, b) = (y, x)" by simp
+    then show ?thesis by (simp add: insert_commute)
+  qed
+  then show ?thesis using G by simp
+qed
 
 lemma one_direction_in_oriented:
   assumes "{a, b} \<in> G"
   shows "(a, b) \<in> oriented_edges \<or> (b, a) \<in> oriented_edges" 
 proof -
-  have "a \<noteq> b" 
+  have ab: "a \<noteq> b"
     using assms graph by fastforce
-  then show ?thesis  unfolding oriented_edges_def 
-    unfolding get_oriented_def 
-    by (smt (z3) CollectI assms insert_commute neqE)
+  have go: "get_oriented x y = (x, y) \<or> get_oriented x y = (y, x)" for x y
+    by (simp add: get_oriented_def)
+  have in_or: "get_oriented x y \<in> oriented_edges" if "{x, y} \<in> G" "x < y" for x y
+    using that unfolding oriented_edges_def by blast
+  show ?thesis
+  proof (cases a b rule: linorder_cases)
+    case less
+    from in_or[OF assms less] show ?thesis
+      using go[of a b] by auto
+  next
+    case equal
+    with ab show ?thesis by simp
+  next
+    case greater
+    have "{b, a} \<in> G"
+      using assms by (simp add: insert_commute)
+    from in_or[OF this greater] show ?thesis
+      using go[of b a] by auto
+  qed
 qed
 
 text \<open>We define the Tutte matrix. On the rows and columns we have 
@@ -171,8 +246,17 @@ proof -
   have "(i, j) \<notin> oriented_edges" 
     using assms oriented_edges by blast
   have "(j, i) \<notin> oriented_edges" 
-    using assms  oriented_edges_def 
-    by (metis (mono_tags, lifting) insert_commute oriented_edges)
+    proof (rule notI)
+    assume "(j, i) \<in> oriented_edges"
+    then have "{j, i} \<in> G"
+      by (rule oriented_edges)
+    moreover have "{j, i} = {i, j}"
+      by (simp add: insert_commute)
+    ultimately have "{i, j} \<in> G"
+      by simp
+    then show False
+      using assms by simp
+  qed
   show ?thesis  unfolding tutte_matrix_def 
     by (simp add: \<open>(i, j) \<notin> oriented_edges\<close> \<open>(j, i) \<notin> oriented_edges\<close>)
 qed
@@ -208,8 +292,48 @@ qed
 
 lemma tutte_skew_symmetric:
   shows "tutte_matrix $i$j = - tutte_matrix $j$i"
-  by (metis (no_types, lifting) add.inverse_neutral in_oriented insert_commute
-      not_in_edges_tutte_zero one_direction_in_oriented rev_in_oriented verit_minus_simplify(4))
+proof (cases "(i, j) \<in> oriented_edges")
+  case True
+  have 1: "tutte_matrix $i$j = Var\<^sub>0 {i, j}"
+    using True by (rule in_oriented)
+  have 2: "tutte_matrix $j$i = - Var\<^sub>0 {j, i}"
+    using True by (rule rev_in_oriented)
+  have 3: "{j, i} = {i, j}" by auto
+  show ?thesis by (simp add: 1 2 3)
+next
+  case False
+  note ij_not = this
+  show ?thesis
+  proof (cases "(j, i) \<in> oriented_edges")
+    case True
+    have 1: "tutte_matrix $i$j = - Var\<^sub>0 {i, j}"
+      using True by (rule rev_in_oriented)
+    have 2: "tutte_matrix $j$i = Var\<^sub>0 {j, i}"
+      using True by (rule in_oriented)
+    have 3: "{j, i} = {i, j}" by auto
+    show ?thesis by (simp add: 1 2 3)
+  next
+    case False
+    note ji_not = this
+    have notG: "{i, j} \<notin> G"
+    proof
+      assume "{i, j} \<in> G"
+      then have "(i, j) \<in> oriented_edges \<or> (j, i) \<in> oriented_edges"
+        by (rule one_direction_in_oriented)
+      then show False using ij_not ji_not by blast
+    qed
+    have jiG: "{j, i} \<notin> G"
+    proof -
+      have "{j, i} = {i, j}" by auto
+      then show ?thesis using notG by simp
+    qed
+    have "tutte_matrix $i$j = 0"
+      using notG by (rule not_in_edges_tutte_zero)
+    moreover have "tutte_matrix $j$i = 0"
+      using jiG by (rule not_in_edges_tutte_zero)
+    ultimately show ?thesis by simp
+  qed
+qed
 
 lemma zero_then_not_in_edges:
   assumes "tutte_matrix $i$j = 0"
@@ -218,8 +342,14 @@ proof -
   have "(i, j) \<notin> oriented_edges" using zero_tutte_not_in_oriented 
     by (simp add: assms)
   moreover have "(j, i) \<notin> oriented_edges" 
-    by (metis add.inverse_neutral assms tutte_skew_symmetric 
-        zero_tutte_not_in_oriented)
+  proof -
+    have "tutte_matrix $j$i = - tutte_matrix $i$j"
+      by (rule tutte_skew_symmetric)
+    then have "tutte_matrix $j$i = 0"
+      using assms by simp
+    then show ?thesis
+      using zero_tutte_not_in_oriented by blast
+  qed
   ultimately show ?thesis 
     using  one_direction_in_oriented by blast
 qed
@@ -350,7 +480,16 @@ proof(rule ccontr)
   have "{i, i} \<notin> G" 
     using graph by fastforce
   then show False 
-    by (metis \<open>p i = i\<close> assms nonzero_edge_in_graph)
+  proof -
+    have "{i, p i} \<in> G"
+      by (rule nonzero_edge_in_graph[OF assms])
+    then have "{i, i} \<in> G"
+      using \<open>p i = i\<close> by simp
+    moreover have "{i, i} \<notin> G"
+      using graph by fastforce
+    ultimately show False
+      by blast
+  qed
 qed
 
 lemma edges_construct_a_path:
@@ -368,9 +507,12 @@ next
   have "\<forall>i<length xs-1. {xs ! i, xs ! (i + 1)} \<in> A" 
     using Cons.prems  less_diff_conv by auto
   have " {(a # xs) ! 0, (a # xs) ! (0 + 1)} \<in> A" 
-    using Cons.prems 
-    by (metis Nat.le_diff_conv2 \<open>length (a # xs) - 1 = length xs\<close> add_leD2 length_greater_0_conv
-        list.size(3) nat_1_add_1 not_one_le_zero)
+  proof -
+    have "0 < length (a # xs) - 1"
+      using Cons.prems(2) by (simp add: Suc_le_eq)
+    then show ?thesis
+      using Cons.prems(1) by blast
+  qed
   then have "{a, xs!0} \<in> A" 
     by simp
   show ?case
@@ -390,7 +532,18 @@ next
       have "xs!0 \<in> Vs A" 
         using \<open>{(a # xs) ! 0, (a # xs) ! (0 + 1)} \<in> A\<close> nth_Cons' by auto
       have "xs = [xs!0]" 
-        by (metis One_nat_def Suc_length_conv True length_0_conv nth_Cons_0)
+      proof -
+        have len: "length xs = 1" using True by simp
+        show ?thesis
+        proof (rule nth_equalityI)
+          show "length xs = length [xs ! 0]" using len by simp
+        next
+          fix i
+          assume "i < length xs"
+          then have "i = 0" using len by simp
+          then show "xs ! i = [xs ! 0] ! i" by simp
+        qed
+      qed
       have "path A [a, xs!0]" 
         by (simp add: \<open>{a, xs ! 0} \<in> A\<close> \<open>xs ! 0 \<in> Vs A\<close>)
       then show ?thesis 
@@ -405,9 +558,25 @@ next
       have "xs = hd xs # tl xs" 
         by (simp add: \<open>xs \<noteq> []\<close>)
       then have "{a, hd xs} \<in> A" 
-        by (metis \<open>{a, xs ! 0} \<in> A\<close> nth_Cons_0)
+        proof -
+          have "hd xs = xs ! 0"
+            using \<open>xs \<noteq> []\<close> by (rule hd_conv_nth)
+          then show "{a, hd xs} \<in> A"
+            using \<open>{a, xs ! 0} \<in> A\<close> by simp
+        qed
       then show ?thesis 
-        by (metis \<open>path A xs\<close> \<open>xs = hd xs # tl xs\<close> path_2) 
+      proof -
+        obtain y ys where y_ys: "xs = y # ys"
+          using \<open>xs \<noteq> []\<close> by (cases xs) auto
+        have "{a, y} \<in> A"
+          using \<open>{a, hd xs} \<in> A\<close> by (simp add: y_ys)
+        moreover have "path A (y # ys)"
+          using \<open>path A xs\<close> by (simp add: y_ys)
+        ultimately have "path A (a # y # ys)"
+          by (rule Paths.path.path2)
+        then show ?thesis
+          by (simp add: y_ys)
+      qed
     qed
   qed
 qed
@@ -470,7 +639,18 @@ proof (cases "n = 0", simp)
       by (induct k) (simp_all add: funpow_add)
 
     have "(p ^^ (n mod ?lpow a)) ((p ^^ (n - (n mod ?lpow a))) a) = (p ^^ n) a"
-      by (metis add_diff_inverse_nat funpow_add mod_less_eq_dividend not_less o_apply)
+    proof -
+      have le: "n mod (least_power p a) \<le> n"
+        by (rule mod_less_eq_dividend)
+      have eq: "(n mod (least_power p a)) + (n - (n mod (least_power p a))) = n"
+        by (rule le_add_diff_inverse[OF le])
+      have "(p ^^ (n mod (least_power p a))) ((p ^^ (n - (n mod (least_power p a)))) a)
+              = (p ^^ ((n mod (least_power p a)) + (n - (n mod (least_power p a))))) a"
+        by (simp only: funpow_add o_apply)
+      also have "\<dots> = (p ^^ n) a"
+        by (simp add: eq)
+      finally show ?thesis .
+    qed
     with \<open>(p ^^ n) a = b\<close> 
     show "(p ^^ (n mod ?lpow a)) a = b"
       using aux_lemma by (simp add: minus_mod_eq_mult_div) 
@@ -514,17 +694,60 @@ proof -
   have "((inv p)^^(?inv_l)) i = i" 
     by (simp add: assms least_power_of_permutation(1) p_is_permutation permutation_inverse)
   then have "i = (p^^?inv_l) i" 
-    by (metis assms bij_fn bij_inv_eq_iff inv_fn permutes_imp_bij)
+  proof -
+    have bij_p: "bij p"
+      using assms by (rule permutes_imp_bij)
+    then have bij_pn: "bij (p ^^ least_power (inv p) i)"
+      by (rule bij_fn)
+    have inv_eq: "inv (p ^^ least_power (inv p) i) = inv p ^^ least_power (inv p) i"
+      by (simp add: bij_p inv_fn)
+    have perm_inv: "permutation (inv p)"
+      using assms p_is_permutation permutation_inverse by blast
+    have "(inv p ^^ least_power (inv p) i) i = i"
+      using perm_inv by (rule least_power_of_permutation(1))
+    with inv_eq have "inv (p ^^ least_power (inv p) i) i = i"
+      by simp
+    then show "i = (p ^^ least_power (inv p) i) i"
+      using bij_inv_eq_iff[OF bij_pn, of i i] by simp
+  qed
   show ?thesis
   proof(rule ccontr)
     assume "?l \<noteq> ?inv_l"
     then have "?l < ?inv_l" 
-      by (metis \<open>i = (p ^^ least_power (inv p) i) i\<close> assms le_eq_less_or_eq least_power_le 
-          least_power_of_permutation(2) p_is_permutation permutation_inverse)
-    then show False 
-      by (metis \<open>(p ^^ least_power p i) i = i\<close> assms bij_betw_inv_into_left bij_fn bij_is_surj 
-          inv_fn leD least_power_le least_power_of_permutation(2) p_is_permutation permutes_imp_bij 
-          range_eqI)
+    proof -
+      assume ne: "least_power p i \<noteq> least_power (inv p) i"
+      have perm_inv: "permutation (inv p)"
+        using assms p_is_permutation permutation_inverse by blast
+      have pos: "0 < least_power (inv p) i"
+        using perm_inv by (rule least_power_of_permutation(2))
+      have fix_p: "(p ^^ least_power (inv p) i) i = i"
+        using \<open>i = (p ^^ least_power (inv p) i) i\<close> by simp
+      have "least_power p i dvd least_power (inv p) i"
+        using fix_p by (rule least_power_minimal)
+      then have "least_power p i \<le> least_power (inv p) i"
+        using pos by (rule dvd_imp_le)
+      then show "least_power p i < least_power (inv p) i"
+        using ne by simp
+    qed
+    moreover have "least_power (inv p) i \<le> least_power p i"
+    proof -
+        have perm: "permutation p"
+          using assms by (rule p_is_permutation)
+        have bij_p: "bij p"
+          using assms by (rule permutes_bij)
+        have inj_pow: "inj (p ^^ least_power p i)"
+          using bij_fn[OF bij_p] by (rule bij_is_inj)
+        have "inv (p ^^ least_power p i) ((p ^^ least_power p i) i) = i"
+          using inj_pow by (rule inv_f_f)
+        then have inv_pow: "inv (p ^^ least_power p i) i = i"
+          using \<open>(p ^^ least_power p i) i = i\<close> by simp
+        have "((inv p) ^^ least_power p i) i = i"
+          using inv_pow by (simp add: inv_fn[OF bij_p])
+        then show "least_power (inv p) i \<le> least_power p i"
+          using least_power_of_permutation(2)[OF perm] by (rule least_power_le)
+      qed
+      ultimately show False
+        by linarith
   qed
 qed
 
@@ -535,9 +758,18 @@ proof -
   have "(p^^0) i = i" by simp
   then have "support p i!0 = i" 
     by (simp add: assms least_power_of_permutation(2) p_is_permutation)
-  then show ?thesis 
-    by (metis assms least_power_of_permutation(2) length_map length_upt nth_mem p_is_permutation 
-        zero_less_diff)
+  have "permutation p"
+    using assms by (rule p_is_permutation)
+  then have lp_pos: "0 < least_power p i"
+    by (rule least_power_of_permutation(2))
+  then have "0 < length (support p i)"
+    by simp
+  then have "support p i ! 0 \<in> set (support p i)"
+    by (rule nth_mem)
+  moreover have "support p i ! 0 = i"
+    using lp_pos by simp
+  ultimately show ?thesis
+    by simp
 qed
 
 lemma p_diff_inv_p_pow:
@@ -546,9 +778,36 @@ lemma p_diff_inv_p_pow:
   shows "((inv p)^^ k) ((p^^n) i) = (p^^(n-k)) i" 
 proof -
   have "(p^^n) i = ((p^^k) \<circ> (p^^(n-k))) i" 
-    by (metis add_diff_inverse_nat assms(2) funpow_add not_le)
+  proof -
+    have kn: "k + (n - k) = n"
+      using assms(2) by (rule le_add_diff_inverse)
+    have "(p ^^ k) \<circ> (p ^^ (n - k)) = p ^^ (k + (n - k))"
+      by (simp add: funpow_add)
+    also have "\<dots> = p ^^ n"
+      by (simp add: kn)
+    finally show ?thesis by simp
+  qed
   then show ?thesis 
-    by (metis assms(1) bij_fn bij_inv_eq_iff comp_apply inv_fn permutation_bijective)
+proof -
+  have bij_p: "bij p"
+    by (rule permutation_bijective[OF assms(1)])
+  then have bij_pk: "bij (p ^^ k)"
+    by (rule bij_fn)
+  then have inj_pk: "inj (p ^^ k)"
+    by (rule bij_is_inj)
+  have inv_pk: "inv (p ^^ k) = (inv p) ^^ k"
+    by (rule inv_fn[OF bij_p])
+  have cancel: "((inv p) ^^ k) ((p ^^ k) y) = y" for y
+    by (simp add: inv_pk[symmetric] inv_f_f[OF inj_pk])
+  have shift: "(p ^^ k) ((p ^^ (n - k)) i) = (p ^^ (k + (n - k))) i"
+    by (simp add: funpow_add)
+  have kn: "k + (n - k) = n"
+    using assms(2) by simp
+  have decomp: "(p ^^ n) i = (p ^^ k) ((p ^^ (n - k)) i)"
+    using shift by (simp add: kn)
+  show ?thesis
+    by (simp add: decomp cancel)
+qed
 qed
 
 lemma inv_support_same:
@@ -558,22 +817,58 @@ proof(safe)
   let ?len = "least_power p i"  
   have "i \<in> set (support (inv p) i)" 
     using el_in_own_support assms 
-    by (smt (z3) least_power_of_permutation(1) map_eq_conv permutation_inverse
-        range_eqI support_set)
+  proof -
+    have perm_inv: "permutation (inv p)"
+      using assms by (rule permutation_inverse)
+    then have pos: "0 < least_power (inv p) i"
+      by (rule least_power_of_permutation(2))
+    have "i = (inv p ^^ (0::nat)) i"
+      by simp
+    moreover have "(0::nat) \<in> set [0..<least_power (inv p) i]"
+      using pos by simp
+    ultimately have "i \<in> (\<lambda>n. (inv p ^^ n) i) ` set [0..<least_power (inv p) i]"
+      by blast
+    then show "i \<in> set (support (inv p) i)"
+      by (simp add: set_map)
+  qed
   { 
     fix x
     assume "x \<in> set (support p i)"
     then obtain j where "x = (p^^j) i \<and> j < least_power p i" 
       by fastforce
     have "i = ((inv p)^^?len) i" 
-      by (metis assms bij_fn bij_inv_eq_iff inv_fn least_power_of_permutation(1) 
-          permutation_bijective)
+    proof -
+      have bij_p: "bij p"
+        using assms by (rule permutation_bijective)
+      have bij_pow: "bij (p ^^ least_power p i)"
+        using bij_p by (rule bij_fn)
+      have pow_id: "(p ^^ least_power p i) i = i"
+        using assms by (rule least_power_of_permutation(1))
+      have inv_eq: "inv (p ^^ least_power p i) = (inv p) ^^ least_power p i"
+        using bij_p by (rule inv_fn)
+      have "((inv p) ^^ least_power p i) i = inv (p ^^ least_power p i) i"
+        by (simp add: inv_eq)
+      also have "\<dots> = i" using bij_is_inj[OF bij_pow] pow_id by (rule inv_f_eq)
+      finally show ?thesis by (rule sym)
+    qed
     then have "x = (p^^j) (((inv p)^^?len) i)" 
       using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by presburger
-    then have "x = ((inv p)^^(?len - j)) i"  
-      using p_diff_inv_p_pow[of p j ?len] 
-      by (metis \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> assms diff_diff_cancel diff_le_self 
-          least_power_of_permutation(1) less_imp_le_nat p_diff_inv_p_pow)
+    have len_fix: "(p ^^ ?len) i = i"
+      by (rule least_power_of_permutation(1)[OF assms])
+    have j_le: "j \<le> ?len"
+      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> less_imp_le_nat by blast
+    have inv_pow_eq: "((inv p) ^^ (?len - j)) i = (p ^^ j) i"
+    proof -
+      have "((inv p) ^^ (?len - j)) i = ((inv p) ^^ (?len - j)) ((p ^^ ?len) i)"
+        by (simp add: len_fix)
+      also have "\<dots> = (p ^^ (?len - (?len - j))) i"
+        by (rule p_diff_inv_p_pow[OF assms diff_le_self])
+      also have "\<dots> = (p ^^ j) i"
+        by (simp add: diff_diff_cancel[OF j_le])
+      finally show ?thesis .
+    qed
+    then have "x = ((inv p)^^(?len - j)) i"
+      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by simp
     then show "x \<in>  set (support (inv p) i)"
       using elemnets_in_support_expo[of "inv p" i i x "?len - j"] 
             \<open>i \<in> set (support (inv p) i)\<close> assms p_is_permutation permutation_inverse by blast
@@ -586,11 +881,38 @@ proof(safe)
     by (simp add: assms least_power_of_permutation(1) p_is_permutation)
   then have "x = ((inv p)^^j) (((p)^^?len) i)" 
     using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by presburger
-  then have "x = (p^^(?len - j)) i"   using p_diff_inv_p_pow[of "inv p" j ?len] 
-    by (smt (z3) \<open>i = (p ^^ least_power p i) i\<close> \<open>x = (inv p ^^ j) i \<and> j < least_power (inv p) i\<close> 
-        assms bij_is_surj dual_order.strict_trans funpow_diff inj_iff inv_inv_eq least_power_le 
-        least_power_of_permutation(2) not_le p_diff_inv_p_pow permutation_bijective
-        permutation_inverse surj_iff) 
+  have "x = (p^^(?len - j)) i" 
+  proof -
+  have step: "\<And>k n. k \<le> n \<Longrightarrow> (inv p ^^ k) ((p ^^ n) i) = (p ^^ (n - k)) i"
+    using p_diff_inv_p_pow[OF assms] by blast
+  have x_eq: "x = (inv p ^^ j) i"
+    using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by blast
+  have j_less: "j < least_power (inv p) i"
+    using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by blast
+  have fix_i: "(p ^^ least_power p i) i = i"
+    using assms by (simp add: least_power_of_permutation(1))
+  have inv_fix: "(inv p ^^ least_power p i) i = i"
+  proof -
+    have "(inv p ^^ least_power p i) ((p ^^ least_power p i) i)
+            = (p ^^ (least_power p i - least_power p i)) i"
+      by (rule step[OF order.refl])
+    then show ?thesis
+      using fix_i by simp
+  qed
+  have dvd_le: "least_power (inv p) i dvd least_power p i"
+    by (rule least_power_minimal[OF inv_fix])
+  have pos: "0 < least_power p i"
+    by (rule least_power_of_permutation(2)[OF assms])
+  have "least_power (inv p) i \<le> least_power p i"
+    by (rule dvd_imp_le[OF dvd_le pos])
+  then have j_le: "j \<le> least_power p i"
+    using j_less by linarith
+  have "x = (inv p ^^ j) ((p ^^ least_power p i) i)"
+    using x_eq fix_i by simp
+  also have "\<dots> = (p ^^ (least_power p i - j)) i"
+    by (rule step[OF j_le])
+  finally show ?thesis .
+  qed
   then show "x \<in>  set (support p i)" 
     using elemnets_in_support_expo[of "p" i i x "?len - j"]
           assms least_power_of_permutation(2) by force
@@ -608,7 +930,19 @@ proof -
   have "x \<in>  set (support (inv p) i)" 
     using assms(1) assms(2) inv_support_same by fastforce
   have "((inv p)^^n) x = y" 
-    by (metis assms(1) assms(3) bij_fn bij_inv_eq_iff inv_fn permutation_bijective)
+  proof -
+    have bij_p: "bij p"
+      using assms(1) by (rule permutation_bijective)
+    have inj_pn: "inj (p ^^ n)"
+      using bij_fn[OF bij_p] by (rule bij_is_inj)
+    have inv_pow: "inv (p ^^ n) = (inv p) ^^ n"
+      using bij_p by (rule inv_fn)
+    have "((inv p) ^^ n) x = inv (p ^^ n) ((p ^^ n) y)"
+      by (simp add: assms(3) inv_pow)
+    also have "\<dots> = y"
+      using inj_pn by (rule inv_f_f)
+    finally show ?thesis .
+  qed
   then have "y \<in> set (support (inv p) i)" 
     using \<open>permutation (inv p)\<close> \<open>x \<in> set (support (inv p) i)\<close> elemnets_in_support_expo by fastforce
   then show ?thesis 

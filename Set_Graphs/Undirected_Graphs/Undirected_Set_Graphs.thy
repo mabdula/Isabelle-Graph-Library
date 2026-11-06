@@ -61,7 +61,12 @@ lemma finite_Vs_then_finite:
   assumes "finite (Vs G)"
   shows "finite G"
   using assms
-  by (metis Vs_def finite_UnionD)
+proof -
+  from assms have "finite (\<Union> G)"
+    by (simp add: Vs_def)
+  then show ?thesis
+    by (rule finite_UnionD)
+qed
 
 lemma finite_dblton_finite_Vs:
   "finite {{x, y} | x y. P x y} \<Longrightarrow> finite (Vs  { {x, y} | x y. P x y})"
@@ -392,7 +397,8 @@ lemma neighbours_of_Vs_subset:
   assumes "A \<subseteq> X"
   shows "neighbours_of_Vs G A \<subseteq> neighbours_of_Vs G X"
   unfolding neighbours_of_Vs_def 
-  by (smt (verit, best) Collect_mono assms subset_eq)
+  using assms
+  by blast
 
 lemma neighbours_of_Vs_insert: 
   "neighbours_of_Vs M (insert x F) = neighbours_of_Vs M F \<union> neighbours_of_Vs M {x}"
@@ -729,7 +735,17 @@ lemma graph_invar_finite:
 lemma graph_invar_subset[intro]:
   "\<lbrakk>graph_invar G1; G2 \<subseteq> G1\<rbrakk> \<Longrightarrow> graph_invar G2"
   using dblton_graph_subset
-  by (metis dblton_graph_finite_Vs finite_subset)
+  proof -
+    assume assms: "graph_invar G1" "G2 \<subseteq> G1"
+    have "dblton_graph G2"
+      using assms dblton_graph_subset by blast
+    have "Vs G2 \<subseteq> Vs G1"
+      using assms(2) by (rule Vs_subset)
+    have "finite (Vs G2)"
+      using \<open>Vs G2 \<subseteq> Vs G1\<close> assms(1) finite_subset by blast
+    then show "graph_invar G2"
+      using \<open>dblton_graph G2\<close> by blast
+  qed
 
 lemma graph_invar_diff: "graph_invar G \<Longrightarrow> graph_invar (G - X)"
   using Vs_subset[of "G - X" G]
@@ -867,7 +883,14 @@ proof -
   have 1: "finite (Vs M)"
     by (meson Vs_subset assms(2) assms(1) finite_subset)
   have 2: "(neighbours_of_Vs M X) \<subseteq> Vs M" 
-    by (smt (verit, best) mem_Collect_eq neighbours_of_Vs_def subsetI vs_member)
+  proof
+    fix y
+    assume "y \<in> neighbours_of_Vs M X"
+    then obtain u e where "u \<in> X" "e \<in> M" "y \<noteq> u" "u \<in> e" "y \<in> e"
+      unfolding neighbours_of_Vs_def by blast
+    then show "y \<in> Vs M"
+      by (auto simp: vs_member)
+  qed
   then show ?thesis using  1 2 
     using finite_subset by blast
 qed

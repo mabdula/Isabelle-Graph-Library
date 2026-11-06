@@ -37,11 +37,65 @@ next
   have a: "if (ab::'a) \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then (b::'b) \<le> ba else False \<Longrightarrow>
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False \<Longrightarrow> b \<le> bb"
     for ab b aa ba bb
-    using order.trans by metis
+  proof -
+    assume H1: "if (ab::'a) \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then (b::'b) \<le> ba else False"
+    assume H2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
+    show "b \<le> bb"
+    proof (cases "ab = aa")
+      case True
+      with H1 have "b \<le> ba" by simp
+      moreover from True H2 have "ba \<le> bb" by simp
+      ultimately show ?thesis by (rule order_trans)
+    next
+      case False
+      then have "ab < aa \<or> aa < ab" by (simp add: neq_iff)
+      then show ?thesis
+      proof
+        assume lt: "ab < aa"
+        with H2 False have False by (auto simp add: less_le_not_le)
+        then show ?thesis ..
+      next
+        assume gt: "aa < ab"
+        with H1 False have False by (auto simp add: less_le_not_le)
+        then show ?thesis ..
+      qed
+    qed
+  qed
   have b: "if a \<le> aa \<and> \<not> (aa::'a) \<le> a then True else if a = aa then (b::'b) \<le> ba else False \<Longrightarrow>
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False \<Longrightarrow> a \<noteq> ab \<Longrightarrow> a \<le> ab "
     for a aa ab ba b bb
-    using order.trans by metis
+    proof -
+      assume h1: "if a \<le> aa \<and> \<not> (aa::'a) \<le> a then True else if a = aa then (b::'b) \<le> ba else False"
+      assume h2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
+      from h1 consider (lt1) "a \<le> aa" "\<not> aa \<le> a" | (eq1) "a = aa" "b \<le> ba"
+        by (auto split: if_splits)
+      then show "a \<le> ab"
+      proof cases
+        case lt1
+        from h2 consider (lt2) "aa \<le> ab" "\<not> ab \<le> aa" | (eq2) "aa = ab" "ba \<le> bb"
+          by (auto split: if_splits)
+        then show "a \<le> ab"
+        proof cases
+          case lt2
+          with lt1 show "a \<le> ab" by (blast intro: order_trans)
+        next
+          case eq2
+          with lt1 show "a \<le> ab" by simp
+        qed
+      next
+        case eq1
+        from h2 consider (lt2) "aa \<le> ab" "\<not> ab \<le> aa" | (eq2) "aa = ab" "ba \<le> bb"
+          by (auto split: if_splits)
+        then show "a \<le> ab"
+        proof cases
+          case lt2
+          with eq1 show "a \<le> ab" by simp
+        next
+          case eq2
+          with eq1 show "a \<le> ab" by simp
+        qed
+      qed
+    qed
   show ?case
     using 3
     by(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)

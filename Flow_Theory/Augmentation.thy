@@ -94,7 +94,15 @@ lemma prepath_cases: "prepath a2 \<Longrightarrow>
                      (\<And>e. a2 = [e]  \<Longrightarrow> P) \<Longrightarrow>
                      (\<And> e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P) \<Longrightarrow>
                      P"
-  using  prepath_induct[of a2 ] by (metis prepath_simps)
+proof -
+  assume asm: "prepath a2"
+    and case_single: "\<And>e. a2 = [e] \<Longrightarrow> P"
+    and case_cons: "\<And>e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P"
+  from asm have "(\<exists>e. a2 = [e]) \<or> (\<exists>e d es. a2 = e # d # es \<and> sndv e = fstv d \<and> prepath (d # es))"
+    by (rule iffD1[OF prepath_simps])
+  then show P
+    using case_single case_cons by blast
+qed
 
 text \<open>Now we can reason about some properties of $prepath$.\<close>
 
@@ -118,17 +126,73 @@ lemma prepath_split1:
 lemma prepath_split2: 
   assumes "prepath (xs@ys)"
   shows   "ys \<noteq> []  \<Longrightarrow> prepath ys"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  by (simp add: Cons_eq_append_conv prepath_intros(1)) (metis append_eq_Cons_conv prepath_intros(2))
+proof -
+  assume ne: "ys \<noteq> []"
+  have imp: "prepath (xs @ ys) \<Longrightarrow> ys \<noteq> [] \<Longrightarrow> prepath ys"
+  proof (induction xs arbitrary: ys)
+    case Nil
+    then show ?case by simp
+  next
+    case (Cons e es)
+    note prems = this
+    show ?case
+    proof -
+      have p': "prepath (e # (es @ ys))"
+        using prems(2) by simp
+      have nonempty: "es @ ys \<noteq> []"
+        using prems(3) by simp
+      have "prepath (es @ ys)"
+      proof (rule prepath_cases[OF p'])
+        fix e'
+        assume "e # es @ ys = [e']"
+        with nonempty show "prepath (es @ ys)" by simp
+      next
+        fix e' d es'
+        assume eq: "e # es @ ys = e' # d # es'"
+        assume pd: "prepath (d # es')"
+        from eq have "es @ ys = d # es'" by simp
+        with pd show "prepath (es @ ys)" by simp
+      qed
+      with Cons.IH prems(3) show "prepath ys" by blast
+    qed
+  qed
+  with assms imp ne show "prepath ys" by blast
+qed
 
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
     shows "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
-  apply(induction "xs@ys" arbitrary:  xs ys rule: prepath_induct, simp add: assms)
-  apply(simp add: Cons_eq_append_conv) 
-  apply(metis (no_types, opaque_lifting) append_Cons append_self_conv2 last_ConsL
-          last_ConsR list.inject list.sel(1) neq_Nil_conv)
-  done
+proof -
+  assume xs_nonempty: "xs \<noteq> []"
+  assume ys_nonempty: "ys \<noteq> []"
+  obtain xs' x where xs': "xs = xs' @ [x]"
+  proof (cases xs rule: rev_exhaust)
+    case Nil
+    then show ?thesis using xs_nonempty by simp
+  next
+    case (snoc as a)
+    then show ?thesis using that[of as a] by simp
+  qed
+  obtain y ys' where ys': "ys = y # ys'"
+  proof (cases ys)
+    case Nil
+    then show ?thesis using ys_nonempty by simp
+  next
+    case (Cons b bs)
+    then show ?thesis using that[of b bs] by simp
+  qed
+  have eq: "xs' @ (x # y # ys') = xs @ ys"
+    using xs' ys' by simp
+  have "prepath (xs' @ (x # y # ys'))"
+    using assms eq by simp
+  moreover have "(x # y # ys') \<noteq> []" by simp
+  ultimately have prepath2: "prepath (x # y # ys')"
+    using prepath_split2[of xs' "x # y # ys'"] by blast
+  then have "sndv x = fstv y"
+    using prepath2 prepath_simps[of "x # y # ys'"] by auto
+  then show "sndv (last xs) = fstv (hd ys)"
+    using xs' ys' by simp
+qed
 
 lemma prepath_drop_cycles:
   assumes "prepath es" "set es \<subseteq> D" "\<not> distinct es"
@@ -291,8 +355,28 @@ lemma augpath_cases:
 (\<And>f e d es. a1 = f \<Longrightarrow> a2 = e # d # es \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = fstv d  \<Longrightarrow> 
             augpath f (d # es) \<Longrightarrow> P) \<Longrightarrow>
 P"
-  using  augpath_induct[of a1 a2 ]
-  by (metis augpath_simps)
+proof -
+  assume p: "augpath a1 a2"
+  assume single: "\<And>f e.     a1 = f \<Longrightarrow> a2 = [e] \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> P"
+  assume cons: "\<And>f e d es. a1 = f \<Longrightarrow> a2 = e # d # es \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = fstv d  \<Longrightarrow>
+            augpath f (d # es) \<Longrightarrow> P"
+  from p have "(\<exists>f e. a1 = f \<and> a2 = [e] \<and> 0 < \<uu>\<^bsub>f\<^esub>e) \<or>
+               (\<exists>f e d es. a1 = f \<and> a2 = e # d # es \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = fstv d \<and>
+                            augpath f (d # es))"
+    by (rule iffD1[OF augpath_simps])
+  then show P
+  proof
+    assume "\<exists>f e. a1 = f \<and> a2 = [e] \<and> 0 < \<uu>\<^bsub>f\<^esub>e"
+    then obtain f e where "a1 = f" and "a2 = [e]" and "0 < \<uu>\<^bsub>f\<^esub>e" by blast
+    then show P by (rule single)
+  next
+    assume "\<exists>f e d es. a1 = f \<and> a2 = e # d # es \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = fstv d \<and>
+                 augpath f (d # es)"
+    then obtain f e d es where "a1 = f" and "a2 = e # d # es" and "0 < \<uu>\<^bsub>f\<^esub>e"
+      and "sndv e = fstv d" and "augpath f (d # es)" by blast
+    then show P by (rule cons)
+  qed
+qed
 
 text \<open>Let us examine the relationship between $augpath$ and $prepath$.\<close>
 
@@ -315,7 +399,20 @@ next
                                "(sndv (last es)) = v" "set es \<subseteq> \<EE>"
    by blast
   hence "augpath f (e#es)"
-      by (metis "2.hyps"(1) "2.hyps"(2) augpath_simps list.collapse)
+  proof -
+    have es_ne: "es \<noteq> []"
+      using es_Def(1) by (auto simp add: augpath_def prepath_def)
+    have es_eq: "es = hd es # tl es"
+      using es_ne by simp
+    have sndv_eq: "sndv e = fstv (hd es)"
+      using "2.hyps"(2) es_Def(2) by simp
+    have "augpath f (hd es # tl es)"
+      using es_Def(1) es_eq by simp
+    from augpath_intros(2)[OF "2.hyps"(1) sndv_eq this]
+    have "augpath f (e # hd es # tl es)" .
+    then show "augpath f (e # es)"
+      using es_eq by simp
+  qed
   moreover have "set (e#es) \<subseteq> \<EE>" 
       by (simp add: "2.hyps"(3) es_Def)
   ultimately show ?case 
@@ -509,7 +606,7 @@ text \<open>Residual capacities related to edges that have got nothing to do
 lemma e_not_in_p_aug: 
   "\<lbrakk>e \<notin> set es; erev e \<notin> set es\<rbrakk> \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e"
   apply(induction f \<gamma> es rule: augment_edges.induct, simp)
-  by(rule redge_pair_cases)(simp, metis  oedge.simps sndv.cases)+
+  by(rule redge_pair_cases)(simp, (rule redge_pair_cases; simp)+)+
 
 text \<open>If we augment a forward residual arc, the flow increases accordingly.\<close>
 
@@ -1123,15 +1220,35 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
       have "augment_edges f \<gamma> es d = f d"
       using e_not_in_es_flow_not_change[of es d "f" \<gamma> ] 
       using "2.prems"(2) "2.prems"(3) True e_not_in_p_aug 
-      by (metis distinct.simps(2) distinct_length_2_or_more ereal.inject erev.simps(2)  rcap.simps(2) )   
+      proof -
+        have e_notin_es: "e \<notin> set es"
+          using "2.prems"(3) by simp
+        have Bd_notin_es: "B d \<notin> set es"
+          using e_notin_es True by simp
+        have Fd_notin_es: "F d \<notin> set es"
+          using "2.prems"(2) by simp
+        have erev_Bd_notin_es: "erev (B d) \<notin> set es"
+          using Fd_notin_es by (simp add: erev.simps(2))
+        have rcap_eq: "rcap (augment_edges f \<gamma> es) (B d) = rcap f (B d)"
+          using e_not_in_p_aug[of "B d" es f \<gamma>] Bd_notin_es erev_Bd_notin_es by blast
+        hence "ereal (augment_edges f \<gamma> es d) = ereal (f d)"
+          by (simp add: rcap.simps(2))
+        thus ?thesis
+          by (simp add: ereal.inject)
+      qed
     then show ?thesis 
       by(auto simp add: True)
   next
     case False
     hence " augment_edges f \<gamma> (e # es) d = augment_edges f \<gamma> ( es) d"
-      apply(subst augment_edges.simps)
-      by (metis (no_types, lifting) "2.prems"(2) augment_edges.simps(2) e_ot_first_unfold ereal.inject erev.simps(2)
-        erve_erve_id list.set_intros(1) rcap.simps(2))
+    proof -
+      have "e \<noteq> F d"
+        using "2.prems"(2) by auto
+      hence "d \<noteq> oedge e"
+        using False by (cases e) auto
+      thus "augment_edges f \<gamma> (e # es) d = augment_edges f \<gamma> es d"
+        by simp
+    qed
      then show ?thesis 
        using "2.IH" "2.prems"(1) "2.prems"(2) "2.prems"(3) False by auto   
     qed
@@ -1168,8 +1285,34 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   next
     case False
     then show ?thesis 
-      by (metis "2.IH" "2.prems" augment_edge_away augment_edges.simps(2) distinct.simps(2) 
-                erev.simps(1) oedge.simps(2) oedge_and_reversed set_ConsD)
+    proof -
+      from "2.prems" have hyps: "F d \<in> set (e # es)" "B d \<in> set (e # es)" "distinct (e # es)"
+        by simp_all
+      have e_ne_Fd: "e \<noteq> F d"
+      proof
+        assume "e = F d"
+        hence "oedge e = d" by simp
+        with False show False by simp
+      qed
+      have e_ne_Bd: "e \<noteq> B d"
+      proof
+        assume "e = B d"
+        hence "oedge e = d" by simp
+        with False show False by simp
+      qed
+      from hyps(1) e_ne_Fd have Fd_es: "F d \<in> set es"
+        using set_ConsD by fastforce
+      from hyps(2) e_ne_Bd have Bd_es: "B d \<in> set es"
+        using set_ConsD by fastforce
+      from hyps(3) have distinct_es: "distinct es"
+        by simp
+      have IH_applied: "augment_edges f \<gamma> es d = f d"
+        using "2.IH" Fd_es Bd_es distinct_es by blast
+      have unaffected: "augment_edge (augment_edges f \<gamma> es) \<gamma> e d = augment_edges f \<gamma> es d"
+        using False by simp
+      show ?thesis
+        using IH_applied augment_edges.simps(2) unaffected by force
+    qed
   qed
 qed simp
 
@@ -1260,7 +1403,12 @@ proof-
      by(auto intro: redge_pair_cases simp add:  algebra_simps)
    also have "... = (\<Sum>ea\<in>(\<E>).f ea * \<c> ea)
                        +  \<gamma> * \<cc> e " 
-        by (smt (verit, ccfv_SIG) assms finite_E sum.remove)
+proof -
+      have "(\<Sum>ea\<in>\<E>. f ea * \<c> ea) =
+              f (oedge e) * \<c> (oedge e) + (\<Sum>ea\<in>\<E> - {oedge e}. f ea * \<c> ea)"
+        by (rule sum.remove[OF finite_E assms])
+      thus ?thesis by argo
+    qed
    finally show "(\<Sum>ea\<in>\<E>. augment_edge f \<gamma> e ea * \<c> ea) = (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * \<cc> e" by simp
  qed
 
@@ -1286,8 +1434,14 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   also have "... = (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set es) + \<gamma> * \<cc> e"
     using "2.IH" "2.prems"(1) "2.prems"(2) by auto
   also have "... =  (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set (e#es))"
-    by (smt (verit, del_insts) "2.prems"(2) List.finite_set distinct.simps(2) 
-            list.set(2) sum.insert_if sum_distrib_left)
+  proof -
+    have e_notin: "e \<notin> set es"
+      using "2.prems"(2) by simp
+    have "sum \<cc> (set (e # es)) = \<cc> e + sum \<cc> (set es)"
+      using e_notin by (simp add: sum.insert)
+    thus ?thesis
+      by (simp add: algebra_simps)
+  qed
   finally show "(\<Sum>ea\<in>\<E>. augment_edges f \<gamma> (e # es) ea * \<c> ea) =
        (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set (e # es))" by simp
 qed simp

@@ -316,7 +316,18 @@ lemma flowpath_cases:
    (\<And>g e. \<lbrakk> a1 = g; a2 = [e]; 0 < g e \<rbrakk> \<Longrightarrow> P);
    (\<And>g e es. \<lbrakk> a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P)\<rbrakk>
     \<Longrightarrow> P"
-  using flowpath_simps by metis
+proof -
+  assume fp: "flowpath a1 a2"
+     and c1: "\<And>g. \<lbrakk>a1 = g; a2 = []\<rbrakk> \<Longrightarrow> P"
+     and c2: "\<And>g e. \<lbrakk>a1 = g; a2 = [e]; 0 < g e\<rbrakk> \<Longrightarrow> P"
+     and c3: "\<And>g e es. \<lbrakk>a1 = g; a2 = e # es; 0 < g e; snd e = fst (hd es); flowpath g es\<rbrakk> \<Longrightarrow> P"
+  from fp have "(\<exists>g. a1 = g \<and> a2 = []) \<or>
+     (\<exists>g e. a1 = g \<and> a2 = [e] \<and> 0 < g e) \<or>
+     (\<exists>g e es. a1 = g \<and> a2 = e # es \<and> 0 < g e \<and> snd e = fst (hd es) \<and> flowpath g es)"
+    by (rule flowpath_simps[THEN iffD1])
+  then show P
+    by (elim disjE exE conjE; auto intro: c1 c2 c3)
+qed
 
 text \<open>Let us now take a look at the properties of flowpaths.
 We observe a relationship to augmenting paths and some topological statements on connectivity.
@@ -331,7 +342,33 @@ proof(induction "es@fs" arbitrary: es fs rule: flowpath_induct, goal_cases)
 next
   case (4 g e es esa fs)
   then show ?case 
-    by (smt (verit, ccfv_SIG) Cons_eq_append_conv hd_append2 flowpath_simps)
+  proof (cases esa)
+    case Nil
+    then show ?thesis
+      by (auto intro: flowpath_intros)
+  next
+    case (Cons a list)
+    then have eq1: "a = e" and eq2: "es = list @ fs"
+      using 4 by auto
+    then have fp: "flowpath g list"
+      using 4 by blast
+    then show ?thesis
+    proof (cases "list = []")
+      case True
+      have "esa = [e]" using eq1 Cons True by simp
+      with 4 have "flowpath g [e]" by (auto intro: flowpath_intros)
+      with \<open>esa = [e]\<close> show ?thesis by simp
+    next
+      case False
+      then have ne: "list \<noteq> []" by simp
+      from eq2 have "hd es = hd (list @ fs)" by simp
+      then have "snd e = fst (hd list)"
+        using ne hd_append2 4 by auto
+      then have "flowpath g (e # list)"
+        using fp 4 by (auto intro: flowpath_intros)
+      with Cons eq1 show ?thesis by simp
+    qed
+  qed
 qed (auto simp add: assms flowpath_intros)
 
 lemma flow_path_split_right: 
@@ -340,7 +377,16 @@ proof(induction es)
   case (Cons e es)
   hence a: "flowpath g (e # (es @ fs))" by simp
   from this have  "flowpath g (es @ fs)"
-    by (metis list.distinct(1) list.sel(3) flowpath_simps)
+  proof (cases "es @ fs")
+    case Nil
+    then show ?thesis using flowpathI(1) by blast
+  next
+    case (Cons e' es')
+    with a have "flowpath g (e # e' # es')" by simp
+    then have fp: "flowpath g (e' # es')"
+      using flowpath_simps[of g "e # e' # es'"] by simp
+    then show ?thesis using Cons fp by simp
+  qed
   then show ?case using Cons by simp
 qed simp
 
@@ -469,10 +515,22 @@ fun erev::"'edge Redge \<Rightarrow> 'edge Redge" where
 "erev (B e) = (F e)"
 
 lemma erve_erve_id: "erev (erev e) = e"
-  by (metis erev.elims erev.simps(1) erev.simps(2))
+proof (cases e)
+  case (F a)
+  then show ?thesis by simp
+next
+  case (B a)
+  then show ?thesis by simp
+qed
 
 lemma oedge_and_reversed: "oedge (erev e) = oedge e"
-  by (metis erev.elims oedge.simps(1) oedge.simps(2))
+proof (cases e)
+  case (F x)
+  then show ?thesis by simp
+next
+  case (B x)
+  then show ?thesis by simp
+qed
 
 lemma oedge_eq_cases: "oedge x = oedge y \<Longrightarrow> x = y \<or> x = erev y"
   by (cases x; cases y) auto
@@ -491,7 +549,12 @@ lemma redge_erve_cases_with_e:
   by(cases e, auto)
 
 lemma inj_erev: "inj_on erev A" for A 
-     using  erve_erve_id inj_on_def by metis 
+  proof (rule inj_onI)
+    fix x y :: "'edge Redge"
+    assume "erev x = erev y"
+    hence "erev (erev x) = erev (erev y)" by simp
+    thus "x = y" by (simp add: erve_erve_id)
+  qed
 
 lemmas redge_case_flip = Redge.case_distrib
 end
@@ -627,12 +690,46 @@ lemma rcap_extr_head:
 
 lemma rcap_extr: 
   "\<lbrakk>e \<in> set es;  \<gamma> \<le> Rcap f (set es)\<rbrakk>  \<Longrightarrow> \<gamma> \<le> rcap f e"
-  by(induction es, simp)
-    (metis order_antisym_conv rcap_extr_head set_ConsD set_subset_Cons subsetI)
+proof(induction es)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons e' es')
+  show ?case
+  proof(cases "e = e'")
+    case True
+    then show ?thesis using Cons.prems(2) rcap_extr_head by blast
+  next
+    case False
+    hence e_in: "e \<in> set es'" using Cons.prems(1) by simp
+    hence ne: "set es' \<noteq> {}" by auto
+    have mono: "Rcap f (set (e' # es')) \<le> Rcap f (set es')"
+    proof (rule ccontr)
+      assume "\<not> Rcap f (set (e' # es')) \<le> Rcap f (set es')"
+      hence lt: "Rcap f (set es') < Rcap f (set (e' # es'))" by simp
+      from ne lt Rcap_subset[where A = "set es'" and B = "set (e' # es')"
+          and f = f and x = "Rcap f (set es')"]
+        show False by auto
+    qed
+    have "\<gamma> \<le> Rcap f (set es')"
+      using Cons.prems(2) mono by (rule order_trans)
+    then show ?thesis using Cons.IH[OF e_in] by blast
+  qed
+qed
 
 lemma rcap_extr_non_zero: 
   "\<lbrakk>e \<in> set es;  set es = ES; 0 < Rcap f ES\<rbrakk> \<Longrightarrow> 0 < rcap f e"
-  by (metis dual_order.refl leD order_less_le rcap_extr)
+proof -
+  assume e_in: "e \<in> set es"
+  assume es_ES: "set es = ES"
+  assume pos: "0 < Rcap f ES"
+  have le: "Rcap f (set es) \<le> rcap f e"
+    using rcap_extr[OF e_in order_refl] .
+  have pos': "0 < Rcap f (set es)"
+    using pos es_ES by simp
+  show "0 < rcap f e"
+    using pos' le by (rule order_less_le_trans)
+qed
 
 lemma rcap_exract_single: 
   "es \<noteq>[] \<Longrightarrow> Rcap f (set (e#es)) = min (rcap f e) (Rcap f (set es))"
@@ -656,12 +753,22 @@ proof-
   have 1:"{\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es} \<noteq> {}"
     by (simp add: assms(1))
   hence " Rcap f (set (e#es)) = min (Min {\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}) (Min {\<uu>\<^bsub>f\<^esub>e})"
-    using assms apply(subst  Rcap_same, force, simp add: finite_subset)+ 
-    using assms apply(subst  (asm) Rcap_same, force, simp add: finite_subset)
-    using Min_Un[of "{\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}" "{\<uu>\<^bsub>f\<^esub>e}"] 0 1
-    unfolding Rcap_old_def 
-    using set_img_extract[of es "rcap f" e]
-    by (smt (verit, del_insts) Collect_cong empty_iff finite.emptyI finite_insert singletonI)
+  proof -
+    have S_eq: "{\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set (e # es)} = {\<uu>\<^bsub>f\<^esub>e} \<union> {\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set es}"
+      by auto
+    have "Rcap f (set (e#es)) = Rcap_old f (set (e#es))"
+      by (simp add: Rcap_same)
+    also have "\<dots> = Min {\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set (e#es)}"
+      by (simp add: Rcap_old_def)
+    also have "\<dots> = Min ({\<uu>\<^bsub>f\<^esub>e} \<union> {\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set es})"
+      by (rule arg_cong [OF S_eq])
+    also have "\<dots> = min (Min {\<uu>\<^bsub>f\<^esub>e}) (Min {\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set es})"
+      using Min_Un[of "{\<uu>\<^bsub>f\<^esub>e}" "{\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set es}"] 0 1
+      by simp
+    also have "\<dots> = min (Min {\<uu>\<^bsub>f\<^esub>ea |ea. ea \<in> set es}) (Min {\<uu>\<^bsub>f\<^esub>e})"
+      by (simp add: min.commute)
+    finally show ?thesis .
+  qed
   hence " Rcap f (set (e#es)) = min (Min {\<uu>\<^bsub>f\<^esub>e |e. e \<in> set es}) \<uu>\<^bsub>f\<^esub>e" by auto
   then show ?thesis 
     using assms apply(subst  Rcap_same, force, simp add: finite_subset)+ 
@@ -736,7 +843,22 @@ proof-
      by(cases p)(simp add: Rcap_def, subst rcap_exract_single, auto)
   ultimately show ?thesis     
     using assm p_prop unfolding resreach_def
-    by (metis insert_subset list.distinct(1) list.simps(15))
+    proof (intro exI[of _ "e # p"] conjI)
+      show "awalk (to_vertex_pair ` \<EE>) (fstv e) (map to_vertex_pair (e # p)) v"
+        using arg_cong[of "to_vertex_pair e " "(fstv e, sndv e)" "\<lambda> d. cas (fstv e) (d # map to_vertex_pair p) v"]
+              to_vertex_pair_fst_snd assm cas.simps(2) p_prop fstv_in_verts
+        by (auto simp add: to_vertex_pair_fst_snd awalk_def)
+    next
+      show "Rcap f (set (e # p)) > 0"
+        using p_prop assm
+        by (cases p)(simp add: Rcap_def, subst rcap_exract_single, auto)
+    next
+      show "e # p \<noteq> []"
+        by simp
+    next
+      show "set (e # p) \<subseteq> \<EE>"
+        using assm(3) p_prop(4) by auto
+    qed
 qed
 
 lemma resreach_intros:
@@ -783,9 +905,16 @@ proof-
       ultimately show ?thesis by simp
     next
       case (Cons a list)
-      have fstve_is_u: "fstv e = u" 
-        using IH(2) unfolding awalk_def using cas.simps(2)
-        by (metis list.simps(9) prod.exhaust_sel vs_to_vertex_pair_pres(1))
+      have fstve_is_u: "fstv e = u"
+      proof -
+        have "awalk (to_vertex_pair ` \<EE>) u (to_vertex_pair e # map to_vertex_pair p1) v"
+          using IH(2) by simp
+        hence "prod.fst (to_vertex_pair e) = u"
+          using awalk_Cons_iff[of "(to_vertex_pair ` \<EE>)" u "to_vertex_pair e" "map to_vertex_pair p1" v]
+          by blast
+        thus "fstv e = u"
+          using vs_to_vertex_pair_pres(1)[of e] by simp
+      qed
       have 001:"fstv a = sndv e" 
         using IH(2)[simplified list.simps(9)] awalk_Cons_iff[of "(to_vertex_pair ` \<EE>)" u "to_vertex_pair e" "map to_vertex_pair p1" v]  local.Cons
               vs_to_vertex_pair_pres(1)[of a] vs_to_vertex_pair_pres(2)[of e]
@@ -798,7 +927,14 @@ proof-
                 IH(3) local.Cons  rcap_exract_single[of p1 f e] Cons IH(5) 
           by (force intro!: exI[of _ p1])     
       have 002: "awalk (to_vertex_pair ` \<EE>) (sndv e) (map to_vertex_pair p1) v"
-          by (metis IH(2) awalk_Cons_iff list.simps(9) vs_to_vertex_pair_pres(2))
+      proof -
+        have "awalk (to_vertex_pair ` \<EE>) u (to_vertex_pair e # map to_vertex_pair p1) v"
+          using IH(2) by (simp add: list.simps(9))
+        hence "awalk (to_vertex_pair ` \<EE>) (sndv e) (map to_vertex_pair p1) v"
+          using awalk_Cons_iff[of "(to_vertex_pair ` \<EE>)" u "to_vertex_pair e" "map to_vertex_pair p1" v]
+                vs_to_vertex_pair_pres(2)[of e] by auto
+        thus ?thesis .
+      qed
       have aa: "P f (sndv e) v"
           using 002 rcap_exract_single[of list f a] rcap_exract_single[of p1 f e] Cons IH(3)
             IH(5) assms(2) IH(7)  Cons.IH by fastforce
@@ -831,7 +967,28 @@ lemma resreach_cases:
   (\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> P)\<rbrakk>
    \<Longrightarrow> P"
   using  resreach_induct[of a1 a2 a3 ]
-  by (metis resreach_simps)
+proof -
+  assume res: "resreach a1 a2 a3"
+    and case1: "\<And>f e. \<lbrakk>a1 = f; a2 = fstv e; a3 = sndv e; 0 < \<uu>\<^bsub>f\<^esub>e; e \<in> \<EE>\<rbrakk> \<Longrightarrow> P"
+    and case2: "\<And>f e u v. \<lbrakk>a1 = f; a2 = fstv e; a3 = v; 0 < \<uu>\<^bsub>f\<^esub>e; sndv e = u; e \<in> \<EE>; resreach f u v\<rbrakk> \<Longrightarrow> P"
+  from res have "(\<exists>f e. a1 = f \<and> a2 = fstv e \<and> a3 = sndv e \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> e \<in> \<EE>) \<or>
+   (\<exists>f e u v. a1 = f \<and> a2 = fstv e \<and> a3 = v \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = u \<and> e \<in> \<EE> \<and> resreach f u v)"
+    using resreach_simps by blast
+  then show P
+  proof (rule disjE)
+    assume "\<exists>f e. a1 = f \<and> a2 = fstv e \<and> a3 = sndv e \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> e \<in> \<EE>"
+    then obtain f e where f1: "a1 = f" and f2: "a2 = fstv e" and f3: "a3 = sndv e"
+      and f4: "0 < \<uu>\<^bsub>f\<^esub>e" and f5: "e \<in> \<EE>"
+      by blast
+    show P by (rule case1[OF f1 f2 f3 f4 f5])
+  next
+    assume "\<exists>f e u v. a1 = f \<and> a2 = fstv e \<and> a3 = v \<and> 0 < \<uu>\<^bsub>f\<^esub>e \<and> sndv e = u \<and> e \<in> \<EE> \<and> resreach f u v"
+    then obtain f e u v where g1: "a1 = f" and g2: "a2 = fstv e" and g3: "a3 = v"
+      and g4: "0 < \<uu>\<^bsub>f\<^esub>e" and g5: "sndv e = u" and g6: "e \<in> \<EE>" and g7: "resreach f u v"
+      by blast
+    show P by (rule case2[OF g1 g2 g3 g4 g5 g6 g7])
+  qed
+qed
 
 lemma resreach_app_single': 
   assumes "resreach f u v"
@@ -990,22 +1147,60 @@ text \<open>From this we know that the sum of balances within $X$ is bounded by 
      of $(X, \mathcal{E} \setminus X)$.\<close>
 
 lemma flow_cross_cut_less_cap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>+ X) \<le> Cap X"
-  unfolding Delta_plus_def Cap_def isuflow_def 
-  using CollectD sum_mono
-  by (metis (no_types, lifting) CollectD sum_mono)
+proof -
+  assume assm: "isuflow f"
+  have "\<And>e. e \<in> \<Delta>\<^sup>+ X \<Longrightarrow> f e \<le> \<u> e"
+    using assm unfolding isuflow_def Delta_plus_def by blast
+  thus "(\<Sum>x\<in>\<Delta>\<^sup>+ X. ereal (f x)) \<le> Cap X"
+    unfolding Cap_def by (rule sum_mono)
+qed
 
 lemma sum_crossing_out_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>+ X) \<ge> 0 "
-  unfolding Delta_plus_def isuflow_def 
-  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
+proof -
+  assume assm: "isuflow f"
+  show "sum f (\<Delta>\<^sup>+ X) \<ge> 0"
+  proof (rule sum_nonneg)
+    fix e
+    assume e_in: "e \<in> \<Delta>\<^sup>+ X"
+    hence "e \<in> \<E>" unfolding Delta_plus_def by simp
+    thus "0 \<le> f e"
+      using assm unfolding isuflow_def by blast
+  qed
+qed
 
 lemma sum_crossing_in_pos: "isuflow f \<Longrightarrow> sum f (\<Delta>\<^sup>- X) \<ge> 0 "
-  unfolding Delta_minus_def isuflow_def 
-  by (metis (no_types, lifting) mem_Collect_eq sum_nonneg)
+proof -
+  assume assm: "isuflow f"
+  show "0 \<le> sum f (\<Delta>\<^sup>- X)"
+  proof (rule sum_nonneg)
+    fix e
+    assume "e \<in> \<Delta>\<^sup>- X"
+    hence "e \<in> \<E>"
+      unfolding Delta_minus_def by blast
+    thus "0 \<le> f e"
+      using assm unfolding isuflow_def by blast
+  qed
+qed
 
 corollary flow_less_cut: "f is b flow \<Longrightarrow> X \<subseteq> \<V> \<Longrightarrow> sum b X \<le> Cap X"
-  using  isbflow_def[of f b] flow_cross_cut_less_cap [of f X]
-         flow_value[of f  b X] sum_crossing_in_pos[of f X] 
-  by (smt (verit, best) dual_order.trans le_ereal_le sum.cong sum_ereal verit_comp_simplify1(2))
+proof -
+  assume fb: "f is b flow" and XV: "X \<subseteq> \<V>"
+  have isu: "isuflow f"
+    using fb by (auto simp add: isbflow_def)
+  have eq: "(\<Sum> v \<in> X. b v) = (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e) - (\<Sum> e \<in> \<Delta>\<^sup>- X. f e)"
+    using flow_value[OF fb XV] by simp
+  have nonneg_in: "(\<Sum> e \<in> \<Delta>\<^sup>- X. f e) \<ge> 0"
+    using sum_crossing_in_pos[OF isu] by simp
+  have le_out: "sum b X \<le> (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e)"
+    using eq nonneg_in by linarith
+  have le_cap: "ereal (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e) \<le> Cap X"
+    using flow_cross_cut_less_cap[OF isu] by simp
+  have "ereal (sum b X) \<le> ereal (\<Sum> e \<in> \<Delta>\<^sup>+ X. f e)"
+    using le_out by simp
+  also have "\<dots> \<le> Cap X"
+    using le_cap by simp
+  finally show ?thesis by simp
+qed
 
 text \<open>Furthermore, we observe that for the residual cut around a vertex, no incoming edge can carry any flow.
      Otherwise, the was an activated residual edge in the opposite direction 
@@ -1058,7 +1253,19 @@ proof(rule ccontr)
       using assms(1) assms(2) flow_less_cut[of f b "Rescut f v"]  less_eq_ereal_def 
             rescut_all_edges_sat[of f b v] sum_ereal[of f "(\<Delta>\<^sup>+ (Rescut f v))"] by simp
     then obtain e where "e \<in> \<Delta>\<^sup>+ (Rescut f v)\<and> f e < \<u> e"
-      by (metis Cap_def linorder_not_less sum_ereal sum_mono)
+    proof -
+      have ex: "\<exists>e. e \<in> \<Delta>\<^sup>+ (Rescut f v) \<and> f e < \<u> e"
+      proof (rule ccontr)
+        assume none: "\<nexists>e. e \<in> \<Delta>\<^sup>+ (Rescut f v) \<and> f e < \<u> e"
+        have ge: "\<And>e. e \<in> \<Delta>\<^sup>+ (Rescut f v) \<Longrightarrow> \<u> e \<le> f e"
+          using none by (auto simp: linorder_not_less)
+        have le: "Cap (Rescut f v) \<le> sum f (\<Delta>\<^sup>+ (Rescut f v))"
+          unfolding Cap_def sum_ereal[symmetric] by (rule sum_mono) (rule ge)
+        from order_le_less_trans[OF le \<open>sum f (\<Delta>\<^sup>+ (Rescut f v)) < Cap (Rescut f v)\<close>]
+        show False by simp
+      qed
+      with that show thesis by blast
+    qed
     hence "fst e \<in> (Rescut f v) \<and> snd e \<notin> (Rescut f v) \<and> f e < \<u> e" 
       using Delta_plus_def by force
     hence a:"rcap f (F e) > 0" "e \<in> \<E>"
@@ -1187,7 +1394,12 @@ begin
 
 lemma flow_cross_acut_less_acap:"isuflow f \<Longrightarrow>  sum f (\<Delta>\<^sup>- X) \<le> ACap X"
   unfolding Delta_minus_def ACap_def isuflow_def 
-  by (metis (no_types, lifting) CollectD case_prodE sum_mono)
+proof -
+  assume isuf: "\<forall>e\<in>\<E>. ereal (f e) \<le> \<u> e \<and> 0 \<le> f e"
+  show "(\<Sum>x\<in>{e \<in> \<E>. snd e \<in> X \<and> fst e \<notin> X}. ereal (f x))
+    \<le> sum \<u> {e \<in> \<E>. snd e \<in> X \<and> fst e \<notin> X}"
+    by (rule sum_mono) (use isuf in auto)
+qed
 
 corollary flow_less_acut: 
   assumes "f is b flow" 
@@ -1249,23 +1461,63 @@ proof(rule ccontr)
       by force     
     then obtain e where "e \<in> \<Delta>\<^sup>- (ARescut f v)\<and> f e < \<u> e"
       unfolding ACap_def 
-      by (metis linorder_not_le sum_ereal sum_mono)
+    proof -
+      have lt: "sum f (\<Delta>\<^sup>- (ARescut f v)) < ACap (ARescut f v)"
+        using assms flow_less_acut[of f b "ARescut f v"] asm
+              arescut_all_edges_sat[of f b v, OF assms] sum_ereal[of b "ARescut f v"]
+              ereal_uminus_le_reorder
+        by force
+      have lt': "sum f (\<Delta>\<^sup>- (ARescut f v)) < (\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e)"
+        using lt unfolding ACap_def .
+      have "\<not> (\<forall>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e \<le> ereal (f e))"
+      proof
+        assume all_ge: "\<forall>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e \<le> ereal (f e)"
+        have "(\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e) \<le> (\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). ereal (f e))"
+          by (rule sum_mono) (use all_ge in blast)
+        also have "(\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). ereal (f e)) = ereal (sum f (\<Delta>\<^sup>- (ARescut f v)))"
+          by (simp add: sum_ereal)
+        finally have le: "(\<Sum>e\<in>\<Delta>\<^sup>- (ARescut f v). \<u> e) \<le> ereal (sum f (\<Delta>\<^sup>- (ARescut f v)))" .
+        with lt' show False
+          using leD by blast
+      qed
+      then obtain e where "e \<in> \<Delta>\<^sup>- (ARescut f v)" "\<not> \<u> e \<le> ereal (f e)"
+        by blast
+      then have "e \<in> \<Delta>\<^sup>- (ARescut f v) \<and> f e < \<u> e"
+        by (auto simp add: not_le)
+      then show ?thesis
+        by (rule that)
+    qed
     hence a0:"fst e \<notin> (ARescut f v) \<and> snd e \<in> (ARescut f v) \<and> f e < \<u> e" 
       using Delta_minus_def by force
     hence a:"rcap f (F e) > 0" "e \<in> \<E>"
       using Delta_minus_def \<open>e \<in> \<Delta>\<^sup>- (ARescut f v) \<and> f e < \<u> e\<close> 
       by(auto simp add: ereal_diff_gr0)
-    hence "snd e \<noteq> v \<Longrightarrow> resreach f (fst e) v "
-      using resreach_intros(2)[of f "F e" "snd e" v] a0 unfolding ARescut_def \<EE>_def 
-      by (metis (no_types, lifting) CollectD \<open>\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>F e; sndv (F e) = snd e; F e \<in> \<EE>; 
-            resreach f (snd e) v\<rbrakk> \<Longrightarrow> resreach f (fstv (F e)) v\<close> fstv.simps(1) insertE o_edge_res 
-               oedge.simps(1) prod.collapse sndv.simps(1))
+    hence "snd e \<noteq> v \<Longrightarrow> resreach f (fst e) v"
+    proof -
+      assume "snd e \<noteq> v"
+      have "snd e \<in> ARescut f v"
+        using a0 by blast
+      hence "snd e \<in> insert v {u. resreach f u v}"
+        unfolding ARescut_def by simp
+      with \<open>snd e \<noteq> v\<close> have snd_reach: "resreach f (snd e) v"
+        by blast
+      have cap_pos: "0 < \<uu>\<^bsub>f\<^esub>(F e)"
+        using a(1) by simp
+      have snd_eq: "sndv (F e) = snd e"
+        by simp
+      have Fe_in: "F e \<in> \<EE>"
+        unfolding \<EE>_def using a(2) by blast
+      have "resreach f (fstv (F e)) v"
+        using resreach_intros(2)[of f "F e" "snd e" v] cap_pos snd_eq Fe_in snd_reach
+        by blast
+      thus "resreach f (fst e) v"
+        by simp
+    qed
     hence "fst e \<in> ARescut f v" 
       using resreach_intros(1)[of f "F e"] a 
       unfolding ARescut_def \<EE>_def
-      by (metis (mono_tags, lifting) \<open>\<lbrakk>0 < \<uu>\<^bsub>f\<^esub>F e; F e \<in> \<EE>\<rbrakk> \<Longrightarrow> resreach f (fstv (F e)) 
-                 (sndv (F e))\<close> fstv.simps(1) insertCI mem_Collect_eq o_edge_res oedge.simps(1)
-                   prod.collapse sndv.simps(1))
+      by (cases "snd e = v") (auto simp: fstv.simps sndv.simps oedge.simps prod.collapse
+              split: if_splits)
     thus False 
       using a0 by blast
  qed

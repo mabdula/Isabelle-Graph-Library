@@ -35,9 +35,21 @@ proof-
     using assms(1) by simp
 
   have "edges_of_vwalk (rev (w # l)) = (edges_of_vwalk (rev l)) @ [(v, w)]"
-    using assms(1)
-    by (metis edges_of_vwalk.simps(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 last_rev
-    list.sel(1) list.simps(3) rev.simps(2) rev_is_Nil_conv)
+  proof -
+    have l_ne: "l \<noteq> []"
+      using assms(1) by simp
+    have rev_l_ne: "rev l \<noteq> []"
+      using l_ne by simp
+    have last_rev_l: "last (rev l) = v"
+      using assms(1) by (simp add: last_rev)
+    have "rev (w # l) = rev l @ [w]"
+      by simp
+    also have "edges_of_vwalk (rev l @ [w]) = edges_of_vwalk (rev l) @ [(last (rev l), w)]"
+      using edges_of_vwalk_append_3[OF rev_l_ne]
+      by simp
+    finally show "edges_of_vwalk (rev (w # l)) = edges_of_vwalk (rev l) @ [(v, w)]"
+      using last_rev_l by simp
+  qed
   then have 2: "set (edges_of_vwalk (rev (w # l))) = {(v, w)} \<union> set (edges_of_vwalk (rev l))" by simp
 
   from assms(2) assms(3)
@@ -101,8 +113,17 @@ proof-
 
   have "edges_of_vwalk (rev l) = (edges_of_vwalk (rev l_tl)) @ [(u, v)]"
     using assms(1) assms(2)
-    by (metis edges_of_vwalk.simps(2) edges_of_vwalk.simps(3) edges_of_vwalk_append_3 last_rev
-    list.sel(1) list.simps(3) rev.simps(2) rev_is_Nil_conv)
+  proof -
+    have l_tl_ne: "l_tl \<noteq> []" using assms(2) by simp
+    hence rev_l_tl_ne: "rev l_tl \<noteq> []" by simp
+    have hd_l_tl: "hd l_tl = u" using assms(2) by simp
+    have last_rev_l_tl: "last (rev l_tl) = u"
+      using hd_l_tl l_tl_ne last_rev by fastforce
+    have step: "edges_of_vwalk (rev l_tl @ [v]) = edges_of_vwalk (rev l_tl) @ edges_of_vwalk (last (rev l_tl) # [v])"
+      using edges_of_vwalk_append_3[OF rev_l_tl_ne] by simp
+    show ?thesis
+      using step last_rev_l_tl assms(1) by simp
+  qed
   then have 2: "set (edges_of_vwalk (rev l)) = {(u, v)} \<union> set (edges_of_vwalk (rev l_tl))" by simp
 
   have "{(x, y). (x, y) \<in> dG \<and> x \<in> set l_tl \<and> y = v} =
@@ -887,9 +908,22 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-      by (metis (no_types, lifting) case_prodI2 rev_rev_ident)
+      proof -
+        have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
+          using \<open>Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state))\<close> graph_symmetric
+          by (blast intro: vwalk_rev)
+        then show ?thesis
+          by (simp add: rev_rev_ident)
+      qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-      by (metis \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> local.Cons stack_expr vwalk_2)
+proof -
+  have stack_eq: "stack dfs_aux_state = hd (stack dfs_aux_state) # u # l_tl_tl"
+    using stack_expr local.Cons by simp
+  have "Vwalk.vwalk (Graph.digraph_abs G) (hd (stack dfs_aux_state) # u # l_tl_tl)"
+    using \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> stack_eq by simp
+  thus "(hd (stack dfs_aux_state), u) \<in> Graph.digraph_abs G"
+    by (simp add: vwalk_2)
+qed
     then have edges_in_G: "{(u, ?v), (?v, u)} \<subseteq> (Graph.digraph_abs G)" by auto
 
     have "set (stack dfs_aux_state) \<subseteq> t_set (seen dfs_aux_state)"
@@ -1040,7 +1074,19 @@ proof (intro invar_props_intros, goal_cases)
       have "t_set (seen (dfs_aux_state)) = {?v}"
       using \<open>invar_seen_stack_finished dfs_aux_state\<close>
       unfolding invar_seen_stack_finished_def
-      by (metis list.simps(15) not_Cons_self2 set_empty subset_singleton_iff)
+      proof -
+        from \<open>invar_seen_stack_finished dfs_aux_state\<close>
+          have "set (stack dfs_aux_state) \<subseteq> t_set (seen (dfs_aux_state))"
+          unfolding invar_seen_stack_finished_def by blast
+        have "set (stack dfs_aux_state) = set [?v]"
+          using \<open>(stack dfs_aux_state) = [?v]\<close> by (rule arg_cong)
+        then have "?v \<in> set (stack dfs_aux_state)" by simp
+        then have "?v \<in> t_set (seen (dfs_aux_state))"
+          using \<open>set (stack dfs_aux_state) \<subseteq> t_set (seen (dfs_aux_state))\<close>
+          by auto
+        then show ?thesis
+          using \<open>t_set (seen (dfs_aux_state)) = {s}\<close> by force
+      qed
 
     with seen_expr
       have "t_set (seen (DFS_Aux_upd1 dfs_aux_state)) = {?v, ?w}"
@@ -1117,9 +1163,23 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-      by (metis (no_types, lifting) case_prodI2 rev_rev_ident)
+    proof -
+      have sym_pairs: "\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> (Graph.digraph_abs G)"
+        using graph_symmetric by fast
+      have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
+        by (rule vwalk_rev[OF sym_pairs \<open>Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state))\<close>])
+      then show ?thesis
+        by simp
+    qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-      by (metis \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> local.Cons stack_expr vwalk_2)
+    proof -
+      have stack_eq: "stack dfs_aux_state = ?v # u # l_tl_tl"
+        using stack_expr local.Cons by simp
+      then have vwalk_cons: "Vwalk.vwalk (Graph.digraph_abs G) (?v # u # l_tl_tl)"
+        using \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> by simp
+      then show "(?v, u) \<in> (Graph.digraph_abs G)"
+        by (rule conjunct1[OF iffD1[OF Vwalk.vwalk_2]])
+    qed
     then have edges_in_G: "{(u, ?v), (?v, u)} \<subseteq> (Graph.digraph_abs G)" by auto
 
     have "set (stack dfs_aux_state) \<subseteq> t_set (seen dfs_aux_state)"
@@ -1338,9 +1398,24 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-      by (metis (no_types, lifting) case_prodI2 rev_rev_ident)
+    proof -
+      have sym: "\<forall>(x, y) \<in> Graph.digraph_abs G. (y, x) \<in> Graph.digraph_abs G"
+        using graph_symmetric by auto
+      have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
+        using vwalk_rev sym \<open>Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state))\<close>
+        by blast
+      then show "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
+        by (simp add: rev_rev_ident)
+    qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-      by (metis \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> local.Cons stack_expr vwalk_2)
+    proof -
+      have stack_split: "stack dfs_aux_state = ?v # u # tl (tl (stack dfs_aux_state))"
+        using \<open>stack dfs_aux_state = [?v, u] @ tl (tl (stack dfs_aux_state))\<close> by simp
+      have "Vwalk.vwalk (Graph.digraph_abs G) (?v # u # tl (tl (stack dfs_aux_state)))"
+        using \<open>Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)\<close> stack_split by simp
+      then show "(?v, u) \<in> (Graph.digraph_abs G)"
+        by (simp add: vwalk_2)
+    qed
     then have edges_in_G: "{(u, ?v), (?v, u)} \<subseteq> (Graph.digraph_abs G)" by auto
 
     have "set (stack dfs_aux_state) \<subseteq> t_set (seen dfs_aux_state)"
@@ -1485,7 +1560,20 @@ proof (intro invar_props_intros, goal_cases)
       using \<open>invar_1 dfs_aux_state\<close> \<open>invar_seen_stack_finished dfs_aux_state\<close>
       by (force elim!: invar_props_elims)
     with Nil have "x = ?v"
-      by (metis emptyE empty_set hd_Cons_tl set_ConsD)
+    proof -
+      have stack_ne: "stack dfs_aux_state \<noteq> []"
+        using \<open>x \<in> set (stack (dfs_aux_state))\<close> by auto
+      have hd_tl: "hd (stack dfs_aux_state) # tl (stack dfs_aux_state) = stack dfs_aux_state"
+        using stack_ne by (rule hd_Cons_tl)
+      with Nil have "stack dfs_aux_state = [?v]"
+        by simp
+      then obtain va where va: "stack dfs_aux_state = [va]"
+        by blast
+      then have "x = va"
+        using \<open>x \<in> set (stack (dfs_aux_state))\<close> by simp
+      then show "x = ?v"
+        using va by simp
+    qed
     with \<open>x \<noteq> ?v\<close> show ?thesis by blast
   next
     case (Cons a list)
@@ -1511,7 +1599,15 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
 
     then have "\<exists>xs p_x_v. (rev (stack dfs_aux_state) = xs @ p_x_v \<and> p_x_v \<noteq> [] \<and> hd p_x_v = x)"
-      by (metis list.discI list.sel(1) set_rev split_list)
+    proof -
+      from \<open>x \<in> set (stack (dfs_aux_state))\<close>
+      have "x \<in> set (rev (stack dfs_aux_state))"
+        by (simp add: set_rev)
+      then obtain xs zs where "rev (stack dfs_aux_state) = xs @ x # zs"
+        by (blast dest: split_list)
+      then show ?thesis
+        by (intro exI[of _ xs] exI[of _ "x # zs"]) simp
+    qed
     then obtain xs p_x_v where "rev (stack dfs_aux_state) = xs @ p_x_v" "p_x_v \<noteq> []" "hd p_x_v = x"
       by blast
 
@@ -1520,7 +1616,12 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     moreover have "last p_x_v = ?v"
       using \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>p_x_v \<noteq> []\<close> last_rev
-      by (metis last_appendR)
+    proof -
+      have "last p_x_v = last (rev (stack dfs_aux_state))"
+        using \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>p_x_v \<noteq> []\<close>
+        by (simp add: last_append)
+      then show ?thesis by (simp add: last_rev)
+    qed
     ultimately have "Vwalk.vwalk_bet (Graph.digraph_abs G) x p_x_v ?v"
       using \<open>hd p_x_v = x\<close> \<open>p_x_v \<noteq> []\<close> unfolding vwalk_bet_def by blast
 
@@ -1538,7 +1639,16 @@ proof (intro invar_props_intros, goal_cases)
       by (simp add: \<open>p_x_v \<noteq> []\<close> edges_of_vwalk_append_3)
     with awalk_vwalk_id \<open>hd p_x_v = x\<close>
       have "awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)]) = p_x_v @ [x]"
-      by (metis \<open>p_x_v \<noteq> []\<close> append_is_Nil_conv hd_append2)
+      proof -
+        have "hd (p_x_v @ [x]) = hd p_x_v"
+          using \<open>p_x_v \<noteq> []\<close> by (simp add: hd_append2)
+        also have "\<dots> = x"
+          using \<open>hd p_x_v = x\<close> by simp
+        finally have "hd (p_x_v @ [x]) = x" .
+        then show ?thesis
+          using \<open>edges_of_vwalk p_x_v @ [(?v, x)] = edges_of_vwalk (p_x_v @ [x])\<close>
+          by (simp add: awalk_vwalk_id)
+      qed
     with \<open>hd p_x_v = x\<close>
       have "tl (awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)])) = tl p_x_v @ [x]"
       using \<open>p_x_v \<noteq> []\<close> by fastforce
@@ -1550,26 +1660,81 @@ proof (intro invar_props_intros, goal_cases)
       by force
     with \<open>hd p_x_v = x\<close>
       have "distinct (tl p_x_v @ [x])"
-      by (metis \<open>p_x_v \<noteq> []\<close> distinct1_rotate list.collapse rotate1.simps(2))
+    proof -
+      have p_eq: "p_x_v = x # tl p_x_v"
+      proof (cases p_x_v)
+        case Nil
+        then show ?thesis using \<open>p_x_v \<noteq> []\<close> by simp
+      next
+        case (Cons a as)
+        then show ?thesis using \<open>hd p_x_v = x\<close> by auto
+      qed
+      have "distinct (x # tl p_x_v)"
+        using \<open>distinct p_x_v\<close> p_eq by simp
+      hence "x \<notin> set (tl p_x_v)" "distinct (tl p_x_v)"
+        by simp_all
+      then show "distinct (tl p_x_v @ [x])"
+        by (simp add: distinct_append)
+    qed
     with \<open>tl (awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)])) = tl p_x_v @ [x]\<close>
       have distinct_verts: "distinct (tl (awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)])))"
       by simp
 
     from \<open>hd p_x_v = x\<close> \<open>last p_x_v = ?v\<close> \<open>x \<noteq> ?v\<close> \<open>p_x_v \<noteq> []\<close>
       have "length p_x_v \<ge> 2"
-      by (metis Suc_1 diff_is_0_eq' length_0_conv length_tl not_less_eq_eq singleton_hd_last)
+    proof -
+      have "\<not> length p_x_v \<le> 1"
+      proof
+        assume "length p_x_v \<le> 1"
+        with \<open>p_x_v \<noteq> []\<close> have "hd p_x_v = last p_x_v"
+          by (cases p_x_v) auto
+        with \<open>hd p_x_v = x\<close> \<open>last p_x_v = ?v\<close> \<open>x \<noteq> ?v\<close> show False by simp
+      qed
+      then show ?thesis by linarith
+    qed
 
     have "\<exists>ys. stack (dfs_aux_state) = [hd (stack dfs_aux_state), hd (tl (stack dfs_aux_state))] @ ys"
       using Cons \<open>DFS_Aux_ret_1_conds dfs_aux_state\<close>
       by (force elim!: call_cond_elims)
     then have "\<exists>ys. rev (stack dfs_aux_state) = ys @ [a, ?v]"
       using Cons rev_append
-      by (smt (verit, ccfv_threshold) list.sel(1) rev_eq_Cons_iff rev_singleton_conv)
+    proof -
+      have stack_split: "stack dfs_aux_state = hd (stack dfs_aux_state) # a # list"
+        using Cons \<open>DFS_Aux_ret_1_conds dfs_aux_state\<close>
+        by (force elim!: call_cond_elims)
+      have "rev (stack dfs_aux_state) = rev list @ [a, hd (stack dfs_aux_state)]"
+        using rev_eq_append_conv stack_split by fastforce
+      then show ?thesis by blast
+    qed
 
     with \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>length p_x_v \<ge> 2\<close>
       have "\<exists>ys. p_x_v = ys @ [a, ?v]"
-      by (metis List.butlast_rev \<open>hd p_x_v = x\<close> \<open>p_x_v \<noteq> []\<close> \<open>x \<noteq> ?v\<close> append.right_neutral append_Nil
-      append_butlast_last_cancel butlast_append last_appendR last_rev list.sel(1) local.Cons)
+      proof -
+        obtain ys0 where ys0_def: "rev (stack dfs_aux_state) = ys0 @ [a, ?v]"
+          using \<open>\<exists>ys. rev (stack dfs_aux_state) = ys @ [a, ?v]\<close> by blast
+        have eq: "xs @ p_x_v = ys0 @ [a, ?v]"
+          using ys0_def \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> by simp
+        from eq[unfolded append_eq_append_conv2]
+        obtain us where
+          "(xs = ys0 @ us \<and> us @ p_x_v = [a, ?v]) \<or> (xs @ us = ys0 \<and> p_x_v = us @ [a, ?v])"
+          by blast
+        then show "\<exists>ys. p_x_v = ys @ [a, ?v]"
+        proof
+          assume "xs = ys0 @ us \<and> us @ p_x_v = [a, ?v]"
+          then have us_eq: "us @ p_x_v = [a, ?v]" by blast
+          have len_eq: "length (us @ p_x_v) = length ([a, ?v])"
+            by (simp add: us_eq)
+          have "length us + length p_x_v = 2"
+            using len_eq by simp
+          with \<open>length p_x_v \<ge> 2\<close> have "length us = 0" by linarith
+          then have "us = []" by simp
+          with us_eq have "p_x_v = [a, ?v]" by simp
+          then show ?thesis by auto
+        next
+          assume "xs @ us = ys0 \<and> p_x_v = us @ [a, ?v]"
+          then show ?thesis by blast
+        qed
+      qed
     then obtain ys where "p_x_v = ys @ [a, ?v]" by blast
     with \<open>hd p_x_v = x\<close> \<open>x \<noteq> a\<close>
       have "ys \<noteq> []" by auto
@@ -1729,7 +1894,16 @@ proof (intro invar_props_intros, goal_cases)
     have stack_expr: "(stack (DFS_Aux_upd1 dfs_aux_state)) = ?w # stack (dfs_aux_state)"
       by (auto simp add: DFS_Aux_upd1_def Let_def)
     with a show ?thesis
-      by (metis "1"(7) disjoint_insert(2) list.set_sel(1) list.simps(15) vwalk_bet_def)
+    proof -
+      have "p \<noteq> []" and "hd p = v"
+        using "1"(7) by (auto simp: vwalk_bet_def)
+      then have "v \<in> set p"
+        by (cases p) auto
+      with a have "?w \<in> set p" by simp
+      moreover have "?w \<in> set (stack (DFS_Aux_upd1 dfs_aux_state))"
+        by (simp add: stack_expr)
+      ultimately show ?thesis by blast
+    qed
   next
     case b
     with \<open>w \<in> dVs (Graph.digraph_abs G) - t_set (seen dfs_aux_state)\<close> 1(7-8)
@@ -1785,10 +1959,19 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
         using \<open>vwalk_bet (Graph.digraph_abs G) v p w\<close> 
         by (auto dest!: split_vwalk simp:  neq_Nil_conv)
       hence "hd p2 \<in> t_set (seen dfs_aux_state)"
-        using 1
-        by (metis DFS_Aux.invar_1_props DFS_Aux_axioms DFS_Aux_axioms_def Diff_iff
-         Graph.vset.set.set_empty Graph.neighbourhood_invars' \<open>DFS_Aux_axioms\<close>
-         empty_iff list.sel(1) set_ops.set_diff)
+      proof -
+        have nbhd_inv: "vset_inv (\<N>\<^sub>G v')"
+          using Graph.neighbourhood_invars' graph_inv(1) by blast
+        have seen_inv: "vset_inv (seen dfs_aux_state)"
+          using \<open>invar_1 dfs_aux_state\<close> by (auto elim!: invar_props_elims)
+        have "((\<N>\<^sub>G v') -\<^sub>G (seen dfs_aux_state)) = \<emptyset>\<^sub>N"
+          using \<open>((\<N>\<^sub>G (hd (stack dfs_aux_state))) -\<^sub>G (seen dfs_aux_state)) = \<emptyset>\<^sub>N\<close>
+                \<open>stack dfs_aux_state = v' # stack_tl\<close>
+          by simp
+        hence "t_set (\<N>\<^sub>G v') - t_set (seen dfs_aux_state) = {}"
+          using nbhd_inv seen_inv set_ops.set_diff Graph.vset.set.set_empty by blast
+        with \<open>hd p2 \<in> t_set (\<N>\<^sub>G v')\<close> show ?thesis by blast
+      qed
       
       have "v' \<in> t_set (seen dfs_aux_state)"
         using 1(10) \<open>invar_seen_stack_finished dfs_aux_state\<close>
@@ -2121,11 +2304,22 @@ proof-
   show "invar_cycle_false initial_state"
   proof (intro invar_props_intros, goal_cases)
     case 1
-    have "dfs_tree initial_state = {}"
+    have dfs_tree_empty: "dfs_tree initial_state = {}"
       by (auto simp: dfs_tree_def initial_state_def)
-    then show ?case
-      using awalk_def
-      by (metis cycle'_imp_awalk dVs_empty empty_iff)
+    show ?case
+    proof (rule ccontr)
+      assume "\<not> (\<nexists>c. cycle' (dfs_tree initial_state) c)"
+      then obtain c where "cycle' (dfs_tree initial_state) c"
+        by blast
+      with dfs_tree_empty have "cycle' {} c"
+        by simp
+      then obtain u where awalk_u: "awalk {} u c u"
+        using cycle'_imp_awalk by blast
+      from awalk_u have "u \<in> dVs {}"
+        by (simp add: awalk_def)
+      then show False
+        by (simp add: dVs_empty)
+    qed
   qed
   show "invar_cycle_true initial_state"
     by (auto simp: initial_state_def intro!: invar_props_intros)

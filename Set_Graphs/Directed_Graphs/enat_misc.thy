@@ -31,6 +31,38 @@ lemma enat_sum_distr:"finite X \<Longrightarrow> sum (\<lambda> x. enat (f x)) X
 lemma nat_cases_up_to_3:
   "\<lbrakk>n = 0 \<Longrightarrow> P; n = Suc 0 \<Longrightarrow> P; n = Suc (Suc 0) \<Longrightarrow> P; 
    \<And> nn. n = Suc (Suc (Suc nn)) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-  by (metis nat.exhaust_sel)
+proof -
+  assume h0: "n = 0 \<Longrightarrow> P"
+  assume h1: "n = Suc 0 \<Longrightarrow> P"
+  assume h2: "n = Suc (Suc 0) \<Longrightarrow> P"
+  assume h3: "\<And>nn. n = Suc (Suc (Suc nn)) \<Longrightarrow> P"
+  show P
+  proof (cases n)
+    case 0
+    with h0 show ?thesis by blast
+  next
+    case (Suc n1)
+    note n_eq1 = Suc
+    show ?thesis
+    proof (cases n1)
+      case 0
+      hence "n = Suc 0" using n_eq1 by simp
+      with h1 show ?thesis by blast
+    next
+      case (Suc n2)
+      note n1_eq2 = Suc
+      show ?thesis
+      proof (cases n2)
+        case 0
+        hence "n = Suc (Suc 0)" using n1_eq2 n_eq1 by simp
+        with h2 show ?thesis by blast
+      next
+        case (Suc n3)
+        hence "n = Suc (Suc (Suc n3))" using n1_eq2 n_eq1 by simp
+        with h3[of n3] show ?thesis by blast
+      qed
+    qed
+  qed
+qed
 
 end

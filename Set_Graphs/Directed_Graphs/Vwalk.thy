@@ -198,7 +198,7 @@ lemma unused_edge_vwalk:
 lemma unused_edge_vwalk_bet:
   "\<lbrakk>Vwalk.vwalk_bet E u p v; e \<notin> set (edges_of_vwalk p); length p \<ge> 2\<rbrakk>
    \<Longrightarrow> Vwalk.vwalk_bet(E-{e}) u p v"
-   by (metis unused_edge_vwalk vwalk_bet_def)
+  unfolding vwalk_bet_def using unused_edge_vwalk by blast
 
 lemma distinct_edges_of_vwalk:
   "distinct p \<Longrightarrow> distinct (edges_of_vwalk p)"
@@ -523,7 +523,20 @@ lemma vwalk_ConsE:
   assumes "vwalk E (a # p)" "p \<noteq> []"
   obtains e where "e \<in> E" "e = (a, hd p)" "vwalk E p"
   using assms
-  by (metis vwalk_2 hd_Cons_tl)
+proof -
+  from assms(2) have p_eq: "p = hd p # tl p"
+    by (simp add: hd_Cons_tl)
+  from assms(1) p_eq have aw: "vwalk E (a # hd p # tl p)"
+    by simp
+  from aw have conj: "(a, hd p) \<in> E \<and> vwalk E (hd p # tl p)"
+    by (simp add: vwalk_2)
+  hence edge: "(a, hd p) \<in> E" and walk_tl: "vwalk E (hd p # tl p)"
+    by auto
+  from walk_tl p_eq have walk_p: "vwalk E p"
+    by simp
+  show ?thesis
+    using edge walk_p that[of "(a, hd p)"] by blast
+qed
 
 lemma vwalk_reachable:
   "p \<noteq> [] \<Longrightarrow> vwalk E p \<Longrightarrow> hd p \<rightarrow>\<^sup>*\<^bsub>E\<^esub> last p"
@@ -938,7 +951,30 @@ lemma closed_vwalk_bet_decompE:
     "vwalk_bet E y r y"
     "vwalk_bet E y s v"
   using assms
-  by auto (metis Cons_eq_appendI vwalk_bet_vertex_decompE)
+proof -
+  have decomp1: "p = xs @ y # (ys @ y # zs)"
+    using p_decomp by simp
+  obtain q1 r1 where
+    q1_eq: "q1 = xs @ [y]" and
+    r1_eq: "r1 = y # (ys @ y # zs)" and
+    uq1: "vwalk_bet E u q1 y" and
+    r1v: "vwalk_bet E y r1 v"
+    using p_vwalk decomp1 by (blast elim: vwalk_bet_vertex_decompE)
+  have decomp2: "r1 = (y # ys) @ y # zs"
+    using r1_eq by simp
+  obtain q2 r2 where
+    q2_eq: "q2 = (y # ys) @ [y]" and
+    r2_eq: "r2 = y # zs" and
+    yq2: "vwalk_bet E y q2 y" and
+    r2v: "vwalk_bet E y r2 v"
+    using r1v decomp2 by (blast elim: vwalk_bet_vertex_decompE)
+  have q2_eq': "q2 = y # ys @ [y]"
+    using q2_eq by simp
+  have p_eq: "p = q1 @ tl q2 @ tl r2"
+    using p_decomp q1_eq q2_eq r2_eq by simp
+  show thesis
+    by (rule that[OF p_eq q1_eq q2_eq' r2_eq uq1 yq2 r2v])
+qed
 
 lemma closed_vwalk_bet_decomp_is_closed_decomp:
   assumes p_vwalk: "vwalk_bet E u p v"
@@ -950,7 +986,27 @@ proof -
     xs_distinct: "distinct xs" and
     y_not_in_xs: "y \<notin> set xs"
     using p_not_distinct not_distinct_decomp    
-    by (smt append.assoc append.simps(2) in_set_conv_decomp_first not_distinct_conv_prefix)
+proof -
+  from p_not_distinct obtain xs' y zs where
+    xs'_distinct: "distinct xs'" and
+    y_in_xs': "y \<in> set xs'" and
+    p_decomp: "p = xs' @ y # zs"
+    using not_distinct_conv_prefix by blast
+  obtain xs ys where
+    xs'_eq: "xs' = xs @ y # ys" and
+    y_notin_xs: "y \<notin> set xs"
+    using y_in_xs' by (auto dest: split_list_first)
+  have xs_distinct: "distinct xs"
+    using xs'_distinct xs'_eq by simp
+  have p_eq: "p = xs @ y # ys @ y # zs"
+    using p_decomp xs'_eq by simp
+  show thesis
+  proof (rule that)
+    show "p = xs @ y # ys @ y # zs" using p_eq .
+    show "distinct xs" using xs_distinct .
+    show "y \<notin> set xs" using y_notin_xs .
+  qed
+qed
   from p_vwalk this(1)
   obtain q r s where
     "p = q @ tl r @ tl s"
@@ -1153,7 +1209,36 @@ lemma reachableE[elim?]:
     step: "\<And>x. \<lbrakk> (u,x)\<in>E; reachable E x v\<rbrakk> \<Longrightarrow> P"
   shows "P"
   using assms
-  by (metis converse_tranclE reachable1_reachable reachable_in_dVs(2) reachable_neq_reachable1 reachable_refl)
+proof -
+  have v_dVs: "v \<in> dVs E"
+    using assms(1) by (rule reachable_in_dVs(2))
+  show ?thesis
+  proof (cases "u = v")
+    case True
+    show ?thesis
+      using singleton[OF v_dVs True] .
+  next
+    case False
+    then have R1: "reachable1 E u v"
+      using assms(1) reachable_neq_reachable1 by blast
+    from R1 have cases_disj: "(u,v) \<in> E \<or> (\<exists>y. (u,y) \<in> E \<and> reachable1 E y v)"
+      by (rule converse_tranclE) auto
+    from cases_disj show ?thesis
+    proof
+      assume uv: "(u,v) \<in> E"
+      have vv: "reachable E v v"
+        using v_dVs reachable_refl by blast
+      from step[OF uv vv] show ?thesis .
+    next
+      assume "\<exists>y. (u,y) \<in> E \<and> reachable1 E y v"
+      then obtain y where uy: "(u,y) \<in> E" and yv1: "reachable1 E y v"
+        by blast
+      have yv: "reachable E y v"
+        using yv1 reachable1_reachable by blast
+      from step[OF uy yv] show ?thesis .
+    qed
+  qed
+qed
 
 
 text \<open>An edge \<open>(a, t)\<close> creates a walk from \<open>s\<close> to \<open>t\<close> iff \<open>s\<close> reaches \<open>a\<close>, if there was none before.\<close>
@@ -1234,7 +1319,7 @@ next
   case (vwalk2 v v' vs)
   then show ?case
     apply (auto simp: dVs_def)
-    by (metis insertCI)
+    by (iprover intro: insertCI)
 qed
 
 text \<open>A lemma which allows for case splitting over paths when doing induction on graph edges.\<close>
@@ -1281,7 +1366,7 @@ next
         using path2
         by auto
       then show ?thesis
-        by metis
+        by auto
     next
       case F2: False
       hence "v \<in> dVs G"
@@ -1342,7 +1427,7 @@ lemma vwalk_not_vwalk:
           (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G'))"
    apply (induction rule: vwalk.induct) 
    apply (auto simp: dVs_def)
-   by (metis Suc_leI dVsI(2) length_greater_0_conv vwalk_1)
+   by (case_tac vs) (auto dest: dVsI(2))
 
  lemma vwalk_not_vwalk_elim: 
    "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 
