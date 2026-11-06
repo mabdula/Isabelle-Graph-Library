@@ -849,11 +849,31 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   have b_s: "abstract_bal_map b s > 0"
     using s_prop assms(2)
     unfolding invar_gamma_def unf 
-    by (smt (verit, ccfv_SIG) \<epsilon>_axiom(2) add_divide_distrib divide_eq_1_iff mul_zero_cancel)
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using assms(2) by (auto elim!: invar_gammaE simp add: unf)
+    have eps_le_1: "\<epsilon> \<le> 1"
+      using \<epsilon>_axiom(2) by linarith
+    have nonneg: "(1 - \<epsilon>) * current_\<gamma> state \<ge> 0"
+    proof (rule mult_nonneg_nonneg)
+      show "0 \<le> 1 - \<epsilon>" using eps_le_1 by simp
+    next
+      show "0 \<le> current_\<gamma> state" using gamma_pos unf(3) by linarith
+    qed
+    then show "(1 - \<epsilon>) * current_\<gamma> state < a_balance state s \<Longrightarrow> s \<in> \<V> \<Longrightarrow> 0 < current_\<gamma> state \<Longrightarrow> 0 < a_balance state s"
+      by linarith
+  qed
   have b_t: "abstract_bal_map b t < 0"
-    using t_prop assms(2)
-    unfolding invar_gamma_def unf
-    by (smt (verit, del_insts) \<epsilon>_axiom(1) mult_neg_pos)
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using assms(2) unf(3) by (simp add: invar_gamma_def)
+    have eps_neg: "- \<epsilon> < 0"
+      using \<epsilon>_axiom(1) by simp
+    have "- \<epsilon> * \<gamma> < 0"
+      using mult_neg_pos[OF eps_neg gamma_pos] .
+    thus ?thesis
+      using t_prop(1) by linarith
+  qed
   have s_rep: "representative state s = s" 
     using s_prop  b_s unf
     by (simp add: assms(4) from_underlying_invars'(12))
@@ -911,11 +931,30 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   have b_s: "abstract_bal_map b s > 0"
     using s_prop assms(2)
     unfolding invar_gamma_def unf 
-    by (smt (verit) \<epsilon>_axiom(1) mult_pos_pos)
+  proof -
+    have gamma_0: "0 < \<gamma>"
+    proof -
+      have "0 < current_\<gamma> state" using assms(2) by (auto elim!: invar_gammaE)
+      thus ?thesis using unf(3) by simp
+    qed
+    have "0 < \<epsilon> * \<gamma>"
+      using \<epsilon>_axiom(1) gamma_0 by (rule mult_pos_pos)
+    then show "0 < a_balance state s"
+      using s_prop(1) by (simp add: unf)
+  qed
   have b_t: "abstract_bal_map b t < 0"
-    using t_prop assms(2)  \<epsilon>_axiom(2)
-    unfolding invar_gamma_def unf
-    by auto (smt (z3) mult_neg_pos)
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using assms(2) by (auto simp add: unf(3) elim!: invar_gammaE)
+    have eps_lt_1: "\<epsilon> < 1"
+      using \<epsilon>_axiom(2) by linarith
+    have "(1 - \<epsilon>) * \<gamma> > 0"
+      using eps_lt_1 gamma_pos by simp
+    hence "- (1 - \<epsilon>) * \<gamma> < 0"
+      using mult_neg_pos[of "\<epsilon> - 1" \<gamma>] eps_lt_1 gamma_pos by simp
+    thus ?thesis
+      using t_prop(1) by linarith
+  qed
   have s_rep: "representative state s = s" 
     using s_prop assms(3) b_s unf
     by (simp add: assms(4) from_underlying_invars'(12))
@@ -1351,8 +1390,22 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
     by auto
   have tP: "abstract_bal_map b t < - \<epsilon> * \<gamma>" "resreach (abstract_flow_map f) s t" "t \<in> \<V>" 
     using if_send_flow_call1_cond_advanced[OF assms(1,4) _ _ assms(3,2,5,6)] 1 by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+  proof (rule notI)
+    assume "s = t"
+    hence "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b t"
+      using sP(1) by simp
+    with tP(1) have st_ineq: "(1 - \<epsilon>) * \<gamma> < - \<epsilon> * \<gamma>"
+      by linarith
+    have distrib: "(1 - \<epsilon>) * \<gamma> = \<gamma> - \<epsilon> * \<gamma>"
+      by (simp add: left_diff_distrib)
+    with st_ineq have "\<gamma> - \<epsilon> * \<gamma> < - \<epsilon> * \<gamma>"
+      by simp
+    hence "\<gamma> < 0"
+      by linarith
+    thus False
+      using gamma_0 by simp
+  qed
   have b'_is: "abstract_bal_map b'= 
         (\<lambda>v. if v = s then abstract_bal_map b s - \<gamma>
         else if v = t then abstract_bal_map b t + \<gamma> else abstract_bal_map b v)"
@@ -1366,7 +1419,12 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
                  \<lceil> (abstract_bal_map b s - \<gamma>) / \<gamma> - (1 - \<epsilon>)\<rceil>" by simp
     also have "... = \<lceil> (abstract_bal_map b s ) / \<gamma> - (1 - \<epsilon>) - 1\<rceil>"
       using gamma_0
-      by (smt (verit) diff_divide_distrib divide_self_if)
+    proof -
+      have "\<gamma> \<noteq> 0"
+        using gamma_0 by simp
+      thus ?thesis
+        by (simp add: diff_divide_distrib divide_self_if)
+    qed
     also have "... = \<lceil> abstract_bal_map b s / \<gamma> - (1 - \<epsilon>)\<rceil> - 1" 
       using ceiling_diff_one[of "abstract_bal_map b s / \<gamma> - (1 - \<epsilon>)"] by simp
     also have "... = \<lceil> \<bar>abstract_bal_map b s \<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1"
@@ -1460,8 +1518,20 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   have tP: "abstract_bal_map b t < - (1-\<epsilon>) * \<gamma>"  "t \<in> \<V>" 
     using  "1"(2,3,5,6) assms(1,4) if_send_flow_call2_cond_basic[OF assms(1,4)] 
     by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+proof (rule ccontr)
+    assume "\<not> s \<noteq> t"
+    hence "s = t" by simp
+    hence "\<epsilon> * \<gamma> < abstract_bal_map b t"
+      using sP(1) by simp
+    also have "... < - (1 - \<epsilon>) * \<gamma>"
+      using tP(1) by simp
+    finally have "\<epsilon> * \<gamma> < - (1 - \<epsilon>) * \<gamma>" .
+    hence "\<gamma> < 0"
+      by (simp add: algebra_simps)
+    thus False
+      using gamma_0 by simp
+  qed
   have b'_is: "abstract_bal_map b'= 
         (\<lambda>v. if v = s then abstract_bal_map b s - \<gamma>
         else if v = t then abstract_bal_map b t + \<gamma> else abstract_bal_map b v)"
@@ -1483,7 +1553,12 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     case False
     have "\<lceil>\<bar>abstract_bal_map b t + \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> = \<lceil> (\<gamma> + abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil>"
       using False 
-      by (smt (verit, best))
+    proof -
+      from False have "abstract_bal_map b t + \<gamma> \<ge> 0" by linarith
+      hence "\<bar>abstract_bal_map b t + \<gamma>\<bar> = \<gamma> + abstract_bal_map b t"
+        by (simp add: abs_of_nonneg add.commute)
+      thus ?thesis by simp
+    qed
     also have "... \<le> \<lceil> \<epsilon> - (1 - \<epsilon>)\<rceil>" 
       apply(rule ceiling_mono, simp, subst pos_divide_le_eq[OF gamma_0])
       using False tP(1) by argo
@@ -1491,11 +1566,29 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     also have "... \<le> 1 -  1" by simp
     also have "... \<le> \<lceil> (- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil> -1"
       using tP(1) gamma_0 
-      by (smt (verit) mult_minus_left one_le_ceiling pos_less_divide_eq)
+      proof -
+        have "(1 - \<epsilon>) * \<gamma> < - abstract_bal_map b t"
+          using tP(1) by argo
+        hence "(1 - \<epsilon>) < (- abstract_bal_map b t) / \<gamma>"
+          using pos_less_divide_eq[OF gamma_0, of "1 - \<epsilon>" "- abstract_bal_map b t"] by simp
+        hence "0 < (- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)"
+          by linarith
+        hence "1 \<le> \<lceil>(- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil>"
+          using one_le_ceiling by blast
+        thus ?thesis by linarith
+      qed
     also have "... = \<lceil>\<bar> abstract_bal_map b t \<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1" 
-      apply(simp, rule cong[of ceiling], simp)
-      using tP gamma_0 \<epsilon>_axiom 
-      by auto (smt (verit, ccfv_SIG) diff_divide_distrib mult_neg_pos)
+      proof -
+        have eps_pos: "1 - \<epsilon> > 0"
+          using \<epsilon>_axiom(2) by linarith
+        have "(1 - \<epsilon>) * \<gamma> > 0"
+          using eps_pos gamma_0 mult_pos_pos by blast
+        hence "abstract_bal_map b t < 0"
+          using tP(1) by linarith
+        hence "\<bar>abstract_bal_map b t\<bar> = - abstract_bal_map b t"
+          by simp
+        thus ?thesis by simp
+      qed
     finally show ?thesis by simp
   qed
   have bs_decr:"\<lceil> \<bar> abstract_bal_map b s - \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> \<le> \<lceil> \<bar>abstract_bal_map b s\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil>"
@@ -1609,7 +1702,14 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
     using send_flow_call1_cond_Phi_decr[of state, OF assms(1-6)] by simp
   ultimately have "abstract_flow_map f' e \<ge> abstract_flow_map f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
     using gamma_0 
-    by (smt (verit) mult_less_cancel_left2 of_int_less_1_iff)
+  proof -
+    have phi_real_ge: "(1::real) \<le> real_of_int (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
+      using Int.of_int_le_iff[THEN iffD2, OF \<open>\<Phi> state - \<Phi> (send_flow_call1_upd state) \<ge> 1\<close>] by simp
+    have gamma_le: "\<gamma> \<le> \<gamma> * real_of_int (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
+      using mult_left_mono[OF phi_real_ge less_imp_le[OF gamma_0]] by simp
+    show "abstract_flow_map f' e \<ge> abstract_flow_map f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
+      using \<open>abstract_flow_map f e - \<gamma> \<le> abstract_flow_map f' e\<close> gamma_le by linarith
+  qed
   moreover have "current_\<gamma> (send_flow_call1_upd state) = \<gamma>"
     by (simp add: "1"(3) send_flow_call1_upd_changes(4))
   moreover have "current_flow (send_flow_call1_upd state) = f'"
@@ -1652,7 +1752,17 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using send_flow_call2_cond_Phi_decr[of state, OF assms(1-6)] by simp
   ultimately have "abstract_flow_map f' e \<ge> abstract_flow_map f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
     using gamma_0 
-    by (smt (verit) mult_less_cancel_left2 of_int_less_1_iff)
+  proof -
+    assume h1: "abstract_flow_map f e - \<gamma> \<le> abstract_flow_map f' e"
+    assume h2: "1 \<le> \<Phi> state - \<Phi> (send_flow_call2_upd state)"
+    assume gp: "0 < \<gamma>"
+    have h2': "(1::real) \<le> real_of_int (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
+      using h2 by simp
+    have gamma_le: "\<gamma> \<le> \<gamma> * real_of_int (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
+      using mult_left_mono[OF h2' order.strict_implies_order[OF gp]] by simp
+    show ?thesis
+      using h1 gamma_le by linarith
+  qed
   moreover have "current_\<gamma> (send_flow_call2_upd state) = \<gamma>"
     by (simp add: "1"(3) send_flow_call2_upd_changes(4))
   moreover have "current_flow (send_flow_call2_upd state) = f'"
@@ -1940,8 +2050,23 @@ proof(all \<open>rule send_flow_call1_condE[OF assms(1)]\<close>, goal_cases)
     "oedge ` set P \<subseteq> to_set (actives state) \<union> \<F> state"
     "distinct P" "Rcap (abstract_flow_map f) (set P) > 0"
     using if_send_flow_call1_cond_advanced[OF assms(1,4) _ _ assms(3,2,5,6) ] 1 by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+  proof (rule notI)
+    assume s_eq_t: "s = t"
+    have "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b t"
+      using sP(1) s_eq_t by simp
+    also have "\<dots> < - \<epsilon> * \<gamma>"
+      using tP(1) by simp
+    finally have less: "(1 - \<epsilon>) * \<gamma> < - \<epsilon> * \<gamma>" .
+    have distrib: "(1 - \<epsilon>) * \<gamma> = \<gamma> - \<epsilon> * \<gamma>"
+      by (simp add: algebra_simps)
+    have "\<gamma> - \<epsilon> * \<gamma> < - \<epsilon> * \<gamma>"
+      using less distrib by simp
+    hence "\<gamma> < 0"
+      by linarith
+    thus False
+      using gamma_0 by linarith
+  qed
   have flow_dom_is: "flow_domain (current_flow state) = \<E>" "flow_invar (current_flow state)"
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
@@ -2038,8 +2163,15 @@ proof(all \<open>rule send_flow_call2_condE[OF assms(1)]\<close>, goal_cases)
   have tP: "abstract_bal_map b t < - (1-\<epsilon>) * \<gamma>"  "t \<in> \<V>" 
     using  "1"(2,3,5,6) if_send_flow_call2_cond_basic[OF assms(1,4)] 
     by auto
-  have s_neq_t:"s \<noteq> t" using sP tP gamma_0
-    by (smt (verit, best) mult_less_cancel_right_disj)
+  have s_neq_t:"s \<noteq> t"
+  proof (rule notI)
+    assume eq: "s = t"
+    have lt: "\<epsilon> * \<gamma> < - (1 - \<epsilon>) * \<gamma>"
+      using sP(1) tP(1)[simplified eq[symmetric]] by linarith
+    then have "\<epsilon> < - (1 - \<epsilon>)"
+      using gamma_0 by (auto simp: mult_less_cancel_right_pos)
+    then show False by linarith
+  qed
   have flow_dom_is: "flow_domain (current_flow state) = \<E>" "flow_invar (current_flow state)"
     using assms(4) 1 by auto
   have f'_is:"abstract_flow_map f' = augment_edges (abstract_flow_map f) \<gamma> P"
@@ -2590,11 +2722,26 @@ lemma send_flow_Phi_final[send_flow_results]:
           "invar_above_6Ngamma state"
           "state' = send_flow state"
   shows   "a_current_flow  state' e \<ge> a_current_flow state e - \<Phi> state*current_\<gamma> state'"
-  using send_flow_Phi[of state state' e] Phi_nonneg[of state] assms
-    invar_gammaE send_flow_invar_gamma_pres Phi_nonneg  
-    send_flow_Phi[of state state' e] 
-    send_flow_termination
-  by(smt mult_less_cancel_right_disj of_int_le_iff)
+proof -
+  have dom: "send_flow_dom state"
+    using send_flow_termination[OF assms(1,2,3,4,5,6)] .
+  have invar_gamma': "invar_gamma state'"
+    unfolding assms(7) using send_flow_invar_gamma_pres[OF dom assms(2)] .
+  have gamma_pos: "0 < current_\<gamma> state'"
+    using invar_gamma' by (auto elim: invar_gammaE)
+  have Phi'_nonneg: "0 \<le> \<Phi> state'"
+    using Phi_nonneg[OF invar_gamma'] .
+  have Phi_ineq: "a_current_flow state' e \<ge> a_current_flow state e - (\<Phi> state - \<Phi> state') * current_\<gamma> state'"
+    using send_flow_Phi[OF assms(1,2,3,4,5,6) assms(7)] .
+  have int_le: "\<Phi> state - \<Phi> state' \<le> \<Phi> state"
+    using Phi'_nonneg by simp
+  have real_le: "real_of_int (\<Phi> state - \<Phi> state') \<le> real_of_int (\<Phi> state)"
+    using int_le of_int_le_iff by blast
+  have times_le: "(\<Phi> state - \<Phi> state') * current_\<gamma> state' \<le> \<Phi> state * current_\<gamma> state'"
+    using mult_right_mono[OF real_le] gamma_pos by (simp add: less_imp_le)
+  show ?thesis
+    using Phi_ineq times_le by linarith
+qed
 
 theorem send_flow_invar_integral_pres[send_flow_results]:
   assumes "underlying_invars state" "invar_gamma state"
@@ -2863,8 +3010,14 @@ proof-
   have eps_card_V':"real (card \<V> ) * \<epsilon> - 1 \<le> 0"
     using eps_card_V by linarith
   have eps_card_rewrite:"- real (card \<V>) * \<epsilon> + 1 \<le> - real (card \<V> - 1) * \<epsilon> + 1 - \<epsilon>"
-    by(auto simp add: algebra_simps) 
-      (metis Suc_pred cardV_0 distrib_left dual_order.refl mult.right_neutral of_nat_Suc)
+    proof -
+      have card_ge: "(1::nat) \<le> card \<V>"
+        using cardV_0 by simp
+      have real_diff: "real (card \<V> - 1) = real (card \<V>) - 1"
+        using of_nat_diff[OF card_ge] by simp
+      show ?thesis
+        by (subst real_diff, simp add: algebra_simps)
+    qed
   show ?thesis
   proof(rule disjE[OF s_and_t], goal_cases)
     case 1

@@ -100,12 +100,56 @@ lemma consistI:
   using assms by(force simp add:  consist_def split: prod.split) 
 
 lemma consist_conv_inj:"consist E conv \<Longrightarrow> a \<in> E \<Longrightarrow> b \<in> E \<Longrightarrow> conv a = conv b \<Longrightarrow> a = b"
-  unfolding consist_def
-  apply(rule Redge.induct[of _ "conv a"])
-  apply(all \<open>rule Redge.induct[ of _ "conv b"]\<close>)
-  apply(all \<open>cases a\<close>, all \<open>cases b\<close>)
-  using Redge.inject Redge.distinct
-  by (smt (verit) case_prod_conv prod.inject)+
+proof -
+  assume consist: "consist E conv" and aE: "a \<in> E" and bE: "b \<in> E" and eq: "conv a = conv b"
+  obtain a1 a2 where a_def: "a = (a1, a2)" by (cases a)
+  obtain b1 b2 where b_def: "b = (b1, b2)" by (cases b)
+  have aE': "(a1, a2) \<in> E" using aE a_def by simp
+  have bE': "(b1, b2) \<in> E" using bE b_def by simp
+  obtain ea where ea_spec: "conv (a1, a2) = F ea \<and> make_pair ea = (a1, a2) \<or>
+                            conv (a1, a2) = B ea \<and> make_pair ea = (a2, a1)"
+    using consistD(1)[OF consist aE'] by blast
+  obtain eb where eb_spec: "conv (b1, b2) = F eb \<and> make_pair eb = (b1, b2) \<or>
+                            conv (b1, b2) = B eb \<and> make_pair eb = (b2, b1)"
+    using consistD(1)[OF consist bE'] by blast
+  have eq': "conv (a1, a2) = conv (b1, b2)"
+    using eq a_def b_def by simp
+  have ab_eq: "(a1, a2) = (b1, b2)"
+  proof -
+    from ea_spec show ?thesis
+    proof (rule disjE)
+      assume h1: "conv (a1, a2) = F ea \<and> make_pair ea = (a1, a2)"
+      from eb_spec show ?thesis
+      proof (rule disjE)
+        assume h2: "conv (b1, b2) = F eb \<and> make_pair eb = (b1, b2)"
+        from h1 h2 eq' have feq: "F ea = F eb" by simp
+        hence eaeb: "ea = eb" using Redge.inject by simp
+        with h1 h2 show ?thesis by simp
+      next
+        assume h2: "conv (b1, b2) = B eb \<and> make_pair eb = (b2, b1)"
+        from h1 h2 eq' have fdeq: "F ea = B eb" by simp
+        hence False using Redge.distinct by simp
+        thus ?thesis ..
+      qed
+    next
+      assume h1: "conv (a1, a2) = B ea \<and> make_pair ea = (a2, a1)"
+      from eb_spec show ?thesis
+      proof (rule disjE)
+        assume h2: "conv (b1, b2) = F eb \<and> make_pair eb = (b1, b2)"
+        from h1 h2 eq' have bdeq: "B ea = F eb" by simp
+        hence False using Redge.distinct by simp
+        thus ?thesis ..
+      next
+        assume h2: "conv (b1, b2) = B eb \<and> make_pair eb = (b2, b1)"
+        from h1 h2 eq' have beq: "B ea = B eb" by simp
+        hence eaeb: "ea = eb" using Redge.inject by simp
+        with h1 h2 have "(a2, a1) = (b2, b1)" by simp
+        thus ?thesis by simp
+      qed
+    qed
+  qed
+  from ab_eq a_def b_def show "a = b" by simp
+qed
 
 end
 
@@ -1376,10 +1420,34 @@ qed
 
 lemma proper_path_some_redges:
   "length l \<ge> 2 \<Longrightarrow> (to_redge_path to_rdg' l) \<noteq> []" for l to_rdg' Q
-   apply(induction to_rdg' l rule: to_redge_path.induct)
-   apply (metis list.simps(3) to_redge_path.simps(1))
-   apply (metis list.distinct(1) to_redge_path.simps(2))
-   by auto
+proof -
+  assume len: "length l \<ge> 2"
+  obtain u v rest where l_eq: "l = u # v # rest"
+  proof (cases l)
+    case Nil
+    with len show thesis by simp
+  next
+    case (Cons a as)
+    note l_a_as = this
+    show thesis
+    proof (cases as)
+      case Nil
+      with len l_a_as show thesis by simp
+    next
+      case (Cons b bs)
+      with l_a_as have "l = a # b # bs" by simp
+      then show thesis by (rule that)
+    qed
+  qed
+  show "to_redge_path to_rdg' l \<noteq> []"
+  proof (cases rest)
+    case Nil
+    with l_eq show ?thesis by simp
+  next
+    case (Cons w vs)
+    with l_eq show ?thesis by simp
+  qed
+qed
 
 lemma perpath_to_redgepath:
   "\<lbrakk>inv_conversion_consistent state; inv_digraph_abs_\<FF>_sym state; 
@@ -1492,7 +1560,13 @@ lemma to_rdg_hd:
 
 lemma to_rdg_last_cons: " (last (abstract_conv_map to_rdg (u, v) # to_redge_path to_rdg (v # va # vb))) =
                           (last (to_redge_path to_rdg (v # va # vb)))"
-  by (smt (verit, best) last_ConsR list.discI list.inject to_redge_path.elims)
+proof -
+  have "length (v # va # vb) \<ge> 2" by simp
+  hence "to_redge_path to_rdg (v # va # vb) \<noteq> []"
+    using proper_path_some_redges by blast
+  then show ?thesis
+    using last_ConsR by simp
+qed
 
 lemma to_rdg_last: 
   assumes "consist E (abstract_conv_map to_rdg)" "length p \<ge> 2"
@@ -1537,7 +1611,25 @@ lemma consist_oedge:
     shows "{oedge (to_rdg' (v, v'))} = oedge ` {to_rdg' (v', v), to_rdg' (v, v')}"
   apply(rule consistE[OF assms(1)])
   using   assms(2,3,4)
-  by (smt (verit, best) insert_commute oedge_both_redges_image oedge.simps(1,2) swap_simp)
+proof -
+  obtain e where e_prop: "(to_rdg' (v, v') = F e \<and> make_pair e = (v, v')) \<or>
+                          (to_rdg' (v, v') = B e \<and> make_pair e = (v', v))"
+    using consistD(1)[OF assms(1) assms(3)] by auto
+  have oedge_eq: "oedge (to_rdg' (v, v')) = oedge (to_rdg' (v', v))"
+  proof(cases "to_rdg' (v, v') = F e")
+    case True
+    hence Bev: "to_rdg' (v', v) = B e"
+      using consistD(2)[OF assms(1) assms(3) assms(2), of e] by simp
+    show ?thesis using True Bev by (simp add: oedge.simps)
+  next
+    case False
+    with e_prop have Be: "to_rdg' (v, v') = B e" by auto
+    hence Fev: "to_rdg' (v', v) = F e"
+      using consistD(2)[OF assms(1) assms(4) not_sym[OF assms(2)], of e] by simp
+    show ?thesis using Be Fev by (simp add: oedge.simps)
+  qed
+  show ?thesis by (simp add: oedge_eq)
+qed
 
 lemma  oedge_of_to_redgepath_subset:
   assumes "distinct Q" "consist E (abstract_conv_map to_rdg')" 
@@ -1683,7 +1775,17 @@ proof(induction Q rule: edges_of_path.induct)
 lemma Phi_nonneg: "invar_gamma state\<Longrightarrow> \<Phi> state \<ge> 0"
   unfolding \<Phi>_def invar_gamma_def
   apply(rule sum_nonneg) 
-  by (smt (verit, ccfv_threshold) \<epsilon>_axiom(1) divide_nonneg_pos zero_le_ceiling)
+proof -
+  assume gamma_pos: "current_\<gamma> state > 0"
+  fix v
+  assume vV: "v \<in> \<V>"
+  have h1: "0 \<le> \<bar>a_balance state v\<bar> / current_\<gamma> state"
+    by (rule divide_nonneg_pos) (use gamma_pos in auto)
+  have h2: "\<bar>a_balance state v\<bar> / current_\<gamma> state - (1 - \<epsilon>) > -1"
+    using h1 \<epsilon>_axiom(1) by linarith
+  thus "0 \<le> \<lceil>\<bar>a_balance state v\<bar> / current_\<gamma> state - (1 - \<epsilon>)\<rceil>"
+    by (simp add: zero_le_ceiling)
+qed
 
 definition add_fst ("_ +++ _") where
 "add_fst c ab = (c + prod.fst ab, prod.snd ab)"
@@ -1987,7 +2089,13 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     case True
     hence p_allowed_edges:"set p \<subseteq> allowed_edges" 
       unfolding less
-      by (metis Collect_mem_eq assms(10) cnt_P_0_set less.prems(6))
+    proof -
+      assume "cnt_P p (\<lambda>e. e \<notin> {e |e. e \<in> \<EE> \<and> oedge e \<in> to_set (actives state)} \<union> \<F>_redges state) = 0"
+      then have "set p \<subseteq> {r. r \<in> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state}"
+        by (simp add: cnt_P_0_set)
+      then show "set p \<subseteq> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state"
+        by blast
+    qed
     show ?thesis 
       apply(rule exI[of _ p])
       using less p_allowed_edges 
@@ -1997,7 +2105,27 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
                                 "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
-      by (metis (mono_tags, lifting) Un_iff cnt_P_0)
+    proof -
+      have cnt_nonzero: "cnt_P p (\<lambda>e. e \<notin> allowed_edges) \<noteq> 0"
+        using False less(13,14) by simp
+      have "\<exists> e \<in> set p. e \<notin> allowed_edges"
+      proof (rule ccontr)
+        assume "\<not> (\<exists> e \<in> set p. e \<notin> allowed_edges)"
+        hence "cnt_P p (\<lambda>e. e \<notin> allowed_edges) = 0"
+          using cnt_P_0[of p "\<lambda>e. e \<notin> allowed_edges"] by blast
+        thus False
+          using cnt_nonzero by simp
+      qed
+      then obtain e where e_in_p: "e \<in> set p" and e_not_allowed: "e \<notin> allowed_edges"
+        by blast
+      have e_not_in_union: "e \<notin> actives_state' \<union> \<F>_state"
+        using e_not_allowed less(13) by simp
+      have e_notF: "e \<notin> \<F>_redges state"
+        using e_not_in_union less(11) by auto
+      have e_notactive: "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
+        using e_not_in_union less(12) by auto
+      from that[OF e_in_p e_notF e_notactive] show thesis .
+    qed
     hence "oedge e \<in> \<E> - to_set (actives state)"
       using allowed_edges_sub less(5) unfolding less 
       using o_edge_res by auto
@@ -2008,9 +2136,23 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
            connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable  (to_graph (\<FF> state)) (fstv e) (sndv e)"
-      by (metis in_connected_componentE in_connected_componentI2)
+    proof -
+      assume eq: "connected_component (to_graph (\<FF> state)) (fstv e) =
+                  connected_component (to_graph (\<FF> state)) (sndv e)"
+      have "sndv e \<in> connected_component (to_graph (\<FF> state)) (sndv e)"
+        by (rule in_connected_componentI2) simp
+      with eq have "sndv e \<in> connected_component (to_graph (\<FF> state)) (fstv e)"
+        by simp
+      thus ?thesis
+        by (auto elim: in_connected_componentE)
+    qed
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
-      by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
+    proof -
+      obtain ys zs where "p = ys @ e # zs"
+        using split_list[OF \<open>e \<in> set p\<close>] by blast
+      hence "ys @ [e] @ zs = p" by simp
+      thus thesis by (rule that)
+    qed
     show ?thesis 
     proof(cases rule: orE'[OF  Meson.disj_comm[OF or_reach]])
       case 2
@@ -2186,7 +2328,27 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
                                 "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
-      by (metis (mono_tags, lifting) Un_iff cnt_P_0)
+      proof -
+        have cnt_nonzero: "cnt_P p (\<lambda>e. e \<notin> allowed_edges) \<noteq> 0"
+          using False less(13,14) by simp
+        have "\<exists> e \<in> set p. e \<notin> allowed_edges"
+        proof (rule ccontr)
+          assume "\<not> (\<exists> e \<in> set p. e \<notin> allowed_edges)"
+          hence "cnt_P p (\<lambda>e. e \<notin> allowed_edges) = 0"
+            using cnt_P_0[of p "\<lambda>e. e \<notin> allowed_edges"] by blast
+          thus False
+            using cnt_nonzero by simp
+        qed
+        then obtain e where e_in_p: "e \<in> set p" and e_not_allowed: "e \<notin> allowed_edges"
+          by blast
+        have e_not_in_union: "e \<notin> actives_state' \<union> \<F>_state"
+          using e_not_allowed less(13) by simp
+        have e_notF: "e \<notin> \<F>_redges state"
+          using e_not_in_union less(11) by auto
+        have e_notactive: "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
+          using e_not_in_union less(12) by auto
+        from that[OF e_in_p e_notF e_notactive] show thesis .
+      qed
     hence "oedge e \<in> \<E> - to_set (actives state)"
       using allowed_edges_sub less(5) less  o_edge_res by auto
     hence "connected_component (to_graph (\<FF> state)) (fst (oedge e)) 
@@ -2197,14 +2359,26 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
           = connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable (to_graph (\<FF> state)) (fstv e) (sndv e)"
-      by (metis in_connected_componentE in_connected_componentI2)  
+      by (fastforce intro: in_connected_componentI2 elim: in_connected_componentE)
     have e_rcap: "rcap f e > 0" 
       using augpath_rcap_pos_strict e_prop(1) less.prems(1) by blast
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
-      by (metis \<open>e \<in> set p\<close> in_set_conv_decomp_last single_in_append)
+      proof -
+        from \<open>e \<in> set p\<close> have "\<exists>ys zs. p = ys @ e # zs"
+          by (simp add: in_set_conv_decomp)
+        then obtain ys zs where "p = ys @ e # zs" by blast
+        hence "ys @ [e] @ zs = p" by simp
+        then show thesis using that by blast
+      qed
     hence costs_split: "foldr (\<lambda>x. (+) (\<cc> x)) p 0 =
                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
-      by(induction p1, auto, metis foldr_append foldr_last_append map_sum_split)  
+      proof -
+        have general: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@[e]@p2) 0 =
+                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
+          by (induction p1) (auto simp add: algebra_simps)
+        from p1p2 have "p = p1@[e]@p2" by simp
+        then show ?thesis using general by simp
+      qed
     have costs_split2: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@p2) 0 =
                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
         by(induction p1, auto)  
@@ -2349,7 +2523,18 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
                       OF E A B C D less(6) less(7-13) _ less(15) less(16) less(17)] by simp
       moreover have costs_split3: "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
              foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
-        by (metis append_eq_appendI map_sum_split)
+      proof -
+        have "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
+              foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) (QQ' @ p2) 0"
+          by (simp only: map_sum_split)
+        also have "\<dots> = foldr (\<lambda>x. (+) (\<cc> x)) p1 0 +
+                     (foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0)"
+          by (simp only: map_sum_split)
+        also have "\<dots> = foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 +
+                     foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
+          by (simp add: add.assoc)
+        finally show ?thesis .
+      qed
       moreover have "foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 \<le> \<cc> e"
       proof(rule ccontr, goal_cases)
         case 1
@@ -2394,7 +2579,17 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
            done
          done
        have QQrev_leng: "length QQrev > 0" 
-         by (metis QQrevpre length_greater_0_conv list.simps(3) prepath_simps)
+        proof (cases QQrev)
+          case Nil
+          with QQrevpre have "prepath []"
+            by simp
+          then have False
+            using prepath_simps[of "[]"] by blast
+          then show ?thesis ..
+        next
+          case (Cons a as)
+          then show ?thesis by simp
+        qed
        hence augpathQQrev: "augpath f QQrev"
            using QQrevpre QQrev_number_not_allowedp Rcap_strictI[of "set QQrev" 0 f] 
            unfolding augpath_def by simp

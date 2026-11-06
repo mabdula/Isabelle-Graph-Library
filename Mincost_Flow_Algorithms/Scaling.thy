@@ -287,8 +287,7 @@ lemma SSP_simps:
     apply(rule SSP_call_3_condE, simp)
     apply(subst SSP.psimps[OF assms])
     unfolding SSP_upd3_def
-    apply(simp split: option.splits if_splits, metis)
-    done    
+    by (auto simp: Let_def split: option.splits if_splits prod.splits)
   by (auto simp add: SSP.psimps[OF assms]
                        SSP_ret_1_cond_def SSP_ret1_def
                        SSP_ret_2_cond_def SSP_ret2_def
@@ -397,7 +396,7 @@ proof(rule invar_integralI)
   define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (metis prod_cases3)
+    by (cases "the (get_source_target_path f b)" rule: prod_cases3) fastforce
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF assms(1)])
     using b_def f_def stp_def by simp
@@ -546,7 +545,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (metis prod_cases3)
+    by (cases "the (get_source_target_path f b)") simp
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF 3])
     using b_def f_def stp_def by simp
@@ -718,7 +717,14 @@ proof-
   define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (metis prod_cases3)
+proof -
+  obtain s' t' P' where "the (get_source_target_path f b) = (s', t', P')"
+    by (rule prod_cases3)
+  hence "(s', t', P') = the (get_source_target_path f b)"
+    by (rule sym)
+  thus thesis
+    by (rule that)
+qed
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF assms(1)])
     using b_def f_def stp_def by simp
@@ -1019,7 +1025,36 @@ proof-
            by (auto intro: augpathI )
          then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
-           by (metis dual_order.refl prepath_drop_cycles augpath_def prepath_def)
+          proof -
+            have pp: "prepath p" using p_prop(1) by (simp add: augpath_def)
+            show ?thesis
+            proof (cases "distinct p")
+              case True
+              show ?thesis
+              proof (rule that[of p])
+                show "prepath p" using pp by simp
+                show "set p \<subseteq> set p" by simp
+                show "fstv (hd p) = s" using p_prop(3) by simp
+                show "sndv (last p) = t" using p_prop(4) by simp
+                show "distinct p" by (fact True)
+                show "p \<noteq> []" using pp by (simp add: prepath_def)
+              qed
+            next
+              case False
+              then obtain q where q_props: "prepath q" "distinct q" "set q \<subseteq> set p"
+                "fstv (hd p) = fstv (hd q)" "sndv (last p) = sndv (last q)" "q \<noteq> []"
+                using pp by (blast elim: prepath_drop_cycles)
+              show ?thesis
+              proof (rule that[of q])
+                show "prepath q" by fact
+                show "set q \<subseteq> set p" by fact
+                show "fstv (hd q) = s" "sndv (last q) = t"
+                  using q_props(4,5) p_prop(3,4) by auto
+                show "distinct q" by fact
+                show "q \<noteq> []" by fact
+              qed
+            qed
+          qed
          hence "augpath \<f> p'"
            using p_prop(1) unfolding augpath_def augpath_def Rcap_def 
            by auto
@@ -1042,7 +1077,42 @@ proof-
            by auto
         then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
-           by (metis dual_order.refl prepath_drop_cycles augpath_def prepath_def)
+proof -
+  have p_prepath: "prepath p"
+    using p_prop(1) unfolding augpath_def by auto
+  have p_nonempty: "p \<noteq> []"
+    using p_prepath unfolding prepath_def by auto
+  show thesis
+  proof (cases "distinct p")
+    case True
+    show thesis
+    proof (rule that[of p])
+      show "prepath p" by (rule p_prepath)
+      show "set p \<subseteq> set p" by (rule subset_refl)
+      show "fstv (hd p) = s" by (rule p_prop(3))
+      show "sndv (last p) = t" by (rule p_prop(4))
+      show "distinct p" by (rule True)
+      show "p \<noteq> []" by (rule p_nonempty)
+    qed
+  next
+    case False
+    show thesis
+    proof (rule prepath_drop_cycles[OF p_prepath subset_refl False])
+      fix ds
+      assume ds_props: "prepath ds" "distinct ds" "set ds \<subseteq> set p"
+        "fstv (hd p) = fstv (hd ds)" "sndv (last p) = sndv (last ds)" "ds \<noteq> []"
+      show thesis
+      proof (rule that[of ds])
+        show "prepath ds" by (rule ds_props(1))
+        show "set ds \<subseteq> set p" by (rule ds_props(3))
+        show "fstv (hd ds) = s" using ds_props(4) p_prop(3) by simp
+        show "sndv (last ds) = t" using ds_props(5) p_prop(4) by simp
+        show "distinct ds" by (rule ds_props(2))
+        show "ds \<noteq> []" by (rule ds_props(6))
+      qed
+    qed
+  qed
+qed
          hence "augpath \<f> p'"
            using p_prop(1) unfolding augpath_def  augpath_def Rcap_def  
            by auto
@@ -1524,7 +1594,21 @@ proof(rule ccontr)
     using C_prop  
     by (auto simp add: image_def augcycle_def \<EE>_def)
   ultimately show False using conservative_weights aa(1)
-    by metis  
+  proof -
+    assume f1: "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0"
+      and f2: "map to_vertex_pair C = map make_pair (map oedge C)"
+      and f3: "set (map oedge C) \<subseteq> \<E>"
+      and cw: "\<nexists> Ca. closed_w (make_pair ` \<E>) (map make_pair Ca)
+                 \<and> set Ca \<subseteq> \<E>
+                 \<and> foldr (\<lambda> e acc. acc + \<c> e) Ca 0 < 0"
+      and a5: "closed_w (make_pair ` \<E>) (map to_vertex_pair C)"
+    have a1: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C))"
+      using a5 by (simp only: f2)
+    have False
+      using cw[unfolded not_ex, rule_format, of "map oedge C"] a1 f3 f1
+      by blast
+    thus False by simp
+  qed
 qed
 
 lemma invar_opt_initial_state:

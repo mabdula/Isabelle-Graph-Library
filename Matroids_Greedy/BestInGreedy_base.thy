@@ -320,7 +320,16 @@ lemma length_carrier_sorted:
 lemma carrier_sorted_distinct:
   "distinct (carrier_sorted)"
   unfolding sort_desc_axioms_def using card_distinct set_inv_carrier matroid.set.set_cardinality 
-  by (metis carrier_sorted_set length_carrier_sorted) 
+proof -
+  have card_eq: "cardinality carrier = card (to_set carrier)"
+    using set_inv_carrier matroid.set.set_cardinality by simp
+  have set_eq: "card (to_set carrier) = card (set carrier_sorted)"
+    using carrier_sorted_set by simp
+  have "card (set carrier_sorted) = length carrier_sorted"
+    using card_eq set_eq length_carrier_sorted by simp
+  then show "distinct carrier_sorted"
+    using card_distinct by auto
+qed
 
 
 
@@ -448,10 +457,57 @@ proof (intro invar_props_intros, goal_cases)
 
   have carrier_pref_expr: "carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) = 
     insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-    apply (simp add: BestInGreedy_base_upd1_def carrier_pref_def Let_def num_iter_def)
-    using \<open>BestInGreedy_base_call_1_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-    apply (clarsimp elim!: invar_props_elims call_cond_elims)
-    by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+  proof -
+    obtain x xs where carrier_split: "carrier_list best_in_greedy_state = x # xs"
+      using \<open>BestInGreedy_base_call_1_conds best_in_greedy_state\<close>
+      by (auto elim!: call_cond_elims)
+    let ?n = "num_iter c order best_in_greedy_state"
+    have drop_eq: "carrier_list best_in_greedy_state = drop ?n carrier_sorted"
+      using \<open>invar_2 c order best_in_greedy_state\<close>
+      by (auto elim!: invar_props_elims)
+    have n_less: "?n < length carrier_sorted"
+    proof (rule ccontr)
+      assume "\<not> ?n < length carrier_sorted"
+      then have "length carrier_sorted \<le> ?n" by simp
+      then have "drop ?n carrier_sorted = []" by simp
+      with drop_eq carrier_split show False by simp
+    qed
+    have upd1_list: "carrier_list (BestInGreedy_base_upd1 best_in_greedy_state) = xs"
+      by (simp add: BestInGreedy_base_upd1_def Let_def carrier_split)
+    have drop_xxs: "drop ?n carrier_sorted = x # xs"
+      using drop_eq carrier_split by simp
+    have len_carrier_sorted: "length carrier_sorted = Suc ?n + length xs"
+    proof -
+      have "length carrier_sorted - ?n = length (drop ?n carrier_sorted)"
+        by (simp add: length_drop)
+      also have "\<dots> = Suc (length xs)"
+        by (simp add: drop_xxs)
+      finally have diff_eq: "length carrier_sorted - ?n = Suc (length xs)" .
+      with n_less show ?thesis by linarith
+    qed
+    have num_iter_upd1: "num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state) = Suc ?n"
+    proof -
+      have "num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state) = length carrier_sorted - length xs"
+        by (simp add: num_iter_def upd1_list)
+      with len_carrier_sorted show ?thesis by linarith
+    qed
+    have hd_eq: "hd (drop ?n carrier_sorted) = hd (carrier_list best_in_greedy_state)"
+      using drop_eq by simp
+    have take_split: "take ?n carrier_sorted @ [hd (drop ?n carrier_sorted)] = take (Suc ?n) carrier_sorted"
+      using take_hd_drop[OF n_less] .
+    have "carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) =
+      set (take (Suc ?n) carrier_sorted)"
+      by (simp add: carrier_pref_def num_iter_upd1)
+    also have "\<dots> = set (take ?n carrier_sorted @ [hd (drop ?n carrier_sorted)])"
+      using take_split by simp
+    also have "\<dots> = insert (hd (drop ?n carrier_sorted)) (set (take ?n carrier_sorted))"
+      by simp
+    also have "\<dots> = insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order ?n)"
+      using hd_eq by (simp add: carrier_pref_def)
+    finally show "carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) =
+      insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
+      .
+  qed
 
   show "to_set (result (BestInGreedy_base_upd1 best_in_greedy_state)) \<subseteq>
     carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state))"
@@ -467,10 +523,44 @@ proof (intro invar_props_intros, goal_cases)
 
   have carrier_pref_expr: "carrier_pref c order (num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state)) = 
     insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-    apply (simp add: BestInGreedy_base_upd2_def carrier_pref_def Let_def num_iter_def 1)
-    using \<open>BestInGreedy_base_call_2_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-    apply (clarsimp elim!: invar_props_elims call_cond_elims)
-    by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+  proof -
+    have length_ge_1: "length (carrier_list best_in_greedy_state) \<ge> 1"
+      using \<open>BestInGreedy_base_call_2_conds best_in_greedy_state\<close>
+      by (auto elim!: call_cond_elims)
+    have carrier_list_eq: "carrier_list best_in_greedy_state =
+        drop (num_iter c order best_in_greedy_state) carrier_sorted"
+      using \<open>invar_2 c order best_in_greedy_state\<close>
+      by (auto elim!: invar_props_elims)
+    have length_le: "length (carrier_list best_in_greedy_state) \<le> length carrier_sorted"
+      using carrier_list_eq by simp
+    have n_lt: "num_iter c order best_in_greedy_state < length carrier_sorted"
+    proof (rule ccontr)
+      assume "\<not> num_iter c order best_in_greedy_state < length carrier_sorted"
+      then have "drop (num_iter c order best_in_greedy_state) carrier_sorted = []"
+        by simp
+      with carrier_list_eq length_ge_1 show False by simp
+    qed
+    have carrier_list_upd2: "carrier_list (BestInGreedy_base_upd2 best_in_greedy_state) =
+        tl (carrier_list best_in_greedy_state)"
+      by (simp add: BestInGreedy_base_upd2_def Let_def)
+    have num_iter_upd: "num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state) =
+        Suc (num_iter c order best_in_greedy_state)"
+      unfolding num_iter_def carrier_list_upd2 length_tl
+      using length_ge_1 length_le by arith
+    have "carrier_pref c order (Suc (num_iter c order best_in_greedy_state)) =
+        set (take (num_iter c order best_in_greedy_state) carrier_sorted @
+             [hd (drop (num_iter c order best_in_greedy_state) carrier_sorted)])"
+      using n_lt by (simp add: carrier_pref_def take_hd_drop)
+    also have "\<dots> = insert (hd (drop (num_iter c order best_in_greedy_state) carrier_sorted))
+        (carrier_pref c order (num_iter c order best_in_greedy_state))"
+      by (simp add: carrier_pref_def)
+    also have "\<dots> = insert (hd (carrier_list best_in_greedy_state))
+        (carrier_pref c order (num_iter c order best_in_greedy_state))"
+      using carrier_list_eq by simp
+    finally show "carrier_pref c order (num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state)) =
+        insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
+      using num_iter_upd by simp
+  qed
 
   show "to_set (result (BestInGreedy_base_upd2 best_in_greedy_state)) \<subseteq> 
     carrier_pref c order (num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state))"
@@ -560,15 +650,68 @@ proof(rule invar_props_intros, goal_cases)
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-      apply (simp add: BestInGreedy_base_upd1_def carrier_pref_def Let_def num_iter_def)
-      using \<open>BestInGreedy_base_call_1_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-      apply (clarsimp elim!: invar_props_elims call_cond_elims)
-      by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+      proof -
+        have list_ne: "carrier_list best_in_greedy_state \<noteq> []"
+          using \<open>BestInGreedy_base_call_1_conds best_in_greedy_state\<close> by (auto elim!: call_cond_elims)
+        define n where n_def: "n = num_iter c order best_in_greedy_state"
+        have drop_n: "carrier_list best_in_greedy_state = drop n carrier_sorted"
+        proof -
+          have "carrier_list best_in_greedy_state = drop (num_iter c order best_in_greedy_state) carrier_sorted"
+            using \<open>invar_2 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
+          then show ?thesis by (simp add: n_def[symmetric])
+        qed
+        have n_less: "n < length carrier_sorted"
+        proof (rule ccontr)
+          assume "\<not> n < length carrier_sorted"
+          then have "length carrier_sorted \<le> n" by simp
+          then have "drop n carrier_sorted = []" by simp
+          with drop_n list_ne show False by simp
+        qed
+        have carrier_list_upd1: "carrier_list (BestInGreedy_base_upd1 best_in_greedy_state) = tl (carrier_list best_in_greedy_state)"
+          by (simp add: BestInGreedy_base_upd1_def Let_def)
+        have tl_eq: "tl (carrier_list best_in_greedy_state) = drop (Suc n) carrier_sorted"
+        proof -
+          have "tl (carrier_list best_in_greedy_state) = tl (drop n carrier_sorted)"
+            using drop_n by simp
+          also have "\<dots> = drop (Suc n) carrier_sorted"
+            by (simp add: drop_Suc tl_drop)
+          finally show ?thesis .
+        qed
+        have num_iter_upd1: "num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state) = Suc n"
+        proof -
+          have len_upd1: "length (carrier_list (BestInGreedy_base_upd1 best_in_greedy_state)) = length carrier_sorted - Suc n"
+            by (simp add: carrier_list_upd1 tl_eq length_drop)
+          show ?thesis
+            unfolding num_iter_def using len_upd1 n_less by linarith
+        qed
+        have "carrier_pref c order (Suc n) = set (take (Suc n) carrier_sorted)"
+          by (simp add: carrier_pref_def)
+        also have "\<dots> = set (take n carrier_sorted @ [hd (drop n carrier_sorted)])"
+          using n_less by (simp add: take_hd_drop)
+        also have "\<dots> = insert (hd (drop n carrier_sorted)) (set (take n carrier_sorted))"
+          by simp
+        also have "\<dots> = insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order n)"
+          by (simp add: drop_n carrier_pref_def)
+        finally have key: "carrier_pref c order (Suc n) = 
+            insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order n)" .
+        then show ?thesis
+          by (simp add: num_iter_upd1 n_def[symmetric])
+      qed
 
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> set (carrier_sorted)"
-      using carrier_pref_def set_take_subset by (metis carrier_pref_expr)
+    proof -
+      have "insert (hd (carrier_list best_in_greedy_state))
+              (carrier_pref c order (num_iter c order best_in_greedy_state)) =
+            carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state))"
+        using carrier_pref_expr by simp
+      also have "... = set (take (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) (carrier_sorted))"
+        by (simp add: carrier_pref_def)
+      also have "... \<subseteq> set (carrier_sorted)"
+        by (rule set_take_subset)
+      finally show ?thesis .
+    qed
     then have insert_subset_carrier:
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> matroid.carrier_abs carrier"
@@ -642,15 +785,55 @@ proof(rule invar_props_intros, goal_cases)
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-      apply (simp add: BestInGreedy_base_upd2_def carrier_pref_def Let_def num_iter_def)
-      using \<open>BestInGreedy_base_call_2_conds best_in_greedy_state\<close> \<open>invar_2 c order best_in_greedy_state\<close>
-      apply (clarsimp elim!: invar_props_elims call_cond_elims)
-      by (metis drop_Suc length_drop num_iter_def set_take_aux_lemma tl_drop)
+    proof -
+      have drop_eq: "carrier_list best_in_greedy_state =
+          drop (num_iter c order best_in_greedy_state) (sort_desc c order)"
+        using \<open>invar_2 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
+      have len_ge_1: "length (carrier_list best_in_greedy_state) \<ge> 1"
+        using \<open>BestInGreedy_base_call_2_conds best_in_greedy_state\<close> by (auto elim!: call_cond_elims)
+      have n_less: "num_iter c order best_in_greedy_state < length (sort_desc c order)"
+      proof (rule ccontr)
+        assume "\<not> num_iter c order best_in_greedy_state < length (sort_desc c order)"
+        then have le: "length (sort_desc c order) \<le> num_iter c order best_in_greedy_state" by simp
+        have "length (drop (num_iter c order best_in_greedy_state) (sort_desc c order)) = 0"
+          using le by (simp add: length_drop)
+        with drop_eq len_ge_1 show False by simp
+      qed
+      have hd_eq: "hd (carrier_list best_in_greedy_state) =
+          (sort_desc c order) ! (num_iter c order best_in_greedy_state)"
+        using drop_eq n_less by (simp add: hd_drop_conv_nth)
+      have tl_eq: "carrier_list (BestInGreedy_base_upd2 best_in_greedy_state) =
+          drop (Suc (num_iter c order best_in_greedy_state)) (sort_desc c order)"
+        using drop_eq by (simp add: BestInGreedy_base_upd2_def Let_def drop_Suc tl_drop)
+      have num_iter_upd: "num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state) =
+          Suc (num_iter c order best_in_greedy_state)"
+      proof -
+        have "num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state) =
+            length (sort_desc c order) - length (carrier_list (BestInGreedy_base_upd2 best_in_greedy_state))"
+          by (simp add: num_iter_def)
+        also have "... = length (sort_desc c order) -
+            length (drop (Suc (num_iter c order best_in_greedy_state)) (sort_desc c order))"
+          by (simp add: tl_eq)
+        also have "... = length (sort_desc c order) -
+            (length (sort_desc c order) - Suc (num_iter c order best_in_greedy_state))"
+          by (simp add: length_drop)
+        also have "... = Suc (num_iter c order best_in_greedy_state)"
+          using n_less by simp
+        finally show ?thesis .
+      qed
+      have take_eq: "take (Suc (num_iter c order best_in_greedy_state)) (sort_desc c order) =
+          take (num_iter c order best_in_greedy_state) (sort_desc c order) @
+          [(sort_desc c order) ! (num_iter c order best_in_greedy_state)]"
+        using n_less by (simp add: take_Suc_conv_app_nth)
+      show ?thesis
+        unfolding carrier_pref_def num_iter_upd hd_eq take_eq by simp
+    qed
 
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> set (carrier_sorted)"
-      using carrier_pref_def set_take_subset by (metis carrier_pref_expr)
+      unfolding carrier_pref_expr[symmetric]
+      unfolding carrier_pref_def by (rule set_take_subset)
 
     then have insert_subset_carrier:
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
@@ -743,7 +926,21 @@ proof-
     using \<open>carrier_pref c order (num_iter c order best_in_greedy_state) \<subseteq> set (carrier_sorted)\<close>
       indep_system.basis_in_indep_in[OF indep_system_axioms_abs]
       indep_system.indep_in_indep[OF indep_system_axioms_abs] 
-    by (metis carrier_sorted_set matroid.carrier_abs_def)
+  proof -
+    fix X
+    assume basis_in_X: "indep_system.basis_in (matroid.indep_abs indep_fn)
+      (carrier_pref c order (num_iter c order best_in_greedy_state)) X"
+    have subset_carrier_abs: "carrier_pref c order (num_iter c order best_in_greedy_state)
+      \<subseteq> matroid.carrier_abs carrier"
+      using \<open>carrier_pref c order (num_iter c order best_in_greedy_state) \<subseteq> set (carrier_sorted)\<close>
+        carrier_sorted_set matroid.carrier_abs_def
+      by simp
+    from indep_system.basis_in_indep_in[OF indep_system_axioms_abs subset_carrier_abs basis_in_X]
+    have indep_in_X: "indep_system.indep_in (matroid.indep_abs indep_fn)
+      (carrier_pref c order (num_iter c order best_in_greedy_state)) X" .
+    show "matroid.indep_abs indep_fn X"
+      using indep_system.indep_in_indep[OF indep_system_axioms_abs indep_in_X] .
+  qed
   moreover have "pref c order (to_set (result best_in_greedy_state)) (num_iter c order best_in_greedy_state) = (to_set (result best_in_greedy_state))"
     unfolding pref_def using \<open>invar_3 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
   ultimately have result_indep: "indep' (result best_in_greedy_state)"
@@ -812,9 +1009,30 @@ proof-
     by (auto elim!: invar_props_elims)
 
   have d_geq_0: "\<forall>j \<in> {1..?n}. ?d j \<ge> 0"
-    unfolding c_diff_def using sorted_wrt_iff_nth_less
-    by (smt (verit, ccfv_SIG) c_carrier_sorted_nonneg carrier_sorted_sorted_desc diff_ge_0_iff_ge
-        diff_le_self dual_order.refl nat_less_le)
+  proof
+    fix j
+    assume j_mem: "j \<in> {1..?n}"
+    then have j_ge: "1 \<le> j" and j_le: "j \<le> ?n" by auto
+    show "?d j \<ge> 0"
+    proof (cases "j < ?n")
+      case True
+      have j1_less_j: "j - 1 < j" using j_ge by arith
+      have j1_less_n: "j - 1 < ?n" using j1_less_j True by arith
+      from carrier_sorted_sorted_desc[unfolded sorted_wrt_iff_nth_less]
+      have ge: "c (carrier_sorted ! (j - 1)) \<ge> c (carrier_sorted ! j)"
+        using j1_less_n True j1_less_j by blast
+      have eq: "?d j = c (carrier_sorted ! (j - 1)) - c (carrier_sorted ! j)"
+        using True by (simp add: c_diff_def)
+      show ?thesis using eq ge by linarith
+    next
+      case False
+      have eq: "?d j = c (carrier_sorted ! (j - 1))"
+        using False by (simp add: c_diff_def)
+      have nonneg: "c (carrier_sorted ! (j - 1)) \<ge> 0"
+        using c_carrier_sorted_nonneg j_mem by blast
+      show ?thesis using eq nonneg by linarith
+    qed
+  qed
 
   from G_j_geq_lower_rank_E_j d_geq_0 have G_j_prod_geq_lower_rank_E_j_prod:
     "\<forall>j \<in> {1..?n}. rat_of_nat (card (pref c order ?G j)) * (?d j) \<ge>
@@ -839,7 +1057,8 @@ proof-
 
   from indep_system.indep_subset[OF indep_system_axioms_abs X_indep] pref_def
   have "\<forall>j \<in> {1..?n}. indep_system.indep_in (matroid.indep_abs indep_fn) (carrier_pref c order j) (pref c order (to_set X) j)"
-    by (metis Int_lower1 Int_lower2 indep_system.indep_in_def indep_system_axioms_abs)
+  by (auto simp: pref_def indep_system.indep_in_def[OF indep_system_axioms_abs]
+      intro: indep_system.indep_subset[OF indep_system_axioms_abs X_indep])
   with carrier_pref_subseteq_carrier indep_system.rank_geq_card_indep_in[OF indep_system_axioms_abs]
   have rank_E_j_geq_X_j:
     "\<forall>j \<in> {1..?n}. card (pref c order (to_set X) j) \<le> indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)"
@@ -866,29 +1085,153 @@ proof-
       carrier_pref_def[of c] pref_def[of c] by simp
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))"
-    using sum_diff_mult_distr[OF g_pos c_carrier_sorted_nonneg g_zero] semiring_1_cancel_class.of_nat_diff g_leq c_diff_def
-    by (smt (verit) sum.cong)
+  proof -
+    define A where "A = (\<lambda>j. rat_of_nat (card (pref c order ?G j)))"
+    define e where "e = (\<lambda>j. c (carrier_sorted ! j))"
+    have A0: "A 0 = 0"
+      using g_zero by (simp add: A_def)
+    have cast: "\<And>j. j \<in> {1..?n} \<Longrightarrow>
+      rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) = A j - A (j - 1)"
+      using g_leq by (simp add: A_def of_nat_diff)
+    have lhs_eq: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1)))
+              = (\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))"
+      using cast by (intro sum.cong) (auto simp: e_def)
+    have rhs_eq: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))
+              = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+      by (intro sum.cong) (auto simp: A_def e_def c_diff_def)
+    have telescope: "(\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))
+                  = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+    proof (cases "?n = 0")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      then have n_ge: "1 \<le> ?n" by linarith
+      have set_split1: "{1..?n} = insert ?n {1..?n - 1}"
+        using n_ge by auto
+      have set_split0: "{0..?n - 1} = insert 0 {1..?n - 1}"
+        using n_ge by auto
+      have split_diff: "(\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))
+          = (\<Sum>j = 1..?n. A j * e (j - 1)) - (\<Sum>j = 1..?n. A (j - 1) * e (j - 1))"
+        by (simp add: algebra_simps sum_subtractf)
+      have reindex: "(\<Sum>j = 1..?n. A (j - 1) * e (j - 1)) = (\<Sum>i = 0..?n - 1. A i * e i)"
+      proof -
+        obtain m where n_eq: "?n = Suc m" using n_ge by (cases ?n) auto
+        have "(\<Sum>j = 1..?n. A (j - 1) * e (j - 1)) = (\<Sum>j = Suc 0..Suc m. A (j - 1) * e (j - 1))"
+          using n_eq by simp
+        also have "\<dots> = (\<Sum>i = 0..m. A (Suc i - 1) * e (Suc i - 1))"
+          by (rule sum.shift_bounds_cl_Suc_ivl)
+        also have "\<dots> = (\<Sum>i = 0..m. A i * e i)"
+          by simp
+        also have "\<dots> = (\<Sum>i = 0..?n - 1. A i * e i)"
+          using n_eq by simp
+        finally show ?thesis .
+      qed
+      have split_last1: "(\<Sum>j = 1..?n. A j * e (j - 1)) = A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * e (j - 1))"
+        using n_ge by (subst set_split1) (simp add: sum.insert)
+      have split_first: "(\<Sum>i = 0..?n - 1. A i * e i) = (\<Sum>i = 1..?n - 1. A i * e i)"
+        using n_ge A0 by (subst set_split0) (simp add: sum.insert)
+      have split_last2: "(\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1))) =
+          A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * (e (j - 1) - e j))"
+      proof -
+        have step1: "(\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1))) =
+              A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+          using n_ge by (subst set_split1) (simp add: sum.insert)
+        have step2: "(\<Sum>j = 1..?n - 1. A j * (if j < ?n then e (j - 1) - e j else e (j - 1))) =
+              (\<Sum>j = 1..?n - 1. A j * (e (j - 1) - e j))"
+          by (intro sum.cong) auto
+        from step1 step2 show ?thesis by simp
+      qed
+      show ?thesis
+      proof -
+        have "(\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))
+            = (\<Sum>j = 1..?n. A j * e (j - 1)) - (\<Sum>j = 1..?n. A (j - 1) * e (j - 1))"
+          by (fact split_diff)
+        also have "\<dots> = (A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * e (j - 1)))
+            - (\<Sum>j = 1..?n. A (j - 1) * e (j - 1))"
+          using split_last1 by simp
+        also have "\<dots> = (A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * e (j - 1)))
+            - (\<Sum>i = 0..?n - 1. A i * e i)"
+          using reindex by simp
+        also have "\<dots> = A ?n * e (?n - 1)
+            + ((\<Sum>j = 1..?n - 1. A j * e (j - 1)) - (\<Sum>j = 1..?n - 1. A j * e j))"
+          using split_first by (simp add: algebra_simps)
+        also have "\<dots> = A ?n * e (?n - 1) + (\<Sum>j = 1..?n - 1. A j * (e (j - 1) - e j))"
+          by (simp add: algebra_simps left_diff_distrib sum_subtractf)
+        also have "\<dots> = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+          using split_last2 by simp
+        finally show ?thesis .
+      qed
+    qed
+    have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1)))
+        = (\<Sum>j = 1..?n. (A j - A (j - 1)) * e (j - 1))"
+      by (fact lhs_eq)
+    also have "... = (\<Sum>j = 1..?n. A j * (if j < ?n then e (j - 1) - e j else e (j - 1)))"
+      by (fact telescope)
+    also have "... = (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))"
+      by (fact rhs_eq[symmetric])
+    finally show ?thesis .
+  qed
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j)) \<ge> 
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
     using G_j_prod_geq_lower_rank_E_j_prod sum_mono by fastforce 
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>  
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
-    using rank_quotient_prod_ineq sum_distrib_left sum_mono
-    by (smt (verit, del_insts) ab_semigroup_mult_class.mult_ac(1))
+  proof -
+    have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+      (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) =
+      (\<Sum>j = 1..?n. indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+        (rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)))"
+      by (simp add: sum_distrib_left)
+    also have "\<dots> = (\<Sum>j = 1..?n. indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+        rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
+      by (simp add: mult.assoc)
+    also have "\<dots> \<le> (\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
+    proof (rule sum_mono)
+      fix j :: nat
+      assume "j \<in> {1..?n}"
+      then show "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
+          rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j) \<le>
+          rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)"
+        using rank_quotient_prod_ineq by blast
+    qed
+    finally show ?thesis by simp
+  qed
   moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
     using rank_E_j_prod_geq_X_j_prod sum_mono rank_quotient_geq_0
-    by (smt (verit) mult_left_mono)
+  proof -
+    have le_sum: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j)) \<le>
+      (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
+      using rank_E_j_prod_geq_X_j_prod by (intro sum_mono) simp
+    from mult_left_mono[OF le_sum rank_quotient_geq_0] show ?thesis by simp
+  qed
   moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j)) \<ge> 
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1)))"
     using sum_diff_mult_distr[OF pref_X_pos c_carrier_sorted_nonneg pref_X_zero] semiring_1_cancel_class.of_nat_diff
       pref_X_leq c_diff_def rank_quotient_geq_0 mult_left_mono 
-    by (smt (verit, best) order.refl sum.cong)
+  proof -
+    have cast: "\<And>j. j \<in> {1..?n} \<Longrightarrow>
+        rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) =
+        rat_of_nat (card (pref c order (to_set X) j)) - rat_of_nat (card (pref c order (to_set X) (j - 1)))"
+      using pref_X_leq by (simp add: of_nat_diff)
+    have eq: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c (carrier_sorted ! (j - 1))) =
+              (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
+    proof -
+      have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c (carrier_sorted ! (j - 1))) =
+            (\<Sum>j = 1..?n. (rat_of_nat (card (pref c order (to_set X) j)) - rat_of_nat (card (pref c order (to_set X) (j - 1)))) * c (carrier_sorted ! (j - 1)))"
+        using cast by (intro sum.cong) auto
+      also have "... = (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
+        using sum_diff_mult_distr[OF pref_X_pos c_carrier_sorted_nonneg pref_X_zero] c_diff_def by simp
+      finally show ?thesis .
+    qed
+    show ?thesis using eq by simp
+  qed
   moreover have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *

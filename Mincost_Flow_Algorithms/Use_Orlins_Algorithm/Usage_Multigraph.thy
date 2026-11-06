@@ -58,25 +58,72 @@ next
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = an_edge (ab, b) ; y = an_edge (aa, ba) ; z = an_edge (ab, bb) \<rbrakk> \<Longrightarrow> b \<le> bb"
     for aa ab ba b bb
-    using order.trans by metis
+    by (auto split: if_split_asm simp: order_refl intro: order_trans)
   have b: "\<lbrakk> if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = an_edge (a, b) ;
        y = an_edge (aa, ba) ; z = an_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
     for a aa ab b ba bb
-    using order.trans by metis
+proof -
+  assume h1: "if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False"
+    and h2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
+    and "x = an_edge (a, b)" and "y = an_edge (aa, ba)" and "z = an_edge (ab, bb)"
+    and "a \<noteq> ab"
+  have a_le_aa: "a \<le> aa"
+  proof (cases "a \<le> aa \<and> \<not> aa \<le> a")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    with h1 have "a = aa" by (simp split: if_split_asm)
+    then show ?thesis by simp
+  qed
+  have aa_le_ab: "aa \<le> ab"
+  proof (cases "aa \<le> ab \<and> \<not> ab \<le> aa")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    with h2 have "aa = ab" by (simp split: if_split_asm)
+    then show ?thesis by simp
+  qed
+  show "a \<le> ab" using a_le_aa aa_le_ab order.trans by blast
+qed
   have c: "\<lbrakk> if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = another_edge (ab, b) ;
        y = another_edge (aa, ba) ; z = another_edge (ab, bb)\<rbrakk> \<Longrightarrow> b \<le> bb"
     for aa ab b ba bb
-    using order.trans by metis
+  proof -
+    assume p1: "if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False"
+      and p2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
+      and "x = another_edge (ab, b)" and "y = another_edge (aa, ba)" and "z = another_edge (ab, bb)"
+    have p1': "ab < aa \<or> ab = aa \<and> b \<le> ba"
+      using p1 by (auto simp add: less_le_not_le split: if_splits)
+    have p2': "aa < ab \<or> aa = ab \<and> ba \<le> bb"
+      using p2 by (auto simp add: less_le_not_le split: if_splits)
+    show "b \<le> bb"
+    proof (cases "ab = aa")
+      case True
+      then have "\<not> ab < aa" by simp
+      with p1' have hb: "b \<le> ba" by auto
+      from True have "\<not> aa < ab" by simp
+      with p2' have hba: "ba \<le> bb" by auto
+      from hb hba show ?thesis by (rule order_trans)
+    next
+      case False
+      with p1' have h1: "ab < aa" by auto
+      from False p2' have h2: "aa < ab" by auto
+      from order_less_trans[OF h1 h2] have "ab < ab" .
+      then show ?thesis by simp
+    qed
+  qed
   have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = another_edge (a, b) ;
        y = another_edge (aa, ba) ; z = another_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
     for a aa ab b ba bb
-    using order.trans by metis
+    by (auto split: if_splits intro: order_trans)
   from 3 show ?case    
     by(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
       (auto split: if_split simp add: less_le_not_le intro: a b c d) 
@@ -91,12 +138,54 @@ next
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = an_edge (a, b) ;y = an_edge (aa, ba)\<rbrakk> \<Longrightarrow> b = ba"
     for a aa b ba
-    by (metis order_antisym_conv)
+  proof -
+    assume h1: "if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False"
+      and h2: "if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False"
+      and "x = an_edge (a, b)"
+      and "y = an_edge (aa, ba)"
+    have b_le_ba: "b \<le> ba"
+    proof (cases "a \<le> aa \<and> \<not> aa \<le> a")
+      case True
+      then have le1: "a \<le> aa" and nle1: "\<not> aa \<le> a" by auto
+      have neq: "aa \<noteq> a"
+      proof
+        assume "aa = a"
+        then have "aa \<le> a" by simp
+        with nle1 show False by simp
+      qed
+      have cond_false: "\<not> (aa \<le> a \<and> \<not> a \<le> aa)" using nle1 by simp
+      with neq h2 have False by simp
+      then show ?thesis by (rule FalseE)
+    next
+      case False
+      with h1 have "if a = aa then b \<le> ba else False" by simp
+      then show ?thesis by (cases "a = aa") simp_all
+    qed
+    have ba_le_b: "ba \<le> b"
+    proof (cases "aa \<le> a \<and> \<not> a \<le> aa")
+      case True
+      then have le2: "aa \<le> a" and nle2: "\<not> a \<le> aa" by auto
+      have neq: "a \<noteq> aa"
+      proof
+        assume "a = aa"
+        then have "a \<le> aa" by simp
+        with nle2 show False by simp
+      qed
+      have cond_false: "\<not> (a \<le> aa \<and> \<not> aa \<le> a)" using nle2 by simp
+      with neq h1 have False by simp
+      then show ?thesis by (rule FalseE)
+    next
+      case False
+      with h2 have "if aa = a then ba \<le> b else False" by simp
+      then show ?thesis by (cases "aa = a") simp_all
+    qed
+    from b_le_ba ba_le_b show "b = ba" by (rule order_antisym)
+  qed
   have c: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba) \<rbrakk> \<Longrightarrow> b = ba"
     for a aa b ba
-    by (metis order_antisym_conv)
+    by (auto split: if_split_asm simp: order_antisym_conv)
   have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba)\<rbrakk> \<Longrightarrow> a = aa"

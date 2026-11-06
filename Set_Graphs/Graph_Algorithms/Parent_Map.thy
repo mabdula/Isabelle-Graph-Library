@@ -313,10 +313,27 @@ proof(rule ccontr, goal_cases)
 qed
 
 lemma follow_cons_3: "\<exists>l. follow v = v # l"
-  by (metis follow_cons follow_nempty list.exhaust)
+proof -
+  have "follow v \<noteq> []"
+    by (rule follow_nempty)
+  then obtain x xs where fx: "follow v = x # xs"
+    by (cases "follow v") auto
+  have "x = v"
+    using follow_cons[OF fx] by simp
+  with fx show ?thesis by blast
+qed
 
 lemma follow_cons_3': obtains l where "follow v = v # l"
-  by (metis follow_cons follow_nempty list.exhaust)
+proof -
+  obtain x l where x_l: "follow v = x # l"
+    using follow_nempty by (cases "follow v") auto
+  have "x = v"
+    using follow_cons[OF x_l] .
+  with x_l have "follow v = v # l"
+    by simp
+  then show thesis
+    by (rule that)
+qed
 
 lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follow v')"
   using follow_psimps
@@ -324,7 +341,15 @@ lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follo
 
 lemma follow_pinduct:
   "(\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v) \<Longrightarrow> P a"
-  by (metis follow.pinduct[OF follow_dom])
+proof -
+  assume IH: "\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v"
+  show "P a"
+  proof (induction a rule: follow.pinduct[OF follow_dom])
+    case (1 v)
+    then show ?case
+      using IH by blast
+  qed
+qed
 
 lemma in_follow_relI: "Some v' = parent v \<Longrightarrow> (v, v') \<in> {(x, y). follow_rel y x}"
   by (simp add: parent_eq_follow_rel)
@@ -481,17 +506,26 @@ proof(induction  rule: parent_spec.follow.pinduct[OF parent.follow_dom[OF assms(
 qed
 
 lemma wf_par':
-  assumes wf: "parent_spec par" 
-  and par': "par' = par(v2 := Some v1, v3 := Some v2)"
-  and neq: "v1 \<noteq> v2" "v2 \<noteq> v3" "v1 \<noteq> v3"
-  and no_ances: "\<forall>v. par v \<noteq> Some v2" "\<forall>v. par v \<noteq> Some v3"
-  and no_par: "par v2 = None" "par v3 = None"
+  assumes wf: "parent_spec par" and
+    par': "par' = par(v2 := Some v1, v3 := Some v2)" and
+    neq: "v1 \<noteq> v2" "v2 \<noteq> v3" "v1 \<noteq> v3" and
+    no_ances: "\<forall>v. par v \<noteq> Some v2" "\<forall>v. par v \<noteq> Some v3" and
+    no_par: "par v2 = None" "par v3 = None"
   shows "parent_spec par'" (is ?g1) "parent_spec (par(v2 := Some v1))" (is ?g2)
 proof-
   have "(v2, v1) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-    using neq(1) no_ances(1)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+    proof (rule notI)
+      assume "(v2, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
+      then show False
+      proof (cases rule: converse_rtranclE)
+        case base
+        with neq(1) show False by simp
+      next
+        case (step y)
+        from step(1) have "Some v2 = par y" by force
+        with no_ances(1) show False by auto
+      qed
+    qed
   then have wf_v2_v1: "wf (insert (v1, v2) {(x,y) | x y. (Some x = par y)})"
     using wf[unfolded parent_spec_def] by blast
   moreover have "{(x, y) |x y. Some x = (par(v2 \<mapsto> v1)) y} = (insert (v1, v2) {(x, y) |x y. Some x = par y})"
@@ -500,14 +534,42 @@ proof-
   ultimately show ?g2
     unfolding parent_spec_def
     by simp
+
   have "(v3, v2) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-    using neq(2) no_ances(2)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+  proof
+    assume "(v3, v2) \<in> {(x, y) | x y. Some x = par y}\<^sup>*"
+    then show False
+    proof (rule converse_rtranclE)
+      assume "v3 = v2"
+      then show False
+        using neq(2) by simp
+    next
+      fix y
+      assume "(v3, y) \<in> {(x, y) | x y. Some x = par y}"
+        and "(y, v2) \<in> {(x, y) | x y. Some x = par y}\<^sup>*"
+      then have "Some v3 = par y"
+        by auto
+      moreover have "par y \<noteq> Some v3"
+        using no_ances(2) by blast
+      ultimately show False
+        by simp
+    qed
+  qed
   moreover have "(v3, v2) \<notin>  {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
-    using neq(3) no_ances(2)
-    apply clarsimp
-    by (metis (mono_tags, lifting) converse_rtranclE mem_Collect_eq old.prod.case)
+        proof (rule notI)
+      assume "(v3, v2) \<in> {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
+      then have "(v3, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*" by auto
+      then show False
+      proof (cases rule: converse_rtranclE)
+        case base
+        with neq(3) show False by simp
+      next
+        case (step w)
+        then have pconv: "Some v3 = par w" by auto
+        have "par w \<noteq> Some v3" using no_ances(2) by blast
+        with pconv show False by simp
+      qed
+    qed
   ultimately have "(v3, v2) \<notin> (insert (v1, v2) {(x,y) | x y. (Some x = par y)})\<^sup>*"
     unfolding rtrancl_insert
     by simp

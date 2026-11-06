@@ -24,8 +24,23 @@ definition subseteq :: "'s \<Rightarrow> 's \<Rightarrow> bool" where
 lemma set_subseteq:
   "invar X \<Longrightarrow> invar Y \<Longrightarrow> (subseteq X Y) = (set X \<subseteq> set Y)"
   unfolding subseteq_def
-  using set_diff set_empty nonempty_repr
-  by (metis Diff_eq_empty_iff invar_diff)
+proof (intro iffI)
+  assume "invar X" "invar Y" "diff X Y = empty"
+  hence "set (diff X Y) = {}" using set_empty by simp
+  moreover have "set (diff X Y) = set X - set Y"
+    using set_diff \<open>invar X\<close> \<open>invar Y\<close> by blast
+  ultimately show "set X \<subseteq> set Y" by blast
+next
+  assume "invar X" "invar Y" "set X \<subseteq> set Y"
+  have "set (diff X Y) = set X - set Y"
+    using set_diff \<open>invar X\<close> \<open>invar Y\<close> by blast
+  also have "\<dots> = {}" using \<open>set X \<subseteq> set Y\<close> by blast
+  finally have "set (diff X Y) = set empty" using set_empty by simp
+  moreover have "invar (diff X Y)"
+    using invar_diff \<open>invar X\<close> \<open>invar Y\<close> by blast
+  ultimately show "diff X Y = empty"
+    using nonempty_repr by blast
+qed
 
 lemmas [code] = subseteq_def
 
@@ -167,11 +182,39 @@ begin
 
 lemma indep_impl_to_abs:
   "set_inv X \<Longrightarrow> indep_fn X \<Longrightarrow> indep_abs indep_fn (to_set X)"
-  by (metis finite_indep_abs_expr finite_sets finite_sets_def from_set_correct invar invarE invar_from_set)
+proof -
+  assume "set_inv X" and "indep_fn X"
+  have fin: "finite (to_set X)"
+    using finite_sets[unfolded finite_sets_def] by blast
+  have inv_from: "set_inv (from_set (to_set X))"
+    using invar_from_set by blast
+  have to_set_eq: "to_set (from_set (to_set X)) = to_set X"
+    using from_set_correct fin by blast
+  have eq_indep: "indep_fn (from_set (to_set X)) = indep_fn X"
+    using invar_indep_impl_correct[OF invar inv_from \<open>set_inv X\<close> to_set_eq] .
+  have abs_eq: "indep_abs indep_fn (to_set X) = indep_fn (from_set (to_set X))"
+    using finite_indep_abs_expr fin by blast
+  show "indep_abs indep_fn (to_set X)"
+    using abs_eq eq_indep \<open>indep_fn X\<close> by simp
+qed
 
 lemma indep_abs_to_impl:
   "set_inv X \<Longrightarrow> indep_abs indep_fn (to_set X) \<Longrightarrow> indep_fn X"
-  by (metis finite_indep_abs_expr from_set_correct indep_abs_finite invar invarE invar_from_set)
+proof -
+  assume "set_inv X" and "indep_abs indep_fn (to_set X)"
+  hence "finite (to_set X)" using indep_abs_finite by blast
+  have indep_eq: "indep_abs indep_fn (to_set X) = indep_fn (from_set (to_set X))"
+    using finite_indep_abs_expr[OF \<open>finite (to_set X)\<close>] .
+  from \<open>indep_abs indep_fn (to_set X)\<close> indep_eq
+  have indep_from_set: "indep_fn (from_set (to_set X))" by simp
+  have to_set_eq: "to_set (from_set (to_set X)) = to_set X"
+    using from_set_correct[OF \<open>finite (to_set X)\<close>] .
+  have inv_from_set: "set_inv (from_set (to_set X))"
+    by (rule invar_from_set)
+  have "indep_fn (from_set (to_set X)) = indep_fn X"
+    using invar inv_from_set \<open>set_inv X\<close> to_set_eq by blast
+  with indep_from_set show "indep_fn X" by simp
+qed
 
 lemma indep_abs_equiv:
   "set_inv X \<Longrightarrow> indep_fn X = indep_abs indep_fn (to_set X)"
@@ -194,12 +237,49 @@ lemma indep_ex_abs_equiv:
 lemma indep_subset_carrier_impl_to_abs:
   "(\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier) \<Longrightarrow>
    (\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier)"
-  by (metis carrier_abs_def finite_indep_abs_expr from_set_correct indep_abs_finite invar invarE invar_from_set set.set_subseteq)
+proof -
+  assume prem: "\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier"
+  show "\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier"
+  proof (rule allI, rule impI)
+    fix S
+    assume indepS: "indep_abs indep_fn S"
+    have finS: "finite S" using indep_abs_finite[OF indepS] .
+    have indepfsS: "indep_fn (from_set S)"
+      using indepS finite_indep_abs_expr[OF finS] by blast
+    have inv_fs: "set_inv (from_set S)" using invar_from_set .
+    have inv_carrier: "set_inv carrier" using invar by (auto simp: invar_def)
+    have subseteqfs: "subseteq (from_set S) carrier"
+      using prem inv_fs indepfsS by blast
+    have "to_set (from_set S) \<subseteq> to_set carrier"
+      using set.set_subseteq[OF inv_fs inv_carrier] subseteqfs by blast
+    then have "S \<subseteq> to_set carrier"
+      using from_set_correct[OF finS] by simp
+    then show "S \<subseteq> carrier_abs carrier"
+      unfolding carrier_abs_def by blast
+  qed
+qed
 
 lemma indep_subset_carrier_abs_to_impl:
   "(\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier) \<Longrightarrow>
    (\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier)"
-  by (metis carrier_abs_def indep_impl_to_abs invar invarE set.set_subseteq)
+proof -
+  assume A: "\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier"
+  show "\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier"
+  proof (intro allI impI)
+    fix X
+    assume "set_inv X" and "indep_fn X"
+    then have "indep_abs indep_fn (to_set X)"
+      using indep_impl_to_abs by blast
+    with A have "to_set X \<subseteq> carrier_abs carrier"
+      by blast
+    then have subset_fact: "to_set X \<subseteq> to_set carrier"
+      by (simp add: carrier_abs_def)
+    have carrier_inv: "set_inv carrier"
+      using invar[unfolded invar_def] by blast
+    from set.set_subseteq[OF \<open>set_inv X\<close> carrier_inv] subset_fact
+    show "subseteq X carrier" by blast
+  qed
+qed
 
 lemma indep_subset_carrier_abs_equiv:
   "(\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier) = 
@@ -210,7 +290,28 @@ lemma indep_subset_carrier_abs_equiv:
 lemma indep_subset_impl_to_abs:
   "(\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep_fn X \<longrightarrow> subseteq Y X \<longrightarrow> indep_fn Y) \<Longrightarrow>
    (\<forall>S T. indep_abs indep_fn S \<longrightarrow> T \<subseteq> S \<longrightarrow> indep_abs indep_fn T)"
-  by (metis from_set_correct indep_abs_finite invar_from_set rev_finite_subset set.set_subseteq finite_indep_abs_expr)
+proof -
+  assume H: "\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep_fn X \<longrightarrow> subseteq Y X \<longrightarrow> indep_fn Y"
+  show "\<forall>S T. indep_abs indep_fn S \<longrightarrow> T \<subseteq> S \<longrightarrow> indep_abs indep_fn T"
+  proof (intro allI impI)
+    fix S T
+    assume S_indep: "indep_abs indep_fn S" and T_sub: "T \<subseteq> S"
+    from S_indep have finS: "finite S" using indep_abs_finite by blast
+    from finS T_sub have finT: "finite T" using rev_finite_subset by blast
+    have invS: "set_inv (from_set S)" using invar_from_set by blast
+    have invT: "set_inv (from_set T)" using invar_from_set by blast
+    have indepS: "indep_fn (from_set S)"
+      using S_indep finite_indep_abs_expr[OF finS] by simp
+    have toS: "to_set (from_set S) = S" using from_set_correct[OF finS] by blast
+    have toT: "to_set (from_set T) = T" using from_set_correct[OF finT] by blast
+    have subTS: "subseteq (from_set T) (from_set S)"
+      using set.set_subseteq[OF invT invS] toS toT T_sub by simp
+    have indepT: "indep_fn (from_set T)"
+      using H invS invT indepS subTS by blast
+    show "indep_abs indep_fn T"
+      using finite_indep_abs_expr[OF finT] indepT by simp
+  qed
+qed
 
 lemma indep_subset_abs_to_impl:
   "(\<forall>S T. indep_abs indep_fn S \<longrightarrow> T \<subseteq> S \<longrightarrow> indep_abs indep_fn T) \<Longrightarrow>
@@ -286,7 +387,16 @@ proof ((rule allI)+, (rule impI)+)
     set.set_cardinality[OF \<open>set_inv (from_set T)\<close>]
   have "cardinality (from_set S) = Suc (cardinality (from_set T))"
     using from_set_correct
-    by (metis \<open>indep_abs indep_fn S\<close> \<open>indep_abs indep_fn T\<close> indep_abs_infinite)
+  proof -
+    have finS: "finite S" by (rule indep_abs_finite[OF \<open>indep_abs indep_fn S\<close>])
+    have finT: "finite T" by (rule indep_abs_finite[OF \<open>indep_abs indep_fn T\<close>])
+    have eqS: "to_set (from_set S) = S" by (rule from_set_correct[OF finS])
+    have eqT: "to_set (from_set T) = T" by (rule from_set_correct[OF finT])
+    show ?thesis
+      using \<open>card S = Suc (card T)\<close> set.set_cardinality[OF \<open>set_inv (from_set S)\<close>]
+        set.set_cardinality[OF \<open>set_inv (from_set T)\<close>] eqS eqT
+      by simp
+  qed
 
   from \<open>set_inv (from_set S)\<close> \<open>set_inv (from_set T)\<close> \<open>indep_fn (from_set S)\<close> \<open>indep_fn (from_set T)\<close>
     \<open>cardinality (from_set S) = Suc (cardinality (from_set T))\<close>
@@ -337,7 +447,17 @@ proof ((rule allI)+, (rule impI)+)
   with \<open>indep_fn (set_insert x (from_set T))\<close>
   have "indep_fn (from_set (Set.insert x T))" by blast
   then have "indep_abs indep_fn (Set.insert x T)"
-    by (metis \<open>finite_sets\<close> \<open>to_set (set_insert x (from_set T)) = insert x T\<close> finite_setsE finite_indep_abs_expr)
+  proof -
+    have "\<And>X. finite (to_set X)"
+      using finite_sets unfolding finite_sets_def by blast
+    from this[of "set_insert x (from_set T)"]
+      \<open>to_set (set_insert x (from_set T)) = insert x T\<close>
+    have "finite (insert x T)" by simp
+    then have "indep_abs indep_fn (Set.insert x T) = indep_fn (from_set (Set.insert x T))"
+      by (rule finite_indep_abs_expr)
+    then show "indep_abs indep_fn (Set.insert x T)"
+      using \<open>indep_fn (from_set (Set.insert x T))\<close> by simp
+  qed
 
   from \<open>x \<in> S - T\<close> \<open>indep_abs indep_fn (Set.insert x T)\<close>
   show "\<exists>e. e \<in> S - T \<and> indep_abs indep_fn (Set.insert e T)" by auto

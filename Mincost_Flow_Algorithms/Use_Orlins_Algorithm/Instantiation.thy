@@ -680,7 +680,14 @@ lemma set_filter:
   by (auto simp add: set_invar_def to_set_def)
 
 lemma flow_invar_Leaf: "flow_invar Leaf"
-  by (metis RBT_Set.empty_def flow_empty_def flow_map.invar_empty)
+proof -
+  have flow_empty_Leaf: "flow_empty = Leaf"
+    by (simp add: flow_empty_def RBT_Set.empty_def)
+  have "flow_invar flow_empty"
+    using flow_map.invar_empty by simp
+  thus ?thesis
+    by (simp add: flow_empty_Leaf)
+qed
 
 lemma flow_invar_fold: 
  "\<lbrakk>flow_invar T; (\<And> T e. flow_invar T \<Longrightarrow> flow_invar (f e T))\<rbrakk>
@@ -941,7 +948,26 @@ qed
     case 1
     note 2 = this
   then obtain a b where "x \<in>{a,b}" "(a,b) \<in> make_pair ` \<E>" 
-    by (metis in_dVsE(1) insert_iff make_pairs_are)
+  proof -
+    from 2 have "x \<in> dVs (make_pair ` \<E>)"
+      by (simp add: make_pairs_are)
+    then show thesis
+    proof (rule in_dVsE(1))
+      fix u assume u: "(u, x) \<in> make_pair ` \<E>"
+      show thesis
+      proof (rule that[of u x])
+        show "x \<in> {u, x}" by simp
+        show "(u, x) \<in> make_pair ` \<E>" using u by simp
+      qed
+    next
+      fix u assume u: "(x, u) \<in> make_pair ` \<E>"
+      show thesis
+      proof (rule that[of x u])
+        show "x \<in> {x, u}" by simp
+        show "(x, u) \<in> make_pair ` \<E>" using u by simp
+      qed
+    qed
+  qed
   then show ?case by force
 qed
   show ?thesis
@@ -1242,18 +1268,49 @@ lemma find_cheapest_backward_props:
 
 lemma get_edge_and_costs_forward_not_MInfty:
   "prod.snd( get_edge_and_costs_forward nb f u v) \<noteq>MInfty"
-  unfolding get_edge_and_costs_forward_def
-  using not_both_realising_edges_none[of u v] 
-        imageI[OF conjunct1[OF 
-             find_cheapest_forward_props[OF prod.collapse refl, 
-                          of f nb _ "create_edge u v" PInfty]],
-            of prod.snd , simplified image_def, simplified]
-        imageI[OF conjunct1[OF 
-              find_cheapest_backward_props[OF prod.collapse refl, 
-                          of f nb _ "create_edge v u" PInfty]],
-                 of prod.snd, simplified image_def, simplified]
-  by(auto split: if_split prod.split option.split)
-    (metis MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv)+
+proof -
+  define ingoing_edges where "ingoing_edges =
+            (case realising_edges_lookup realising_edges
+                  (u, v) of
+            None \<Rightarrow> [] | Some list \<Rightarrow> list)"
+  define outgoing_edges where "outgoing_edges =
+            (case realising_edges_lookup realising_edges
+                  (v, u) of
+            None \<Rightarrow> [] | Some list \<Rightarrow> list)"
+  define ef where "ef = prod.fst (find_cheapest_forward f nb ingoing_edges
+             (create_edge u v) PInfty)"
+  define cf where "cf = prod.snd (find_cheapest_forward f nb ingoing_edges
+             (create_edge u v) PInfty)"
+  define eb where "eb = prod.fst (find_cheapest_backward f nb outgoing_edges
+             (create_edge v u) PInfty)"
+  define cb where "cb = prod.snd (find_cheapest_backward f nb outgoing_edges
+             (create_edge v u) PInfty)"
+  define edges_and_costs where "edges_and_costs =
+        Set.insert (create_edge u v, PInfty)
+         {(e, ereal (\<c> e)) |e. e \<in> set ingoing_edges \<and> nb e \<and> ereal (f e) < \<u> e}"
+  define edges_and_costs' where "edges_and_costs' =
+        Set.insert (create_edge v u, PInfty)
+         {(e, ereal (- \<c> e)) |e. e \<in> set outgoing_edges \<and> nb e \<and> 0 < ereal (f e)}"
+  have ef_cf_prop: "(ef, cf) \<in> edges_and_costs"
+    using find_cheapest_forward_props[of ef cf f nb ingoing_edges
+                          "create_edge u v" PInfty edges_and_costs]
+    by (auto simp add: cf_def edges_and_costs_def ef_def)
+  hence cf_not_MInfty: "cf \<noteq> MInfty"
+    by (auto simp add: edges_and_costs_def MInfty_neq_PInfty MInfty_neq_ereal)
+  have eb_cb_prop: "(eb, cb) \<in> edges_and_costs'"
+    using find_cheapest_backward_props[of eb cb f nb outgoing_edges
+                          "create_edge v u" PInfty edges_and_costs']
+    by (auto simp add: cb_def edges_and_costs'_def eb_def)
+  hence cb_not_MInfty: "cb \<noteq> MInfty"
+    by (auto simp add: edges_and_costs'_def MInfty_neq_PInfty MInfty_neq_ereal)
+  have goalI: "prod.snd (if cf \<le> cb then (F ef, cf) else (B eb, cb)) \<noteq> MInfty"
+    using cf_not_MInfty cb_not_MInfty by auto
+  show ?thesis
+    unfolding get_edge_and_costs_forward_def Let_def
+    using goalI
+    by (auto split: if_split option.split prod.split
+        simp add: cf_def cb_def ef_def eb_def ingoing_edges_def outgoing_edges_def)
+qed
 
 lemma get_edge_and_costs_backward_not_MInfty:
   "prod.snd( get_edge_and_costs_backward nb f u v) \<noteq>MInfty"
@@ -1267,8 +1324,8 @@ lemma get_edge_and_costs_backward_not_MInfty:
               find_cheapest_backward_props[OF prod.collapse refl, 
                           of f nb _ "create_edge u v" PInfty]],
                  of prod.snd, simplified image_def, simplified]
-  by(auto split: if_split prod.split option.split)
-    (metis MInfty_neq_PInfty(1) MInfty_neq_ereal(1) snd_conv)+
+  using get_edge_and_costs_forward_not_MInfty get_edge_and_costs_forward_def
+  by auto
 
 lemma realising_edges_general_result_None_and_Some:
   assumes "(case realising_edges_lookup (realising_edges_general list) (u, v) 
@@ -1349,7 +1406,8 @@ proof-
     hence ef_props: "ef \<in> set ingoing_edges" "nb ef" "ereal (f ef) < \<u> ef" by auto
     have realising_not_none: "realising_edges_lookup realising_edges (u, v) \<noteq> None"
       using  ef_props  
-      by(auto split: option.split simp add: ingoing_edges_def) metis
+    by(cases "realising_edges_lookup realising_edges (u, v)")
+      (auto simp add: ingoing_edges_def)
     then obtain list where list_prop: "realising_edges_lookup realising_edges (u, v) = Some list"
       by auto
     have "set ingoing_edges = {e |e. e \<in> set \<E>_list \<and> make_pair e = (u, v)}"
@@ -1379,7 +1437,14 @@ proof-
     hence ef_props: "eb \<in> set outgoing_edges" "nb eb" "ereal (f eb) > 0" by auto
     have realising_not_none: "realising_edges_lookup realising_edges (v, u) \<noteq> None"
       using  ef_props  
-      by(auto split: option.split simp add: outgoing_edges_def) metis
+    proof(cases "realising_edges_lookup realising_edges (v, u)")
+      case None
+      hence "outgoing_edges = []" by (simp add: outgoing_edges_def)
+      thus ?thesis using ef_props(1) None by simp
+    next
+      case (Some list)
+      thus ?thesis by simp
+    qed
     then obtain list where list_prop: "realising_edges_lookup realising_edges (v, u) = Some list"
       by auto
     have "set outgoing_edges = {e |e. e \<in> set \<E>_list \<and> make_pair e = (v, u)}"
@@ -1436,7 +1501,7 @@ proof-
     hence ef_props: "ef \<in> set ingoing_edges" "nb ef" "ereal (f ef) < \<u> ef" by auto
     have realising_not_none: "realising_edges_lookup realising_edges (u, v) \<noteq> None"
       using  ef_props  
-      by(auto split: option.split simp add: ingoing_edges_def) metis
+      by (cases "realising_edges_lookup realising_edges (u, v)") (auto simp add: ingoing_edges_def)
     then obtain list where list_prop: "realising_edges_lookup realising_edges (u, v) = Some list"
       by auto
     have "set ingoing_edges = {e |e. e \<in> set \<E>_list \<and> make_pair e = (u, v)}"
@@ -1466,7 +1531,8 @@ proof-
     hence ef_props: "eb \<in> set outgoing_edges" "nb eb" "ereal (f eb) > 0" by auto
     have realising_not_none: "realising_edges_lookup realising_edges (v, u) \<noteq> None"
       using  ef_props  
-      by(auto split: option.split simp add: outgoing_edges_def) metis
+    by(cases "realising_edges_lookup realising_edges (v, u)")
+      (auto simp add: outgoing_edges_def)
     then obtain list where list_prop: "realising_edges_lookup realising_edges (v, u) = Some list"
       by auto
     have "set outgoing_edges = {e |e. e \<in> set \<E>_list \<and> make_pair e = (v, u)}"
@@ -1489,19 +1555,53 @@ proof(goal_cases)
   have help1: "\<lbrakk> (a, b) = prod.swap (make_pair d); prod.swap (make_pair d) \<notin> make_pair ` \<E>; d \<in> \<E>\<rbrakk> 
                \<Longrightarrow> (b, a) \<in> make_pair ` local.\<E>" for a b d
   using cost_flow_network.to_vertex_pair.simps 
-  by (metis imageI swap_simp swap_swap)
+proof -
+  assume asm1: "(a, b) = prod.swap (make_pair d)"
+     and asm2: "prod.swap (make_pair d) \<notin> make_pair ` \<E>"
+     and asm3: "d \<in> \<E>"
+  obtain x y where xy: "make_pair d = (x, y)"
+    by fastforce
+  have ba_eq: "(b, a) = make_pair d"
+    using asm1 xy by auto
+  have "make_pair d \<in> make_pair ` local.\<E>"
+    using asm3 by (rule imageI)
+  with ba_eq show "(b, a) \<in> make_pair ` local.\<E>"
+    by simp
+qed
   have help2: "\<lbrakk>(a, b) = make_pair x ; x \<in> local.\<E> \<rbrakk>\<Longrightarrow>
        make_pair x \<in> to_edge `
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
     using cost_flow_network.to_vertex_pair.simps make_pairs_are
-    by(metis (mono_tags, lifting) UnI1 imageI mem_Collect_eq)
+  proof -
+    assume assms: "(a, b) = make_pair x" "x \<in> local.\<E>"
+    have to_edge_Fx: "to_edge (F x) = make_pair x"
+      using cost_flow_network.to_vertex_pair.simps make_pairs_are by simp
+    have "F x \<in> {F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>}"
+      using assms(2) by blast
+    hence "to_edge (F x) \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      by (rule imageI)
+    thus "make_pair x \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      using to_edge_Fx by simp
+  qed
   have help3: "\<lbrakk> (b, a) = make_pair x ; x \<in> local.\<E>\<rbrakk> \<Longrightarrow>
        (a, b) \<in> to_edge `
           ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
     for a b x
-    by (smt (verit, del_insts) cost_flow_network.\<EE>_def cost_flow_network.o_edge_res make_pairs_are
-    flow_network_spec.oedge.simps(2) cost_flow_network.to_vertex_pair.simps(2) image_iff swap_simp)
+  proof -
+    assume assms: "(b, a) = make_pair x" "x \<in> local.\<E>"
+    have step: "to_edge (B x) = prod.swap (make_pair x)"
+      by (simp add: cost_flow_network.to_vertex_pair.simps(2)
+            Instantiation.make_pair_def multigraph_spec.make_pair_def local.make_pair_def)
+    have to_edge_Bx: "to_edge (B x) = (a, b)"
+      using step assms(1)[symmetric] by simp
+    have mem: "B x \<in> {F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>}"
+      using assms(2) by blast
+    have img: "to_edge (B x) \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      using mem by (rule imageI)
+    show "(a, b) \<in> to_edge ` ({F d |d. d \<in> local.\<E>} \<union> {B d |d. d \<in> local.\<E>})"
+      using to_edge_Bx[symmetric] img by simp
+  qed
     show ?case
      by(auto simp add: cost_flow_network.to_vertex_pair.simps es_is_E EEE_def
           cost_flow_network.\<EE>_def make_pairs_are Instantiation.make_pair_def
@@ -2256,7 +2356,47 @@ proof(rule nexistsI, goal_cases)
                     awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (if l = [] then v' else last l);zs \<noteq> []\<rbrakk>
         \<Longrightarrow> awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (prod.snd (to_edge (last zs)))"
       for v v' l z zs 
-      by(metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+    proof -
+      assume c_eq: "c = v # v' # l"
+         and cc_eq: "cc = z # zs"
+         and z_eq: "to_edge z = (v, v')"
+         and map_eq: "map to_edge zs = edges_of_vwalk (v' # l)"
+         and awalk5: "awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (if l = [] then v' else last l)"
+         and zs_ne: "zs \<noteq> []"
+      have edges_ne: "edges_of_vwalk (v' # l) \<noteq> []"
+        using map_eq zs_ne by fastforce
+      have last_eq1: "last ((v, v') # edges_of_vwalk (v' # l)) = last (edges_of_vwalk (v' # l))"
+        using edges_ne by (simp add: last_ConsR)
+      have last_eq2: "last (edges_of_vwalk (v' # l)) = to_edge (last zs)"
+      proof -
+        have "last (edges_of_vwalk (v' # l)) = last (map to_edge zs)"
+          using map_eq by simp
+        also have "\<dots> = to_edge (last zs)"
+          using zs_ne by (rule last_map)
+        finally show ?thesis .
+      qed
+      have p_ne: "(v, v') # edges_of_vwalk (v' # l) \<noteq> []" by simp
+      have target_snd: "prod.snd (to_edge (last zs)) = (if l = [] then v' else last l)"
+      proof (cases "l = []")
+        case True
+        then show ?thesis
+          using map_eq zs_ne by simp
+      next
+        case False
+        then have len: "2 \<le> length (v' # l)" by (cases l) simp_all
+        have lv: "last (v' # l) = prod.snd (last (edges_of_vwalk (v' # l)))"
+          using len by (rule Vwalk.last_v_snd_last_e)
+        have "prod.snd (to_edge (last zs)) = prod.snd (last (edges_of_vwalk (v' # l)))"
+          using last_eq2 by simp
+        also have "\<dots> = last (v' # l)"
+          by (rule sym[OF lv])
+        also have "\<dots> = (if l = [] then v' else last l)"
+          by (cases l) simp_all
+        finally show ?thesis .
+      qed
+      show "awalk UNIV v ((v, v') # edges_of_vwalk (v' # l)) (prod.snd (to_edge (last zs)))"
+        using awalk5 target_snd by simp
+    qed
       show ?thesis
     apply(rule edges_of_vwalk.elims [OF sym[OF same_edges]])
     using path_with_props(1) same_edges 
@@ -2276,7 +2416,14 @@ proof(rule nexistsI, goal_cases)
   proof(rule, rule ccontr, goal_cases)
     case (1 e)
     hence "to_edge e \<in> set (edges_of_vwalk c)"
-      by (metis map_in_set same_edges)
+    proof -
+      from 1(1) have img: "to_edge e \<in> to_edge ` set cc"
+        by (rule imageI)
+      then have inset: "to_edge e \<in> set (map to_edge cc)"
+        by simp
+      from inset show ?thesis
+        by (auto simp: same_edges)
+    qed
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = c" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
@@ -2377,8 +2524,25 @@ proof( goal_cases)
          t \<in> set vs \<and> prod.snd (the (connection_lookup connections t)) < PInfty"
     using t_props by(auto simp add: tt_is_t connections_def  bf_def)
   have t_neq_s: "t \<noteq> s"
-    using t_prop s_prop "1"(1) "1"(2) invar_gamma_def
-    by (smt (verit, best) "1"(6) mult_minus_left mult_mono')
+  proof (rule notI)
+    assume t_eq_s: "t = s"
+    have gamma_pos: "0 < \<gamma>"
+      using "1"(6) "1"(2) by (simp add: invar_gamma_def)
+    have t_prop1: "a_balance state t < - \<epsilon> * current_\<gamma> state"
+      using t_prop by (rule conjunct1)
+    have upper: "abstract_bal_map b s < - \<epsilon> * \<gamma>"
+      using t_prop1 t_eq_s "1"(1) "1"(2) by auto
+    have lower: "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b s"
+      using s_prop(2) by simp
+    have combine_ineq: "(1 - \<epsilon>) * \<gamma> < - \<epsilon> * \<gamma>"
+      using lower upper by linarith
+    have eq1: "(1 - \<epsilon>) * \<gamma> = \<gamma> - \<epsilon> * \<gamma>"
+      by (simp add: algebra_simps)
+    have "\<gamma> < 0"
+      using combine_ineq eq1 by linarith
+    thus False
+      using gamma_pos by simp
+  qed
   have t_in_dom: "t \<in> dom (connection_lookup  connections)"
     using t_prop
     by (auto simp add: bellman_ford.bellman_ford_init_dom_is[OF bellman_ford]
@@ -2469,7 +2633,7 @@ proof( goal_cases)
   proof(rule, rule ccontr, goal_cases)
     case (1 e)
     hence "to_edge e \<in> set (edges_of_vwalk Pbf)"
-      by (metis map_in_set same_edges)
+      by (fastforce simp add: same_edges[symmetric] image_iff)
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = Pbf" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
@@ -2671,14 +2835,26 @@ proof-
     using get_target_for_source_ax[of b state, OF  _  refl, of f s t P]  assms 
     by(auto simp add: get_source_target_path_a_cond_def make_pairs_are elim: algo.invar_gammaE)
   hence bt_neg:"abstract_bal_map b t < 0"
-    by (smt (verit, del_insts) local.algo.\<epsilon>_axiom(1) mult_neg_pos) 
+  proof -
+    have "- local.\<epsilon> < 0"
+      using local.algo.\<epsilon>_axiom(1) by simp
+    hence "- local.\<epsilon> * current_\<gamma> state < 0"
+      using t_props(5) by (rule mult_neg_pos)
+    with t_props(2) show ?thesis by linarith
+  qed
   have s_props: "s \<in> \<V>" "(1 - local.\<epsilon>) * current_\<gamma> state < abstract_bal_map b s"
     using get_source_axioms_red(1)[of b state "current_\<gamma> state" s] assms
     by(auto simp add: get_source_target_path_a_cond_def)
-  hence bs_pos: "abstract_bal_map b s > 0" 
-    using t_props(5) \<epsilon>_axiom s_props(2) 
-    by (auto simp add: algebra_simps)
-       (smt (verit, best) mult_less_0_iff s_props(2))
+  hence bs_pos: "abstract_bal_map b s > 0"
+  proof -
+    have "0 < 1 - local.\<epsilon>"
+      using \<epsilon>_axiom(2) by linarith
+    hence "0 < (1 - local.\<epsilon>) * current_\<gamma> state"
+      using t_props(5) by simp
+    also have "\<dots> < abstract_bal_map b s"
+      using s_props(2) by simp
+    finally show ?thesis .
+  qed
   hence a_balance_s_not_zero:"a_balance state s \<noteq> 0"  
     using assms by(force simp add: get_source_target_path_a_cond_def)
   have knowledge: True
@@ -2866,13 +3042,43 @@ proof-
     by(auto simp add: PP_def)
   moreover have awalk_f:" awalk UNIV (fstv (hd PP)) (map cost_flow_network.to_vertex_pair PP) 
                            (sndv (last PP))"
-    apply(rule edges_of_vwalk.elims [OF sym[OF same_edges]])
-    using Pbf_props(1) same_edges length_Pbf awalk_fst_last bellman_ford.weight.simps[OF bellman_ford] 
-           cost_flow_network.vs_to_vertex_pair_pres apply auto[2]
-    using calculation  Pbf_props(1) same_edges 
-    by(auto simp add: cost_flow_network.vs_to_vertex_pair_pres awalk_intros(1) 
-                        arc_implies_awalk[OF UNIV_I refl]) 
-    (metis awalk_fst_last last_ConsR last_map list.simps(3) list.simps(9))
+  proof -
+    have PP_nonempty: "PP \<noteq> []"
+      using edges_of_vwalk.simps(3) length_Pbf same_edges
+      by (cases Pbf rule: list_cases3) auto
+    have edges_nonempty: "edges_of_vwalk Pbf \<noteq> []"
+      using PP_nonempty same_edges by auto
+    have awalk_ends: "prod.fst (hd (edges_of_vwalk Pbf)) = hd Pbf"
+                     "prod.snd (last (edges_of_vwalk Pbf)) = last Pbf"
+      using awalk_fst_last[OF edges_nonempty Pbf_props(1)] by auto
+    have fstv_hd: "fstv (hd PP) = hd Pbf"
+    proof -
+      have "fstv (hd PP) = prod.fst (cost_flow_network.to_vertex_pair (hd PP))"
+        by (simp add: cost_flow_network.vs_to_vertex_pair_pres)
+      also have "\<dots> = prod.fst (hd (map cost_flow_network.to_vertex_pair PP))"
+        using PP_nonempty by (simp add: hd_map)
+      also have "\<dots> = prod.fst (hd (edges_of_vwalk Pbf))"
+        by (simp add: same_edges)
+      also have "\<dots> = hd Pbf"
+        using awalk_ends(1) by simp
+      finally show ?thesis .
+    qed
+    have sndv_last: "sndv (last PP) = last Pbf"
+    proof -
+      have "sndv (last PP) = prod.snd (cost_flow_network.to_vertex_pair (last PP))"
+        by (simp add: cost_flow_network.vs_to_vertex_pair_pres)
+      also have "\<dots> = prod.snd (last (map cost_flow_network.to_vertex_pair PP))"
+        using PP_nonempty by (simp add: last_map)
+      also have "\<dots> = prod.snd (last (edges_of_vwalk Pbf))"
+        by (simp add: same_edges)
+      also have "\<dots> = last Pbf"
+        using awalk_ends(2) by simp
+      finally show ?thesis .
+    qed
+    show ?thesis
+      unfolding fstv_hd sndv_last same_edges
+      by (rule Pbf_props(1))
+  qed
   moreover have "PP \<noteq> []"
     using  edges_of_vwalk.simps(3) length_Pbf same_edges
     by(cases Pbf rule: list_cases3) auto
@@ -2931,7 +3137,24 @@ proof-
   have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
     using  weight_Pbf_snd t_dist_le_qq_weight Pbf_props(2)[simplified sym[OF PP_def]]
            qq_prop(5) bf_weight_leq_res_costs
-    by (smt (verit, best) leD le_ereal_less)
+  proof -
+    have "ereal (foldr (\<lambda>e. (+) (\<cc> e)) PP 0)
+            = weight (a_not_blocked state) (a_current_flow state) Pbf"
+      using Pbf_props(2)[simplified sym[OF PP_def]] by simp
+    also have "\<dots> = prod.snd (the (connection_lookup bf t))"
+      using weight_Pbf_snd by simp
+    also have "\<dots> \<le> weight (a_not_blocked state) (a_current_flow state)
+                       (awalk_verts s (map cost_flow_network.to_vertex_pair qq))"
+      using t_dist_le_qq_weight by simp
+    also have "\<dots> \<le> ereal (foldr (\<lambda>x. (+) (\<cc> x)) qq 0)"
+      using bf_weight_leq_res_costs by simp
+    finally have "ereal (foldr (\<lambda>e. (+) (\<cc> e)) PP 0) \<le> ereal (foldr (\<lambda>x. (+) (\<cc> x)) qq 0)" .
+    hence "foldr (\<lambda>e. (+) (\<cc> e)) PP 0 \<le> foldr (\<lambda>x. (+) (\<cc> x)) qq 0"
+      by simp
+    also have "\<dots> \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
+      using qq_prop(5) by simp
+    finally show ?thesis .
+  qed
   moreover have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) = cost_flow_network.\<CC> PP"
     unfolding cost_flow_network.\<CC>_def 
     by(subst distinct_sum, simp add: distinctP, meson add.commute)
@@ -3130,7 +3353,16 @@ proof(rule nexistsI, goal_cases)
   proof(rule, rule ccontr, goal_cases)
     case (1 e) 
     hence "to_edge e \<in> set (edges_of_vwalk (rev c))"
-      by (metis map_in_set same_edges[simplified edges_of_vwalk_rev_swap])
+    proof -
+      have cc_map: "map to_edge cc = edges_of_vwalk (rev c)"
+        using same_edges edges_of_vwalk_rev_swap by simp
+      hence cc_set: "set (map to_edge cc) = set (edges_of_vwalk (rev c))"
+        by simp
+      have "to_edge e \<in> set (map to_edge cc)"
+        using map_in_set "1"(1) by simp
+      thus ?thesis
+        using cc_set by simp
+    qed
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = rev c" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
@@ -3169,7 +3401,8 @@ qed
     apply(rule cost_flow_network.augcycle_from_non_distinct_cycle[OF  agpath])
     using "1"(1) awalk_f c_non_empt awalk_fst_last[OF _ awalk_f]
           awalk_fst_last[OF _ path_with_props(1)]  cc_in_E  "1"(1) cc_def path_with_props(2)
-    by (auto, metis list.map_comp same_edges)
+    by (auto simp add: list.map_comp same_edges cc_def comp_def hd_map last_map
+                    to_edge_get_edge_and_costs_backward)
   then show ?case 
     using assms(1) invar_isOptflow_def cost_flow_network.min_cost_flow_no_augcycle by blast
 qed
@@ -3238,7 +3471,21 @@ lemma get_source_for_target_ax:
     using s_props by(auto simp add: ss_is_s connections_def  bf_def)
   have s_neq_t: "s \<noteq> t"
     using t_prop s_prop "1"(1) "1"(2) invar_gamma_def
-    by (smt (verit, best) "1"(6) mult_minus_left mult_mono')
+  proof -
+    show "s \<noteq> t"
+    proof
+      assume st: "s = t"
+      have gam: "0 < current_\<gamma> state" using "1"(6) invar_gamma_def by auto
+      have hi: "a_balance state t < (\<epsilon> - 1) * current_\<gamma> state"
+        using t_prop "1"(1) "1"(2) by simp
+      have lo: "\<epsilon> * current_\<gamma> state < a_balance state t"
+        using s_prop st by simp
+      have "\<epsilon> * current_\<gamma> state < (\<epsilon> - 1) * current_\<gamma> state"
+        by (rule less_trans[OF lo hi])
+      then show False
+        using gam mult_less_cancel_right_disj[of \<epsilon> "current_\<gamma> state" "\<epsilon> - 1"] by simp
+    qed
+  qed
   have s_in_dom: "s \<in> dom (connection_lookup  connections)"
     using s_prop
     by (auto simp add: bellman_ford.bellman_ford_init_dom_is[OF bellman_ford]
@@ -3309,20 +3556,41 @@ lemma get_source_for_target_ax:
   ultimately have "augpath (a_current_flow state) P"
     by(auto simp add: cost_flow_network.augpath_def)
   moreover have "fstv (hd P) = s" 
-    using awalk_f same_edges Pbf_opt_path  awalk_ends[OF Pbf_props(1)] s_neq_t
-          P_def bellman_ford.opt_vs_path_def[OF bellman_ford]
-                        bellman_ford.vs_path_def[OF bellman_ford] Pbf_def
-    by (metis (no_types, lifting))  
+  proof -
+    have "hd Pbf = t" "last Pbf = s"
+      using Pbf_opt_path
+      by (auto simp add: bellman_ford.opt_vs_path_def[OF bellman_ford]
+                         bellman_ford.vs_path_def[OF bellman_ford] Pbf_def)
+    have hl: "last Pbf = fstv (hd P)"
+      using awalk_ends[OF Pbf_props(1) awalk_f[unfolded same_edges]]
+            s_neq_t \<open>hd Pbf = t\<close> \<open>last Pbf = s\<close>
+      by auto
+    with \<open>last Pbf = s\<close> show "fstv (hd P) = s" by simp
+  qed
   moreover have "sndv (last P) = t" 
-    using awalk_f same_edges Pbf_opt_path  awalk_ends[OF Pbf_props(1)] s_neq_t
-    using P_def bellman_ford.opt_vs_path_def[OF bellman_ford]
-                        bellman_ford.vs_path_def[OF bellman_ford] Pbf_def
-    by (metis (no_types, lifting)) 
+  proof -
+    have "hd Pbf = t" "last Pbf = s"
+      using Pbf_opt_path
+      by (auto simp add: bellman_ford.opt_vs_path_def[OF bellman_ford]
+                         bellman_ford.vs_path_def[OF bellman_ford] Pbf_def)
+    have hl: "hd Pbf = sndv (last P)"
+      using awalk_ends[OF Pbf_props(1) awalk_f[unfolded same_edges]]
+            s_neq_t \<open>hd Pbf = t\<close> \<open>last Pbf = s\<close>
+      by auto
+    with \<open>hd Pbf = t\<close> show "sndv (last P) = t" by simp
+  qed
   moreover have "set P \<subseteq> EEE"
   proof(rule, rule ccontr, goal_cases)
     case (1 e)
     hence "to_edge e \<in> set ( (edges_of_vwalk ( (rev Pbf))))"
-      by (metis map_in_set same_edges edges_of_vwalk_rev_swap)
+    proof -
+      have map_eq: "map to_edge P = edges_of_vwalk (rev Pbf)"
+        using same_edges edges_of_vwalk_rev_swap by simp
+      have "to_edge e \<in> set (map to_edge P)"
+        using "1"(1) by auto
+      thus ?thesis
+        using map_eq by simp
+    qed
     then obtain c1 c2 where c_split:"c1@[prod.fst (to_edge e)]@[prod.snd (to_edge e)]@c2 = rev Pbf" 
       apply(induction e rule: cost_flow_network.to_vertex_pair.induct)
       subgoal for e
@@ -3496,9 +3764,34 @@ proof(rule cost_flow_network.consistE[OF assms(1)], rule symmetric_digraphE[OF a
   hence b:"prod.swap (make_pair ee) \<in> forst"
     using 1 by (fastforce simp add: make_pairs_are )
   hence c:"conv (prod.swap (make_pair ee)) =  B ee"
-    using 1(2)[of "fst ee" "snd ee" ee] assms(3)[of "make_pair ee"] a 1(1,4,5)
-    by (metis (no_types, lifting) "1"(2) Redge.distinct(1) Redge.inject(1) imageE 
-         make_pairs_are(1) prod.swap_def surjective_pairing)
+  proof -
+    from "1"(5) "1"(4) have "F ee \<in> conv ` forst" by simp
+    then obtain p where pf: "p \<in> forst" and pc: "conv p = F ee"
+      by (force simp add: image_iff)
+    from surjective_pairing[of p] pf have pq: "(prod.fst p, prod.snd p) \<in> forst" by simp
+    from surjective_pairing[of p] pc have ce: "conv (prod.fst p, prod.snd p) = F ee" by simp
+    have fp: "prod.fst p = fst ee"
+      using local.algo.consist_fstv[OF assms(1) pq] ce
+            cost_flow_network.fstv.simps(1)
+      by simp
+    have sp: "prod.snd p = snd ee"
+      using local.algo.consist_sndv[OF assms(1) pq] ce
+            cost_flow_network.sndv.simps(1)
+      by simp
+    from surjective_pairing[of p] fp sp have peq: "p = (fst ee, snd ee)" by simp
+    have cf: "conv (fst ee, snd ee) = F ee"
+      using peq pc by simp
+    have prev: "(fst ee, snd ee) \<in> forst"
+      using a make_pair_fst_snd[of ee] by simp
+    have ne: "fst ee \<noteq> snd ee"
+      using assms(3)[of "make_pair ee"] a by (simp add: make_pair_fst_snd)
+    have iff: "(conv (fst ee, snd ee) = F ee) = (conv (snd ee, fst ee) = B ee)"
+      using prev ne "1"(2)[of "fst ee" "snd ee" ee] by blast
+    have sw: "prod.swap (make_pair ee) = (snd ee, fst ee)"
+      by (simp add: make_pair_fst_snd prod.swap_def)
+    show ?thesis
+      using sw iff cf by simp
+  qed
   then show ?case 
     using "1"(5) b by force
 next
@@ -3507,18 +3800,55 @@ next
   hence b:"make_pair ee \<in> forst"
     using 2 by (fastforce simp add: make_pairs_are )
   hence c:"conv (make_pair ee) =  F ee"
-    using 2(2)[of "fst ee" "snd ee" ee] assms(3)[of "make_pair ee"] a 2(1,4,5)
-  by (metis assms(1) cost_flow_network.fstv.simps(2) cost_flow_network.sndv.simps(2) image_iff
-      local.algo.consist_fstv local.algo.consist_sndv make_pair_fst_snd surjective_pairing)
+  proof -
+    from 2(5) 2(4) have "B ee \<in> conv ` forst" by simp
+    then obtain p where pf: "p \<in> forst" and pc: "conv p = B ee"
+      by (force simp add: image_iff)
+    from surjective_pairing[of p] pf have pq: "(prod.fst p, prod.snd p) \<in> forst" by simp
+    from surjective_pairing[of p] pc have ce: "conv (prod.fst p, prod.snd p) = B ee" by simp
+    have fp: "prod.fst p = snd ee"
+      using local.algo.consist_fstv[OF assms(1) pq] ce
+            cost_flow_network.fstv.simps(2)
+      by simp
+    have sp: "prod.snd p = fst ee"
+      using local.algo.consist_sndv[OF assms(1) pq] ce
+            cost_flow_network.sndv.simps(2)
+      by simp
+    from surjective_pairing[of p] fp sp have peq: "p = (snd ee, fst ee)" by simp
+    have cb: "conv (snd ee, fst ee) = B ee"
+      using peq pc by simp
+    have prev: "(fst ee, snd ee) \<in> forst"
+      using b make_pair_fst_snd[of ee] by simp
+    have ne: "fst ee \<noteq> snd ee"
+      using assms(3)[of "make_pair ee"] b by (simp add: make_pair_fst_snd)
+    have iff: "(conv (fst ee, snd ee) = F ee) = (conv (snd ee, fst ee) = B ee)"
+      using prev ne 2(2)[of "fst ee" "snd ee" ee] by blast
+    show ?thesis
+      using iff cb make_pair_fst_snd[of ee] by simp
+  qed
   then show ?case 
     using 2(5) b by force
 next
   case (3 ee)
   hence c:"conv (prod.swap (make_pair ee)) =  B ee"
     using 3(2)[of "fst ee" "snd ee" ee] assms(3)[of "make_pair ee"] 
-    by (metis assms(1) cost_flow_network.erev.simps(1) cost_flow_network.fstv.simps(2)
-        cost_flow_network.sndv.simps(2) image_iff local.algo.consist_fstv local.algo.consist_sndv
-        local.multigraph.make_pair''(1,2) make_pairs_are(1) prod.swap_def surjective_pairing)
+    proof -
+      have "B ee \<in> conv ` forst"
+        using "3" by (simp add: cost_flow_network.erev.simps(1))
+      then obtain u v where uv: "(u, v) \<in> forst" "conv (u, v) = B ee"
+        by (auto simp add: image_iff)
+      have u_eq: "u = snd ee"
+        using local.algo.consist_fstv[OF assms(1) uv(1)] uv(2)
+        by (simp add: cost_flow_network.fstv.simps(2))
+      have v_eq: "v = fst ee"
+        using local.algo.consist_sndv[OF assms(1) uv(1)] uv(2)
+        by (simp add: cost_flow_network.sndv.simps(2))
+      have "prod.swap (make_pair ee) = (u, v)"
+        using u_eq v_eq
+        by (simp add: local.make_pair_def prod.swap_def)
+      thus ?thesis
+        using uv(2) by simp
+    qed
   hence b:"prod.swap (make_pair ee) \<in> forst"
     using 3 by (fastforce simp add: make_pairs_are)
   hence a:"make_pair ee \<in> forst"using 3 by (fastforce simp add: make_pairs_are)
@@ -3530,9 +3860,31 @@ next
 next
   case (4 ee)
 hence c:"conv ((make_pair ee)) =  F ee"
-  by (metis assms(1) cost_flow_network.erev.simps(2) cost_flow_network.fstv.simps(1)
-      cost_flow_network.sndv.simps(1) image_iff local.algo.consist_fstv local.algo.consist_sndv
-      make_pair_fst_snd surjective_pairing)
+proof -
+  from 4 have F_mem: "F ee \<in> conv ` forst"
+    by (auto simp add: cost_flow_network.erev.simps)
+  then obtain x where x_forst: "x \<in> forst" and x_eq: "conv x = F ee"
+    by (auto simp add: image_iff)
+  have pair_mem: "(prod.fst x, prod.snd x) \<in> forst" using x_forst by simp
+  have fu: "cost_flow_network.fstv (conv x) = prod.fst x"
+    using local.algo.consist_fstv[OF assms(1) pair_mem] by simp
+  have su: "cost_flow_network.sndv (conv x) = prod.snd x"
+    using local.algo.consist_sndv[OF assms(1) pair_mem] by simp
+  have fst_eq: "prod.fst x = fst ee"
+    using fu x_eq cost_flow_network.fstv.simps by simp
+  have snd_eq: "prod.snd x = snd ee"
+    using su x_eq cost_flow_network.sndv.simps by simp
+  have x_is: "x = make_pair ee"
+  proof -
+    have "x = (prod.fst x, prod.snd x)" by (rule surjective_pairing)
+    also have "\<dots> = (fst ee, snd ee)" using fst_eq snd_eq by simp
+    also have "\<dots> = make_pair ee" by (simp add: make_pair_fst_snd)
+    finally show ?thesis .
+  qed
+  have "conv (make_pair ee) = conv x" using x_is by simp
+  also have "\<dots> = F ee" by (rule x_eq)
+  finally show ?thesis .
+qed
   hence b:"(make_pair ee) \<in> forst"
     using 4 by (fastforce simp add: make_pairs_are)
   hence a:"prod.swap (make_pair ee) \<in> forst"using 4 by (fastforce simp add: make_pairs_are)
@@ -3599,10 +3951,17 @@ proof-
   have t_props: "t \<in> \<V>" "- (1 - local.\<epsilon>) * current_\<gamma> state > abstract_bal_map b t"
     using get_target_axioms_red(1)[of b state "current_\<gamma> state" t] assms
     by(auto simp add: get_source_target_path_b_cond_def)
-  hence bt_pos: "abstract_bal_map b t < 0" 
-    using gamma_0 \<epsilon>_axiom t_props(2) 
-    by (auto simp add: algebra_simps)
-       (smt (verit, best) mult_less_0_iff t_props(2))
+  hence bt_pos: "abstract_bal_map b t < 0"
+  proof -
+    have "\<epsilon> \<le> 1 / 2"
+      using \<epsilon>_axiom(2) by blast
+    hence pos: "(1 - \<epsilon>) * current_\<gamma> state > 0"
+      using gamma_0 by simp
+    have "abstract_bal_map b t < - ((1 - \<epsilon>) * current_\<gamma> state)"
+      using t_props(2) by (simp add: algebra_simps)
+    thus ?thesis
+      using pos by linarith
+  qed
   hence a_balance_s_not_zero:"a_balance state t \<noteq> 0"  
     using assms by(force simp add: get_source_target_path_b_cond_def)
   have knowledge: True
@@ -3692,7 +4051,12 @@ proof-
   proof(goal_cases)
     case 1
     hence 11: "cost_flow_network.erev e \<in> set  qq"
-      using in_set_map cost_flow_network.erve_erve_id[OF  ] set_rev by metis
+    proof -
+      from 1 obtain x where x_qq: "x \<in> set qq" and e_eq: "e = cost_flow_network.erev x"
+        by (auto simp add: set_map set_rev)
+      from x_qq show ?thesis
+        by (simp add: e_eq cost_flow_network.erve_erve_id)
+    qed
     note e_es[OF 1]
     moreover have oedgeF:"oedge e \<in> to_set (actives state) \<or> oedge e \<in> \<F> state"
       using e_in  1 by (auto simp add: \<F>_def)
@@ -3869,9 +4233,24 @@ proof-
   hence P_in_E: "set PP \<subseteq> EEE"
     by (meson image_subset_iff cost_flow_network.o_edge_res subsetI) 
   have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
-    using  weight_Pbf_snd s_dist_le_qq_weight Pbf_props(2)[simplified sym[OF PP_def]]
-           qq_prop(5) bf_weight_leq_res_costs knowledge(16) 
-    by (smt (verit, best) leD le_ereal_less)
+  proof -
+    have "ereal (foldr (\<lambda>e. (+) (\<cc> e)) PP 0) =
+            weight_backward (a_not_blocked state) (a_current_flow state) (rev Pbf)"
+      using Pbf_props(2)[simplified sym[OF PP_def]] by simp
+    also have "\<dots> = prod.snd (the (connection_lookup bf s))"
+      using weight_Pbf_snd by simp
+    also have "\<dots> = prod.snd (the (connection_lookup bf ss))"
+      using ss_is_s by simp
+    also have "\<dots> \<le> weight_backward (a_not_blocked state) (a_current_flow state)
+                   (awalk_verts t (map cost_flow_network.to_vertex_pair
+                                     (map cost_flow_network.erev (rev qq))))"
+      using s_dist_le_qq_weight by simp
+    also have "\<dots> \<le> foldr (\<lambda>x. (+) (\<cc> x)) qq 0"
+      using bf_weight_leq_res_costs by simp
+    also have "\<dots> \<le> foldr (\<lambda>x. (+) (\<cc> x)) Q 0"
+      using qq_prop(5) by simp
+    finally show ?thesis by simp
+  qed
   moreover have "(foldr (\<lambda>e. (+) (\<cc> e)) PP 0) = cost_flow_network.\<CC> PP"
     unfolding cost_flow_network.\<CC>_def 
     by(subst distinct_sum, simp add: distinctP, meson add.commute)
@@ -3916,7 +4295,16 @@ proof(goal_cases)
     by(auto simp add: get_source_def get_source_aux_def) 
    hence bs0:"abstract_bal_map b s > 0"   
      using knowledge(7,2,1) \<epsilon>_axiom(2,4) algo.invar_gamma_def 
-     by (smt (verit, ccfv_SIG) divide_less_eq_1_pos mult_nonneg_nonneg)
+  proof -
+    have \<gamma>_pos: "0 < \<gamma>"
+      unfolding knowledge(2) using knowledge(7) by (simp add: invar_gamma_def)
+    have coef_pos: "0 < 1 - \<epsilon>"
+      using \<epsilon>_axiom(4) by simp
+    have prod_pos: "0 < (1 - \<epsilon>) * \<gamma>"
+      using coef_pos \<gamma>_pos by (rule mult_pos_pos)
+    then show ?thesis
+      using s_prop(1) by linarith
+  qed
   have "\<not> (\<exists> t \<in> VV. abstract_bal_map b t < - \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t) \<longleftrightarrow> 
             (tt = None)"
   proof(rule,  all \<open>rule ccontr\<close>, goal_cases)
@@ -3932,7 +4320,14 @@ proof(goal_cases)
       by auto
     hence bx0:"abstract_bal_map b x < 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have gamma_pos: "0 < current_\<gamma> state"
+        using knowledge(7) by (simp add: algo.invar_gamma_def)
+      have pos: "0 < \<epsilon> * current_\<gamma> state"
+        using \<epsilon>_axiom(1) gamma_pos by (rule mult_pos_pos)
+      then show ?thesis
+        using x_prop(2) by linarith
+    qed
     hence x_not_s:"x \<noteq> s"
       using bs0 by auto
     hence x_in_dom:"x\<in>dom (connection_lookup bf)" "prod.fst (the (connection_lookup bf x)) \<noteq> None"
@@ -3994,7 +4389,13 @@ proof(goal_cases)
     note 2 = this 2
     hence "abstract_bal_map b t < 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have gamma_pos: "0 < \<gamma>"
+        using knowledge(7) knowledge(2) by (simp add: algo.invar_gamma_def)
+      have "0 < \<epsilon> * \<gamma>"
+        using \<epsilon>_axiom(1) gamma_pos by (rule mult_pos_pos)
+      with 2(2) show ?thesis by linarith
+    qed
     hence t_not_s:"t \<noteq> s"
       using bs0 by auto
     have f_is: "abstract_flow_map f = a_current_flow state"
@@ -4103,7 +4504,18 @@ proof(goal_cases)
     by(auto simp add: get_target_def get_target_aux_def) 
   hence bt0:"abstract_bal_map b t < 0"   
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def
-      by (smt (verit) divide_less_eq_1_pos mult_minus_left mult_nonneg_nonneg)+
+  proof -
+    have gamma_pos: "\<gamma> > 0"
+      using knowledge(7) knowledge(2) by (simp add: invar_gamma_def)
+    have eps_lt_1: "\<epsilon> < 1"
+      using \<epsilon>_axiom(4) by linarith
+    have one_minus_eps_pos: "1 - \<epsilon> > 0"
+      using eps_lt_1 by linarith
+    have prod_pos: "(1 - \<epsilon>) * \<gamma> > 0"
+      using one_minus_eps_pos gamma_pos by (rule mult_pos_pos)
+    show ?thesis
+      using t_prop(1) prod_pos by linarith
+  qed
   have "\<not> (\<exists> s \<in> VV. abstract_bal_map b s > \<epsilon> * \<gamma> \<and> resreach (abstract_flow_map f) s t) \<longleftrightarrow> 
             (ss = None)"
   proof(rule,  all \<open>rule ccontr\<close>, goal_cases)
@@ -4118,7 +4530,16 @@ proof(goal_cases)
       by auto
     hence bx0:"abstract_bal_map b x > 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def 
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have gamma_pos: "\<gamma> > 0"
+        using knowledge(7) knowledge(2) by (simp add: invar_gamma_def)
+      have eps_pos: "0 < \<epsilon>"
+        using \<epsilon>_axiom(1) by simp
+      have "0 < \<epsilon> * current_\<gamma> state"
+        using eps_pos gamma_pos knowledge(2) by (simp add: mult_pos_pos)
+      thus ?thesis
+        using x_prop(2) by linarith
+    qed
     hence x_not_s:"x \<noteq> t"
       using bt0 by auto
     hence x_in_dom:"x\<in>dom (connection_lookup bf)" 
@@ -4167,7 +4588,28 @@ proof(goal_cases)
     ultimately have "resreach  (abstract_flow_map f) x t"
       using cost_flow_network.augpath_imp_resreach[OF , of " (abstract_flow_map f)" pp]
             path_hd p_prop(3,4) path_last
-      by (metis One_nat_def hd_append2 last_snoc le_numeral_extra(4) list.size(3) not_less_eq_eq subsetI)
+      proof -
+        have p_ne: "p \<noteq> []"
+          using p_prop(4) by auto
+        have fstv_hd_pp: "fstv (hd pp) = x"
+          using path_hd[symmetric] by (simp add: last_snoc)
+        have sndv_last_pp: "sndv (last pp) = t"
+          by (simp add: path_last[symmetric] hd_append2[OF p_ne] p_prop(3))
+        have Rcap_pp: "0 < cost_flow_network.Rcap (abstract_flow_map f) (set pp)"
+          using transformed(2) knowledge(3)
+          by (auto intro: linorder_class.Min_gr_iff simp add: cost_flow_network.Rcap_def)
+        have aug_pp: "augpath (abstract_flow_map f) pp"
+          using prepath Rcap_pp by (simp add: cost_flow_network.augpath_def)
+        have subs_pp: "set pp \<subseteq> EEE"
+        proof (rule subsetI)
+          fix e assume "e \<in> set pp"
+          thus "e \<in> EEE"
+            using transformed(2)[of e] not_blocked_in_E cost_flow_network.o_edge_res by blast
+        qed
+        show ?thesis
+          using aug_pp fstv_hd_pp sndv_last_pp subs_pp
+          by (fastforce intro: cost_flow_network.augpath_imp_resreach)
+      qed
     thus False
       using 1 x_prop(1,2) knowledge(2) vs_is_V
       by simp
@@ -4179,7 +4621,13 @@ proof(goal_cases)
     note 2 = 2 this
     hence "abstract_bal_map b s > 0"
       using knowledge(7,2,1) \<epsilon>_axiom algo.invar_gamma_def 
-      by (smt (verit)  mult_minus_left mult_nonneg_nonneg)
+    proof -
+      have "0 < \<epsilon>" using \<epsilon>_axiom(1) by simp
+      moreover have "0 < \<gamma>" using knowledge(7,2) by (simp add: algo.invar_gamma_def)
+      ultimately have "0 < \<epsilon> * \<gamma>" by (rule mult_pos_pos)
+      hence "- \<epsilon> * \<gamma> < 0" by simp
+      with 2(4) show ?thesis by linarith
+    qed
     hence t_not_s:"t \<noteq> s"
       using bt0 by auto
     have f_is: "abstract_flow_map f = a_current_flow state"

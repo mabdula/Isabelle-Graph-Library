@@ -77,20 +77,68 @@ proof-
   let ?indep_cards = "{card Y | Y. indep_in X Y}"
   from assms(1) indep_in_ex have "?indep_cards \<noteq> {}" by simp
   from assms(1) carrier_finite finite_Pow_iff finite_imageI have "finite ?indep_cards"
-    by (smt (verit) card_mono finite_nat_set_iff_bounded_le indep_in_def indep_subset_carrier mem_Collect_eq)
+  proof -
+    have "\<forall>n \<in> ?indep_cards. n \<le> card carrier"
+    proof
+      fix n
+      assume "n \<in> ?indep_cards"
+      then obtain Y where "n = card Y" "indep_in X Y" by blast
+      from indep_in_indep[OF `indep_in X Y`] have "indep Y" .
+      from indep_subset_carrier[OF this] have "Y \<subseteq> carrier" .
+      with carrier_finite have "card Y \<le> card carrier" by (simp add: card_mono)
+      with `n = card Y` show "n \<le> card carrier" by simp
+    qed
+    then show "finite ?indep_cards"
+      using finite_nat_set_iff_bounded_le by blast
+  qed
 
   have "\<forall>n. (upper_rank_of X = n) \<longleftrightarrow> (rank X = n)"
   proof
     fix n
     have upper_rank_eq_iff: "(n = upper_rank_of X) \<longleftrightarrow> 
       (\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
-      unfolding upper_rank_of_def using Max_eq_iff[OF `finite ?basis_cards` `?basis_cards \<noteq> {}`]
-      by (smt (verit, del_insts) mem_Collect_eq)
+    proof -
+      have max_eq: "(Max ?basis_cards = n) \<longleftrightarrow> (n \<in> ?basis_cards \<and> (\<forall>a \<in> ?basis_cards. a \<le> n))"
+        using Max_eq_iff[OF `finite ?basis_cards` `?basis_cards \<noteq> {}`] by auto
+      show ?thesis
+      proof
+        assume "n = upper_rank_of X"
+        then have "Max ?basis_cards = n" by (simp add: upper_rank_of_def)
+        with max_eq have n_mem: "n \<in> ?basis_cards" and n_ub: "\<forall>a \<in> ?basis_cards. a \<le> n" by auto
+        from n_mem obtain Y where Y_basis: "basis_in X Y" and Y_card: "card Y = n" by auto
+        have Y_max: "\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'"
+        proof (rule allI, rule impI)
+          fix Y'
+          assume Y'_basis: "basis_in X Y'"
+          then have "card Y' \<in> ?basis_cards" by auto
+          with n_ub have "card Y' \<le> n" by auto
+          with Y_card show "card Y \<ge> card Y'" by simp
+        qed
+        from Y_basis Y_card Y_max
+        show "\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')"
+          by blast
+      next
+        assume "\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')"
+        then obtain Y where Y_basis: "basis_in X Y" and Y_card: "card Y = n"
+          and Y_max: "\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'" by blast
+        have n_mem: "n \<in> ?basis_cards" using Y_basis Y_card by auto
+        have n_ub: "\<forall>a \<in> ?basis_cards. a \<le> n"
+        proof
+          fix a
+          assume "a \<in> ?basis_cards"
+          then obtain Y' where a_eq: "a = card Y'" and Y'_basis: "basis_in X Y'" by auto
+          from Y_max Y'_basis have "card Y' \<le> card Y" by auto
+          with a_eq Y_card show "a \<le> n" by simp
+        qed
+        from n_mem n_ub max_eq have "Max ?basis_cards = n" by auto
+        then show "n = upper_rank_of X" by (simp add: upper_rank_of_def)
+      qed
+    qed
 
     have rank_eq_iff: "(n = rank X) \<longleftrightarrow> 
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
       unfolding rank_def using Max_eq_iff[OF `finite ?indep_cards` `?indep_cards \<noteq> {}`]
-      by (smt (verit, del_insts) mem_Collect_eq)
+      by force
 
     have "(\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')) \<longleftrightarrow>
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
@@ -130,8 +178,15 @@ proof-
           using assms basis_inI by blast
         then obtain x where "x \<in> (X - Y)" "indep_in X (insert x Y)" by blast
         then have "card (insert x Y) > card Y"
-          by (metis DiffD2 \<open>indep_in X Y\<close> assms card_insert_disjoint finite_subset 
-              indep_in_subset_carrier indep_system.carrier_finite indep_system_axioms lessI)
+        proof -
+          from \<open>x \<in> (X - Y)\<close> have "x \<notin> Y" by blast
+          from indep_in_subset_carrier[OF \<open>indep_in X Y\<close>] have "Y \<subseteq> X" .
+          with assms have "Y \<subseteq> carrier" by blast
+          with carrier_finite have "finite Y" using finite_subset by blast
+          with \<open>x \<notin> Y\<close> have "card (insert x Y) = Suc (card Y)"
+            by (simp add: card_insert_disjoint)
+          then show "card (insert x Y) > card Y" by simp
+        qed
 
         with `indep_in X (insert x Y)` `(\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y')`
         show ?case by fastforce
@@ -216,14 +271,34 @@ proof (standard, goal_cases LTR RTL)
       with `B1 \<subseteq> X` `B2 \<subseteq> X` have "\<exists>x \<in> B2 - B1. indep_in X (insert x B1)"
         by (simp add: in_mono indep_in_def)
       with ex_B1_B2 show ?thesis 
-        by (metis DiffD2 DiffI basis_in_max_indep_in ex_X indep_in_subset_carrier insert_subset)
+      proof -
+        from ex_B1_B2 have basis_B1: "basis_in X B1" by blast
+        from ex_X have "X \<subseteq> carrier" by blast
+        from \<open>\<exists>x \<in> B2 - B1. indep_in X (insert x B1)\<close>
+        obtain x where x_mem: "x \<in> B2 - B1" and x_indep: "indep_in X (insert x B1)" by blast
+        from x_mem have "x \<in> B2" and "x \<notin> B1" by simp_all
+        from \<open>B2 \<subseteq> X\<close> \<open>x \<in> B2\<close> have "x \<in> X" by blast
+        with \<open>x \<notin> B1\<close> have "x \<in> X - B1" by blast
+        from basis_in_max_indep_in[OF \<open>X \<subseteq> carrier\<close> basis_B1 this]
+        have "\<not> indep_in X (insert x B1)" .
+        with x_indep show False by blast
+      qed
     next
       case 2
       from LTR `indep B1` `indep B2` 2 have "\<exists>x \<in> B1 - B2. indep (insert x B2)" by blast
       with `B1 \<subseteq> X` `B2 \<subseteq> X` have "\<exists>x \<in> B1 - B2. indep_in X (insert x B2)"
         by (simp add: in_mono indep_in_def)
       with ex_B1_B2 show ?thesis
-        by (metis DiffD2 DiffI basis_in_max_indep_in ex_X indep_in_subset_carrier insert_subset)
+      proof -
+        from ex_B1_B2 have basis_B2: "basis_in X B2" by blast
+        from ex_X have "X \<subseteq> carrier" by blast
+        from \<open>\<exists>x \<in> B1 - B2. indep_in X (insert x B2)\<close>
+        obtain x where x_mem: "x \<in> B1 - B2" and x_indep: "indep_in X (insert x B2)" by blast
+        from x_mem \<open>B1 \<subseteq> X\<close> have "x \<in> X - B2" by blast
+        from basis_in_max_indep_in[OF \<open>X \<subseteq> carrier\<close> basis_B2 this]
+        have "\<not> indep_in X (insert x B2)" .
+        with x_indep show ?thesis by blast
+      qed
     qed
   qed
 next
@@ -245,7 +320,10 @@ next
       by blast
     with `X \<union> Y \<subseteq> carrier` `card X > card Y` have
       "\<not> basis_in (X \<union> Y) X \<or> \<not> basis_in (X \<union> Y) Y"
-      by (metis nat_neq_iff)
+    proof -
+      have "card X \<noteq> card Y" using `card X > card Y` by simp
+      with `X \<union> Y \<subseteq> carrier` 1 show ?thesis by blast
+    qed
 
     have "\<not> basis_in (X \<union> Y) Y"
     proof (rule ccontr, goal_cases False)
@@ -261,7 +339,12 @@ next
       have "card Y < card B" by auto
 
       from `X \<union> Y \<subseteq> carrier` `basis_in (X \<union> Y) B` `basis_in (X \<union> Y) Y` `card Y < card B` RTL        
-      show ?case by (metis nat_neq_iff)
+      show ?case
+      proof -
+        from RTL `X \<union> Y \<subseteq> carrier` `basis_in (X \<union> Y) B` `basis_in (X \<union> Y) Y`
+        have "card B = card Y" by blast
+        with `card Y < card B` show False by simp
+      qed
     qed
 
 
@@ -329,7 +412,35 @@ proof-
   have "finite ?fracs" using `finite carrier` by auto
 
   have 1: "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
-    unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
+    unfolding rank_quotient_def
+  proof -
+    have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+      {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (rule set_eqI)
+      fix y
+      show "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} \<longleftrightarrow>
+            y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      proof
+        assume "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        then obtain X where X_carrier: "X \<subseteq> carrier"
+          and y_eq: "y = Frac (int (lower_rank_of X)) (int (rank X))" by blast
+        have "int (upper_rank_of X) = int (rank X)"
+          using upper_rank_equiv_rank[OF X_carrier] by simp
+        with y_eq have "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by simp
+        with X_carrier
+        show "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}" by auto
+      next
+        assume "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        then obtain X where X_carrier: "X \<subseteq> carrier"
+          and y_eq: "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by blast
+        from upper_rank_equiv_rank[OF X_carrier] y_eq X_carrier
+        show "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}" by auto
+      qed
+    qed
+    show "Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+          Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      using set_eq by simp
+  qed
 
   have 2: "\<forall>X \<subseteq> carrier. Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<le> 1"
     using rq_fracs_leq_1 by auto
@@ -366,28 +477,211 @@ proof-
     using M3_equiv_M3'' by auto
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n))"
-    by (smt (verit, del_insts) mem_Collect_eq)
+    proof (rule iffI)
+      assume LHS: "\<forall>X \<subseteq> carrier. \<forall>B1 B2. basis_in X B1 \<longrightarrow> basis_in X B2 \<longrightarrow> card B1 = card B2"
+      show "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+      proof (intro allI impI)
+        fix X
+        assume "X \<subseteq> carrier"
+        show "\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n"
+        proof (cases "\<exists>B. basis_in X B")
+          case True
+          then obtain B0 where B0_basis: "basis_in X B0" by blast
+          have n_eq: "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = card B0"
+          proof (intro allI impI)
+            fix n'
+            assume "n' \<in> {card B | B. basis_in X B}"
+            then obtain B' where "n' = card B'" "basis_in X B'" by blast
+            with LHS \<open>X \<subseteq> carrier\<close> B0_basis have "card B' = card B0" by blast
+            with \<open>n' = card B'\<close> show "n' = card B0" by simp
+          qed
+          then show ?thesis by blast
+        next
+          case False
+          then have "{card B | B. basis_in X B} = {}" by blast
+          then show ?thesis by blast
+        qed
+      qed
+    next
+      assume RHS: "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+      show "\<forall>X \<subseteq> carrier. \<forall>B1 B2. basis_in X B1 \<longrightarrow> basis_in X B2 \<longrightarrow> card B1 = card B2"
+      proof (intro allI impI)
+        fix X B1 B2
+        assume "X \<subseteq> carrier" "basis_in X B1" "basis_in X B2"
+        from RHS \<open>X \<subseteq> carrier\<close> obtain n where n_prop: "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n"
+          by blast
+        from \<open>basis_in X B1\<close> have "card B1 \<in> {card B | B. basis_in X B}" by blast
+        with n_prop have card_B1_eq: "card B1 = n" by blast
+        from \<open>basis_in X B2\<close> have "card B2 \<in> {card B | B. basis_in X B}" by blast
+        with n_prop have "card B2 = n" by blast
+        then show "card B1 = card B2" using card_B1_eq by simp
+      qed
+    qed
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B})"
-    by (smt (verit, del_insts) Max.bounded_iff Max_eq_iff Min_eq_iff bases_X_finite bases_X_nonempty)
+  proof
+    assume LTR: "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+    show "\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      with LTR obtain n where n_eq: "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n" by blast
+      from `X \<subseteq> carrier` bases_X_nonempty have nonempty: "{card B | B. basis_in X B} \<noteq> {}" by blast
+      then obtain s where s_in: "s \<in> {card B | B. basis_in X B}" by blast
+      with n_eq have "s = n" by blast
+      with n_eq s_in have "{card B | B. basis_in X B} = {n}" by blast
+      then show "Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}" by simp
+    qed
+  next
+    assume RTL: "\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+    show "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      with RTL have min_eq_max: "Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+        by blast
+      from `X \<subseteq> carrier` bases_X_finite have fin: "finite {card B | B. basis_in X B}" by blast
+      have "\<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = Min {card B | B. basis_in X B}"
+      proof (rule allI, rule impI)
+        fix n'
+        assume n'_in: "n' \<in> {card B | B. basis_in X B}"
+        from Min_le[OF fin n'_in] have le1: "Min {card B | B. basis_in X B} \<le> n'" .
+        from Max_ge[OF fin n'_in] have "n' \<le> Max {card B | B. basis_in X B}" .
+        with min_eq_max have le2: "n' \<le> Min {card B | B. basis_in X B}" by simp
+        from le1 le2 show "n' = Min {card B | B. basis_in X B}" by simp
+      qed
+      then show "\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n" by blast
+    qed
+  qed
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B}))"
     by simp
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. 
     Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1)"
-    by (smt (verit, best) Frac_def One_rat_def eq_rat(1) eq_rat(2) mult.commute mult_cancel_right)
+  proof (rule iffI)
+    assume eq_assm: "\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B})"
+    show "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      with eq_assm have eq: "Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
+        by simp
+      then show "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+        unfolding Frac_def by simp
+    qed
+  next
+    assume frac_assm: "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+    show "\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B})"
+    proof (rule allI, rule impI)
+      fix X
+      assume "X \<subseteq> carrier"
+      let ?m = "Min {card B | B. basis_in X B}"
+      let ?M = "Max {card B | B. basis_in X B}"
+
+      from bases_X_finite \<open>X \<subseteq> carrier\<close> have fin: "finite {card B | B. basis_in X B}" by blast
+      from bases_X_nonempty \<open>X \<subseteq> carrier\<close> have nonempty: "{card B | B. basis_in X B} \<noteq> {}" by blast
+
+      from Min_in[OF fin nonempty] have m_in: "?m \<in> {card B | B. basis_in X B}" .
+      from Max_ge[OF fin m_in] have m_le_M: "?m \<le> ?M" .
+
+      from frac_assm \<open>X \<subseteq> carrier\<close>
+      have frac_eq: "Frac (int ?m) (int ?M) = 1" by blast
+
+      from Frac_of_int_leq_quotient[OF m_le_M refl]
+      have "rat_of_nat ?m = Frac (int ?m) (int ?M) * rat_of_nat ?M" .
+      also have "... = rat_of_nat ?M" using frac_eq by simp
+      finally have "rat_of_nat ?m = rat_of_nat ?M" .
+      then have "?m = ?M" by simp
+      then show "int ?m = int ?M" by simp
+    qed
+  qed
   also have "...
     \<longleftrightarrow> (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) | 
     X. X \<subseteq> carrier} = 1)"
     using rq_fracs_finite rq_fracs_nonempty rq_fracs_leq_1
-    by (smt (verit, best) Min.boundedE Min_in mem_Collect_eq verit_la_disequality)
-  also have "...
+  proof -
+    show "(\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1) =
+      (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+      X. X \<subseteq> carrier} = 1)"
+    proof
+      assume asm: "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+      from Min_in[OF rq_fracs_finite rq_fracs_nonempty]
+      have "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} \<in> {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier}" .
+      then obtain Y where Y: "Y \<subseteq> carrier"
+        "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} = Frac (int (Min {card B | B. basis_in Y B})) (int (Max {card B | B. basis_in Y B}))"
+        by blast
+
+      from asm[rule_format, of Y, OF Y(1)]
+      have "Frac (int (Min {card B | B. basis_in Y B})) (int (Max {card B | B. basis_in Y B})) = 1" .
+      with Y(2)
+      show "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} = 1" by simp
+    next
+      assume asm: "Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
+        X. X \<subseteq> carrier} = 1"
+      show "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+      proof (rule allI, rule impI)        fix X
+        assume "X \<subseteq> carrier"
+        then have mem: "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) \<in>
+          {Frac (int (Min {card B | B. basis_in Y B})) (int (Max {card B | B. basis_in Y B})) |
+          Y. Y \<subseteq> carrier}" by auto
+
+        from asm Min_le[OF rq_fracs_finite mem]
+        have le1: "1 \<le> Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B}))"
+          by simp
+
+        from rq_fracs_leq_1[rule_format, of X, OF \<open>X \<subseteq> carrier\<close>]
+        have le2: "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) \<le> 1"
+          .
+
+        from le1 le2
+        show "Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
+          by linarith
+      qed
+    qed
+  qed  also have "...
     \<longleftrightarrow> (Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} = 1)"
     using lower_rank_of_def upper_rank_of_def by auto
   also have "...
     \<longleftrightarrow> (Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} = 1)"
-    using upper_rank_equiv_rank arg_cong by (smt (verit, best) Collect_cong)
+  proof -
+  have set_eq: "{Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} =
+                {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+  proof (rule subset_antisym)
+    show "{Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} \<subseteq>
+          {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+    proof (rule subsetI)
+      fix q
+      assume "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      then obtain X where X_sub: "X \<subseteq> carrier"
+        and q_eq: "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+        by blast
+      from upper_rank_equiv_rank[OF X_sub] q_eq
+      have "q = Frac (int (lower_rank_of X)) (int (rank X))" by simp
+      with X_sub show "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        by blast
+    qed
+  next
+    show "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} \<subseteq>
+          {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (rule subsetI)
+      fix q
+      assume "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+      then obtain X where X_sub: "X \<subseteq> carrier"
+        and q_eq: "q = Frac (int (lower_rank_of X)) (int (rank X))"
+        by blast
+      from upper_rank_equiv_rank[OF X_sub] q_eq
+      have "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by simp
+      with X_sub show "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        by blast
+    qed
+  qed
+  show ?thesis by (simp add: set_eq)
+  qed
   also have "... \<longleftrightarrow> (rank_quotient = 1)"
     unfolding rank_quotient_def by simp
   finally have augment_iff_rq_eq_1:
@@ -449,7 +743,13 @@ proof-
     then obtain x where "x \<in> C'" "x \<notin> J" by blast
 
     from \<open>set l = (J - K)\<close> assms(8) have "l ! i \<in> J"
-      by (metis Diff_iff assms(4) assms(6) nth_mem)
+    proof -
+  from assms(4) assms(8) have "i < t" by simp
+  with assms(6) have "i < length l" by simp
+  then have "l ! i \<in> set l" by (rule nth_mem)
+  then have "l ! i \<in> J - K" using \<open>set l = (J - K)\<close> by simp
+  then show "l ! i \<in> J" by (rule DiffD1)
+qed
     from \<open>l ! i \<in> J\<close> \<open>x \<notin> J\<close> \<open>x \<in> C'\<close> \<open>C' \<subseteq> K_i \<union> {l ! i}\<close>
     have "x \<in> K_i" by blast
 
@@ -550,7 +850,41 @@ next
 
         from K_seq_i have "K_seq K J l i \<inter> (J - K) = set (take i l)" by auto
         moreover have "l ! i \<notin> set (take i l)" using assms(4) assms(5) assms(6)
-          by (metis \<open>i < card (J - K)\<close> card_distinct distinct_take id_take_nth_drop not_distinct_conv_prefix)
+        proof -
+          have length_l: "length l = card (J - K)"
+            using assms(4) assms(6) by simp
+          have set_l: "set l = J - K"
+            using assms(5) by simp
+          from length_l set_l have "card (set l) = length l"
+            by simp
+          then have distinct_l: "distinct l"
+            by (rule card_distinct)
+          from \<open>i < card (J - K)\<close> length_l have i_lt: "i < length l"
+            by simp
+          have split: "take i l @ drop i l = l"
+            by (rule append_take_drop_id)
+          from split distinct_l have distinct_split: "distinct (take i l @ drop i l)"
+            by simp
+          have disjoint: "set (take i l) \<inter> set (drop i l) = {}"
+            using distinct_split by (blast dest: distinct_append[THEN iffD1])
+          have drop_nonempty: "drop i l \<noteq> []"
+          proof
+            assume "drop i l = []"
+            then have "length (drop i l) = 0" by simp
+            then have "length l - i = 0" by (simp add: length_drop)
+            with i_lt show False by simp
+          qed
+          have hd_eq: "hd (drop i l) = l ! i"
+            using i_lt by (rule hd_drop_conv_nth)
+          have mem: "l ! i \<in> set (drop i l)"
+          proof -
+            have "hd (drop i l) \<in> set (drop i l)"
+              using drop_nonempty by (rule hd_in_set)
+            then show ?thesis using hd_eq by simp
+          qed
+          show "l ! i \<notin> set (take i l)"
+            using disjoint mem by blast
+        qed
         ultimately have "l ! i \<notin> K_seq K J l i"
           using \<open>l ! i \<in> J - K\<close> by blast
         from \<open>x \<in> ((K_seq K J l i) - J) \<inter> C\<close> \<open>l ! i \<notin> K_seq K J l i\<close>
@@ -643,7 +977,13 @@ proof-
 (* We establish an order on the elements by using a list *)
     from `finite (J - K)` 
     have "\<exists>l. set l = (J - K) \<and> length l = ?t"
-      by (metis distinct_card finite_distinct_list)
+    proof -
+  from finite_distinct_list[OF \<open>finite (J - K)\<close>]
+  obtain xs where xs_set: "set xs = J - K" and xs_distinct: "distinct xs" by blast
+  from distinct_card[OF xs_distinct] have "card (set xs) = length xs" .
+  with xs_set have "length xs = card (J - K)" by simp
+  with xs_set show "\<exists>l. set l = (J - K) \<and> length l = ?t" by blast
+qed
     then obtain l where "set l = (J - K) \<and> length l = ?t" by blast
 
     from K_seq_props[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F J\<close> \<open>basis_in F K\<close> refl] 
@@ -691,7 +1031,14 @@ proof-
       assume "j < ?t"
 
       from \<open>set l = (J - K) \<and> length l = ?t\<close> \<open>j < ?t\<close>
-      have "l ! j \<in> J" by (metis Diff_iff nth_mem)
+      have "l ! j \<in> J"
+      proof -
+        from \<open>set l = (J - K) \<and> length l = ?t\<close> have set_l: "set l = J - K" and len_l: "length l = ?t" by auto
+        from \<open>j < ?t\<close> len_l have "j < length l" by simp
+        then have "l ! j \<in> set l" by (rule nth_mem)
+        with set_l have "l ! j \<in> J - K" by simp
+        then show "l ! j \<in> J" by (rule DiffD1)
+      qed
       with basis_in_subset_carrier[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F J\<close>] \<open>F \<subseteq> carrier\<close>
       have "l ! j \<in> carrier" by blast
 
@@ -757,7 +1104,16 @@ proof-
       by auto
 
     from \<open>finite K\<close> have "card K = card (K - J) + card (K \<inter> J)"
-      by (metis Diff_Diff_Int Diff_disjoint Un_Diff_Int card_Un_disjoint finite_Diff) 
+    proof -
+      have union_eq: "K - J \<union> K \<inter> J = K" by blast
+      have disj: "(K - J) \<inter> (K \<inter> J) = {}" by blast
+      have fin1: "finite (K - J)" using \<open>finite K\<close> by simp
+      have fin2: "finite (K \<inter> J)" using \<open>finite K\<close> by simp
+      have "card K = card (K - J \<union> K \<inter> J)" using union_eq by simp
+      also have "... = card (K - J) + card (K \<inter> J)"
+        using card_Un_disjoint[OF fin1 fin2 disj] by simp
+      finally show "card K = card (K - J) + card (K \<inter> J)" .
+    qed
     also have "... \<le>  p * card (J - K) + card (K \<inter> J)"
       using \<open>card (K - J) \<le> p * card (J - K)\<close> by auto
     also have "... = p * card (J - K) + p * card (K \<inter> J) - p * card (K \<inter> J) + card (K \<inter> J)"
@@ -765,9 +1121,15 @@ proof-
     also have "... = p * card J - p * card (K \<inter> J) + card (K \<inter> J)"
       by (simp add: Int_commute \<open>finite J\<close> card_Diff_subset_Int right_diff_distrib')
     also have "... = p * card J - (p - 1) * card (K \<inter> J)"
-      using \<open>p * card J \<ge> p * card (K \<inter> J)\<close> 
-      by (smt (verit) Nat.add_diff_assoc \<open>1 \<le> p\<close> diff_diff_cancel diff_le_self le_add_diff_inverse2
-          left_diff_distrib' nat_mult_1)
+      using \<open>p * card J \<ge> p * card (K \<inter> J)\<close>
+    proof -
+      have distrib: "(p - 1) * card (K \<inter> J) = p * card (K \<inter> J) - card (K \<inter> J)"
+        by (simp add: left_diff_distrib')
+      have le1: "card (K \<inter> J) \<le> p * card (K \<inter> J)"
+        using mult_le_mono1[OF \<open>1 \<le> p\<close>, of "card (K \<inter> J)"] by simp
+      show "p * card J - p * card (K \<inter> J) + card (K \<inter> J) = p * card J - (p - 1) * card (K \<inter> J)"
+        using distrib le1 \<open>p * card J \<ge> p * card (K \<inter> J)\<close> by arith
+    qed
     also have "... \<le> p * card J" by auto
     finally show "card K \<le> p * card J" .
   qed
@@ -778,7 +1140,15 @@ proof-
 
   from Min_in[OF \<open>finite ?fracs\<close> \<open>?fracs \<noteq> {}\<close>]
   have "\<exists>F \<subseteq> carrier. Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
-    by (smt (verit, best) mem_Collect_eq)
+  proof -
+    have "Min ?fracs \<in> ?fracs"
+      using Min_in[OF \<open>finite ?fracs\<close> \<open>?fracs \<noteq> {}\<close>] .
+    then obtain F where "F \<subseteq> carrier"
+      and "Min ?fracs = Frac (int (lower_rank_of F)) (int (upper_rank_of F))"
+      by (auto simp: mem_Collect_eq)
+    then show "\<exists>F \<subseteq> carrier. Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
+      by auto
+  qed
   then obtain F where "F \<subseteq> carrier" "Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
     by blast
 
@@ -801,11 +1171,52 @@ proof-
   from \<open>Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs\<close>
     \<open>card J = Min ?basis_cards\<close> \<open>card K = Max ?basis_cards\<close> lower_rank_of_def upper_rank_of_def
   have "Min ?fracs = Frac (int (card J)) (int (card K))"
-    by metis
+  proof -
+    have lower_eq: "lower_rank_of F = card J"
+      using \<open>card J = Min ?basis_cards\<close> unfolding lower_rank_of_def by simp
+    have upper_eq: "upper_rank_of F = card K"
+      using \<open>card K = Max ?basis_cards\<close> unfolding upper_rank_of_def by simp
+    from \<open>Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs\<close>
+    have "Frac (int (card J)) (int (card K)) = Min ?fracs"
+      by (simp add: lower_eq upper_eq)
+    then show ?thesis by simp
+  qed
   moreover have "rank_quotient = Min ?fracs"
-    unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
+  proof -
+    have rw1: "\<And>X. X \<subseteq> carrier \<Longrightarrow>
+      Frac (int (lower_rank_of X)) (int (rank X)) = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+      using upper_rank_equiv_rank by simp
+    have rw2: "\<And>X. X \<subseteq> carrier \<Longrightarrow>
+      Frac (int (lower_rank_of X)) (int (upper_rank_of X)) = Frac (int (lower_rank_of X)) (int (rank X))"
+      using upper_rank_equiv_rank by simp
+    have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+                  {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (rule set_eqI)
+      fix q
+      show "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} \<longleftrightarrow>
+            q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      proof
+        assume "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        then obtain X where "X \<subseteq> carrier"
+          and "q = Frac (int (lower_rank_of X)) (int (rank X))" by blast
+        then have "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+          using rw1 by simp
+        then show "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+          using \<open>X \<subseteq> carrier\<close> by blast
+      next
+        assume "q \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        then obtain X where "X \<subseteq> carrier"
+          and "q = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by blast
+        then have "q = Frac (int (lower_rank_of X)) (int (rank X))"
+          using rw2 by simp
+        then show "q \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+          using \<open>X \<subseteq> carrier\<close> by blast
+      qed
+    qed
+    then show ?thesis
+      unfolding rank_quotient_def by simp
+  qed
   ultimately have "rank_quotient = Frac (int (card J)) (int (card K))" by simp
-
   from basis_cards_ineq \<open>F \<subseteq> carrier\<close> \<open>basis_in F J\<close> \<open>basis_in F K\<close>
   have "card K \<le> p * card J" by blast
 
@@ -857,7 +1268,30 @@ begin
 
 lemma card_eq_basis:
   "basis X \<Longrightarrow> indep Y \<Longrightarrow> card X = card Y \<Longrightarrow> basis Y"
-  by (metis basis_iff_rank_of basis_subset_carrier indep_iff_rank_of indep_subset_carrier) 
+proof -
+  assume "basis X" and "indep Y" and "card X = card Y"
+
+  from basis_subset_carrier[OF \<open>basis X\<close>] have X_carrier: "X \<subseteq> carrier" .
+  from indep_subset_carrier[OF \<open>indep Y\<close>] have Y_carrier: "Y \<subseteq> carrier" .
+
+  from basis_iff_rank_of[OF X_carrier] \<open>basis X\<close>
+  have X_indep_rank: "rank_of X = card X \<and> rank_of X = rank_of carrier" by blast
+  from indep_iff_rank_of[of X] X_carrier X_indep_rank
+  have X_indep: "indep X" by blast
+  from X_indep_rank have X_rank: "rank_of X = rank_of carrier" by blast
+
+  from indep_iff_rank_of[OF X_carrier] X_indep
+  have "rank_of X = card X" by blast
+  with X_rank have carrier_rank: "rank_of carrier = card X" by simp
+
+  from indep_iff_rank_of[OF Y_carrier] \<open>indep Y\<close>
+  have "rank_of Y = card Y" by blast
+  with \<open>card X = card Y\<close> carrier_rank
+  have Y_rank: "rank_of Y = rank_of carrier" by simp
+
+  from basis_iff_rank_of[OF Y_carrier] indep_iff_rank_of[OF Y_carrier] \<open>indep Y\<close> Y_rank
+  show "basis Y" by blast
+qed
 
 end
 
@@ -896,7 +1330,10 @@ proof-
   from ex have "?int_set_P \<noteq> {}" by blast
   from 1 2 have "finite ?int_set" by auto
   then have "finite ?int_set_P" 
-    by (smt (verit, best) finite_subset mem_Collect_eq subsetI)
+    proof -
+      have "?int_set_P \<subseteq> ?int_set" by blast
+      with \<open>finite ?int_set\<close> show ?thesis using finite_subset by blast
+    qed
 
   from ex_max_card[OF `?int_set_P \<noteq> {}` `finite ?int_set_P`] show ?thesis by blast
 qed
@@ -923,9 +1360,24 @@ proof-
         assume "x \<in> E - B" "B' \<in> S"
         from `x \<in> E - B` have "x \<notin> B" by blast
         from `B \<in> S` assms `x \<notin> B` card_insert_disjoint finite_subset
-        have "card (insert x B) = Suc (card B)" by metis
-        with `B' \<in> S` assms show "\<not>(insert x B) \<subseteq> B'"
-          by (metis `B \<in> S` Suc_n_not_le_n card_mono infinite_super)
+        have "card (insert x B) = Suc (card B)"
+        proof -
+          from assms(3) \<open>B \<in> S\<close> have "B \<subseteq> E" by blast
+          with assms(1) have "finite B" by (blast intro: finite_subset)
+          from card_insert_disjoint[OF this \<open>x \<notin> B\<close>] show ?thesis .
+        qed
+        show "\<not>(insert x B) \<subseteq> B'"
+        proof (rule notI)
+          assume "insert x B \<subseteq> B'"
+          from assms(3) `B' \<in> S` have "B' \<subseteq> E" by blast
+          with assms(1) have "finite B'" using finite_subset by blast
+          from card_mono[OF `finite B'` `insert x B \<subseteq> B'`]
+          have "card (insert x B) \<le> card B'" .
+          with `card (insert x B) = Suc (card B)` have "Suc (card B) \<le> card B'" by simp
+          from assms(2) `B \<in> S` `B' \<in> S` have "card B = card B'" by blast
+          with `Suc (card B) \<le> card B'` have "Suc (card B') \<le> card B'" by simp
+          then show False using Suc_n_not_le_n by blast
+        qed
       qed
     qed
 
@@ -941,7 +1393,14 @@ proof-
       then obtain B' where B': "B' \<in> S \<and> B \<subseteq> B'" by blast
 
       from `\<not>B \<in> S` B' have "\<exists>x. ((insert x B) \<subseteq> B')"
-        by (metis all_not_in_conv insert_absorb insert_subset)
+      proof -
+        from B' have B'_in_S: "B' \<in> S" by blast
+        from B' have B_sub_B': "B \<subseteq> B'" by blast
+        from `\<not>B \<in> S` B'_in_S have "B \<noteq> B'" by blast
+        with B_sub_B' have "B \<subset> B'" by blast
+        then obtain x where "x \<in> B' - B" by blast
+        with B_sub_B' show "\<exists>x. insert x B \<subseteq> B'" by blast
+      qed
       with B' `\<not>B \<in> S` have "\<exists>x B'. x \<in> E - B \<and> B' \<in> S \<and> ((insert x B) \<subseteq> B')"
         using assms(3) equalityI by fastforce
       then show ?thesis by blast
@@ -961,8 +1420,48 @@ lemma all_cards_equal_member_iff_alt:
   assumes "finite E" "\<forall>A1 A2. A1 \<in> S \<longrightarrow> A2 \<in> S \<longrightarrow> card A1 = card A2" "\<forall>A. A \<in> S \<longrightarrow> A \<subseteq> E"
   shows "B \<in> S \<longleftrightarrow> 
     ((B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and> (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B'))))"
-  using assms all_cards_equal_member_iff
-  by (smt (verit, del_insts) subset_trans)
+proof -
+  have iff1: "B \<in> S \<longleftrightarrow>
+    ((\<exists>B' \<in> S. B \<subseteq> B') \<and> (\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
+    using all_cards_equal_member_iff[OF assms] by blast
+  show ?thesis
+  proof
+    assume "B \<in> S"
+    with assms(3) have "B \<subseteq> E" by blast
+    from iff1 \<open>B \<in> S\<close>
+    have ex_B': "\<exists>B' \<in> S. B \<subseteq> B'"
+      and forall1: "\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')"
+      by blast+
+    have forall2: "\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B'))"
+    proof
+      fix x
+      assume "x \<in> E - B"
+      with forall1 have "\<forall>B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')" by blast
+      then show "(\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B'))" by blast
+    qed
+    from \<open>B \<subseteq> E\<close> ex_B' forall2
+    show "(B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and>
+      (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
+      by blast
+  next
+    assume P2: "(B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and>
+      (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
+    then have "B \<subseteq> E" and ex_B': "\<exists>B' \<in> S. B \<subseteq> B'"
+      and forall2: "\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B'))"
+      by blast+
+    have forall1: "\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')"
+    proof (rule allI, rule allI, rule impI, rule impI)
+      fix x B'
+      assume "x \<in> E - B" "B' \<in> S"
+      from \<open>x \<in> E - B\<close> \<open>B \<subseteq> E\<close> have "insert x B \<subseteq> E" by blast
+      with forall2 \<open>x \<in> E - B\<close>
+      have "\<forall> B'. (B' \<in> S) \<longrightarrow> \<not> (insert x B \<subseteq> B')" by blast
+      with \<open>B' \<in> S\<close> show "\<not>(insert x B) \<subseteq> B'" by blast
+    qed
+    with ex_B' iff1
+    show "B \<in> S" by blast
+  qed
+qed
 
 lemma card_eq1:
   assumes "finite B1" "finite B2" "Y \<subseteq> B2"
@@ -983,7 +1482,12 @@ proof-
 
   from 1 card_Un_disjoint[OF finite_1 finite_2 2] 
   have "card B2 = card (B1 \<inter> B2) + card (((B2 - B1) - Y) \<union> (Y - B1))"
-    by (metis Un_assoc)
+  proof -
+    have "B2 = (B1 \<inter> B2) \<union> ((B2 - B1) - Y \<union> (Y - B1))"
+      using 1 by auto
+    then show ?thesis
+      using card_Un_disjoint[OF finite_1 finite_2 2] by simp
+  qed
 
   with card_Un_disjoint[OF finite_3 finite_4 3]
   have "card B2 = card (B1 \<inter> B2) + card (Y - B1) + card ((B2 - B1) - Y)" 
@@ -998,8 +1502,9 @@ proof-
   have "card (B1 - B2) \<ge> card (X - B2)" using assms by (simp add: Diff_mono card_mono)
   also have "... \<ge> card ((X - Y) - B2)" using assms 
     by (meson Diff_mono Diff_subset card_mono dual_order.trans equalityD1 finite_Diff2)
-  then have "... \<ge> card (X - Y)" using assms 
-    by (metis Diff_triv \<open>card (X - Y - B2) \<le> card (B1 - B2)\<close> inf.commute)
+  have "(X - Y) \<inter> B2 = {}" using assms(5) by blast
+  then have "X - Y - B2 = X - Y" by (rule Diff_triv)
+  with \<open>card (X - Y - B2) \<le> card (B1 - B2)\<close> have "card (B1 - B2) \<ge> card (X - Y)" by simp
   have "card (B1 - B2) \<ge> card (X - Y)"
     using \<open>card (X - Y) \<le> card (B1 - B2)\<close> by blast
 
@@ -1058,7 +1563,8 @@ proof-
       from indep_p matroid.basis_card basis_B1 basis_B2
       have "card B1 = card B2" by blast
       with `x \<in> B1 - B2` have card_less: "card (B1 - {x}) < card B2"
-        by (metis DiffD1 basis_B1 card_Diff1_less indep_sys indep_system.basis_finite)
+        using card_Diff1_less[OF indep_system.basis_finite[OF indep_sys basis_B1] DiffD1[OF \<open>x \<in> B1 - B2\<close>]]
+        by simp
 
       from indep_p indep_B1_x indep_B2 matroid.augment card_less
       have "\<exists>y\<in>B2 - (B1 - {x}). indep (insert y (B1 - {x}))" by blast
@@ -1068,11 +1574,32 @@ proof-
       then obtain y where y_p: "y \<in> B2 - B1 \<and> indep (insert y (B1 - {x}))" by blast
 
       from y_p `x \<in> B1 - B2` have "card (insert y (B1 - {x})) = card B1"
-        by (metis DiffD1 DiffD2 basis_B1 card.remove card_insert_disjoint finite_Diff indep_sys
-            indep_system.basis_finite)
+      proof -
+        from `x \<in> B1 - B2` have x_in_B1: "x \<in> B1" by blast
+        from y_p have "y \<in> B2 - B1" by blast
+        then have y_notin: "y \<notin> B1 - {x}" by blast
+
+        from indep_system.basis_finite[OF indep_sys basis_B1] have B1_finite: "finite B1" .
+        then have finite_B1_x: "finite (B1 - {x})" by blast
+
+        from card_insert_disjoint[OF finite_B1_x y_notin]
+        have eq1: "card (insert y (B1 - {x})) = Suc (card (B1 - {x}))" .
+
+        from card.remove[OF B1_finite x_in_B1]
+        have eq2: "card B1 = Suc (card (B1 - {x}))" .
+
+        from eq1 eq2 show "card (insert y (B1 - {x})) = card B1" by simp
+      qed
 
       with basis_B1 y_p indep_p have "indep_system.basis E indep (insert y (B1 - {x}))"
-        by (metis matroid.card_eq_basis)
+        proof -
+          have mat: "matroid E indep" using indep_p by blast
+          have indep_y: "indep (insert y (B1 - {x}))" using y_p by blast
+          from \<open>card (insert y (B1 - {x})) = card B1\<close>
+          have card_eq: "card B1 = card (insert y (B1 - {x}))" by (rule sym)
+          from matroid.card_eq_basis[OF mat basis_B1 indep_y card_eq]
+          show "indep_system.basis E indep (insert y (B1 - {x}))" .
+        qed
 
       with y_p indep_p show "\<exists>y. y \<in> B2 - B1 \<and> insert y (B1 - {x}) \<in> \<B>" by blast
     qed
@@ -1103,21 +1630,76 @@ proof-
         (\<forall>B1' B2'. B1' \<in> \<B> \<longrightarrow> B2' \<in> \<B> \<longrightarrow> card B1' > card B2' \<longrightarrow> card(B1 \<inter> B2) \<ge> card(B1' \<inter> B2'))" by blast
       then have card_greater: "card B1 > card B2" by blast
       then have "\<exists>x. x \<in> B1 - B2"
-        by (metis B2 Diff_Diff_Int Diff_empty Diff_eq_empty_iff all_not_in_conv ex_B1_B2
-            inf.absorb_iff2 less_not_refl)
+      proof -
+        from ex_B1_B2 assms(2) have "B1 \<subseteq> E" by blast
+        from ex_B1_B2 assms(2) have "B2 \<subseteq> E" by blast
+        from assms(1) \<open>B2 \<subseteq> E\<close> have "finite B2" using finite_subset by blast
+        show "\<exists>x. x \<in> B1 - B2"
+        proof (rule ccontr)
+          assume "\<not> (\<exists>x. x \<in> B1 - B2)"
+          then have "B1 \<subseteq> B2" by blast
+          from card_mono[OF \<open>finite B2\<close> this] have "card B1 \<le> card B2" .
+          with card_greater show False by simp
+        qed
+      qed
       then obtain x where ex_x: "x \<in> B1 - B2" by blast
       from B2 ex_B1_B2 ex_x have "(\<exists>y. y \<in> B2 - B1 \<and> insert y (B1 - {x}) \<in> \<B>)" by blast
       then obtain y where ex_y: "y \<in> B2 - B1 \<and> insert y (B1 - {x}) \<in> \<B>" by blast
 
       from card_greater have card_insert_greater: 
         "card (insert y (B1 - {x})) > card B2"
-        by (metis DiffD1 DiffD2 bot_nat_0.extremum_strict card.infinite card.remove
-            card_insert_disjoint ex_x ex_y finite_Diff)
+      proof -
+        have "B1 \<subseteq> E" using ex_B1_B2 assms(2) by blast
+        with assms(1) have "finite B1" using finite_subset by blast
+
+        from ex_x have "x \<in> B1" by blast
+        from ex_y have "y \<notin> B1" by blast
+        then have "y \<notin> B1 - {x}" by blast
+
+        from \<open>finite B1\<close> have "finite (B1 - {x})" by blast
+
+        from \<open>x \<in> B1\<close> have card_diff: "card (B1 - {x}) = card B1 - 1"
+          by (rule card_Diff_singleton)
+
+        from \<open>finite (B1 - {x})\<close> \<open>y \<notin> B1 - {x}\<close>
+        have "card (insert y (B1 - {x})) = card (B1 - {x}) + 1"
+          by (simp add: card_insert_disjoint)
+        also have "... = card B1 - 1 + 1"
+          using card_diff by simp
+        also have "... = card B1"
+        proof -
+          have "B1 \<noteq> {}" using \<open>x \<in> B1\<close> by blast
+          with \<open>finite B1\<close> have "0 < card B1" by (simp add: card_gt_0_iff)
+          then show "card B1 - 1 + 1 = card B1" by simp
+        qed
+        finally have "card (insert y (B1 - {x})) = card B1" .
+
+        with card_greater show "card (insert y (B1 - {x})) > card B2" by simp
+      qed
 
       from ex_y have card_inter_greater: "card ((insert y (B1 - {x})) \<inter> B2) > card (B1 \<inter> B2)"
-        by (metis (no_types, lifting) DiffD1 DiffD2 Int_insert_left_if0 Int_insert_left_if1 
-            card.infinite card_greater ex_x finite_Int finite_insert inf_le1 insert_Diff psubset_card_mono 
-            psubset_insert_iff subsetD subset_insert subset_insertI)
+        proof -
+          have "B1 \<in> \<B>" using ex_B1_B2 by blast
+          then have "B1 \<subseteq> E" using assms(2) by auto
+          have finB1: "finite B1"
+            using \<open>B1 \<subseteq> E\<close> assms(1) by (rule finite_subset)
+          have "x \<notin> B2" using ex_x by blast
+          have "y \<in> B2" using ex_y by blast
+          have "y \<notin> B1" using ex_y by blast
+          have eq1: "insert y (B1 - {x}) \<inter> B2 = insert y ((B1 - {x}) \<inter> B2)"
+            using \<open>y \<in> B2\<close> by blast
+          have eq2: "(B1 - {x}) \<inter> B2 = B1 \<inter> B2"
+            using \<open>x \<notin> B2\<close> by blast
+          have eq: "insert y (B1 - {x}) \<inter> B2 = insert y (B1 \<inter> B2)"
+            using eq1 eq2 by simp
+          have finBI: "finite (B1 \<inter> B2)" using finB1 by blast
+          have notin: "y \<notin> B1 \<inter> B2" using \<open>y \<notin> B1\<close> by blast
+          have card_eq: "card (insert y (B1 \<inter> B2)) = card (B1 \<inter> B2) + 1"
+            using card_insert_disjoint[OF finBI notin] by simp
+          have "card (insert y (B1 - {x}) \<inter> B2) = card (B1 \<inter> B2) + 1"
+            using eq card_eq by simp
+          then show ?thesis by simp
+        qed
 
       from card_insert_greater card_inter_greater ex_B1_B2 ex_y show ?case by fastforce
     qed
@@ -1142,10 +1724,10 @@ proof-
         (\<forall>x\<in>E - B. \<not> insert x B \<subseteq> E \<or> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B')))" by blast
     then have
       "\<forall>B. (B \<in> \<B>) = ((B \<subseteq> E \<and> (\<exists>B'\<in>\<B>. B \<subseteq> B')) \<and> 
-        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> \<not> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B'))))" by metis
+        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> \<not> (\<forall>B'. B' \<in> \<B> \<longrightarrow> \<not> insert x B \<subseteq> B'))))" by meson
     then have
       "\<forall>B. (B \<in> \<B>) = ((B \<subseteq> E \<and> (\<exists>B'\<in>\<B>. B \<subseteq> B')) \<and> 
-        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> (\<exists>B' \<in> \<B>. insert x B \<subseteq> B'))))" by metis
+        (\<forall>x\<in>E - B. \<not> (insert x B \<subseteq> E \<and> (\<exists>B' \<in> \<B>. insert x B \<subseteq> B'))))" by meson
     with indep_system.basis_def[OF indep_sys]
     have "\<forall>B. B \<in> \<B> = indep_system.basis E ?indep B" by presburger
     then have basis_set: "\<B> = {B. (indep_system.basis E ?indep B)}" by blast
@@ -1176,10 +1758,18 @@ proof-
         show ?thesis
         proof (rule ccontr, goal_cases False)
           case False
-          have "finite B1" using ex_B1_B2 assms finite_subset
-            by (metis all_subset_E)
-          have "finite B2" using ex_B1_B2 assms finite_subset
-            by (metis all_subset_E)
+          have "B1 \<in> \<B>"
+            using ex_B1_B2 by blast
+          then have "B1 \<subseteq> E"
+            using all_subset_E by blast
+          then have "finite B1"
+            using assms(1) finite_subset by blast
+          have "finite B2"
+          proof -
+            have "B2 \<in> \<B>" using ex_B1_B2 by blast
+            hence "B2 \<subseteq> E" using all_subset_E by blast
+            thus "finite B2" using assms(1) finite_subset by blast
+          qed
 
           from card_eq1[OF `finite B1` `finite B2`] ex_B1_B2 
           have 1: "card (B1 \<inter> B2) + card (Y - B1) + card ((B2 - B1) - Y) = card B2" by auto
@@ -1196,16 +1786,41 @@ proof-
           then have 4: "card (Y - B1) + card ((B2 - B1) - Y) \<ge> card (X - Y)" by simp
 
           from `finite B1` `finite B2` ex_B1_B2 card_less_sym_Diff card_X_Y 
-          have 5: "card (X - Y) > card (Y - X)" by (metis finite_subset lessI) 
+          have X_sub_B1: "X \<subseteq> B1" using ex_B1_B2 by blast
+          have Y_sub_B2: "Y \<subseteq> B2" using ex_B1_B2 by blast
+          have "finite X" using \<open>finite B1\<close> X_sub_B1 finite_subset by blast
+          have "finite Y" using \<open>finite B2\<close> Y_sub_B2 finite_subset by blast
+          have finite_int: "finite (X \<inter> Y)" using \<open>finite X\<close> by blast
+          have finite_XY: "finite (X - Y)" using \<open>finite X\<close> by blast
+          have finite_YX: "finite (Y - X)" using \<open>finite Y\<close> by blast
+          have X_eq: "X = (X \<inter> Y) \<union> (X - Y)" by blast
+          have Y_eq: "Y = (X \<inter> Y) \<union> (Y - X)" by blast
+          have disj_X: "(X \<inter> Y) \<inter> (X - Y) = {}" by blast
+          have disj_Y: "(X \<inter> Y) \<inter> (Y - X) = {}" by blast
+          have card_X_eq: "card X = card (X \<inter> Y) + card (X - Y)"
+            using X_eq card_Un_disjoint[OF finite_int finite_XY disj_X] by simp
+          have card_Y_eq: "card Y = card (X \<inter> Y) + card (Y - X)"
+            using Y_eq card_Un_disjoint[OF finite_int finite_YX disj_Y] by simp
+          have 5: "card (X - Y) > card (Y - X)"
+            using card_X_eq card_Y_eq card_X_Y by linarith
+
 
           from `finite B1` `finite B2` ex_B1_B2 card_mono Diff_mono 
-          have 6: "card (Y - X) \<ge> card (Y - B1)" by (metis equalityD1 finite_Diff finite_subset)
+          have 6: "card (Y - X) \<ge> card (Y - B1)"
+          proof -
+            from ex_B1_B2 have "X \<subseteq> B1" by blast
+            then have subset: "Y - B1 \<subseteq> Y - X" by blast
+            from ex_B1_B2 have "Y \<subseteq> B2" by blast
+            from this \<open>finite B2\<close> have "finite Y" by (rule finite_subset)
+            then have "finite (Y - X)" by blast
+            from card_mono[OF this subset] show ?thesis .
+          qed
 
           from 5 6 have 7: "card (X - Y) > card (Y - B1)" by simp
 
           from 4 7 have "card ((B2 - B1) - Y) > 0" by linarith
           then have "\<exists>y. y \<in> (B2 - B1) - Y"
-            by (metis all_not_in_conv card_gt_0_iff)
+            by (auto simp: card_gt_0_iff ex_in_conv)
           then obtain y where ex_y: "y \<in> (B2 - B1) - Y" by blast
           with ex_B1_B2 have y_in: "y \<in> (B2 - B1)" by blast
 
@@ -1214,11 +1829,36 @@ proof-
           then obtain x where ex_x: "x \<in> B1 - B2 \<and> insert x (B2 - {y}) \<in> \<B>" by blast
 
           from ex_x have card_inter_greater: "card (B1 \<inter> (insert x (B2 - {y}))) > card (B1 \<inter> B2)"
-            by (metis DiffD2 Int_Diff_Un Int_commute Int_insert_right_if0 Int_insert_right_if1 UnCI 
-                \<open>finite B1\<close> finite_Int insertCI insert_Diff psubsetI psubset_card_mono subset_insertI y_in)
+          proof -
+            from ex_x have x_in: "x \<in> B1" and x_notin: "x \<notin> B2" by auto
+            from y_in have y_notin: "y \<notin> B1" by auto
+            have "B1 \<inter> insert x (B2 - {y}) = insert x (B1 \<inter> (B2 - {y}))"
+              using x_in by auto
+            also have "B1 \<inter> (B2 - {y}) = B1 \<inter> B2"
+              using y_notin by auto
+            finally have eq: "B1 \<inter> insert x (B2 - {y}) = insert x (B1 \<inter> B2)" .
+            have finite_inter: "finite (B1 \<inter> B2)" using \<open>finite B1\<close> by auto
+            have x_notin_inter: "x \<notin> B1 \<inter> B2" using x_notin by auto
+            from card_insert_disjoint[OF finite_inter x_notin_inter]
+            have "card (insert x (B1 \<inter> B2)) = card (B1 \<inter> B2) + 1" by simp
+            with eq show ?thesis by simp
+          qed
 
           with ex_B1_B2 show ?case
-            by (metis DiffD1 DiffD2 ex_x ex_y insert_Diff linorder_not_less subset_insert subset_insertI subset_trans)
+          proof -
+            from ex_B1_B2 have B1_in: "B1 \<in> \<B>" by blast
+            from ex_x have B2'_in: "insert x (B2 - {y}) \<in> \<B>" by blast
+            from ex_B1_B2 have X_sub_B1: "X \<subseteq> B1" by blast
+            from ex_B1_B2 have Y_sub_B2: "Y \<subseteq> B2" by blast
+            from ex_y have y_notin_Y: "y \<notin> Y" by blast
+            from Y_sub_B2 y_notin_Y have Y_sub: "Y \<subseteq> insert x (B2 - {y})" by blast
+            from ex_B1_B2 have max_prop:
+              "\<forall>B1' B2'. B1' \<in> \<B> \<longrightarrow> B2' \<in> \<B> \<longrightarrow> X \<subseteq> B1' \<and> Y \<subseteq> B2' \<longrightarrow> card (B1' \<inter> B2') \<le> card (B1 \<inter> B2)"
+              by blast
+            from max_prop B1_in B2'_in X_sub_B1 Y_sub
+            have "card (B1 \<inter> insert x (B2 - {y})) \<le> card (B1 \<inter> B2)" by blast
+            with card_inter_greater show False by simp
+          qed
         qed
       next
         case False
@@ -1272,16 +1912,19 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "0 = card X" "X \<subseteq> E"
-    from assms(2) show "r X \<le> card X"
-      by (metis \<open>0 = card X\<close> \<open>X \<subseteq> E\<close> assms(1) card_0_eq infinite_super nle_le)
+    from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by (rule finite_subset)
+    with \<open>0 = card X\<close> have "X = {}" by (simp add: card_eq_0_iff)
+    with assms(2) show "r X \<le> card X" by simp
   qed
 next
   case (Suc n)
   show ?case
   proof ((rule impI)+)
     assume "Suc n = card X" "X \<subseteq> E"
-    then have "\<exists>X' y. y \<notin> X' \<and> X = (insert y X')"
-      by (metis card_Suc_eq)
+    then have "card X = Suc n" by simp
+    then obtain b B where "X = insert b B" "b \<notin> B" "card B = n"
+      using card_Suc_eq[THEN iffD1, of X n] by blast
+    then have "\<exists>X' y. y \<notin> X' \<and> X = (insert y X')" by blast
     then obtain X' y where "y \<notin> X'" "X = (insert y X')" by blast
 
     from \<open>X \<subseteq> E\<close> \<open>X = (insert y X')\<close> have "X' \<subseteq> E" by blast
@@ -1305,23 +1948,48 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "card X = card Y - 0" "X \<subseteq> Y" "P Y"
-    then show "P X" using assms(1) card_subset_eq finite_subset
-      by (metis assms(3) minus_nat.diff_0)
+    then have card_eq: "card X = card Y" by simp
+    from assms(1) assms(3) have "finite Y" using finite_subset by blast
+    from card_subset_eq[OF this \<open>X \<subseteq> Y\<close> card_eq] have "X = Y" .
+    with \<open>P Y\<close> show "P X" by simp
   qed
 next
   case (Suc n)
   show ?case
   proof ((rule impI)+)
     assume "Suc n \<le> card Y" "card X = card Y - Suc n" "X \<subseteq> Y" "P Y"
-    then have
-      "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
-      by (metis Diff_eq_empty_iff assms(1) assms(3) card_Diff_subset card_gt_0_iff diff_diff_cancel
-          finite_subset insert_subsetI subsetI zero_less_Suc)
+
+    have "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
+    proof -
+      have "finite Y" using assms(1) assms(3) finite_subset by blast
+      have "finite X" using \<open>X \<subseteq> Y\<close> \<open>finite Y\<close> finite_subset by blast
+      have "card X < card Y"
+        using \<open>card X = card Y - Suc n\<close> \<open>Suc n \<le> card Y\<close> by arith
+      have "Y - X \<noteq> {}"
+      proof (rule ccontr)
+        assume "\<not> (Y - X \<noteq> {})"
+        then have "Y - X = {}" by simp
+        then have "Y \<subseteq> X" by blast
+        with \<open>X \<subseteq> Y\<close> have "X = Y" by simp
+        with \<open>card X < card Y\<close> show False by simp
+      qed
+      then obtain x where "x \<in> Y - X" by blast
+      then have "x \<notin> X" "x \<in> Y" by auto
+      have "insert x X \<subseteq> Y" using \<open>x \<in> Y\<close> \<open>X \<subseteq> Y\<close> by blast
+      with \<open>x \<notin> X\<close> show ?thesis by blast
+    qed
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
-      by (metis Suc_diff_le \<open>Suc n \<le> card Y\<close> \<open>X \<subseteq> Y\<close> assms(1) assms(3) card_insert_disjoint
-          diff_Suc_Suc finite_subset)
+      proof -
+        from \<open>X \<subseteq> Y\<close> assms(3) have "X \<subseteq> E" by auto
+        from this assms(1) have "finite X" by (rule finite_subset)
+        from \<open>X' = insert x X\<close> \<open>x \<notin> X\<close> \<open>finite X\<close> have "card X' = card X + 1"
+          by (simp add: card_insert_disjoint)
+        also from \<open>card X = card Y - Suc n\<close> have "... = card Y - Suc n + 1" by simp
+        also from \<open>Suc n \<le> card Y\<close> have "... = card Y - n" by arith
+        finally show ?thesis .
+      qed
 
     from \<open>Suc n \<le> card Y\<close> have "n \<le> card Y" by auto
 
@@ -1351,7 +2019,13 @@ proof (induction n arbitrary: A rule: less_induct)
     proof ((rule impI)+)
       assume "n = card A" "A \<subseteq> X - Y"
       with Zero show "r (Y \<union> A) = r Y"
-        by (metis assms(1) assms(2) card_eq_0_iff finite_Diff finite_subset sup_bot.right_neutral)
+      proof -
+        have "card A = 0" using \<open>n = card A\<close> Zero by simp
+        have "A \<subseteq> E" using \<open>A \<subseteq> X - Y\<close> assms(2) by blast
+        then have "finite A" using assms(1) finite_subset by blast
+        with \<open>card A = 0\<close> have "A = {}" by (simp add: card_eq_0_iff)
+        then show "r (Y \<union> A) = r Y" by simp
+      qed
     qed
   next
     case Pos
@@ -1362,13 +2036,38 @@ proof (induction n arbitrary: A rule: less_induct)
       proof (cases "n = 1")
         case True
         with \<open>n = card A\<close> assms(4) show ?thesis
-          by (metis \<open>A \<subseteq> X - Y\<close> card_1_singletonE in_mono insertCI)
+        proof -
+          from True \<open>n = card A\<close> have "card A = 1" by simp
+          then obtain a where "A = {a}" by (rule card_1_singletonE)
+          with \<open>A \<subseteq> X - Y\<close> have "a \<in> X - Y" by blast
+          with assms(4) have "r (Y \<union> {a}) = r Y" by blast
+          with \<open>A = {a}\<close> show "r (Y \<union> A) = r Y" by simp
+        qed
       next
         case False
         with Pos have "n \<ge> 2" by auto
         with \<open>n = card A\<close> have "\<exists>x y. x \<in> A \<and> y \<in> A \<and> x \<noteq> y"
-          by (metis One_nat_def Suc_1 \<open>A \<subseteq> X - Y\<close> assms(1) assms(2) card_le_Suc0_iff_eq finite_Diff
-              finite_subset not_less_eq_eq)
+        proof -
+          have A_subset_E: "A \<subseteq> E"
+            using \<open>A \<subseteq> X - Y\<close> assms(2) by blast
+          have finite_A: "finite A"
+            using assms(1) A_subset_E finite_subset by blast
+          have card_A_ge_2: "card A \<ge> 2"
+            using \<open>n \<ge> 2\<close> \<open>n = card A\<close> by simp
+          have not_subset_singleton: "\<not> (\<exists>a. A \<subseteq> {a})"
+            using card_le_Suc0_iff_eq[OF finite_A] card_A_ge_2 by auto
+          have "A \<noteq> {}"
+          proof
+            assume "A = {}"
+            with card_A_ge_2 show False by simp
+          qed
+          then obtain x where x_in: "x \<in> A" by blast
+          have "\<not> A \<subseteq> {x}"
+            using not_subset_singleton by blast
+          then obtain y where y_in: "y \<in> A" and y_neq: "y \<noteq> x"
+            by blast
+          from x_in y_in y_neq show "\<exists>x y. x \<in> A \<and> y \<in> A \<and> x \<noteq> y" by blast
+        qed
         then obtain x y where "x \<in> A" "y \<in> A" "x \<noteq> y" by blast
 
         from \<open>n \<ge> 2\<close> have "n - 1 < n" by simp
@@ -1379,16 +2078,22 @@ proof (induction n arbitrary: A rule: less_induct)
         from \<open>n - 1 < n\<close> \<open>n - 1 = card (A - {x})\<close> \<open>(A - {x}) \<subseteq> X - Y\<close> less.IH
         have "r (Y \<union> (A - {x})) = r Y" by blast
         then have r_A_sub_y: "r ((Y \<union> (A - {x, y})) \<union> {y}) = r Y"
-          by (metis (no_types, opaque_lifting) DiffI Diff_insert2 Un_insert_left \<open>x \<noteq> y\<close> \<open>y \<in> A\<close>
-              emptyE insertE insert_Diff_single insert_absorb sup.commute sup_bot.left_neutral)
+        proof -
+          have "(Y \<union> (A - {x, y})) \<union> {y} = Y \<union> (A - {x})"
+            using \<open>x \<noteq> y\<close> \<open>y \<in> A\<close> by blast
+          then show ?thesis using \<open>r (Y \<union> (A - {x})) = r Y\<close> by simp
+        qed
 
         from \<open>x \<in> A\<close> \<open>y \<in> A\<close> \<open>x \<noteq> y\<close> \<open>n = card A\<close> have "n - 1 = card (A - {y})" by simp
         from \<open>A \<subseteq> X - Y\<close> have "(A - {y}) \<subseteq> X - Y" by blast
         from \<open>n - 1 < n\<close> \<open>n - 1 = card (A - {y})\<close> \<open>(A - {y}) \<subseteq> X - Y\<close> less.IH
         have "r (Y \<union> (A - {y})) = r Y" by blast
         then have r_A_sub_x: "r ((Y \<union> (A - {x, y})) \<union> {x}) = r Y"
-          by (smt (verit, ccfv_threshold) Diff_idemp Diff_insert2 Diff_insert_absorb Un_Diff Un_assoc
-              \<open>x \<in> A\<close> \<open>x \<noteq> y\<close> insert_Diff insert_is_Un singleton_iff sup.commute)
+        proof -
+          have "(Y \<union> (A - {x, y})) \<union> {x} = Y \<union> (A - {y})"
+            using \<open>x \<in> A\<close> \<open>x \<noteq> y\<close> by blast
+          with \<open>r (Y \<union> (A - {y})) = r Y\<close> show ?thesis by simp
+        qed
 
         from \<open>x \<in> A\<close> \<open>y \<in> A\<close> \<open>x \<noteq> y\<close> \<open>n = card A\<close> have "n - 2 = card (A - {x, y})" by simp
         from \<open>A \<subseteq> X - Y\<close> have "(A - {x, y}) \<subseteq> X - Y" by blast
@@ -1407,7 +2112,12 @@ proof (induction n arbitrary: A rule: less_induct)
         from assms(5) \<open>Y \<union> (A - {x, y}) \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> 1 2
         have "r ((Y \<union> (A - {x, y})) \<union> {x, y}) = r (Y \<union> (A - {x, y}))" by blast
         then have "r (Y \<union> A) = r (Y \<union> (A - {x, y}))"
-          by (metis Un_Diff_cancel2 \<open>x \<in> A\<close> \<open>y \<in> A\<close> bot.extremum insert_subsetI sup.order_iff sup_assoc)
+        proof -
+          assume rank_eq: "r ((Y \<union> (A - {x, y})) \<union> {x, y}) = r (Y \<union> (A - {x, y}))"
+          have set_eq: "Y \<union> (A - {x, y}) \<union> {x, y} = Y \<union> A"
+            using \<open>x \<in> A\<close> \<open>y \<in> A\<close> by blast
+          from rank_eq[unfolded set_eq] show ?thesis .
+        qed
         with r_A_sub_x_y
         show "r (Y \<union> A) = r Y" by auto
       qed
@@ -1423,23 +2133,45 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "card X = card Y - 0" "X \<subseteq> Y"
-    then show "r X \<le> r Y"
-      by (metis assms(1) assms(2) card_subset_eq diff_zero dual_order.eq_iff finite_subset)
+      have "card X = card Y" using \<open>card X = card Y - 0\<close> by simp
+      moreover have "finite Y" using assms(1) assms(2) finite_subset by blast
+      ultimately have "X = Y" using \<open>X \<subseteq> Y\<close> card_subset_eq by blast
+      then show "r X \<le> r Y" by simp
   qed
 next
   case (Suc n)
   show ?case
   proof ((rule impI)+)
     assume "Suc n \<le> card Y" "card X = card Y - Suc n" "X \<subseteq> Y"
-    then have
-      "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
-      by (metis Diff_eq_empty_iff assms(1) assms(2) card_Diff_subset card_gt_0_iff diff_diff_cancel
-          finite_subset insert_subsetI subsetI zero_less_Suc)
+    have "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
+    proof -
+      have "finite Y" using assms(1) assms(2) finite_subset by blast
+      have "Suc n + (card Y - Suc n) = card Y"
+        using \<open>Suc n \<le> card Y\<close> by (rule le_add_diff_inverse)
+      with \<open>card X = card Y - Suc n\<close> have "Suc n + card X = card Y" by simp
+      then have "card X < card Y" by simp
+      have "\<exists>x. x \<in> Y \<and> x \<notin> X"
+      proof (rule ccontr)
+        assume "\<not> (\<exists>x. x \<in> Y \<and> x \<notin> X)"
+        then have "Y \<subseteq> X" by blast
+        from subset_antisym[OF \<open>X \<subseteq> Y\<close> this] have "X = Y" .
+        with \<open>card X < card Y\<close> show False by simp
+      qed
+      then obtain x where "x \<in> Y" "x \<notin> X" by blast
+      then have "insert x X \<subseteq> Y" using \<open>X \<subseteq> Y\<close> by auto
+      with \<open>x \<notin> X\<close> show ?thesis by blast
+    qed
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
-      by (metis Suc_diff_le \<open>Suc n \<le> card Y\<close> \<open>X \<subseteq> Y\<close> assms(1) assms(2) card_insert_disjoint
-          diff_Suc_Suc finite_subset)
+    proof -
+      have "X \<subseteq> E" using \<open>X \<subseteq> Y\<close> assms(2) by blast
+      have "finite X" using assms(1) \<open>X \<subseteq> E\<close> finite_subset by blast
+      have card_X'_eq: "card X' = card X + 1"
+        using \<open>X' = (insert x X)\<close> \<open>x \<notin> X\<close> \<open>finite X\<close> by simp
+      show "card X' = card Y - n"
+        using card_X'_eq \<open>card X = card Y - Suc n\<close> \<open>Suc n \<le> card Y\<close> by arith
+    qed
 
     from \<open>Suc n \<le> card Y\<close> have "n \<le> card Y" by auto
 
@@ -1448,7 +2180,12 @@ next
 
     from \<open>X' = (insert x X)\<close> assms(3)
     have "r X \<le> r X'"
-      by (metis Un_commute \<open>X' \<subseteq> Y\<close> assms(2) insert_is_Un insert_subset subset_trans)
+    proof -
+      from \<open>X' = (insert x X)\<close> \<open>X' \<subseteq> Y\<close> assms(2) have "X \<subseteq> E" by blast
+      from \<open>X' = (insert x X)\<close> \<open>X' \<subseteq> Y\<close> assms(2) have "x \<in> E" by blast
+      from assms(3) \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> have "r X \<le> r (X \<union> {x})" by blast
+      with \<open>X' = (insert x X)\<close> show "r X \<le> r X'" by simp
+    qed
 
     with \<open>r X' \<le> r Y\<close> show "r X \<le> r Y" by simp
   qed
@@ -1464,7 +2201,54 @@ lemma matroid_imp_rank_axioms1:
     (\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. X \<subseteq> Y \<longrightarrow> r X \<le> r Y) \<and>
     (\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y))"
   using assms matroid.rank_of_le matroid.rank_of_mono matroid.rank_of_Un_Int_le 
-  by (smt (verit, best) Int_Un_eq(1) Un_subset_iff)
+proof-
+  from assms(2) obtain indep where
+    indep_matroid: "matroid E indep" and
+    r_eq: "\<forall>X \<subseteq> E. r X = matroid.rank_of indep X"
+    by blast
+
+  have R1: "\<forall>X \<subseteq> E. r X \<le> card X"
+  proof (rule allI, rule impI)
+    fix X
+    assume "X \<subseteq> E"
+    from r_eq \<open>X \<subseteq> E\<close> have "r X = matroid.rank_of indep X" by blast
+    also have "... \<le> card X"
+      using matroid.rank_of_le[OF indep_matroid \<open>X \<subseteq> E\<close>] .
+    finally show "r X \<le> card X" .
+  qed
+
+  have R2: "\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. X \<subseteq> Y \<longrightarrow> r X \<le> r Y"
+  proof ((rule allI, rule impI)+, rule impI)
+    fix X Y
+    assume "X \<subseteq> E" "Y \<subseteq> E" "X \<subseteq> Y"
+    from r_eq \<open>X \<subseteq> E\<close> have "r X = matroid.rank_of indep X" by blast
+    also have "... \<le> matroid.rank_of indep Y"
+      using matroid.rank_of_mono[OF indep_matroid \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close>] .
+    also from r_eq \<open>Y \<subseteq> E\<close> have "... = r Y" by (simp add: r_eq)
+    finally show "r X \<le> r Y" .
+  qed
+
+  have R3: "\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y"
+  proof ((rule allI, rule impI)+)
+    fix X Y
+    assume "X \<subseteq> E" "Y \<subseteq> E"
+    then have "X \<union> Y \<subseteq> E" by blast
+    from \<open>X \<subseteq> E\<close> have "X \<inter> Y \<subseteq> E" by blast
+
+    from r_eq \<open>X \<union> Y \<subseteq> E\<close> have r_un: "r (X \<union> Y) = matroid.rank_of indep (X \<union> Y)" by blast
+    from r_eq \<open>X \<inter> Y \<subseteq> E\<close> have r_int: "r (X \<inter> Y) = matroid.rank_of indep (X \<inter> Y)" by blast
+    from r_eq \<open>X \<subseteq> E\<close> have r_X: "r X = matroid.rank_of indep X" by blast
+    from r_eq \<open>Y \<subseteq> E\<close> have r_Y: "r Y = matroid.rank_of indep Y" by blast
+
+    from matroid.rank_of_Un_Int_le[OF indep_matroid \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close>]
+    have "matroid.rank_of indep (X \<union> Y) + matroid.rank_of indep (X \<inter> Y) \<le>
+      matroid.rank_of indep X + matroid.rank_of indep Y" .
+
+    with r_un r_int r_X r_Y show "r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y" by simp
+  qed
+
+  from R1 R2 R3 show ?thesis by blast
+qed
 
 lemma rank_axioms1_imp_rank_axioms2:
   assumes "finite E"
@@ -1498,8 +2282,13 @@ proof-
         by (meson R3 add_le_imp_le_diff empty_subsetI insert_subset)
       also have "... \<le> r X + r {y}" by auto
       also have "... \<le> r X + 1"
-        by (metis One_nat_def R1 Un_subset_iff \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> add_left_mono card.empty
-            card_insert_disjoint empty_iff finite.emptyI insert_subset sup_bot.right_neutral)
+        proof -
+          have "{y} \<subseteq> E" using \<open>y \<in> E\<close> by simp
+          then have "r {y} \<le> card {y}" using R1 by blast
+          also have "card {y} = 1" by simp
+          finally have "r {y} \<le> 1" .
+          then show ?thesis by linarith
+        qed
       finally show "r (X \<union> {y}) \<le> r X + 1" .
     qed
   qed
@@ -1523,11 +2312,26 @@ proof-
       from False have int_sets: "(X \<union> {x}) \<inter> (X \<union> {y}) = X" by auto
 
       have "r X \<le> r (X \<union> {x, y})" using R2 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close>
-        by (metis Un_insert_right Un_upper1 insert_subset sup_bot.right_neutral)
+      proof -
+        have "X \<union> {x, y} \<subseteq> E" using \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> by blast
+        moreover have "X \<subseteq> X \<union> {x, y}" by blast
+        ultimately show ?thesis using R2 \<open>X \<subseteq> E\<close> by blast
+      qed
 
       have "r X + r (X \<union> {x, y}) \<le> r (X \<union> {x}) + r (X \<union> {y})"
         using R3 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> un_sets int_sets
-        by (metis Un_empty_right Un_insert_right add.commute insert_subsetI)
+      proof -
+        from \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> have x_subset: "X \<union> {x} \<subseteq> E" by simp
+        from \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> have y_subset: "X \<union> {y} \<subseteq> E" by simp
+        from R3 x_subset y_subset
+        have "r ((X \<union> {x}) \<union> (X \<union> {y})) + r ((X \<union> {x}) \<inter> (X \<union> {y})) \<le> r (X \<union> {x}) + r (X \<union> {y})"
+          by blast
+        with un_sets int_sets
+        have "r (X \<union> {x, y}) + r X \<le> r (X \<union> {x}) + r (X \<union> {y})"
+          by simp
+        then show "r X + r (X \<union> {x, y}) \<le> r (X \<union> {x}) + r (X \<union> {y})"
+          by (simp add: add.commute)
+      qed
       also have "... \<le> r X + r X" using \<open>(r (X \<union> {x}) = r X \<and> r (X \<union> {y}) = r X)\<close> by auto
       finally have "r (X \<union> {x, y}) \<le> r X" by simp
 
@@ -1567,7 +2371,11 @@ proof-
     from \<open>Y \<subseteq> E\<close> \<open>Y = insert y X\<close> have "y \<in> E" by blast
 
     have "card X + 1 = card Y" using \<open>Y = insert y X\<close>
-      by (metis Suc_eq_plus1 \<open>X \<subseteq> E\<close> \<open>y \<notin> X\<close> assms(1) card_insert_disjoint finite_subset)
+    proof -
+      from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by (rule finite_subset)
+      from this \<open>y \<notin> X\<close> have "card (insert y X) = Suc (card X)" by (rule card_insert_disjoint)
+      then show "card X + 1 = card Y" using \<open>Y = insert y X\<close> by simp
+    qed
     also have "... = r Y" using \<open>?indep Y\<close> by simp
     also have "... = r (X \<union> {y})" using \<open>Y = insert y X\<close> by auto
     also have "... \<le> r X + 1" using R2' \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> by simp
@@ -1580,7 +2388,19 @@ proof-
 
   from prop_preserved_subset_induct[OF assms(1) this]
   have indep_subset: "\<forall>X Y. X \<subseteq> Y \<longrightarrow> ?indep Y \<longrightarrow> ?indep X"
-    by (metis assms(1) card_mono diff_diff_cancel diff_le_self finite_subset)
+  proof (intro allI impI)
+    fix X Y
+    assume F: "\<And>Y n X. Y \<subseteq> E \<Longrightarrow> n \<le> card Y \<longrightarrow> card X = card Y - n \<longrightarrow> X \<subseteq> Y \<longrightarrow> ?indep Y \<longrightarrow> ?indep X"
+    assume "X \<subseteq> Y" and indep_Y: "?indep Y"
+    from indep_Y have Y_subset: "Y \<subseteq> E" by blast
+    have Y_finite: "finite Y" using assms(1) Y_subset finite_subset by blast
+    from card_mono[OF Y_finite \<open>X \<subseteq> Y\<close>] have card_le: "card X \<le> card Y" .
+    have n_le: "card Y - card X \<le> card Y" by (rule diff_le_self)
+    have card_eq: "card X = card Y - (card Y - card X)"
+      using diff_diff_cancel[OF card_le] by simp
+    show "?indep X"
+      using F[of Y "card Y - card X" X] Y_subset n_le card_eq \<open>X \<subseteq> Y\<close> indep_Y by blast
+  qed
 
   have augment_aux: 
     "\<forall>X Y. ?indep X \<longrightarrow> ?indep Y \<longrightarrow> card X = Suc (card Y) \<longrightarrow> (\<exists>x \<in> X - Y. ?indep (insert x Y))" 
@@ -1596,14 +2416,46 @@ proof-
         by blast
       with rank_leq_card \<open>?indep X\<close> \<open>?indep Y\<close>
       have "\<forall>x \<in> X - Y. r (insert x Y) < card (insert x Y)"
-        by (metis DiffD1 in_mono insert_subsetI order_less_le)
+        proof (intro ballI)
+  fix x
+  assume "x \<in> X - Y"
+  then have "x \<in> X" by blast
+  with \<open>?indep X\<close> have "x \<in> E" by blast
+  from \<open>?indep Y\<close> have "Y \<subseteq> E" by blast
+  with \<open>x \<in> E\<close> have "insert x Y \<subseteq> E" by blast
+  with rank_leq_card have le: "r (insert x Y) \<le> card (insert x Y)" by blast
+  from \<open>x \<in> X - Y\<close> \<open>\<forall>x \<in> X - Y. \<not> (r (insert x Y) = card (insert x Y))\<close>
+  have neq: "r (insert x Y) \<noteq> card (insert x Y)" by blast
+  from le neq show "r (insert x Y) < card (insert x Y)" by simp
+qed
       then have "\<forall>x \<in> X - Y. r (insert x Y) < card Y + 1"
-        by (metis DiffD2 Suc_eq_plus1 \<open>?indep Y\<close> assms(1) card_insert_disjoint finite_subset)
-      then have "\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y"
+        proof (intro ballI)
+          fix x
+          assume "x \<in> X - Y"
+
+          have lt: "r (insert x Y) < card (insert x Y)"
+            using \<open>\<forall>x \<in> X - Y. r (insert x Y) < card (insert x Y)\<close> \<open>x \<in> X - Y\<close> by blast
+
+          from \<open>?indep Y\<close> have "Y \<subseteq> E" by blast
+          with assms(1) have fin: "finite Y" using finite_subset by blast
+          from \<open>x \<in> X - Y\<close> have notin: "x \<notin> Y" by blast
+
+          have "card (insert x Y) = card Y + 1"
+            using card_insert_disjoint[OF fin notin] by simp
+
+          with lt show "r (insert x Y) < card Y + 1" by simp
+        qed      then have "\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y"
         by force
 
-      from R2' \<open>?indep Y\<close> have "\<forall>x \<in> X - Y. r (insert x Y) \<ge> card Y"
-        by (metis DiffD1 Un_commute \<open>?indep X\<close> insert_is_Un subsetD)
+      have "\<forall>x \<in> X - Y. r (insert x Y) \<ge> card Y"
+      proof (rule ballI)
+        fix x
+        assume "x \<in> X - Y"
+        from \<open>x \<in> X - Y\<close> \<open>?indep X\<close> have "x \<in> E" by blast
+        from \<open>?indep Y\<close> have "Y \<subseteq> E" and rY_eq: "r Y = card Y" by blast+
+        from R2' \<open>Y \<subseteq> E\<close> \<open>x \<in> E\<close> have "r Y \<le> r (Y \<union> {x})" by blast
+        then show "r (insert x Y) \<ge> card Y" using rY_eq by simp
+      qed
       with \<open>\<forall>x \<in> X - Y. r (insert x Y) \<le> card Y\<close>
       have "\<forall>x \<in> X - Y. r (insert x Y) = card Y" by force
       with \<open>?indep Y\<close>
@@ -1620,7 +2472,11 @@ proof-
         let ?n = "card Y - card X"
         have "?n \<le> card Y" by auto
         have "card X = card Y - ?n" 
-          by (metis \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close> assms(1) card_mono diff_diff_cancel rev_finite_subset)
+        proof -
+          have "finite Y" using assms(1) \<open>Y \<subseteq> E\<close> by (rule rev_finite_subset)
+          from card_mono[OF this \<open>X \<subseteq> Y\<close>] have le: "card X \<le> card Y" .
+          show ?thesis by (rule diff_diff_cancel[OF le, symmetric])
+        qed
 
         from R2' have R2'_part: "\<forall>X\<subseteq>E. \<forall>y\<in>E. r X \<le> r (X \<union> {y})" by auto
 
@@ -1629,9 +2485,10 @@ proof-
         show "r X \<le> r Y" by blast
       qed
 
-      from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> rank_Y_un_x_eq_Y R3'] 
+      from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> rank_Y_un_x_eq_Y R3',
+          of "card (X - Y)" "X - Y"]
       have "r Y = r (Y \<union> (X - Y))"
-        by (metis subset_refl)
+        by simp
       also have "... = r (X \<union> Y)" by (simp add: Un_commute)
       also have "... \<ge> r X" using subset_rank_leq \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> by auto
       finally have "r Y \<ge> r X" .
@@ -1674,18 +2531,41 @@ proof-
 
     from Y_basis_in have "\<forall>x \<in> X - Y. \<not>(?indep (insert x Y))"
       using indep_system.basis_in_def[OF indep_sys_props] indep_system.basis_def[OF indep_sys_props]
-      by (smt (verit, del_insts) DiffD1 Diff_eq_empty_iff \<open>X \<subseteq> E\<close> indep_sys_props
-          indep_system.basis_in_max_indep_in indep_system.basis_in_subset_carrier indep_system.indep_in_def
-          insert_Diff_if)
+    proof (rule_tac ballI)
+      fix x
+      assume "x \<in> X - Y"
+      then have "x \<in> X" by blast
+      with \<open>Y \<subseteq> X\<close> have subset: "insert x Y \<subseteq> X" by blast
+
+      from indep_system.basis_in_max_indep_in[OF indep_sys_props \<open>X \<subseteq> E\<close> Y_basis_in]
+      have "\<not> indep_system.indep_in ?indep X (insert x Y)"
+        using \<open>x \<in> X - Y\<close> by blast
+
+      show "\<not> ?indep (insert x Y)"
+      proof
+        assume "?indep (insert x Y)"
+        with subset have "indep_system.indep_in ?indep X (insert x Y)"
+          using indep_system.indep_in_def[OF indep_sys_props] by blast
+        with \<open>\<not> indep_system.indep_in ?indep X (insert x Y)\<close> show False by blast
+      qed
+    qed
 
     with \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close>
     have "\<forall>x \<in> X - Y. (r (insert x Y) \<noteq> card (insert x Y))"
       by blast
-    with rank_leq_card \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close>
     have "\<forall>x \<in> X - Y. (r (insert x Y) < card (insert x Y))"
-      by (metis Diff_iff dual_order.trans insert_subsetI order_less_le)
+    proof (rule ballI)
+      fix x
+      assume x_mem: "x \<in> X - Y"
+      have "insert x Y \<subseteq> X" using x_mem \<open>Y \<subseteq> X\<close> by blast
+      with \<open>X \<subseteq> E\<close> have "insert x Y \<subseteq> E" by blast
+      with rank_leq_card have le: "r (insert x Y) \<le> card (insert x Y)" by blast
+      from \<open>\<forall>x \<in> X - Y. (r (insert x Y) \<noteq> card (insert x Y))\<close> x_mem
+      have neq: "r (insert x Y) \<noteq> card (insert x Y)" by blast
+      from le neq show "r (insert x Y) < card (insert x Y)" by (simp add: order_less_le)
+    qed
     then have "\<forall>x \<in> X - Y. (r (insert x Y) < card Y + 1)"
-      by (metis DiffD2 Suc_eq_plus1 \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> X\<close> assms(1) card_insert_if rev_finite_subset)
+      using \<open>Y \<subseteq> E\<close> assms(1) finite_subset by fastforce
     then have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> card Y)" by force
     with \<open>r Y = card Y\<close>
     have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> r Y)" by auto
@@ -1695,7 +2575,13 @@ proof-
 
     from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> this R3']
     have "r (Y \<union> X) = r Y"
-      by (metis Un_Diff_cancel dual_order.refl)
+    proof -
+      assume fact2: "\<And>n A. n = card A \<longrightarrow> A \<subseteq> X - Y \<longrightarrow> r (Y \<union> A) = r Y"
+      have "r (Y \<union> (X - Y)) = r Y"
+        using fact2[of "card (X - Y)" "X - Y"] by simp
+      hence "r (Y \<union> X) = r Y" by (simp add: Un_Diff_cancel)
+      thus ?thesis .
+    qed
     with \<open>Y \<subseteq> X\<close>
     have "r X = r Y"
       by (simp add: sup.absorb_iff2)
@@ -1705,8 +2591,11 @@ proof-
     have "matroid.rank_of ?indep X = Min {card B | B. indep_system.basis_in ?indep X B}"
       using matroid.rank_of_def[OF matroid_props] by auto
     also have "... = card Y"
-      using matroid.basis_in_card[OF matroid_props \<open>X \<subseteq> E\<close>] Y_basis_in
-      by (metis (no_types, lifting) \<open>X \<subseteq> E\<close> calculation matroid.rank_of_eq_card_basis_in matroid_props)
+    proof -
+      have "matroid.rank_of (\<lambda>X. X \<subseteq> E \<and> r X = card X) X = card Y"
+        using matroid.rank_of_eq_card_basis_in[OF matroid_props \<open>X \<subseteq> E\<close> Y_basis_in] .
+      from calculation[symmetric] this show ?thesis by (rule trans)
+    qed
     also have "... = r X"
       using \<open>r X = card Y\<close> by simp
     finally show "r X = matroid.rank_of (\<lambda> X. X \<subseteq> E \<and> r X = card X) X" by auto
@@ -1802,13 +2691,51 @@ begin
 lemma rank_of_eq_basis_subset:
   assumes "Y \<subseteq> carrier" "X \<subseteq> Y" "basis_in X B" "rank_of X = rank_of Y"
   shows "basis_in Y B"
-  using assms by (smt (verit) basis_in_iff_rank_of basis_in_subset_carrier subset_trans)
+proof -
+  have X_carrier: "X \<subseteq> carrier" using assms(1) assms(2) by blast
+  have B_subset_X: "B \<subseteq> X" using basis_in_subset_carrier[OF X_carrier assms(3)] .
+  have B_subset_Y: "B \<subseteq> Y" using B_subset_X assms(2) by blast
+  have rank_B: "rank_of B = rank_of X"
+    using basis_in_iff_rank_of[OF X_carrier B_subset_X] assms(3) by blast
+  have card_B: "rank_of B = card B"
+    using basis_in_iff_rank_of[OF X_carrier B_subset_X] assms(3) by blast
+  have "rank_of B = rank_of Y" using rank_B assms(4) by simp
+  thus "basis_in Y B"
+    using card_B basis_in_iff_rank_of[OF assms(1) B_subset_Y] by blast
+qed
 
 lemma rank_of_circuit:
   assumes "circuit X"
   shows "rank_of X = card X - 1"
-  by (metis all_not_in_conv assms card_Diff_singleton circuit_imp_circuit_in circuit_in_iff_rank_of
-      circuit_in_subset_carrier subset_refl)
+proof -
+  have X_carrier: "X \<subseteq> carrier" using assms unfolding circuit_def by blast
+  have X_dep: "\<not> indep X" using assms unfolding circuit_def by blast
+  have X_minus: "\<And>x. x \<in> X \<Longrightarrow> indep (X - {x})"
+    using assms unfolding circuit_def by blast
+  have X_nonempty: "X \<noteq> {}" using X_dep indep_empty by blast
+  obtain x where x_in: "x \<in> X" using X_nonempty by blast
+  have indep_X_minus_x: "indep (X - {x})" using X_minus x_in by blast
+  have subset_X: "X - {x} \<subseteq> X" by blast
+  have indep_in_X_minus_x: "indep_in X (X - {x})"
+    using subset_X indep_X_minus_x unfolding indep_in_def by blast
+  have insert_eq: "insert x (X - {x}) = X" using x_in by blast
+  have basis_X_minus_x: "basis_in X (X - {x})"
+  proof (rule basis_inI[OF X_carrier])
+    show "indep_in X (X - {x})" using indep_in_X_minus_x .
+  next
+    fix y assume y_mem: "y \<in> X - (X - {x})"
+    have y_eq: "y = x" using y_mem x_in by blast
+    have not_indep_in_XX: "\<not> indep_in X X" using X_dep unfolding indep_in_def by blast
+    show "\<not> indep_in X (insert y (X - {x}))"
+      using y_eq insert_eq not_indep_in_XX by simp
+  qed
+  have rank_eq: "rank_of X = card (X - {x})"
+    using rank_of_eq_card_basis_in[OF X_carrier basis_X_minus_x] .
+  have finite_X: "finite X" using finite_subset[OF X_carrier carrier_finite] .
+  have card_eq: "card (X - {x}) = card X - 1"
+    using card_Diff_singleton[OF x_in] .
+  from rank_eq card_eq show ?thesis by simp
+qed
 
 end
 
@@ -1853,7 +2780,7 @@ next
     subgoal using assms(1) .
     subgoal by blast
     subgoal using indep_ex by blast
-    subgoal by (metis subset_trans)
+    subgoal by blast
     done
 
   have "\<forall>C. C \<in> \<C> = indep_system.circuit E ?indep C"
@@ -1967,14 +2894,24 @@ proof (rule ballI, rule ballI, rule ballI, rule ballI)
   have "indep (C1 - {f})" by blast
   with matroid.indep_iff_rank_of[OF assms(1) \<open>(C1 - {f}) \<subseteq> E\<close>] \<open>f \<in> C1 - C2\<close>
   have C1_minus_f_rank: "matroid.rank_of indep (C1 - {f}) = card C1 - 1"
-    by (metis DiffD1 card_Diff_singleton)
+  proof -
+    have "matroid.rank_of indep (C1 - {f}) = card (C1 - {f})"
+      using \<open>indep (C1 - {f})\<close> matroid.indep_iff_rank_of[OF assms(1) \<open>(C1 - {f}) \<subseteq> E\<close>] by blast
+    moreover have "f \<in> C1" using \<open>f \<in> C1 - C2\<close> by (rule DiffD1)
+    ultimately show ?thesis by (simp add: card_Diff_singleton)
+  qed
 
   from \<open>C2 \<subseteq> E\<close> \<open>e \<in> C1 \<inter> C2\<close> have "(C2 - {e}) \<subseteq> E" by blast
   from indep_system.circuit_def[OF indep_sys] C2_circuit \<open>e \<in> C1 \<inter> C2\<close>
   have "indep (C2 - {e})" by blast
   with matroid.indep_iff_rank_of[OF assms(1) \<open>(C2 - {e}) \<subseteq> E\<close>] \<open>e \<in> C1 \<inter> C2\<close>
   have C2_minus_e_rank: "matroid.rank_of indep (C2 - {e}) = card C2 - 1"
-    by (metis IntD2 card_Diff_singleton)
+  proof -
+    from \<open>e \<in> C1 \<inter> C2\<close> have "e \<in> C2" by (rule IntD2)
+    then have "card (C2 - {e}) = card C2 - 1" by (rule card_Diff_singleton)
+    with matroid.indep_iff_rank_of[OF assms(1) \<open>(C2 - {e}) \<subseteq> E\<close>] \<open>indep (C2 - {e})\<close>
+    show "matroid.rank_of indep (C2 - {e}) = card C2 - 1" by simp
+  qed
 
   have 1: "card C1 - 1 + matroid.rank_of indep (C1 \<union> C2 - {e, f}) + card C2 - 1 =
     matroid.rank_of indep C1 + matroid.rank_of indep (C1 \<union> C2 - {e, f}) + matroid.rank_of indep C2"
@@ -2083,8 +3020,21 @@ proof (rule allI, rule impI, rule ballI, rule ccontr)
   assume "indep X" "e \<in> E"
   assume "\<not> card ?circuits \<le> 1"
   have "\<exists>C1 C2. C1 \<in> ?circuits \<and> C2 \<in> ?circuits \<and> C1 \<noteq> C2"
-    by (smt (verit) \<open>\<not> card ?circuits \<le> 1\<close> card_insert_le is_singletonI is_singletonI'
-        is_singleton_altdef verit_comp_simplify1(2))
+  proof -
+    from indep_system.indep_subset_carrier[OF assms(1) \<open>indep X\<close>] have "X \<subseteq> E" .
+    with \<open>e \<in> E\<close> have subset_E: "X \<union> {e} \<subseteq> E" by blast
+    from indep_system.carrier_finite[OF assms(1)] subset_E have "finite (X \<union> {e})"
+      using finite_subset by blast
+    moreover have "?circuits \<subseteq> Pow (X \<union> {e})" by blast
+    ultimately have finite_circuits: "finite ?circuits" using finite_subset by blast
+    have "\<not> (\<forall>a1 \<in> ?circuits. \<forall>a2 \<in> ?circuits. a1 = a2)"
+    proof
+      assume "\<forall>a1 \<in> ?circuits. \<forall>a2 \<in> ?circuits. a1 = a2"
+      with card_le_Suc0_iff_eq[OF finite_circuits] have "card ?circuits \<le> Suc 0" by blast
+      with \<open>\<not> card ?circuits \<le> 1\<close> show False by simp
+    qed
+    then show "\<exists>C1 C2. C1 \<in> ?circuits \<and> C2 \<in> ?circuits \<and> C1 \<noteq> C2" by blast
+  qed
   then obtain C1 C2 where "C1 \<in> ?circuits" "C2 \<in> ?circuits" "C1 \<noteq> C2" by blast
 
   from \<open>C1 \<in> ?circuits\<close> assms(2) have "C1 \<in> \<C>" by simp
@@ -2184,7 +3134,13 @@ lemma dual_indep_system:
   apply(unfold_locales)
   using assms indep_system.carrier_finite apply blast
   apply simp
-  apply (metis assms empty_subsetI indep_system.basis_ex inf_bot_left)
+  subgoal
+  proof -
+    from indep_system.basis_ex[OF assms] obtain B where basis_B: "indep_system.basis E indep B" by blast
+    have "{} \<subseteq> E" by (rule empty_subsetI)
+    moreover have "{} \<inter> B = {}" by (rule inf_bot_left)
+    ultimately show ?thesis using basis_B by blast
+  qed
   using disjoint_iff apply blast
   done
 
@@ -2224,7 +3180,8 @@ proof (rule iffI, erule HOL.contrapos_pp)
       by (simp add: dual_def) 
   next
     case False
-    with indep_system.basis_def[OF dual_indep_sys] dual_def show ?thesis by metis
+    from False have "\<not> (dual E indep) B'" by (simp add: dual_def)
+    with indep_system.basis_def[OF dual_indep_sys] show ?thesis by auto
   qed
 next
   assume complement: "(\<exists>B. indep_system.basis E indep B \<and> B' = E - B)"
@@ -2244,10 +3201,17 @@ next
     show "((insert x B') \<inter> B'' \<noteq> {})"
     proof (cases "B'' \<inter> B' = {}")
       case True
-      with \<open>B' = E - B\<close> have "B'' = B" 
-        by (metis Diff_eq_empty_iff Int_Diff \<open>indep_system.basis E indep B''\<close>
-            \<open>indep_system.basis E indep B\<close> assms(1) indep_system.basis_subset_carrier
-            indep_system.basis_subset_eq inf.orderE)
+      have "B'' = B"
+      proof -
+        have B''_subset_E: "B'' \<subseteq> E"
+          using indep_system.basis_subset_carrier[OF assms(1) \<open>indep_system.basis E indep B''\<close>] .
+        have "B'' \<inter> (E - B) = {}"
+          using True \<open>B' = E - B\<close> by simp
+        with B''_subset_E have "B'' \<subseteq> B" by blast
+        from indep_system.basis_subset_eq[OF assms(1) \<open>indep_system.basis E indep B''\<close>
+            \<open>indep_system.basis E indep B\<close> this]
+        show "B'' = B" .
+      qed
       with \<open>B' = E - B\<close> \<open>x \<in> E - B'\<close> have "x \<in> (insert x B') \<inter> B''" by simp
       then show ?thesis by blast
     next
@@ -2278,16 +3242,45 @@ proof
 
   fix X
   have "(dual E (dual E indep)) X = 
-    (X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> (X \<inter> B' = {})))" using dual_def by metis
+    (X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> (X \<inter> B' = {})))"
+    unfolding dual_def by blast
   also have "... =
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> (X \<inter> (E - B) = {})))"
-    using dual_basis_complement[OF assms] indep_system.basis_subset_carrier
-    by (metis Diff_subset dual_indep_sys)
+  proof (intro iffI)
+    assume "X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> X \<inter> B' = {})"
+    then obtain B' where "X \<subseteq> E" and B'_basis: "indep_system.basis E (dual E indep) B'"
+      and B'_disj: "X \<inter> B' = {}" by blast
+    from indep_system.basis_subset_carrier[OF dual_indep_sys B'_basis]
+    have "B' \<subseteq> E" .
+    from dual_basis_complement[OF assms this]
+    have "indep_system.basis E (dual E indep) B' \<longleftrightarrow>
+      (\<exists>B. indep_system.basis E indep B \<and> B' = E - B)" .
+    with B'_basis obtain B where "indep_system.basis E indep B" and "B' = E - B" by blast
+    with B'_disj have "X \<inter> (E - B) = {}" by simp
+    with \<open>X \<subseteq> E\<close> \<open>indep_system.basis E indep B\<close>
+    show "X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<inter> (E - B) = {})" by blast
+  next
+    assume "X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<inter> (E - B) = {})"
+    then obtain B where "X \<subseteq> E" and B_basis: "indep_system.basis E indep B"
+      and B_disj: "X \<inter> (E - B) = {}" by blast
+    have "E - B \<subseteq> E" by blast
+    from dual_basis_complement[OF assms this]
+    have "indep_system.basis E (dual E indep) (E - B) \<longleftrightarrow>
+      (\<exists>B'. indep_system.basis E indep B' \<and> E - B = E - B')" .
+    with B_basis have "indep_system.basis E (dual E indep) (E - B)" by blast
+    with \<open>X \<subseteq> E\<close> B_disj
+    show "X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> X \<inter> B' = {})" by blast
+  qed
   also have "... =
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<subseteq> B))"
     by auto
   also have "... = indep X" using indep_system.indep_iff_subset_basis[OF assms]
-    by (metis assms indep_system_def)
+  proof -
+    from assms have cont: "\<And>Y. indep Y \<Longrightarrow> Y \<subseteq> E"
+      by (auto simp: indep_system_def)
+    show ?thesis
+      using indep_system.indep_iff_subset_basis[OF assms] cont by blast
+  qed
   finally show "(dual E (dual E indep)) X = indep X" .
 qed
 
@@ -2344,8 +3337,13 @@ proof (rule allI, rule impI)
   have "E - X \<subseteq> E" by auto
 
   from matroid.rank_of_def[OF assms(1)] have "matroid.rank_of indep {} = 0"
-    by (metis assms(1) card.empty empty_subsetI indep_system.indep_empty matroid.axioms(1)
-        matroid.indep_iff_rank_of) 
+  proof -
+    have "indep_system E indep" using assms(1) by (rule matroid.axioms(1))
+    then have "indep {}" by (rule indep_system.indep_empty)
+    then have "matroid.rank_of indep {} = card {}"
+      using matroid.indep_iff_rank_of[OF assms(1) empty_subsetI] by fastforce
+    then show ?thesis by simp
+  qed
 
   from matroid.rank_of_Un_Int_le[OF assms(1) \<open>X \<subseteq> E\<close> \<open>E - X \<subseteq> E\<close>]
   have "indep_system.lower_rank_of indep (X \<union> (E - X)) + indep_system.lower_rank_of indep (X \<inter> (E - X))
@@ -2370,8 +3368,9 @@ lemma dual_rank_sat_rank_axioms1:
 proof-
 
   from matroid.rank_of_def[OF assms(2)] have "matroid.rank_of indep {} = 0"
-    by (metis assms(2) card.empty empty_subsetI indep_system.indep_empty matroid.axioms(1)
-        matroid.indep_iff_rank_of)   
+    using indep_system.indep_empty[OF matroid.axioms(1)[OF assms(2)]]
+          matroid.indep_iff_rank_of[OF assms(2) empty_subsetI]
+    by simp
 
   have q_well_def: "\<forall>X \<subseteq> E. card X + matroid.rank_of indep (E - X) \<ge> matroid.rank_of indep E"
     using dual_rank_well_def[OF assms(2)] by blast
@@ -2404,9 +3403,10 @@ proof-
       "matroid.rank_of indep (E - X) + matroid.rank_of indep ((E - Y) \<inter> (Y - X)) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
       by (simp add: \<open>E - Y \<union> (Y - X) = E - X\<close>)
-    then have "matroid.rank_of indep (E - X) + matroid.rank_of indep ({}) \<le>
+    moreover have "(E - Y) \<inter> (Y - X) = {}" by blast
+    ultimately have "matroid.rank_of indep (E - X) + matroid.rank_of indep ({}) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
-      by (metis Diff_disjoint Int_Diff inf_commute)
+      by simp
     with \<open>matroid.rank_of indep {} = 0\<close> have
       "matroid.rank_of indep (E - X) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
@@ -2422,11 +3422,33 @@ proof-
     with \<open>X \<subseteq> Y\<close> have
       "matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> 
       card Y - card X"
-      by (metis \<open>X \<subseteq> E\<close> assms(1) card_Diff_subset rev_finite_subset)
+    proof -
+      have "finite X" using rev_finite_subset[OF assms(1) \<open>X \<subseteq> E\<close>] .
+      have "card (Y - X) = card Y - card X"
+        using card_Diff_subset[OF \<open>finite X\<close> \<open>X \<subseteq> Y\<close>] .
+      then show ?thesis
+        using \<open>matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> card (Y - X)\<close>
+        by simp
+    qed
     then have
       "card X + matroid.rank_of indep (E - X) \<le> card Y + matroid.rank_of indep (E - Y)"
-      by (smt (verit, ccfv_SIG) Nat.diff_cancel \<open>X \<subseteq> Y\<close> \<open>Y \<subseteq> E\<close> assms(1) card_mono diff_cancel2
-          diff_diff_cancel diff_le_mono infinite_super le_antisym nat_le_linear)
+    proof -
+      have finite_Y: "finite Y" by (rule finite_subset[OF \<open>Y \<subseteq> E\<close> assms(1)])
+      have card_le: "card X \<le> card Y" by (rule card_mono[OF finite_Y \<open>X \<subseteq> Y\<close>])
+      show ?thesis
+      proof (cases "matroid.rank_of indep (E - X) \<le> matroid.rank_of indep (E - Y)")
+        case True
+        show ?thesis by (rule add_mono[OF card_le True])
+      next
+        case False
+        then have rank_le: "matroid.rank_of indep (E - Y) \<le> matroid.rank_of indep (E - X)"
+          by presburger
+        show ?thesis
+          using \<open>matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> card Y - card X\<close>
+            rank_le card_le
+          by presburger
+      qed
+    qed
 
     with assms(3) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> show "q X \<le> q Y" by simp
   qed
@@ -2464,7 +3486,11 @@ proof-
     also have "... = card X + card Y +
       matroid.rank_of indep (E - (X \<union> Y)) + matroid.rank_of indep (E - (X \<inter> Y))
       - matroid.rank_of indep E - matroid.rank_of indep E"
-      by (metis \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> assms(1) card_Un_Int rev_finite_subset)
+    proof -
+      from assms(1) \<open>X \<subseteq> E\<close> have "finite X" by (rule rev_finite_subset)
+      from assms(1) \<open>Y \<subseteq> E\<close> have "finite Y" by (rule rev_finite_subset)
+      from card_Un_Int[OF \<open>finite X\<close> \<open>finite Y\<close>] show ?thesis by simp
+    qed
     also have "... = card X + card Y +
       matroid.rank_of indep ((E - X) \<inter> (E - Y)) + matroid.rank_of indep ((E - X) \<union> (E - Y))
       - matroid.rank_of indep E - matroid.rank_of indep E"
@@ -2533,8 +3559,12 @@ proof-
     have "E - X \<subseteq> E" by blast
 
     have "(?q X = card X) \<longleftrightarrow> (matroid.rank_of indep (E - X) = matroid.rank_of indep E)"
-      using dual_rank_well_def
-      by (metis \<open>X \<subseteq> E\<close> assms(2) diff_add_inverse diff_add_inverse2 diff_diff_cancel)
+    proof -
+      have le: "matroid.rank_of indep E \<le> card X + matroid.rank_of indep (E - X)"
+        using dual_rank_well_def[OF assms(2)] \<open>X \<subseteq> E\<close> by blast
+    show "(?q X = card X) \<longleftrightarrow> (matroid.rank_of indep (E - X) = matroid.rank_of indep E)"
+      using le by presburger
+    qed
     also have "... \<longleftrightarrow> (\<exists>B. indep_system.basis_in indep E B \<and> B \<subseteq> (E - X))"
       using matroid.rank_carrier_iff_contains_basis[OF assms(2) \<open>E - X \<subseteq> E\<close>] by simp
     also have "... \<longleftrightarrow> (\<exists>B. indep_system.basis_in indep E B \<and> X \<inter> B = {})"
@@ -2585,9 +3615,26 @@ proof-
             indep'_iff_dual by simp
       next
         case False
-        then show ?thesis using indep_system.indep_in_def[OF \<open>indep_system E indep'\<close>]
-            indep_system.indep_in_def[OF \<open>indep_system E (dual E indep)\<close>]
-          by (metis \<open>X \<subseteq> E\<close> subset_trans)
+        then show ?thesis
+        proof -
+          have not_indep': "\<not> (indep_system.indep_in indep' X) Y"
+          proof (rule notI)
+            assume "(indep_system.indep_in indep' X) Y"
+            from indep_system.indep_in_subset_carrier[OF \<open>indep_system E indep'\<close> this]
+            have "Y \<subseteq> X" .
+            with \<open>X \<subseteq> E\<close> have "Y \<subseteq> E" using subset_trans by blast
+            with False show False by blast
+          qed
+          have not_dual: "\<not> (indep_system.indep_in (dual E indep) X) Y"
+          proof (rule notI)
+            assume "(indep_system.indep_in (dual E indep) X) Y"
+            from indep_system.indep_in_subset_carrier[OF \<open>indep_system E (dual E indep)\<close> this]
+            have "Y \<subseteq> X" .
+            with \<open>X \<subseteq> E\<close> have "Y \<subseteq> E" using subset_trans by blast
+            with False show False by blast
+          qed
+          from not_indep' not_dual show ?thesis by simp
+        qed
       qed
     qed
 
@@ -2606,9 +3653,62 @@ proof-
     indep_system.lower_rank_of (dual E indep) X"
     using indep_system.lower_rank_of_def
       matroid.axioms(1)[OF \<open>matroid E indep'\<close>] matroid.axioms(1)[OF \<open>matroid E (dual E indep)\<close>]
-    by (smt (verit, ccfv_threshold) \<open>matroid E (dual E indep)\<close> \<open>matroid E indep'\<close>
-        indep_system.basis_in_ex indep_system.basis_in_subset_carrier matroid.rank_of_eq_card_basis_in
-        subset_trans)
+    proof (intro allI impI)
+      fix X
+      assume "X \<subseteq> E"
+
+      have basis_in_iff: "\<And>B. B \<subseteq> E \<Longrightarrow> indep_system.basis_in indep' X B \<longleftrightarrow>
+        indep_system.basis_in (dual E indep) X B"
+        using \<open>\<forall>X \<subseteq> E. \<forall>B \<subseteq> E. indep_system.basis_in indep' X B \<longleftrightarrow>
+          indep_system.basis_in (dual E indep) X B\<close> \<open>X \<subseteq> E\<close>
+        by blast
+
+      have set_eq: "{card B | B. indep_system.basis_in indep' X B} =
+        {card B | B. indep_system.basis_in (dual E indep) X B}"
+      proof (rule equalityI)
+        show "{card B | B. indep_system.basis_in indep' X B} \<subseteq>
+              {card B | B. indep_system.basis_in (dual E indep) X B}"
+        proof (rule subsetI)
+          fix n
+          assume "n \<in> {card B | B. indep_system.basis_in indep' X B}"
+          then have "\<exists>B. n = card B \<and> indep_system.basis_in indep' X B" by auto
+          then obtain B where n_def: "n = card B" and B_basis: "indep_system.basis_in indep' X B"
+            by blast
+          from indep_system.basis_in_subset_carrier[OF \<open>indep_system E indep'\<close> \<open>X \<subseteq> E\<close> B_basis]
+          have "B \<subseteq> X" .
+          with \<open>X \<subseteq> E\<close> have "B \<subseteq> E" by blast
+          with basis_in_iff B_basis have "indep_system.basis_in (dual E indep) X B" by blast
+          then show "n \<in> {card B | B. indep_system.basis_in (dual E indep) X B}"
+            using n_def by auto
+        qed
+      next
+        show "{card B | B. indep_system.basis_in (dual E indep) X B} \<subseteq>
+              {card B | B. indep_system.basis_in indep' X B}"
+        proof (rule subsetI)
+          fix n
+          assume "n \<in> {card B | B. indep_system.basis_in (dual E indep) X B}"
+          then have "\<exists>B. n = card B \<and> indep_system.basis_in (dual E indep) X B" by auto
+          then obtain B where n_def: "n = card B" and B_basis: "indep_system.basis_in (dual E indep) X B"
+            by blast
+          from indep_system.basis_in_subset_carrier[OF \<open>indep_system E (dual E indep)\<close> \<open>X \<subseteq> E\<close> B_basis]
+          have "B \<subseteq> X" .
+          with \<open>X \<subseteq> E\<close> have "B \<subseteq> E" by blast
+          with basis_in_iff B_basis have "indep_system.basis_in indep' X B" by blast
+          then show "n \<in> {card B | B. indep_system.basis_in indep' X B}"
+            using n_def by auto
+        qed
+      qed
+
+      have def1: "indep_system.lower_rank_of indep' X =
+        Min {card B | B. indep_system.basis_in indep' X B}"
+        using \<open>indep_system E indep'\<close> indep_system.lower_rank_of_def by blast
+      have def2: "indep_system.lower_rank_of (dual E indep) X =
+        Min {card B | B. indep_system.basis_in (dual E indep) X B}"
+        using \<open>indep_system E (dual E indep)\<close> indep_system.lower_rank_of_def by blast
+
+      show "indep_system.lower_rank_of indep' X = indep_system.lower_rank_of (dual E indep) X"
+        unfolding def1 def2 using set_eq by simp
+    qed
 
   with \<open>\<forall>X\<subseteq>E. ?q X = matroid.rank_of indep' X\<close>
   have "\<forall>X \<subseteq> E. matroid.rank_of (dual E indep) X = ?q X" by auto
@@ -2620,8 +3720,18 @@ qed
 lemma matroid_iff_dual_matroid:
   assumes "indep_system E indep"
   shows "matroid E indep \<longleftrightarrow> matroid E (dual E indep)"
-  using matroid_dual_rank_expr dual_involution
-  by (metis assms indep_system_def)
+proof (rule iffI)
+  assume "matroid E indep"
+  have fin: "finite E" using indep_system.carrier_finite[OF assms] .
+  from matroid_dual_rank_expr[OF fin \<open>matroid E indep\<close>]
+  show "matroid E (dual E indep)" by (rule conjunct1)
+next
+  assume "matroid E (dual E indep)"
+  have fin: "finite E" using indep_system.carrier_finite[OF assms] .
+  from matroid_dual_rank_expr[OF fin \<open>matroid E (dual E indep)\<close>]
+  have "matroid E (dual E (dual E indep))" by (rule conjunct1)
+  then show "matroid E indep" using dual_involution[OF assms] by simp
+qed
 
 
 (* --------------------------------------------------------------------------------------------- *)
@@ -2639,17 +3749,36 @@ proof-
 
   from \<open>l2 = x # xs\<close> have "length l2 \<ge> 1" by auto
   from \<open>l2 = drop (length l1 - length l2) l1\<close> have "length l2 \<le> length l1"
-    by (metis diff_le_self length_drop)
+  proof -
+    have "length l2 = length (drop (length l1 - length l2) l1)"
+      using \<open>l2 = drop (length l1 - length l2) l1\<close> by (rule arg_cong)
+    also have "... = length l1 - (length l1 - length l2)"
+      by (rule length_drop)
+    finally have len_eq: "length l2 = length l1 - (length l1 - length l2)" .
+    show "length l2 \<le> length l1"
+    proof (subst len_eq)
+      show "length l1 - (length l1 - length l2) \<le> length l1" by (rule diff_le_self)
+    qed
+  qed
 
   have "?j < length l1"
     using \<open>1 \<le> length l2\<close> \<open>length l2 \<le> length l1\<close> by linarith
 
   have "length l1 - length (tl l2) = (length l1 - length l2) + 1"
     using \<open>length l2 \<le> length l1\<close> \<open>length l2 \<ge> 1\<close>
-    by (metis Nat.add_diff_assoc2 Nat.diff_diff_right length_tl)
+    by (simp add: length_tl; linarith)
   moreover have "set (take (?j + 1) l1) = insert (hd (drop (?j) l1)) (set (take (?j) l1))"
     using take_hd_drop \<open>?j < length l1\<close>
-    by (metis Suc_eq_plus1 list.simps(15) rotate1.simps(2) set_rotate1)
+  proof -
+    have take_eq: "take (?j) l1 @ [hd (drop (?j) l1)] = take (Suc (?j)) l1"
+      using take_hd_drop[OF \<open>?j < length l1\<close>] .
+    have "set (take (Suc (?j)) l1) = set (take (?j) l1 @ [hd (drop (?j) l1)])"
+      using take_eq by simp
+    also have "... = insert (hd (drop (?j) l1)) (set (take (?j) l1))"
+      by simp
+    finally show ?thesis
+      by simp
+  qed
   then have "set (take (?j + 1) l1) = insert (hd l2) (set (take (?j) l1))"
     using \<open>l2 = drop (length l1 - length l2) l1\<close> by simp
   ultimately show ?thesis by auto
@@ -2737,9 +3866,27 @@ which proves the cost inequality for the greedy solution *)
 lemma set_take_Suc_diff:
   assumes "set l = S" "length l = card S" "j < length l" 
   shows "{l ! j} = set (take (Suc j) l) - set (take j l)"
-  using take_Suc_conv_app_nth[OF assms(3)] 
-  by (metis Diff_Diff_Int Diff_insert_absorb assms(1) assms(2) card_distinct distinct_take inf_bot_right
-      insert_inter_insert list.simps(15) not_distinct_conv_prefix rotate1.simps(2) set_rotate1)
+proof -
+  have "distinct l" using assms(1) assms(2) card_distinct by force
+  have take_eq: "take (Suc j) l = take j l @ [l ! j]"
+    using take_Suc_conv_app_nth[OF assms(3)] .
+  have l_j_notin: "l ! j \<notin> set (take j l)"
+  proof
+    assume "l ! j \<in> set (take j l)"
+    from this[unfolded in_set_conv_nth]
+    obtain i where i_lt: "i < length (take j l)" and eq: "take j l ! i = l ! j" by blast
+    from i_lt assms(3) have i_less_j: "i < j" by simp
+    from eq i_less_j assms(3) have l_eq: "l ! i = l ! j" by (simp add: nth_take)
+    from i_less_j assms(3) have i_len: "i < length l" and j_len: "j < length l" by simp_all
+    from nth_eq_iff_index_eq[OF \<open>distinct l\<close> i_len j_len] l_eq have "i = j" by simp
+    with i_less_j show False by simp
+  qed
+  have "set (take (Suc j) l) = set (take j l) \<union> {l ! j}"
+    using take_eq by simp
+  with l_j_notin have "set (take (Suc j) l) - set (take j l) = {l ! j}"
+    by auto
+  then show ?thesis by simp
+qed
 
 lemma set_union_expr:
   assumes "n = length l" "set l = S" "length l = card S" "A \<subseteq> S"
@@ -2777,12 +3924,36 @@ proof-
 
   from take_Suc_conv_app_nth[OF assms(5)]
   have set_take_diff_expr: "set (take j l) - set (take (j - 1) l) = {l ! (j - 1)}"
-    by (metis add.commute assms(1) assms(2) assms(4) assms(5) le_add_diff_inverse2 plus_1_eq_Suc set_take_Suc_diff)
+  proof -
+    have j_eq: "Suc (j - 1) = j" using assms(4) by simp
+    from set_take_Suc_diff[OF assms(1) assms(2) assms(5)]
+    have "{l ! (j - 1)} = set (take (Suc (j - 1)) l) - set (take (j - 1) l)" .
+    with j_eq show ?thesis by simp
+  qed
 
   have card_diff_expr: "(card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l))) =
     card (A \<inter> (set (take j l) - set (take (j - 1) l)))"
-    by (metis Diff_Int_distrib List.finite_set card_Diff_subset diff_le_self equalityD1 finite_Int
-        inf_mono set_take_subset_set_take)
+  proof -
+    have subset_take: "set (take (j - 1) l) \<subseteq> set (take j l)"
+    proof (rule set_take_subset_set_take)
+      show "j - 1 \<le> j" by simp
+    qed
+    have subset_inter: "A \<inter> set (take (j - 1) l) \<subseteq> A \<inter> set (take j l)"
+      using subset_take by blast
+    have finite_inter: "finite (A \<inter> set (take (j - 1) l))" by simp
+    have card_diff: "card (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) =
+      card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l))"
+      using card_Diff_subset[OF finite_inter subset_inter] .
+    have set_eq: "A \<inter> set (take j l) - A \<inter> set (take (j - 1) l) =
+      A \<inter> (set (take j l) - set (take (j - 1) l))"
+      by blast
+    have "card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l)) =
+      card (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l))"
+      using card_diff by simp
+    also have "... = card (A \<inter> (set (take j l) - set (take (j - 1) l)))"
+      using set_eq by simp
+    finally show ?thesis .
+  qed
 
   show ?thesis
   proof(cases "l ! (j - 1) \<in> A")
@@ -2799,7 +3970,8 @@ proof-
     from set_take_diff_expr False have "(A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) = {}"
       by force
     then have "sum c (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) = 0"
-      by (metis sum.empty)
+      unfolding \<open>A \<inter> set (take j l) - A \<inter> set (take (j - 1) l) = {}\<close>
+      by simp
     moreover have "rat_of_nat (card (A \<inter> set (take j l)) - (card (A \<inter> set (take (j - 1) l)))) = 0"
       using set_take_diff_expr False card_diff_expr by auto
     ultimately show ?thesis by auto
@@ -2822,7 +3994,18 @@ proof-
     "\<forall>j < n. G \<inter> (set (take (Suc j) l) - set (take j l)) \<subseteq> {l ! j}" by blast
   then have 1:
     "\<forall>j \<in> {1..n}. G \<inter> (set (take j l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
-    by (metis Suc_pred' atLeastAtMost_iff lessI less_imp_diff_less less_one nat_less_le)
+proof (intro ballI)
+  fix j :: nat
+  assume "j \<in> {1..n}"
+  then have j_ge: "1 \<le> j" and j_le: "j \<le> n" by simp_all
+  from j_ge have j_eq: "Suc (j - 1) = j" by arith
+  from j_ge j_le have j1_lt_n: "j - 1 < n" by arith
+  with \<open>\<forall>j < n. G \<inter> (set (take (Suc j) l) - set (take j l)) \<subseteq> {l ! j}\<close>
+  have "G \<inter> (set (take (Suc (j - 1)) l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
+    by blast
+  with j_eq show "G \<inter> (set (take j l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
+    by simp
+qed
 
   from assms(2) assms(3) have "distinct l"
     by (simp add: card_distinct)
@@ -2874,8 +4057,20 @@ lemma sum_split_last:
   assumes "n \<ge> 1"
   shows "(\<Sum>j=1..(n - 1). g j) + g (n::nat) = (\<Sum>j=1..n. g j)"
   using assms
-  by (metis Suc_eq_plus1_left Suc_pred' add.commute atLeastLessThanSuc_atLeastAtMost lessI
-      less_add_same_cancel1 order_le_less_trans sum.last_plus)
+proof -
+  from assms have n_eq: "n = Suc (n - 1)" by presburger
+  have set_eq: "{1..Suc (n - 1)} = insert (Suc (n - 1)) {1..(n - 1)}" by auto
+  have notin: "Suc (n - 1) \<notin> {1..(n - 1)}" by auto
+  have "(\<Sum>j = 1..(n - 1). g j) + g n = (\<Sum>j = 1..(n - 1). g j) + g (Suc (n - 1))"
+    by (rule arg_cong[OF n_eq])
+  also have "... = g (Suc (n - 1)) + (\<Sum>j = 1..(n - 1). g j)" by (rule add.commute)
+  also have "... = (\<Sum>j \<in> insert (Suc (n - 1)) {1..(n - 1)}. g j)"
+    using sum.insert[OF finite_atLeastAtMost notin] by simp
+  also have "... = (\<Sum>j = 1..Suc (n - 1). g j)"
+    using set_eq by simp
+  also have "... = (\<Sum>j = 1..n. g j)" by (rule arg_cong[OF n_eq, symmetric])
+  finally show ?thesis .
+qed
 
 lemma sum_diff_mult_distr:
   assumes "\<forall>j \<in> {0..(n::nat)}. (g::(nat \<Rightarrow> rat)) j \<ge> 0" "\<forall>j \<in> {1..n}. c (j - 1) \<ge> 0" "g 0 = 0"
@@ -2914,8 +4109,15 @@ proof-
     also have "... =
     (\<Sum>j = 1..n. g j * (c (j - 1) - c j)) + g (Suc n) * c (Suc n - 1)"
       using Suc
-      by (smt (verit, best) Suc_pred' add_cancel_right_right assms(3) diff_Suc_1 diff_is_0_eq
-          less_add_same_cancel1 linorder_not_less mult_zero_left nle_le plus_1_eq_Suc sum_split_last)
+      proof (cases "n = 0")
+        case True
+        then show ?thesis by simp
+      next
+        case False
+        then have "1 \<le> n" by simp
+        from sum_split_last[OF this, of "\<lambda>j. g j * (c (j - 1) - c j)"]
+        show ?thesis by simp
+      qed
     also have "... =
     (\<Sum>j = 1..(Suc n - 1). g j * (c (j - 1) - c j)) + g (Suc n) * c (Suc n - 1)"
       by simp
@@ -2926,7 +4128,15 @@ proof-
   have "(\<Sum>j \<in> {1..n}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1))) =
     (\<Sum>j \<in> {1..n - 1}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1)))
     + (g n) * (if n < n then c (n - 1) - c n else c (n - 1))"
-    by (metis (no_types, lifting) add.right_neutral assms(3) less_one linorder_not_le mult_zero_left sum_split_last zero_diff)
+proof (cases "n = 0")
+  case True
+  then show ?thesis using assms(3) by simp
+next
+  case False
+  then have "1 \<le> n" by simp
+  from sum_split_last[OF this, of "\<lambda>j. g j * (if j < n then c (j - 1) - c j else c (j - 1))"]
+  show ?thesis by simp
+qed
   also have "... = 
     (\<Sum>j \<in> {1..n - 1}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1)))
     + (g n) * c (n - 1)"
@@ -2956,14 +4166,56 @@ proof-
   have "finite ?fracs" using `finite carrier` by auto
 
   have 1: "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
-    unfolding rank_quotient_def using upper_rank_equiv_rank by (metis (no_types, opaque_lifting))
+  proof -
+    have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
+                  {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+    proof (intro equalityI subsetI)
+      fix y assume "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+      then obtain X where "X \<subseteq> carrier" and "y = Frac (int (lower_rank_of X)) (int (rank X))" by blast
+      then have "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
+        using upper_rank_equiv_rank by simp
+      then show "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+        using `X \<subseteq> carrier` by blast
+    next
+      fix y assume "y \<in> {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
+      then obtain X where "X \<subseteq> carrier" and "y = Frac (int (lower_rank_of X)) (int (upper_rank_of X))" by blast
+      then have "y = Frac (int (lower_rank_of X)) (int (rank X))"
+        using upper_rank_equiv_rank by simp
+      then show "y \<in> {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
+        using `X \<subseteq> carrier` by blast
+    qed
+    show ?thesis
+      unfolding rank_quotient_def by (simp add: set_eq)
+  qed
 
   have "\<forall>X \<subseteq> carrier. int (lower_rank_of X) \<ge> 0"
     by simp
   moreover have "\<forall>X \<subseteq> carrier. int (upper_rank_of X) \<ge> 0"
     by simp
   ultimately have 2: "\<forall>X \<subseteq> carrier. Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<ge> 0"
-    by (smt (verit, best) Frac_def One_rat_def lower_rank_le_upper_rank nat_int_comparison(3) zero_le_Fract_iff)
+  proof (intro allI impI)
+    fix X
+    assume X_subset: "X \<subseteq> carrier"
+    show "Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<ge> 0"
+    proof (cases "lower_rank_of X = upper_rank_of X")
+      case True
+      then show ?thesis unfolding Frac_def by simp
+    next
+      case False
+      from lower_rank_le_upper_rank[OF X_subset]
+      have le: "lower_rank_of X \<le> upper_rank_of X" .
+      have lt: "lower_rank_of X < upper_rank_of X"
+        using le False by linarith
+      have upper_pos: "0 < upper_rank_of X"
+        using lt by linarith
+      have pos: "(0::int) < int (upper_rank_of X)"
+        using upper_pos by simp
+      have nonneg: "(0::int) \<le> int (lower_rank_of X)" by simp
+      have fract_nonneg: "0 \<le> Fract (int (lower_rank_of X)) (int (upper_rank_of X))"
+        using zero_le_Fract_iff[OF pos] nonneg by simp
+      from fract_nonneg False show ?thesis unfolding Frac_def by simp
+    qed
+  qed
 
   from 1 2 Min_ge_iff[OF `finite ?fracs` `?fracs \<noteq> {}`] show ?thesis by auto
 qed
@@ -2985,8 +4237,20 @@ lemma rank_geq_card_indep_in:
   shows "rank X \<ge> card Y"
 proof-
   from indep_in_def have "finite {card Y | Y. indep_in X Y}"
-    by (smt (verit, del_insts) card_mono carrier_finite finite_nat_set_iff_bounded_le indep_subset_carrier
-        mem_Collect_eq)
+  proof -
+    have "\<forall>n \<in> {card Y | Y. indep_in X Y}. n \<le> card carrier"
+    proof
+      fix n
+      assume "n \<in> {card Y | Y. indep_in X Y}"
+      then obtain Y where "n = card Y" "indep_in X Y" by blast
+      from indep_in_subset_carrier[OF this(2)] have "Y \<subseteq> X" .
+      with assms(1) have "Y \<subseteq> carrier" by blast
+      from card_mono[OF carrier_finite \<open>Y \<subseteq> carrier\<close>] have "card Y \<le> card carrier" .
+      with \<open>n = card Y\<close> show "n \<le> card carrier" by simp
+    qed
+    then show "finite {card Y | Y. indep_in X Y}"
+      using finite_nat_set_iff_bounded_le by blast
+  qed
   moreover have "card Y \<in> {card Y | Y. indep_in X Y}" using assms(2) by fast 
   ultimately show ?thesis using rank_def by auto
 qed
@@ -3023,7 +4287,16 @@ proof-
       using \<open>rank_quotient \<le> Fract (int (lower_rank_of X)) (int (rank X))\<close>
       by (simp add: Fract_of_int_quotient)
     then show ?thesis
-      by (metis mult_zero_right of_nat_0_le_iff order_le_less pos_le_divide_eq)
+    proof (cases "rank X = 0")
+      case True
+      then show ?thesis by simp
+    next
+      case False
+      then have rank_pos: "rat_of_nat (rank X) > 0" by (simp add: of_nat_0_less_iff)
+      from pos_le_divide_eq[OF rank_pos, of rank_quotient "rat_of_nat (lower_rank_of X)"]
+        \<open>rank_quotient \<le> rat_of_nat (lower_rank_of X) / rat_of_nat (rank X)\<close>
+      show ?thesis by simp
+    qed
   qed
 qed
 
@@ -3069,8 +4342,16 @@ proof-
 
   from \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close>
   have "card B1 \<le> card B2" 
-    by (metis X(1) lower_rank_le_upper_rank upper_rank_equiv_rank)
-  with X B1 B2 show ?thesis by metis
+  proof -
+    have "lower_rank_of X \<le> upper_rank_of X" using lower_rank_le_upper_rank[OF X(1)] .
+    also have "upper_rank_of X = rank X" using upper_rank_equiv_rank[OF X(1)] .
+    finally show "card B1 \<le> card B2"
+      using \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close> by simp
+  qed
+  have "Frac (int (card B1)) (int (card B2)) = rank_quotient"
+    using X(2) B1(2) B2(2) by simp
+  with X(1) B1(1) B2(1) \<open>card B1 \<le> card B2\<close>
+  show ?thesis by blast
 qed
 
 lemma rank_quotient_greater_0:
@@ -3089,15 +4370,53 @@ proof (rule ccontr, goal_cases)
   have "rank_quotient = Fract (int (card B1)) (int (card B2))" by simp
 
   with rank_quotient_leq_1 have "card B1 \<le> card B2" (* unclean, TODO change *)
-    by (smt (verit, ccfv_SIG) Fract_le_one_iff \<open>F \<subseteq> carrier\<close> \<open>basis_in F B1\<close> \<open>basis_in F B2\<close>
-        basis_in_finite basis_in_subset_eq card_0_eq empty_subsetI of_nat_le_0_iff of_nat_le_iff)
+  proof -
+    from \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close> rank_quotient_leq_1
+    have le1: "Fract (int (card B1)) (int (card B2)) \<le> 1" by simp
+    show "card B1 \<le> card B2"
+    proof (cases "card B2 = 0")
+      case True
+      have "B2 = {}"
+        using True \<open>F \<subseteq> carrier\<close> \<open>basis_in F B2\<close> basis_in_finite by auto
+      with basis_in_max_indep_in[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B2\<close>]
+      have "\<forall>x \<in> F. \<not> indep_in F {x}" by simp
+      then have not_indep: "\<forall>x \<in> F. \<not> indep {x}" using indep_in_def by blast
+      have "B1 = {}"
+      proof (rule ccontr)
+        assume "B1 \<noteq> {}"
+        then obtain x where "x \<in> B1" by blast
+        from basis_in_subset_carrier[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B1\<close>] have "B1 \<subseteq> F" .
+        with \<open>x \<in> B1\<close> have "x \<in> F" by blast
+        from indep_in_indep[OF basis_in_indep_in[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B1\<close>]] have "indep B1" .
+        with indep_subset \<open>x \<in> B1\<close> have "indep {x}" by auto
+        with not_indep \<open>x \<in> F\<close> show False by blast
+      qed
+      with \<open>B2 = {}\<close> show ?thesis by simp
+    next
+      case False
+      then have pos_b: "int (card B2) > 0" by simp
+      from le1 pos_b have "int (card B1) \<le> int (card B2)"
+        by (simp add: Fract_le_one_iff)
+      then show ?thesis by simp
+    qed
+  qed
 
   with \<open>(int (card B1)) \<noteq> (int (card B2))\<close>
   have "card B1 < card B2" by simp
 
   with \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close>  \<open>rank_quotient = 0\<close>
   have "card B1 = 0"
-    by (metis gr_implies_not0 le0 nat_less_le of_nat_0_less_iff order_less_irrefl zero_less_Fract_iff)
+  proof -
+    have B2_pos: "card B2 > 0" using \<open>card B1 < card B2\<close> by simp
+    then have B2_nonzero: "of_int (int (card B2)) \<noteq> (0::rat)" by simp
+    have "Fract (int (card B1)) (int (card B2)) = 0"
+      using \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close> \<open>rank_quotient = 0\<close> by simp
+    then have "of_int (int (card B1)) / of_int (int (card B2)) = (0::rat)"
+      by (simp add: Fract_of_int_quotient)
+    with B2_nonzero have "of_int (int (card B1)) = (0::rat)"
+      by (simp add: divide_eq_0_iff)
+    then show "card B1 = 0" by simp
+  qed
 
   with \<open>card B1 < card B2\<close>
   have "card B2 > 0" by simp
@@ -3111,7 +4430,10 @@ proof (rule ccontr, goal_cases)
   then have "\<forall>x \<in> F. \<not>indep {x}" using indep_in_def by blast
 
   from \<open>card B2 > 0\<close> have "\<exists>x. x \<in> B2"
-    by (metis \<open>B1 = {}\<close> \<open>int (card B1) \<noteq> int (card B2)\<close> all_not_in_conv)
+  proof -
+    from \<open>card B2 > 0\<close> have "B2 \<noteq> {}" by auto
+    then show "\<exists>x. x \<in> B2" by blast
+  qed
   then obtain x where "x \<in> B2" by blast
 
   from indep_in_indep[OF basis_in_indep_in[OF \<open>F \<subseteq> carrier\<close> \<open>basis_in F B2\<close>]]
@@ -3132,8 +4454,21 @@ end
 lemma bound_tight_set_aux:
   "F \<subseteq> carrier' \<Longrightarrow> B1 \<subseteq> F \<Longrightarrow>
     B1 \<subseteq> X \<Longrightarrow> X \<subseteq> carrier' - (F - B1) \<Longrightarrow> (\<exists>Y. X = Y \<union> B1 \<and> Y \<subseteq> carrier' - F)"
-  by (smt (verit) Diff_Un Diff_eq_empty_iff Diff_partition Diff_subset Diff_subset_conv double_diff
-      sup.absorb_iff2 sup_commute)
+proof -
+  assume "F \<subseteq> carrier'" and "B1 \<subseteq> F" and "B1 \<subseteq> X" and "X \<subseteq> carrier' - (F - B1)"
+  have "X = (X - B1) \<union> B1"
+    using \<open>B1 \<subseteq> X\<close> by blast
+  moreover have "X - B1 \<subseteq> carrier' - F"
+  proof
+    fix x
+    assume "x \<in> X - B1"
+    then have "x \<in> X" and "x \<notin> B1" by auto
+    with \<open>X \<subseteq> carrier' - (F - B1)\<close> have "x \<in> carrier'" and "x \<notin> F - B1" by auto
+    then have "x \<notin> F" using \<open>x \<notin> B1\<close> by auto
+    with \<open>x \<in> carrier'\<close> show "x \<in> carrier' - F" by auto
+  qed
+  ultimately show "\<exists>Y. X = Y \<union> B1 \<and> Y \<subseteq> carrier' - F" by blast
+qed
 
 lemma sorted_aux1:
   "distinct xs \<Longrightarrow> sorted_wrt (\<lambda>x1 x2. c x1 \<ge> c x2) xs \<Longrightarrow> (\<forall>x. c x = 1 \<or> c x = 0) \<Longrightarrow>
@@ -3152,16 +4487,50 @@ proof (rule ccontr, goal_cases)
 
   with \<open>length (filter (\<lambda>y. c y = 1) xs) = k\<close> append_take_drop_id[of k xs] filter_append
   have "length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1"
-    by (metis One_nat_def Suc_le_eq append_self_conv length_greater_0_conv nless_le)
+proof -
+  have filter_eq: "filter (\<lambda>y. c y = 1) xs =
+    filter (\<lambda>y. c y = 1) (take k xs) @ filter (\<lambda>y. c y = 1) (drop k xs)"
+  proof -
+    have "xs = take k xs @ drop k xs" by (simp add: append_take_drop_id)
+    then show ?thesis by (subst \<open>xs = take k xs @ drop k xs\<close>) (rule filter_append)
+  qed
+  have len_eq: "length (filter (\<lambda>y. c y = 1) xs) =
+    length (filter (\<lambda>y. c y = 1) (take k xs)) + length (filter (\<lambda>y. c y = 1) (drop k xs))"
+    using filter_eq by simp
+  show "length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1"
+    using len_eq \<open>length (filter (\<lambda>y. c y = 1) xs) = k\<close>
+      \<open>length (filter (\<lambda>y. c y = 1) (take k xs)) < k\<close>
+    by linarith
+qed
 
   then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) \<ge> 1"
-    by (metis "1"(1) distinct_card distinct_drop distinct_filter)
+  proof -
+    from \<open>distinct xs\<close> have "distinct (drop k xs)" by (rule distinct_drop)
+    then have "distinct (filter (\<lambda>y. c y = 1) (drop k xs))" by (rule distinct_filter)
+    then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) =
+      length (filter (\<lambda>y. c y = 1) (drop k xs))" by (rule distinct_card)
+    with \<open>length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1\<close>
+    show ?thesis by simp
+  qed
   with set_filter
   have "card ({x \<in> set (drop k xs). c x = 1}) \<ge> 1" by simp
   with drop_eq_nths[of k xs] set_nths[of xs]
   have "card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) \<ge> 1" by simp
   then have "\<exists>j. j \<ge> k \<and> j < length xs \<and> c (xs ! j) = 1"
-    by (smt (verit, ccfv_threshold) Collect_empty_eq card.empty mem_Collect_eq not_one_le_zero)
+  proof -
+    have "{x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1} \<noteq> {}"
+    proof
+      assume "{x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1} = {}"
+      then have "card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) = 0" by simp
+      with \<open>card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) \<ge> 1\<close>
+      show False by linarith
+    qed
+    then obtain x where "x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}" and "c x = 1"
+      by auto
+    then obtain j where "x = xs ! j" "j < length xs" "k \<le> j"
+      by blast
+    with \<open>c x = 1\<close> show ?thesis by auto
+  qed
   then obtain j where "j \<ge> k" "j < length xs" "c (xs ! j) = 1" by blast
 
   from \<open>i < k\<close> \<open>j \<ge> k\<close> have "i < j" by auto
@@ -3204,16 +4573,85 @@ qed
 
 lemma sorted_aux3:
   "\<lbrakk>distinct xs; xs = ys @ zs; \<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)\<rbrakk> \<Longrightarrow> ys = filter P xs"
-  by (smt (verit, best) IntI UnCI distinct_append filter_append filter_empty_conv filter_id_conv list.set(1)
-      self_append_conv set_append)
+proof -
+  assume dist: "distinct xs"
+  assume decomp: "xs = ys @ zs"
+  assume mem_iff: "\<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)"
+
+  have distinct_ys_zs: "distinct (ys @ zs)" using dist decomp by simp
+  have disjoint: "set ys \<inter> set zs = {}" using distinct_ys_zs by (auto simp: distinct_append)
+
+  have ys_sub: "set ys \<subseteq> set xs" using decomp by auto
+  have zs_sub: "set zs \<subseteq> set xs" using decomp by auto
+
+  have all_ys_P: "\<forall>x \<in> set ys. P x"
+  proof
+    fix x
+    assume "x \<in> set ys"
+    with ys_sub mem_iff show "P x" by blast
+  qed
+
+  have none_zs_P: "\<forall>x \<in> set zs. \<not> P x"
+  proof
+    fix x
+    assume "x \<in> set zs"
+    with disjoint have "x \<notin> set ys" by blast
+    with zs_sub \<open>x \<in> set zs\<close> mem_iff show "\<not> P x" by blast
+  qed
+
+  have filter_ys: "filter P ys = ys" using all_ys_P filter_id_conv by blast
+  have filter_zs: "filter P zs = []" using none_zs_P filter_empty_conv by blast
+
+  have filter_eq: "filter P xs = ys"
+    using decomp filter_ys filter_zs by simp
+
+  from filter_eq show "ys = filter P xs" by simp
+qed
 
 lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
   by simp
 
 lemma sorted_aux4:
   "\<lbrakk>distinct xs; xs = (filter P xs) @ ys\<rbrakk> \<Longrightarrow> ys = (filter (\<lambda>x. \<not> P x) xs)"
-  by (metis (no_types, lifting) filter_append filter_empty_conv filter_id_conv filter_set
-      member_filter self_append_conv self_append_conv2)
+proof -
+  assume dist: "distinct xs" and split: "xs = filter P xs @ ys"
+
+  from dist split have "distinct (filter P xs @ ys)" by simp
+  then have disjoint: "set (filter P xs) \<inter> set ys = {}"
+    by (simp add: distinct_append)
+
+  have subset_ys: "set ys \<subseteq> set xs" by (subst split) simp
+
+  have not_P: "\<forall>y \<in> set ys. \<not> P y"
+  proof
+    fix y
+    assume "y \<in> set ys"
+    show "\<not> P y"
+    proof
+      assume "P y"
+      from \<open>y \<in> set ys\<close> subset_ys have "y \<in> set xs" by blast
+      with \<open>P y\<close> have "y \<in> set (filter P xs)" by simp
+      with disjoint \<open>y \<in> set ys\<close> show False by blast
+    qed
+  qed
+
+  have filter_ys: "filter (\<lambda>x. \<not> P x) ys = ys"
+    using not_P by (simp add: filter_id_conv)
+
+  have all_P: "\<forall>x \<in> set (filter P xs). P x" by auto
+
+  have step2: "filter (\<lambda>x. \<not> P x) (filter P xs) = []"
+    using all_P by (simp add: filter_empty_conv)
+
+  have "filter (\<lambda>x. \<not> P x) xs = filter (\<lambda>x. \<not> P x) (filter P xs) @ filter (\<lambda>x. \<not> P x) ys"
+    by (subst split) (simp add: filter_append)
+  also have "\<dots> = [] @ filter (\<lambda>x. \<not> P x) ys"
+    using step2 by simp
+  also have "\<dots> = ys"
+    using filter_ys by simp
+  finally have "filter (\<lambda>x. \<not> P x) xs = ys" .
+  then show "ys = filter (\<lambda>x. \<not> P x) xs" by simp
+qed
 
 
 lemma sorted_aux5:
@@ -3223,7 +4661,24 @@ lemma sorted_aux5:
 proof-
   from sorted_aux1[OF assms] sorted_aux2[OF assms] assms(3)
   have "\<forall>i < length xs. i < k \<longleftrightarrow> c (xs ! i) = 1"
-    by (metis linorder_le_less_linear zero_neq_one)
+  proof -
+    show "\<forall>i < length xs. i < k \<longleftrightarrow> c (xs ! i) = 1"
+    proof (rule allI, rule impI)
+      fix i
+      assume "i < length xs"
+      show "(i < k) = (c (xs ! i) = 1)"
+      proof (cases "i < k")
+        case True
+        then have "c (xs ! i) = 1" using sorted_aux1[OF assms] by blast
+        with True show ?thesis by simp
+      next
+        case False
+        then have "i \<ge> k" by simp
+        with sorted_aux2[OF assms] \<open>i < length xs\<close> have "c (xs ! i) = 0" by blast
+        with False show ?thesis by simp
+      qed
+    qed
+  qed
 
   then have "\<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
   proof-
@@ -3233,8 +4688,37 @@ proof-
       by (simp add: in_set_conv_nth)
 
     show "(x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
-      by (metis \<open>\<exists>i<length xs. xs ! i = x\<close>  \<open>\<forall>i<length xs. (i < k) = (c (xs ! i) = 1)\<close>
-          in_set_conv_nth length_take min_less_iff_conj nth_take)
+    proof -
+      obtain i where i_len: "i < length xs" and xs_i: "xs ! i = x"
+        using \<open>\<exists>i<length xs. xs ! i = x\<close> by blast
+      have iff_i: "(i < k) = (c (xs ! i) = 1)"
+        using \<open>\<forall>i<length xs. (i < k) = (c (xs ! i) = 1)\<close> i_len by blast
+      show "(x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
+      proof
+        assume "x \<in> set (take k xs)"
+        then have "\<exists>j<length (take k xs). take k xs ! j = x"
+          by (simp add: in_set_conv_nth)
+        then obtain j where j_len: "j < length (take k xs)" and take_j: "take k xs ! j = x"
+          by blast
+        from j_len have j_lt_k: "j < k" and j_lt_len: "j < length xs"
+          using length_take[of k xs] by auto
+        from take_j j_lt_k have xs_j: "xs ! j = x"
+          by (simp add: nth_take)
+        have eq_ij: "xs ! i = xs ! j" using xs_i xs_j by simp
+        from nth_eq_iff_index_eq[OF assms(1) i_len j_lt_len] eq_ij have "i = j" by simp
+        with j_lt_k iff_i xs_i show "c x = 1" by simp
+      next
+        assume "c x = 1"
+        with iff_i xs_i have i_lt_k: "i < k" by simp
+        with i_len have i_lt_take: "i < length (take k xs)"
+          using length_take[of k xs] by auto
+        from i_lt_k xs_i have "take k xs ! i = x"
+          by (simp add: nth_take)
+        with i_lt_take have "\<exists>j<length (take k xs). take k xs ! j = x" by blast
+        then show "x \<in> set (take k xs)"
+          by (simp add: in_set_conv_nth)
+      qed
+    qed
   qed
 
   from append_take_drop_id[of k xs]
@@ -3271,24 +4755,88 @@ proof (induction n arbitrary: A)
   case 0
   from 0 basis_in_iff_rank_of[OF assms]
   have "basis_in X A"
-    by (metis assms diff_zero indep_in_iff_rank_of indep_in_subset_carrier)
+  proof -
+    from 0 have indepXA: "indep_in X A" by blast
+    from indep_in_subset_carrier[OF indepXA] have A_subset: "A \<subseteq> X" .
+    from indep_in_iff_rank_of[OF assms A_subset] indepXA
+    have rank_A_eq_card: "rank_of A = card A" by blast
+    from 0 have "card A = rank_of X - 0" by blast
+    then have card_A_eq: "card A = rank_of X" by simp
+    from rank_A_eq_card card_A_eq have rank_eq: "rank_of A = rank_of X" by simp
+    from basis_in_iff_rank_of[OF assms A_subset] indepXA rank_A_eq_card rank_eq
+    show "basis_in X A" by blast
+  qed
   then show ?case by fastforce
 next
   case (Suc n)
   from Suc have "\<exists>A'. indep_in X A' \<and> card A' = rank_of X - n"
-    by (metis DiffD2 Suc_diff_le assms card_insert_disjoint diff_Suc_Suc diff_le_self finite_subset
-        indep_in_def indep_in_not_basis_in indep_system.carrier_finite indep_system_axioms not_less_eq_eq
-        rank_of_eq_card_basis_in)
+  proof -
+    from Suc.prems(1) have card_A: "card A = rank_of X - Suc n" by simp
+    from Suc.prems(2) have le_Suc: "Suc n \<le> rank_of X" by simp
+    from Suc.prems(3) have indep_A: "indep_in X A" by simp
+
+    have rank_eq: "rank_of X = card A + Suc n"
+    proof -
+      from le_Suc have "rank_of X - Suc n + Suc n = rank_of X"
+        by (rule le_add_diff_inverse2)
+      with card_A show ?thesis by simp
+    qed
+
+    have not_basis: "\<not> basis_in X A"
+    proof
+      assume basis_A: "basis_in X A"
+      from rank_of_eq_card_basis_in[OF assms basis_A] have "rank_of X = card A" .
+      with rank_eq show False by simp
+    qed
+
+    from indep_in_not_basis_in[OF assms indep_A not_basis]
+    obtain x where x_mem: "x \<in> X - A" and indep_Ax: "indep_in X (insert x A)"
+      by blast
+
+    from indep_in_subset_carrier[OF indep_A] have "A \<subseteq> X" .
+    with assms have A_subset_carrier: "A \<subseteq> carrier" by blast
+
+    have carrier_fin: "finite carrier"
+      using indep_system.carrier_finite[OF indep_system_axioms] .
+    from carrier_fin A_subset_carrier have finite_A: "finite A"
+      using finite_subset by blast
+
+    from x_mem have x_notin: "x \<notin> A" by blast
+    with finite_A have card_insert: "card (insert x A) = card A + 1"
+      by (simp add: card_insert_disjoint)
+
+    have card_next: "card A + 1 = rank_of X - n"
+    proof -
+      from rank_eq have "rank_of X - n = card A + Suc n - n" by simp
+      also have "... = card A + 1" by simp
+      finally show ?thesis by simp
+    qed
+
+    with card_insert have "card (insert x A) = rank_of X - n" by simp
+
+    with indep_Ax show "\<exists>A'. indep_in X A' \<and> card A' = rank_of X - n" by blast
+  qed
   then obtain A' where "indep_in X A'" "card A' = rank_of X - n" by blast
 
   from this(2) Suc(2) augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close>]
   have "\<exists>x \<in> A' - A. indep_in X (insert x A)"
-    by (metis Suc.prems(2) Suc_diff_le diff_Suc_Suc)
+  proof -
+    have "card A' = Suc (card A)"
+      using Suc.prems(1) Suc.prems(2) \<open>card A' = rank_of X - n\<close> by linarith
+    from augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close> this]
+    show "\<exists>x \<in> A' - A. indep_in X (insert x A)" .
+  qed
   then obtain x where "x \<in> A' - A" "indep_in X (insert x A)" by blast
 
   with Suc.prems(1) have "card (insert x A) = rank_of X - n"
-    by (metis DiffE Suc.prems(2) Suc.prems(3) Suc_diff_le card_insert_disjoint diff_Suc_Suc indep_finite
-        indep_system.indep_in_def indep_system_axioms)
+  proof -
+    have "indep A" using indep_in_indep[OF Suc.prems(3)] .
+    have "finite A" using indep_finite[OF \<open>indep A\<close>] .
+    from \<open>x \<in> A' - A\<close> have "x \<notin> A" by blast
+    have "card (insert x A) = Suc (card A)"
+      using card_insert_disjoint[OF \<open>finite A\<close> \<open>x \<notin> A\<close>] .
+    with Suc.prems(1) Suc.prems(2) show ?thesis by linarith
+  qed
 
   from Suc.prems(2) have "n \<le> rank_of X" by auto
 
@@ -3316,7 +4864,11 @@ proof-
   from matroid.axioms(1) assms(2) have "indep_system E indep" by blast 
 
   from \<open>x \<in> B2 - B1\<close> \<open>indep_system.basis E indep B2\<close> have "x \<in> E - B1"
-    by (metis DiffD1 DiffD2 DiffI assms(2) indep_system.basis_subset_carrier matroid.axioms(1) subsetD)
+    proof -
+      from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(4)]
+      have "B2 \<subseteq> E" .
+      with \<open>x \<in> B2 - B1\<close> show "x \<in> E - B1" by blast
+    qed
   from matroid.basis_ex1_supset_circuit[OF assms(2) assms(3) this] 
   have unique_circuit: "\<exists>!C. indep_system.circuit E indep C \<and> C \<subseteq> insert x B1" .
   then obtain C where "indep_system.circuit E indep C" "C \<subseteq> insert x B1" by blast
@@ -3338,8 +4890,13 @@ proof-
     using assms(5) by blast
 
   from assms(3) assms(5) \<open>y \<in> C - B2\<close> have "(insert x (B1 - {y})) \<subseteq> E"
-    by (metis DiffD1 \<open>indep_system E indep\<close> \<open>x \<in> E - B1\<close> \<open>y \<in> B1 - B2\<close> indep_system.basis_subset_carrier
-        insert_Diff insert_subset)
+  proof -
+    from \<open>x \<in> E - B1\<close> have "x \<in> E" by (rule DiffD1)
+    from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(3)]
+    have "B1 \<subseteq> E" .
+    then have "B1 - {y} \<subseteq> E" by blast
+    with \<open>x \<in> E\<close> show "insert x (B1 - {y}) \<subseteq> E" by (simp add: insert_subset)
+  qed
 
   have "\<not> C \<subseteq> (insert x (B1 - {y}))" using \<open>x \<in> B2 - B1\<close> \<open>y \<in> C - B2\<close> by blast
 
@@ -3367,9 +4924,32 @@ proof-
 
   have "card B1 = card (insert x (B1 - {y}))"
     using \<open>x \<in> B2 - B1\<close> \<open>y \<in> C - B2\<close>
-    by (metis Diff_iff \<open>C \<subseteq> insert x B1\<close> \<open>indep (insert x (B1 - {y}))\<close> \<open>indep_system E indep\<close>
-        card.remove card_insert_if finite.emptyI finite_Diff2 finite_insert in_mono
-        indep_system.indep_finite insert_iff)
+  proof -
+    from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(3)]
+    have B1_subset: "B1 \<subseteq> E" .
+    from B1_subset assms(1) have "finite B1" using finite_subset by blast
+
+    from \<open>x \<in> B2 - B1\<close> have "x \<notin> B1" by blast
+    from \<open>x \<in> B2 - B1\<close> have "x \<in> B2" by blast
+    from \<open>y \<in> C - B2\<close> have "y \<notin> B2" by blast
+    from \<open>x \<in> B2\<close> \<open>y \<notin> B2\<close> have "y \<noteq> x" by blast
+    from \<open>y \<in> C - B2\<close> \<open>C \<subseteq> insert x B1\<close> have "y \<in> insert x B1" by blast
+    from \<open>y \<in> insert x B1\<close> \<open>y \<noteq> x\<close> have "y \<in> B1" by blast
+
+    from \<open>finite B1\<close> have "finite (B1 - {y})" by blast
+    from \<open>x \<notin> B1\<close> have "x \<notin> B1 - {y}" by blast
+    from card_insert_disjoint[OF \<open>finite (B1 - {y})\<close> \<open>x \<notin> B1 - {y}\<close>]
+    have card_insert_eq: "card (insert x (B1 - {y})) = card (B1 - {y}) + 1" by simp
+
+    from card_Diff_singleton[OF \<open>y \<in> B1\<close>]
+    have card_diff_eq: "card (B1 - {y}) = card B1 - 1" .
+
+    from \<open>y \<in> B1\<close> have "{y} \<subseteq> B1" by blast
+    from card_mono[OF \<open>finite B1\<close> this] have card_B1_ge: "card B1 \<ge> 1" by simp
+
+    from card_insert_eq card_diff_eq card_B1_ge
+    show "card B1 = card (insert x (B1 - {y}))" by simp
+  qed
 
   from matroid.card_eq_basis[OF assms(2) assms(3) `indep (insert x (B1 - {y}))` this]
   have "indep_system.basis E indep (insert x (B1 - {y}))" .

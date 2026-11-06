@@ -225,7 +225,7 @@ definition "SSP_upd4' state = (let b = balance state; f = current_flow state;
                                         if v = t then b t + \<gamma> else b v)  \<rparr>))"
 
 lemma SSP_upd4_same: "SSP_upd4' state = SSP_upd4 state"
-  unfolding SSP_upd4_def SSP_upd4'_def by metis
+  unfolding SSP_upd4_def SSP_upd4'_def Let_def by simp
 
 declare[[simp_trace_depth_limit=1000]]
 
@@ -240,7 +240,7 @@ lemma SSP_simps:
     apply(thin_tac " SSP_call_4_cond state")
     apply(subst SSP.psimps[OF assms])
     unfolding SSP_upd4_def
-    apply(simp split: option.splits if_splits, metis)
+    apply(simp split: option.splits if_splits, simp add: Let_def)
     done    
   by (auto simp add: SSP.psimps[OF assms]
                        SSP_ret_1_cond_def SSP_ret1_def
@@ -414,7 +414,7 @@ proof(rule invar_integralI)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
     unfolding \<gamma>_def using integral_min
-    by (metis  min_def real_of_ereal.simps(1))
+    by (auto simp: min_def)
 
   show "is_integral_flow (current_flow (SSP_upd4 state))"
   proof-
@@ -431,10 +431,38 @@ proof(rule invar_integralI)
   proof-
       have b'_integral: "is_integral_balance b'"
         unfolding b'_def
-        apply(rule is_integral_balanceI)
-            using  assms(2) b_def integral_gamma invar_integral_def[of state]
-                   is_integral_balanceE[of b] 
-             by (metis integral_add is_integral_def is_integral_def of_int_diff)
+        proof (intro is_integral_balanceI)
+          fix v assume v_in_V: "v \<in> \<V>"
+          have b_integral: "is_integral (b v)"
+            using assms(2) v_in_V
+            by (auto intro: is_integral_balanceE[of "balance state"]
+                     simp add: invar_integral_def is_integral_def b_def)
+          obtain k where gamma_int: "\<gamma> = real_of_int k"
+            using integral_gamma unfolding is_integral_def by auto
+          show "\<exists>n::int. (if v = s then b s - \<gamma> else if v = t then b t + \<gamma> else b v) = real_of_int n"
+          proof (cases "v = s")
+            case True
+            have "is_integral (b s)" using b_integral True by simp
+            then obtain m where "b s = real_of_int m" unfolding is_integral_def by auto
+            with gamma_int have "b s - \<gamma> = real_of_int (m - k)" by (simp add: of_int_diff)
+            with True show ?thesis by (intro exI[of _ "m - k"]) auto
+          next
+            case False
+            note v_neq_s = False
+            show ?thesis
+            proof (cases "v = t")
+              case True
+              have "is_integral (b t)" using b_integral True by simp
+              then obtain m where "b t = real_of_int m" unfolding is_integral_def by auto
+              with gamma_int have "b t + \<gamma> = real_of_int (m + k)" by simp
+              with v_neq_s True show ?thesis by (intro exI[of _ "m + k"]) auto
+            next
+              case False
+              obtain m where "b v = real_of_int m" using b_integral unfolding is_integral_def by auto
+              with v_neq_s False show ?thesis by (intro exI[of _ "m"]) auto
+            qed
+          qed
+        qed
       show ?thesis 
       using b'_integral
       unfolding b'_def P_def \<gamma>_def s_def t_def f_def b_def SSP_upd4_def Let_def 
@@ -472,7 +500,7 @@ lemma SSP_call_4_cond_SSP_dom:
   apply(rule forw_subst[of _ "SSP_upd4 state" SSP_dom])
   subgoal
     unfolding SSP_upd4_def SSP_call_4_cond_def Let_def
-    by (metis ereal_min option.sel)
+    by (auto simp add: ereal_min option.sel cong: if_cong)
   by simp 
 
 lemma SSP_ret_1_cond_SSP_dom:
@@ -582,7 +610,23 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
     unfolding \<gamma>_def using integral_min
-    by (metis  min_def real_of_ereal.simps(1))
+  proof (cases "ereal (min (b s) (- b t)) \<le> Rcap f (set P)")
+    case True
+    hence gamma_val_eq1:
+      "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) = min (b s) (- b t)"
+      by (simp add: min_def)
+    show "is_integral (real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))))"
+      unfolding gamma_val_eq1
+      using \<open>is_integral (min (b s) (- b t))\<close> .
+  next
+    case False
+    hence gamma_val_eq2:
+      "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) = real_of_ereal (Rcap f (set P))"
+      by (simp add: min_def)
+    show "is_integral (real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))))"
+      unfolding gamma_val_eq2
+      using \<open>is_integral (real_of_ereal (Rcap f (set P)))\<close> .
+  qed
 
   have P_augpath:"augpath f P"
     using  get_min_augpath_axioms(2)[of f s t P, OF resreach_f_s_t]
@@ -595,20 +639,113 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
   have gamma_pos: "\<gamma> > 0"
     unfolding \<gamma>_def
     using Rcap_pos t_is_neg b_s_pos
-    by (smt (verit, ccfv_SIG) PInfty_neq_ereal(2) ereal_infty_less(1) ereal_less(2) 
-        min.absorb3 min_less_iff_conj zero_less_real_of_ereal)
+  proof -
+    have min1_pos: "0 < min (ereal (b s)) (ereal (- b t))"
+      using b_s_pos t_is_neg by (simp add: min_less_iff_conj)
+    have overall_pos: "0 < min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))"
+      using min1_pos Rcap_pos by (simp add: min_less_iff_conj)
+    have b_s_lt_inf: "ereal (b s) < \<infinity>"
+      by simp
+    have min1_lt_inf: "min (ereal (b s)) (ereal (- b t)) < \<infinity>"
+      using min.cobounded1[of "ereal (b s)" "ereal (- b t)"] b_s_lt_inf
+      by (rule le_less_trans)
+    have overall_lt_inf: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) < \<infinity>"
+      using min.cobounded1[of "min (ereal (b s)) (ereal (- b t))"] min1_lt_inf
+      by (rule le_less_trans)
+    have overall_neq_inf: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) \<noteq> \<infinity>"
+      using overall_lt_inf by simp
+    show "0 < Rcap f (set P) \<Longrightarrow> b t < 0 \<Longrightarrow> 0 < b s \<Longrightarrow>
+           0 < real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))"
+      using overall_pos overall_neq_inf by (simp add: zero_less_real_of_ereal)
+  qed
     
   have s_red: "abs (b' s) < abs (b s)"
-    unfolding b'_def 
-    using gamma_pos b_s_pos 
-    unfolding \<gamma>_def
-    by (smt (verit, ccfv_threshold) ereal_less_real_iff min.strict_order_iff min_def) 
+  proof -
+    have step1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
+      by (rule min.cobounded1)
+    have step2: "min (b s) (- b t) \<le> b s"
+      by (rule min.cobounded1)
+    have step2': "ereal (min (b s) (- b t)) \<le> ereal (b s)"
+      using step2 by simp
+    have le_ereal: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (b s)"
+      by (rule order_trans[OF step1 step2'])
+    have gamma_le_bs: "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) \<le> b s"
+    proof (cases "min (min (b s) (- b t)) (Rcap f (set P))")
+      case (real r)
+      then show ?thesis using le_ereal by simp
+    next
+      case PInf
+      then show ?thesis using le_ereal by simp
+    next
+      case MInf
+      then show ?thesis using b_s_pos by simp
+    qed
+    have gamma_le: "\<gamma> \<le> b s"
+      unfolding \<gamma>_def using gamma_le_bs by simp
+    have b'_s_eq: "b' s = b s - \<gamma>"
+      unfolding b'_def by simp
+    have h1: "abs (b s) = b s"
+      using b_s_pos by (simp add: abs_of_pos)
+    have h2: "abs (b s - \<gamma>) = b s - \<gamma>"
+      using gamma_le by (simp add: abs_of_nonneg)
+    show "abs (b' s) < abs (b s)"
+      unfolding b'_s_eq h1 h2
+      using gamma_pos by linarith
+  qed
 
   have t_red: "abs (b' t) < abs (b t)"
     unfolding b'_def 
     using gamma_pos t_is_neg
     unfolding \<gamma>_def 
-    by (smt (verit, best) ereal_less_real_iff min.absorb3 min_def real_of_ereal.simps(1))
+  proof -
+    have step1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
+      by (rule min.cobounded1)
+    have step2: "min (b s) (- b t) \<le> - b t"
+      by (rule min.cobounded2)
+    have step2': "ereal (min (b s) (- b t)) \<le> ereal (- b t)"
+      using step2 by simp
+    have le_ereal: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (- b t)"
+      by (rule order_trans[OF step1 step2'])
+    have gamma_le_bt: "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) \<le> - b t"
+    proof (cases "min (min (b s) (- b t)) (Rcap f (set P))")
+      case (real r)
+      then show ?thesis using le_ereal by simp
+    next
+      case PInf
+      then show ?thesis using le_ereal by simp
+    next
+      case MInf
+      then show ?thesis using t_is_neg by simp
+    qed
+    have gamma_le: "\<gamma> \<le> - b t"
+      unfolding \<gamma>_def using gamma_le_bt by simp
+    have b't_eq: "b' t = b t + \<gamma>"
+      unfolding b'_def using s_neq_t by simp
+    have le0: "b t + \<gamma> \<le> 0"
+      using gamma_le by linarith
+    have main: "\<bar>b t + \<gamma>\<bar> < \<bar>b t\<bar>"
+    proof -
+      have "\<bar>b t + \<gamma>\<bar> = - (b t + \<gamma>)"
+        using le0 by (simp add: abs_of_nonpos)
+      also have "- (b t + \<gamma>) < - b t"
+        using gamma_pos by linarith
+      also have "- b t = \<bar>b t\<bar>"
+        using t_is_neg by simp
+      finally show ?thesis .
+    qed
+    have \<gamma>e_def: "real_of_ereal (min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))) = \<gamma>"
+      using \<gamma>_def by simp
+    show "0 < real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P))) \<Longrightarrow>
+           b t < 0 \<Longrightarrow>
+           \<bar>if t = s
+             then b s -
+                  real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))
+             else if t = t
+                  then b t +
+                       real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))
+                  else b t\<bar> < \<bar>b t\<bar>"
+      using s_neq_t main by (simp add: \<gamma>e_def)
+  qed
    
     show ?thesis 
     proof(cases rule: SSP_call_4_cond_SSP_dom[OF 4])
@@ -693,7 +830,40 @@ proof-
   have gamma_pos: "\<gamma> > 0"
     unfolding \<gamma>_def
     using Rcap_pos t_is_neg b_s_pos
-    by (smt (verit) ereal_infty_less(1) min.absorb3 min_def real_of_ereal.simps(1) zero_less_real_of_ereal)
+  proof -
+    have ne_le: "\<And>x y::ereal. x \<le> y \<Longrightarrow> y \<noteq> \<infinity> \<Longrightarrow> x \<noteq> \<infinity>"
+    proof -
+      fix x y :: ereal
+      assume "x \<le> y" "y \<noteq> \<infinity>"
+      show "x \<noteq> \<infinity>"
+      proof (rule notI)
+        assume "x = \<infinity>"
+        with \<open>x \<le> y\<close> have "\<infinity> \<le> y" by simp
+        then have "y = \<infinity>" by (simp add: ereal_infty_less_eq(1))
+        with \<open>y \<noteq> \<infinity>\<close> show False by simp
+      qed
+    qed
+    have fin1: "min (ereal (b s)) (ereal (- b t)) \<le> ereal (b s)"
+      by (rule min.cobounded1)
+    then have ne1: "min (ereal (b s)) (ereal (- b t)) \<noteq> \<infinity>"
+      using PInfty_neq_ereal(1)[of "b s"] by (rule ne_le)
+    have fin2: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) \<le> min (ereal (b s)) (ereal (- b t))"
+      by (rule min.cobounded1)
+    then have ne2: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) \<noteq> \<infinity>"
+      using ne1 by (rule ne_le)
+    have conj_fact: "0 < min (min (b s) (- b t)) (Rcap f (set P)) \<and>
+                    min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> \<infinity>"
+    proof
+      show "0 < min (min (b s) (- b t)) (Rcap f (set P))"
+        using b_s_pos t_is_neg Rcap_pos by simp
+    next
+      show "min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> \<infinity>"
+        using ne2 by simp
+    qed
+    show "0 < Rcap f (set P) \<Longrightarrow> b t < 0 \<Longrightarrow> 0 < b s \<Longrightarrow>
+          0 < real_of_ereal (min (ereal (min (b s) (- b t))) (Rcap f (set P)))"
+      using conj_fact by (simp add: zero_less_real_of_ereal)
+  qed
 
   have s_hd_P: "s = fstv (hd P)"
   using get_min_augpath_axioms(2)[of f s t P, OF resreach_f_s_t] 
@@ -709,7 +879,59 @@ proof-
 
   have good_cap: "ereal \<gamma> \<le> Rcap (current_flow state) (set P)"
     unfolding \<gamma>_def f_def
-    by (smt (verit, ccfv_threshold) \<gamma>_def ereal_le_real_iff f_def gamma_pos min.boundedE)
+  proof -
+    have Rcap_eq: "Rcap (current_flow state) (set P) = Rcap f (set P)"
+      by (simp add: f_def)
+    have le1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> Rcap f (set P)"
+      by (rule min.cobounded2)
+    have le2: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
+      by (rule min.cobounded1)
+    have not_PInf: "min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> \<infinity>"
+    proof -
+      have lt0: "ereal (b s) < \<infinity>" by simp
+      have mb1: "min (ereal (b s)) (ereal (- b t)) \<le> ereal (b s)"
+        by (rule min.cobounded1)
+      from mb1 lt0 have lt1: "min (ereal (b s)) (ereal (- b t)) < \<infinity>"
+        by (rule le_less_trans)
+      have mb2: "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))
+                 \<le> min (ereal (b s)) (ereal (- b t))"
+        by (rule min.cobounded1)
+      from mb2 lt1 have "min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P)) < \<infinity>"
+        by (rule le_less_trans)
+      then show ?thesis by simp
+    qed
+    have not_MInf: "min (min (b s) (- b t)) (Rcap f (set P)) \<noteq> - \<infinity>"
+    proof (cases "ereal (min (b s) (- b t)) \<le> Rcap f (set P)")
+      case True
+      have min1_ne_MInf: "min (ereal (b s)) (ereal (- b t)) \<noteq> - \<infinity>"
+        by (auto simp: min_def MInfty_neq_ereal)
+      with True have "min (min (b s) (- b t)) (Rcap f (set P)) = ereal (min (b s) (- b t))"
+        by (simp add: min_def)
+      then show ?thesis using min1_ne_MInf by simp
+    next
+      case False
+      then have "min (min (b s) (- b t)) (Rcap f (set P)) = Rcap f (set P)"
+        by (simp add: min_def)
+      then show ?thesis using Rcap_pos by force
+    qed
+    have eq: "ereal (real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))))
+                = min (min (b s) (- b t)) (Rcap f (set P))"
+    proof (cases "min (min (b s) (- b t)) (Rcap f (set P))")
+      case (real r)
+      then show ?thesis by simp
+    next
+      case PInf
+      then show ?thesis using not_PInf by simp
+    next
+      case MInf
+      then show ?thesis using not_MInf by simp
+    qed
+    show "ereal (real_of_ereal (min (ereal (min (b s) (- b t)))
+                              (Rcap (current_flow state) (set P))))
+          \<le> Rcap (current_flow state) (set P)"
+      using eq le1 Rcap_eq
+      by simp
+  qed
 
   have s_neq_t: "s \<noteq> t"
     using s_def t_def  get_source_axioms(1)[of b s]
@@ -750,8 +972,8 @@ proof(rule ccontr)
     by(rule augcycle_to_closed_w, simp)+
   have "foldr (\<lambda> e acc. acc + \<cc> e) C 0 < 0"
     using C_prop unfolding augcycle_def \<CC>_def using distinct_sum[of C \<cc>] by simp
-  hence "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
-  moreover have "map to_vertex_pair C = map make_pair (map oedge C)"
+  hence cost_neg': "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
+  moreover have map_eq: "map to_vertex_pair C = map make_pair (map oedge C)"
   proof-
     have "e \<in> set C \<Longrightarrow> to_vertex_pair e = make_pair (oedge e)" for e
     proof(goal_cases)
@@ -764,11 +986,19 @@ proof(rule ccontr)
     thus "map to_vertex_pair C = map make_pair (map oedge C)" 
       by simp
   qed
-  moreover have "set (map oedge C) \<subseteq> \<E> " 
+  moreover have subset_E: "set (map oedge C) \<subseteq> \<E> " 
     using C_prop  
     by (auto simp add: image_def augcycle_def \<EE>_def)
-  ultimately show False using conservative_weights aa(1)
-    by metis  
+  ultimately show False
+  proof -
+    have closed_w_oedge: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C))"
+      using aa(1) map_eq by simp
+    have conj: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C)) \<and>
+          set (map oedge C) \<subseteq> \<E> \<and>
+          foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0"
+      using closed_w_oedge subset_E cost_neg' by blast
+    with conservative_weights show False by blast
+  qed
 qed
 
 text \<open>By this, we can already prove correctness.\<close>
@@ -909,13 +1139,17 @@ proof-
     proof
       assume "\<exists>f. is_Opt \<b> f "
       then obtain f where f_prop:"is_Opt \<b> f" by auto
-      have "sum \<b> (Rescut \<f> s) \<le> Cap (Rescut \<f> s)"
+      have le_cut: "sum \<b> (Rescut \<f> s) \<le> Cap (Rescut \<f> s)"
         using f_prop bsf_prop get_source_axioms 
         by (auto intro!: flow_less_cut[of f,simplified Extended_Real.sum_ereal]
                          Rescut_around_in_V 
                simp add:  is_Opt_def )
-      thus False using sumbb sumb0 rescutsat 
-        by (smt (verit, ccfv_threshold) ereal_less_eq(3))
+      have "ereal (sum \<b> (Rescut \<f> s)) \<le> ereal (sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s))"
+        using le_cut rescutsat by simp
+      hence "sum \<b> (Rescut \<f> s) \<le> sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s)"
+        by (simp add: ereal_less_eq)
+      thus False
+        using sumbb' by linarith
     qed
   qed
   show "return final = notyetterm \<Longrightarrow> False"

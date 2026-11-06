@@ -157,7 +157,12 @@ proof(cases "\<u> (oedge e)", goal_cases)
     moreover have "\<u> (oedge e) \<noteq> PInfty"
       by (simp add: one)
     ultimately have "is_integral (real n')" 
-      using is_integralI of_int_of_nat_eq by metis
+proof -
+      have "is_integral (real_of_int (int n'))"
+        by (rule is_integralI[of _ "int n'"]) simp
+      thus ?thesis
+        by (simp add: of_int_of_nat_eq)
+    qed
     then show ?case
       using one n n' 
       by (cases e)(auto intro!: integral_sub intro: is_integralI)
@@ -231,7 +236,12 @@ next
 
 lemma is_integral_neg: "is_integral x \<Longrightarrow> is_integral (- x)"
   unfolding is_integral_def 
-  by (metis of_int_minus)
+proof -
+    assume "\<exists>n::int. x = real_of_int n"
+    then obtain n where "x = real_of_int n" by auto
+    hence "- x = real_of_int (- n)" by simp
+    thus "\<exists>n::int. - x = real_of_int n" by (rule exI)
+  qed
 
 lemmas is_integral_ceiling = ceiling_of_int
 

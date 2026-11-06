@@ -82,7 +82,7 @@ fun fstvv where
   "fstvv (additional e) = fstv e"
 
 lemma fstvv_fstv: "fstvv e = fstv (to_redge e)"
-  by (metis fstvv.simps(1) fstvv.simps to_redge.elims)
+  by (cases e) simp_all
 
 fun sndvv where
   "sndvv (blue e) = sndv e"|
@@ -90,7 +90,7 @@ fun sndvv where
   "sndvv (additional e) = sndv e"
 
 lemma sndvv_sndv: "sndvv e = sndv (to_redge e)" 
-  by (metis sndvv.simps(1) sndvv.simps to_redge.elims)
+  by (cases e) simp_all
 
 text \<open>Pattern for case analysis.\<close>
 
@@ -195,19 +195,70 @@ lemma augpath_to_hpath:
   assumes "augpath f mapes" "mapes = (map to_redge es)"
   shows   "hpath es"
   using assms(2)
-  apply(induction arbitrary: es rule: augpath_induct[OF assms(1)])
-  using hpath_intros(1) 
-  by (force, smt (verit, best) fstvv_fstv hpath_simps map_eq_Cons_D sndvv_sndv)
+proof (induction arbitrary: es rule: augpath_induct[OF assms(1)])
+  case (1 f x xs)
+  then obtain ee where "xs = [ee]"
+    by (cases xs; auto)
+  then show ?case
+    using hpath_intros(1) by simp
+next
+  case (2 f e d rest lista)
+  obtain ee ess where es_def: "lista = ee # ess" "e = to_redge ee"
+      "d # rest = map to_redge ess"
+    using "2.hyps" "2.prems" by (cases lista; auto)
+  have hpath_ess: "hpath ess"
+    by (rule "2.IH"[OF es_def(3)])
+  obtain dd fss where ess_def: "ess = dd # fss" "d = to_redge dd"
+    using es_def(3) by (cases ess; auto)
+  have sndvv_fstvv: "sndvv ee = fstvv dd"
+    using "2.hyps" es_def(2) ess_def(2) by (auto simp add: fstvv_fstv sndvv_sndv)
+  have "hpath (dd # fss)"
+    using hpath_ess ess_def(1) by simp
+  from sndvv_fstvv this have "hpath (ee # dd # fss)"
+    by (rule hpath_intros(2))
+  then show ?case
+    by (simp add: es_def(1) ess_def(1))
+qed
 
 text \<open>Furthermore, we see some topological properties.\<close>
 
 lemma h_path_split1: 
   assumes "hpath (xs@ys)" "xs \<noteq> []"
   shows "hpath xs"
-  using assms(2)
-  apply(induction "xs@ys" arbitrary:  xs ys rule: hpath_induct, simp add: assms)
-   apply(force intro: list.exhaust hpath_intros) 
-  by (smt (verit, ccfv_SIG) append_eq_Cons_conv hpath_simps)  
+proof -
+  have aux: "\<And>As Bs. xs @ ys = As @ Bs \<Longrightarrow> As \<noteq> [] \<Longrightarrow> hpath As"
+  proof (induction arbitrary: As Bs rule: hpath_induct[OF assms(1)])
+    case (1 e As Bs)
+    have "As = [e]"
+      using "1.prems" by (cases As) auto
+    then show ?case
+      by (simp add: hpath_intros(1))
+  next
+    case (2 e d es As Bs)
+    obtain xs' where xs_def: "As = e # xs'" "d # es = xs' @ Bs"
+      using "2.prems" by (cases As) auto
+    show ?case
+    proof (cases "xs' = []")
+      case True
+      with xs_def show ?thesis
+        by (simp add: hpath_intros(1))
+    next
+      case False
+      with xs_def(2) obtain es' where es'_def: "xs' = d # es'" "es = es' @ Bs"
+        by (auto simp: Cons_eq_append_conv)
+      have hxs': "hpath xs'"
+        using "2.IH"[OF xs_def(2) False] .
+      have "hpath (d # es')"
+        using hxs' es'_def(1) by simp
+      hence "hpath (e # d # es')"
+        using "2.hyps"(1) hpath_intros(2) by blast
+      then show ?thesis
+        using xs_def(1) es'_def(1) by simp
+    qed
+  qed
+  then show ?thesis
+    using aux[of xs ys] assms(2) by simp
+qed
 
 lemma h_path_split2: 
   assumes "hpath (xs@ys)" "ys \<noteq> []"
@@ -330,7 +381,29 @@ lemma FBP_unique: "isFBP a b \<Longrightarrow> isFBP a c \<Longrightarrow> b = c
 proof(cases a, goal_cases)
   case (1 x1)
   thus ?case
-    by(cases b, simp, metis erve_erve_id is_red_edge_def to_redge.simps(2), simp)
+  proof(cases b, goal_cases)
+    case (1 x2)
+    then show ?case by simp
+  next
+    case (2 x2)
+    then show ?case
+    proof(cases c, goal_cases)
+      case (1 y)
+      then show ?case by simp
+    next
+      case (2 y)
+      then have e: "erev x2 = erev y" by simp
+      then have "erev (erev x2) = erev (erev y)" by (rule arg_cong)
+      then have "x2 = y" by (simp add: erve_erve_id)
+      with "2" show ?case by simp
+    next
+      case (3 y)
+      then show ?case by simp
+    qed
+  next
+    case (3 x2)
+    then show ?case by simp
+  qed
 next
   case (2 x1)
   show ?case
@@ -545,7 +618,19 @@ proof
     then obtain C' D' where C'D'_prop: "C' \<in> cycles - {C} \<union> {D}" "D' \<in> cycles - {C} \<union> {D}"
       "x \<in> C'" "y \<in> D'"using assm 
       unfolding FBPs_def
-      by (smt (verit, best) Union_iff insertCI mem_Collect_eq subsetD)
+    proof -
+      have subset: "xy \<subseteq> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
+        using FBP_in_E[OF assm] .
+      hence x_in: "x \<in> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
+        and y_in: "y \<in> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
+        using \<open>xy = {x,y} \<and> isFBP x y\<close> by auto
+      obtain C'' where C''_prop: "C'' \<in> cycles - {C} \<union> {D}" "x \<in> C''"
+        using x_in by blast
+      obtain D'' where D''_prop: "D'' \<in> cycles - {C} \<union> {D}" "y \<in> D''"
+        using y_in by blast
+      show thesis
+        using that C''_prop D''_prop by blast
+    qed
     have "{x,y} \<noteq> {a,b}" 
     proof
       assume "{x, y} = {a, b} "
@@ -2762,7 +2847,20 @@ Otherwise there was a negative cycle and since this was in the residual graph
       assume assm:" \<not> 0 \<le> (\<Sum>D\<in>cycles'. sum cc (set D))"
       hence "(\<Sum>D\<in>cycles'. sum cc (set D)) < 0" by auto
       then obtain D where D_props: "D \<in> cycles'" "sum cc (set D) < 0" 
-        by (smt (verit) sum_nonneg)
+      proof -
+        have "\<exists>D\<in>cycles'. sum cc (set D) < 0"
+        proof (rule ccontr)
+          assume "\<not> (\<exists>D\<in>cycles'. sum cc (set D) < 0)"
+          hence "\<And>D. D \<in> cycles' \<Longrightarrow> 0 \<le> sum cc (set D)"
+            by (auto simp add: not_less)
+          hence "0 \<le> (\<Sum>D\<in>cycles'. sum cc (set D))"
+            by (rule sum_nonneg)
+          with assm show False
+            by simp
+        qed
+        then show thesis
+          using that by blast
+      qed
       have "\<exists> cycles. (\<forall> D \<in> set cycles. precycle D) \<and> 
                 (\<Sum> e \<in> set D. cc e) = foldr (\<lambda> D costs. \<CC> D + costs) cycles (0::real) \<and>
                 set (map to_redge D) = \<Union>{set D| D. D \<in> set cycles}"

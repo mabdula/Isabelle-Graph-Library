@@ -55,11 +55,20 @@ lemma terminated_mono: "return (prod.snd ((orlins_one_step_time_check  ^^ i) ini
                                  = (orlins_one_step_time_check  ^^ i) init"
 proof(induction k arbitrary: i init)
   case (Suc k)
-  then show ?case
-  apply(subst add.commute, subst add_Suc, subst add.commute)
-  apply(subst funpow.simps(2), subst o_apply)
-  apply(subst (2) surjective_pairing, subst orlins_one_step_time_check.simps)
-  by (smt (z3) return.exhaust surjective_pairing)
+  have IH: "(orlins_one_step_time_check ^^ (i + k)) init = (orlins_one_step_time_check ^^ i) init"
+    using Suc.IH[OF Suc.prems] .
+  have step_stable: "orlins_one_step_time_check ((orlins_one_step_time_check ^^ i) init)
+                     = (orlins_one_step_time_check ^^ i) init"
+    using terminated_mono_one_step[OF Suc.prems]
+    by (simp add: funpow.simps(2) o_apply)
+  have "(orlins_one_step_time_check ^^ (i + Suc k)) init
+      = orlins_one_step_time_check ((orlins_one_step_time_check ^^ (i + k)) init)"
+    by (simp add: add_Suc_right funpow.simps(2) o_apply)
+  also have "... = orlins_one_step_time_check ((orlins_one_step_time_check ^^ i) init)"
+    by (simp add: IH)
+  also have "... = (orlins_one_step_time_check ^^ i) init"
+    by (simp add: step_stable)
+  finally show ?case .
 qed simp
 
 lemma succ_fail_not_changes_time:
@@ -176,7 +185,20 @@ next
       case notyetterm
       hence "return state = notyetterm" 
         unfolding orlins_one_step_time_check.simps[of tt  state] add_fst_def 
-        by (smt (verit, ccfv_SIG) return.exhaust snd_conv)
+proof (cases "return state")
+  case success
+  hence "orlins_one_step_time_check (tt, state) = (tt, state)"
+    by (simp add: orlins_one_step_time_check.simps)
+  with notyetterm show ?thesis by simp
+next
+  case infeasible
+  hence "orlins_one_step_time_check (tt, state) = (tt, state)"
+    by (simp add: orlins_one_step_time_check.simps)
+  with notyetterm show ?thesis by simp
+next
+  case notyetterm
+  then show ?thesis by simp
+qed
       hence last_step_swap:"(orlins_one_step_time_check ^^  k) 
                  (orlins_one_step_time_check (orlins_one_step_time_check (tt , state))) = 
              (orlins_one_step_time_check ^^  k) 
@@ -239,9 +261,22 @@ next
         show ?case
         proof(insert 2,(subst (asm) let_swap[of "add_fst tt"])+, cases k, goal_cases)
         case 1
+        define state'time where
+          "state'time = maintain_forest_time (state\<lparr>current_\<gamma> := new_\<gamma> state\<rparr>)"
+        define state''time where
+          "state''time = send_flow_time (prod.snd state'time)"
+        have unfolded: "add_fst tt (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time, prod.snd state''time)
+                 = (tfin, state')"
+          using 1 by (simp add: funpow_0 Let_def state'time_def state''time_def)
+        have snd_eq: "prod.snd state''time = state'"
+          and tfin_eq: "tfin = tt + (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time)"
+          using unfolded by (auto simp add: add_fst_def)
+        have dom': "orlins_time_dom (tt, state')"
+          using assms(2) by (blast intro: orlins_time.domintros)
+        have step_result: "orlins_time tt (prod.snd state''time) = (tt, state')"
+          using dom' snd_eq assms(2) by (auto simp add: orlins_time.psimps)
         thus ?case
-          by (smt (verit) add.commute add_fst_def fst_conv funpow_0 orlins_time.domintros orlins_time.psimps
-              snd_conv)
+          by (simp add: Let_def state'time_def state''time_def add_fst_def step_result tfin_eq add.commute)
         next
         case (2 nat)
         show ?case 
@@ -1634,7 +1669,20 @@ proof-
             using stateX_def stateY_def 2 by simp
           hence "X = Y"
             using X_Y_props y_prop(2) x_prop(2)
-            by (metis connected_components_member_eq disjoint_iff)
+          proof-
+            obtain w where w_XY: "w \<in> X" "w \<in> Y"
+              using X_Y_props(3) by auto
+            have X_eq: "X = connected_component (to_graph (\<FF> stateY)) x"
+              using x_prop(2) forest_same by simp
+            have w_in_X_comp: "w \<in> connected_component (to_graph (\<FF> stateY)) x"
+              using w_XY(1) X_eq by simp
+            have w_in_Y_comp: "w \<in> connected_component (to_graph (\<FF> stateY)) y"
+              using w_XY(2) y_prop(2) by simp
+            show "X = Y"
+              using X_eq y_prop(2) connected_components_member_eq[OF w_in_X_comp]
+                    connected_components_member_eq[OF w_in_Y_comp]
+              by auto
+          qed
           moreover have "X \<noteq> Y"
             using X_Y_props forest_same by simp
           ultimately show ?thesis by simp
@@ -1657,7 +1705,21 @@ proof-
             using X_Y_props(3) Y_subs_Y' by blast
           hence "Y' = X"
             using Y'_def x_prop(2) 
-            by (metis connected_components_member_eq disjoint_iff)
+            proof -
+              obtain z where z_props: "z \<in> X" "z \<in> Y"
+                using X_Y_props(3) by auto
+              then have z_in_Y': "z \<in> Y'"
+                using Y_subs_Y' by auto
+              have z_mem_y: "z \<in> connected_component (to_graph (\<FF> stateX)) y"
+                using z_in_Y' Y'_def by simp
+              have z_mem_x: "z \<in> connected_component (to_graph (\<FF> stateX)) x"
+                using z_props(1) x_prop(2) by simp
+              have "Y' = connected_component (to_graph (\<FF> stateX)) z"
+                using connected_components_member_eq[OF z_mem_y] by (simp add: Y'_def)
+              also have "\<dots> = X"
+                using connected_components_member_eq[OF z_mem_x] x_prop(2) by simp
+              finally show "Y' = X" .
+            qed
           moreover have "Y' \<noteq> X"
             using X_Y_props Y_subs_Y' by simp
           ultimately show ?thesis by simp

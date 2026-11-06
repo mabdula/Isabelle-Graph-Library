@@ -12,14 +12,28 @@ provenance human
 subsection \<open>Auxiliary Lemmas\<close>
 
 lemma max_n: "(\<And> n. P n \<Longrightarrow> n \<le> bound) \<Longrightarrow> P (n::nat) \<Longrightarrow> (\<exists> nmax. P nmax \<and> (\<nexists> m. m > nmax \<and> P m))"
-  by (metis bounded_Max_nat leD)
+proof -
+  assume bound_hyp: "\<And>n. P n \<Longrightarrow> n \<le> bound"
+  assume "P n"
+  let ?S = "{n. P n}"
+  have "n \<in> ?S" using \<open>P n\<close> by simp
+  hence S_nonempty: "?S \<noteq> {}" by auto
+  have "?S \<subseteq> {0..bound}" using bound_hyp by auto
+  hence S_finite: "finite ?S" using finite_subset by auto
+  define nmax where "nmax = Max ?S"
+  have nmax_in: "nmax \<in> ?S" using Max_in[OF S_finite S_nonempty] nmax_def by simp
+  hence "P nmax" by simp
+  have "\<forall>m \<in> ?S. m \<le> nmax" using Max_ge[OF S_finite] nmax_def by simp
+  hence "\<nexists>m. m > nmax \<and> P m" by auto
+  thus ?thesis using \<open>P nmax\<close> by auto
+qed
 
 lemma exists_list_with_first_element:
   assumes "finite X" "x \<in> X"
   shows "\<exists>l. set l = X \<and> (nth l 0) = x \<and> distinct l"
 proof -
   from `finite X` `x \<in> X` obtain l where "set l = X" "distinct l"
-    by (metis finite_distinct_list)
+  using finite_distinct_list by blast
   then have "x \<in> set l" using assms(2) by simp
   then obtain i where "i < length l" and "nth l i = x"
     by (meson in_set_conv_nth)
@@ -96,7 +110,12 @@ proof -
   then have "\<forall>y. y \<in> ?set_diff \<longrightarrow> List.member l y" using  \<open>length l > 0\<close> by simp
   then have "List.member l x" using \<open>x \<in> ?set_diff\<close> by simp
   then obtain i where "(nth l i) = x" "i < length l" 
-    by (metis \<open>\<forall>y. y \<in> set l - set k \<longrightarrow> y \<in> set l\<close> \<open>x \<in> set l - set k\<close> in_set_conv_nth)
+  proof -
+    have "x \<in> set l" using \<open>x \<in> set l - set k\<close> by simp
+    then obtain i where "i < length l" "l ! i = x"
+      using in_set_conv_nth by meson
+    then show thesis using that by auto
+  qed
   then have "(nth l i) \<in> ?set_diff" using \<open>x \<in> ?set_diff\<close> by simp
   then have "i \<in> ?S" using \<open>i < length l\<close> by simp
   then have "?S \<noteq> {} \<and> finite ?S" by auto
@@ -206,7 +225,13 @@ proof -
   then have "?S \<noteq> {}" by auto
   have "\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<in> F" by simp
   then have "\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<subseteq> E" using assms(1) unfolding set_system_def by simp
-  then have S_prop: "\<forall>Z. Z \<in> ?S \<longrightarrow> finite Z" using \<open>finite E\<close> finite_subset by (metis (mono_tags, lifting))
+  have S_prop: "\<forall>Z. Z \<in> ?S \<longrightarrow> finite Z"
+  proof (rule allI, rule impI)
+    fix Z
+    assume "Z \<in> ?S"
+    with \<open>\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<subseteq> E\<close> have "Z \<subseteq> E" by blast
+    then show "finite Z" using \<open>finite E\<close> finite_subset by blast
+  qed
   let ?P = "{card Z | Z. Z \<supseteq> X \<and> Z \<subseteq> X \<union> Y \<and> Z \<in> F}"
   have "?P \<noteq> {} \<and> finite ?P" using \<open>finite ?S\<close> \<open>?S \<noteq> {}\<close> by simp
   then obtain x where "x = Max ?P" by simp
@@ -359,14 +384,25 @@ proof
               then have assum3: "List.member (take (length l - 1) l) (nth l (length l - 1))" 
                 using  \<open>l \<noteq> []\<close> assum2 by simp
               have "l = (take (length l - 1) l) @ [nth l (length l - 1)]" using \<open>l \<noteq> []\<close> 
-                by (metis Suc_diff_1 \<open>0 < length l\<close> \<open>length l - 1 < length l\<close> order_refl take_Suc_conv_app_nth take_all_iff)
+              proof -
+                have "Suc (length l - 1) = length l" using \<open>0 < length l\<close> by simp
+                hence "take (Suc (length l - 1)) l = l" by simp
+                moreover have "take (Suc (length l - 1)) l = take (length l - 1) l @ [l ! (length l - 1)]"
+                  using take_Suc_conv_app_nth \<open>length l - 1 < length l\<close> by blast
+                ultimately show "l = take (length l - 1) l @ [l ! (length l - 1)]" by simp
+              qed
               then have "\<not> (distinct l)"
                 using assum2 distinct_take not_distinct_conv_prefix by blast
               then show False using l_prop by simp
             qed
             have "set (take (length l - 1) l) \<in> F" using l_prop by simp
             then have  "((set (take (length l) l)) - {nth l (length l - 1)}) \<in> F" using factone facttwo 
-              by (metis Diff_insert_absorb Un_empty_right Un_insert_right)
+            proof -
+              have "set (take (length l) l) - {nth l (length l - 1)} = set (take (length l - 1) l)"
+                using factone facttwo by auto
+              then show ?thesis
+                using \<open>set (take (length l - 1) l) \<in> F\<close> by simp
+            qed
             then have "X - {x} \<in> F" using l_prop \<open>nth l (length l - 1) = x\<close> by simp
             have "x \<in> X" using l_prop \<open>nth l (length l - 1) = x\<close>  \<open>l \<noteq> []\<close> by auto
             then show "\<exists>x\<in>X. X - {x} \<in> F" using \<open>X - {x} \<in> F\<close> by auto
@@ -474,7 +510,10 @@ proof (unfold_locales)
           case True
           have "set l = X" using l_prop by auto
           then have "nth l 0 \<in> X" 
-            by (metis Int_lower1 True \<open>finite X\<close> assum5 card.empty card_length card_seteq gr_zeroI less_nat_zero_code nth_mem)
+          proof -
+  have "l \<noteq> []" using \<open>X \<noteq> {}\<close> \<open>set l = X\<close> by auto
+  then show ?thesis using \<open>set l = X\<close> by (cases l) auto
+qed
           then have "nth l 0 \<notin> Y" using True by blast
           then have "nth l 0 \<in> X - Y" using \<open>nth l 0 \<in> X\<close> by simp
           have "l \<noteq> []" using \<open>X \<noteq> {}\<close> \<open>set l = X\<close> by auto
@@ -522,10 +561,23 @@ proof (unfold_locales)
             have "distinct l" using l_prop by simp
             have "distinct k" using k_prop(3) by simp
             have "X \<inter> Y \<subset> X" using \<open>X \<inter> Y \<noteq> {}\<close>
-              by (metis \<open>finite Y\<close> assum5 inf.cobounded1 inf.cobounded2 order.asym psubsetI psubset_card_mono)
+            proof -
+              show "X \<inter> Y \<subset> X"
+              proof (rule psubsetI)
+                show "X \<inter> Y \<subseteq> X" by (rule inf.cobounded1)
+              next
+                show "X \<inter> Y \<noteq> X"
+                proof
+                  assume "X \<inter> Y = X"
+                  then have "X \<subseteq> Y" by auto
+                  then have "card X \<le> card Y" using \<open>finite Y\<close> by (blast intro: card_mono)
+                  then show False using assum5 by simp
+                qed
+              qed
+            qed
             then have "(set k) \<subset> (set l)" using l_prop k_prop(1) by simp
             then have assum6: "\<exists>i. i \<le> length k \<and> set (take i l) \<subseteq> set k \<and> (nth l i) \<in> (set l) - (set k)" using subset_list_el 
-                \<open>distinct l\<close> \<open>distinct k\<close> \<open>(nth l 0) = (nth k 0)\<close> \<open>l \<noteq> []\<close> \<open>set k \<subset> set l\<close> \<open>k \<noteq> []\<close> by metis
+                [OF \<open>distinct l\<close> \<open>distinct k\<close> \<open>(nth l 0) = (nth k 0)\<close> \<open>l \<noteq> []\<close> \<open>set k \<subset> set l\<close> \<open>k \<noteq> []\<close>] by blast
             then obtain i where i_prop: " i \<le> length k \<and> set (take i l) \<subseteq> set k \<and> (nth l i) \<in> (set l) - (set k)" by auto
             have "X - (X \<inter> Y) = X - Y" by auto
             then have "(set l) - (set k) = X - Y" using l_prop k_prop(1) by simp
@@ -533,7 +585,14 @@ proof (unfold_locales)
             then have "(nth l i) \<notin> Y" by simp
             have "card (set k) < card (set l)" using \<open>(set k) \<subset> (set l)\<close> by (simp add: \<open>finite X\<close> psubset_card_mono)
             then have "length k < length l" using l_prop k_prop(3)
-              by (metis distinct_card)
+            proof -
+              have "distinct l" using l_prop by simp
+              have "distinct k" using k_prop(3) by simp
+              have l_card: "length l = card (set l)" using distinct_card[OF \<open>distinct l\<close>] by simp
+              have k_card: "length k = card (set k)" using distinct_card[OF \<open>distinct k\<close>] by simp
+              show "length k < length l"
+                using \<open>card (set k) < card (set l)\<close> l_card k_card by simp
+            qed
             then have "i < length l" using i_prop by simp
             then have "set (take i l) \<union> {nth l i} = set (take (i + 1) l)" using set_take_union_nth by simp
             have "set (take (i + 1) l) \<in> F" using l_prop \<open>i < length l\<close> by auto
@@ -618,13 +677,29 @@ proof
                 then obtain y where y_prop: "y \<in> X - Y \<and> Y \<union> {y} \<in> F" by auto
                 then have "y \<notin> Y" by simp
                 then have "card (Y \<union> {y}) = card Y + card {y}" using \<open>card Y = i\<close> 
-                  by (metis Nat.add_0_right \<open>0 < i \<and> i < card X\<close> add_Suc_right card_1_singleton_iff card_gt_0_iff card_insert_disjoint insert_is_Un sup_commute)
+                  proof -
+                  have "finite Y" using x_Y_Z_prop \<open>finite X\<close> finite_subset by blast
+                  moreover have "finite {y}" by simp
+                  moreover have "Y \<inter> {y} = {}" using \<open>y \<notin> Y\<close> by simp
+                  ultimately show "card (Y \<union> {y}) = card Y + card {y}"
+                    by (simp add: card_Un_disjoint)
+                  qed
                 then have 1: "card (Y \<union> {y}) = i + 1" using \<open>card Y = i\<close> by simp
                 have 3: "Y \<union> {y} \<subseteq> X" using y_prop x_Y_Z_prop by simp
                 have 4: "Y \<subset> Y \<union> {y}" using \<open>y \<notin> Y\<close> by auto
                 then have "((Y \<union> {y}) - Y) = {y}" by auto
-                then show ?thesis using 1 2 3 4 y_prop x_Y_Z_prop \<open>X \<in> F - {{}}\<close> \<open>finite X\<close>
-                  by (metis Diff_iff)
+                then show ?thesis
+                                   proof -
+                   have "y \<notin> Y" using y_prop by simp
+                   have "(Y \<union> {y}) - Y = {y}" using \<open>y \<notin> Y\<close> by auto
+                   then have "Y \<in> F \<and> Y \<union> {y} \<in> F \<and> Y \<union> {y} \<subseteq> X \<and> Y \<subset> Y \<union> {y} \<and>
+                              card (Y \<union> {y}) = i + 1 \<and> card Y = i \<and> (Y \<union> {y}) - Y = {y}"
+                     using y_prop x_Y_Z_prop 1 2 3 4 by simp
+                   then have "\<exists>Ya Za. Ya \<in> F \<and> Za \<in> F \<and> Ya \<subseteq> X \<and> Za \<subset> Ya \<and> card Ya = i + 1 \<and> card Za = i \<and> Ya - Za = {y}"
+                     by blast
+                   moreover have "y \<in> X" using y_prop by simp
+                   ultimately show ?thesis by blast
+                 qed
               qed
             qed
           qed

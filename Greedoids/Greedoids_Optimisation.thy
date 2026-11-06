@@ -212,8 +212,32 @@ proof-
          else case acc of None \<Rightarrow> Some e | Some d \<Rightarrow> if elements_costs c d < elements_costs c e then Some e else Some d)"
   have none_no_solution:"foldr ?iteration xs None = None \<Longrightarrow> \<not> ( \<exists> x \<in> set xs. x \<notin> X \<and> orcl x X)"
     for xs
-    by(induction xs)
-      (auto simp add: option.case_eq_if, meson option.discI, smt (verit, best) not_Some_eq option.simps(5))
+    proof(induction xs)
+      case Nil
+      then show ?case by simp
+    next
+      case (Cons e es)
+      show ?case
+      proof(cases "e \<in> X \<or> \<not> orcl e X")
+        case True
+        then have "foldr ?iteration (e # es) None = foldr ?iteration es None"
+          by simp
+        with Cons.prems have "foldr ?iteration es None = None"
+          by simp
+        with Cons.IH have "\<not> (\<exists>y \<in> set es. y \<notin> X \<and> orcl y X)"
+          by simp
+        with True show ?thesis
+          by auto
+      next
+        case False
+        then have "?iteration e (foldr ?iteration es None) \<noteq> None"
+          by (cases "foldr ?iteration es None") simp_all
+        then have "foldr ?iteration (e # es) None \<noteq> None"
+          by simp
+        with Cons.prems show ?thesis
+          by simp
+      qed
+    qed
   have "set es \<subseteq> E"
     by (simp add: set_assum(1))
   hence "\<exists> es1 es2. es = es1@[x]@es2 \<and> x \<notin> X \<and> (insert x X) \<in> F \<and>
@@ -630,7 +654,14 @@ proof-
       hence "set (local.greedoid_greedy es c []) \<subseteq> E"
         using ss_assum by(auto simp add: set_system_def)
       moreover have "rev (local.greedoid_greedy es c []) ! k \<in> set (local.greedoid_greedy es c  [])" 
-        by (metis length_rev nth_mem one set_rev)
+      proof -
+        have "k < length (rev (local.greedoid_greedy es c []))"
+          using one by (simp add: length_rev)
+        hence "rev (local.greedoid_greedy es c []) ! k \<in> set (rev (local.greedoid_greedy es c []))"
+          by (rule nth_mem)
+        thus ?thesis
+          by (simp add: set_rev)
+      qed
       ultimately show ?thesis by auto
     qed
     have a6: "rev (local.greedoid_greedy es c []) ! k \<notin> B" 
@@ -663,7 +694,35 @@ proof-
           one rev_rev_ident[of "greedoid_greedy es c []"] 
           rev_take[of "k+1" "rev (greedoid_greedy es c [])"] 
           set_take_union_nth[of k "(rev (local.greedoid_greedy es c []))"]
-        by (auto ,metis set_rev)         
+      proof -
+        define xs where "xs = local.greedoid_greedy es c []"
+        have k_less: "k < length xs"
+          unfolding xs_def using one by simp
+        have drop_in_F: "set (drop (length xs - Suc k) xs) \<in> F"
+          unfolding xs_def
+          using HOL.spec[OF result_props(6)[simplified invar_tails_indep_def],
+                          of "length (local.greedoid_greedy es c []) - Suc k"]
+          by simp
+        have rev_take_eq: "rev (take (Suc k) (rev xs)) = drop (length xs - Suc k) xs"
+          using rev_take[of "Suc k" "rev xs"] by simp
+        have take_Suc_in_F: "set (take (Suc k) (rev xs)) \<in> F"
+        proof -
+          have "set (take (Suc k) (rev xs)) = set (rev (take (Suc k) (rev xs)))"
+            by simp
+          also have "... = set (drop (length xs - Suc k) xs)"
+            by (simp add: rev_take_eq)
+          finally show ?thesis
+            using drop_in_F by simp
+        qed
+        have take_split: "take (Suc k) (rev xs) = take k (rev xs) @ [rev xs ! k]"
+          using k_less by (simp add: take_Suc_conv_app_nth)
+        have "set (take k (rev xs) @ [rev xs ! k]) \<in> F"
+          using take_Suc_in_F by (simp add: take_split)
+        hence "insert (rev xs ! k) (set (take k (rev xs))) \<in> F"
+          by simp
+        thus ?thesis
+          by (simp add: xs_def)
+      qed
       show ?case 
         using a1 a2 a3 a4 a5 a6 a7 
         by(auto intro!: 1[of "set (take k (rev (local.greedoid_greedy es c  [])))" B
@@ -833,7 +892,19 @@ definition "A_list = (SOME l. set l = A \<and> (\<forall>i\<le>length l. set (ta
 lemma A_list_props:   assumes no_strong_exchange: "\<not> strong_exchange_property E F" 
   shows "set A_list = A" "(\<forall>i\<le>length A_list. set (take i A_list) \<in> F)" "distinct A_list"
   "(\<And> i. i\<le>length A_list \<Longrightarrow> set (take i A_list) \<in> F)"
-  by (smt (verit, del_insts) A_list_def someI_ex there_is_A_list no_strong_exchange)+
+proof -
+  have A_list_prop: "set A_list = A \<and> (\<forall>i\<le>length A_list. set (take i A_list) \<in> F) \<and> distinct A_list"
+    unfolding A_list_def
+    by (rule someI_ex[OF there_is_A_list[OF no_strong_exchange]])
+  show "set A_list = A"
+    using A_list_prop by simp
+  show "\<forall>i\<le>length A_list. set (take i A_list) \<in> F"
+    using A_list_prop by simp
+  show "distinct A_list"
+    using A_list_prop by simp
+  show "\<And>i. i \<le> length A_list \<Longrightarrow> set (take i A_list) \<in> F"
+    using A_list_prop by auto
+qed
 
 lemma finites: assumes no_strong_exchange: "\<not> strong_exchange_property E F"
   shows "finite A" "finite B" "finite Y"
@@ -924,13 +995,129 @@ definition "unique P = (\<forall> x y. P x \<longrightarrow> P y \<longrightarro
 lemma injective_predicate_unique_split:
   "distinct xs \<Longrightarrow> unique P \<Longrightarrow> xs = xs11@[xx]@xs12 \<Longrightarrow> xs = xs21@[yy]@xs22
          \<Longrightarrow> P xx \<Longrightarrow> P yy \<Longrightarrow> xs11=xs21 \<and> xx = yy \<and> xs12 = xs22"
-  by (smt (verit, del_insts) Cons_eq_appendI append.left_neutral append_Cons_eq_iff distinct.simps(2)
-      distinct_append in_set_conv_decomp unique_def inj_on_eq_iff not_distinct_conv_prefix)
+proof -
+  assume dist: "distinct xs"
+     and uniq: "unique P"
+     and split1: "xs = xs11 @ [xx] @ xs12"
+     and split2: "xs = xs21 @ [yy] @ xs22"
+     and Pxx: "P xx"
+     and Pyy: "P yy"
+  have xy_eq: "xx = yy"
+    using uniq Pxx Pyy unfolding unique_def by blast
+  have split2': "xs = xs21 @ [xx] @ xs22"
+    using split2 by (simp add: xy_eq[symmetric])
+  have dist1: "distinct (xs11 @ [xx] @ xs12)"
+    using dist split1 by simp
+  have dist2: "distinct (xs21 @ [xx] @ xs22)"
+    using dist split2' by simp
+  have not_in1: "xx \<notin> set xs11"
+    using dist1 by (auto simp add: distinct_append)
+  have not_in3: "xx \<notin> set xs21"
+    using dist2 by (auto simp add: distinct_append)
+  have eq_lists: "xs11 @ [xx] @ xs12 = xs21 @ [xx] @ xs22"
+    using split1 split2' by simp
+  obtain us where us_prop:
+      "xs11 = xs21 @ us \<and> [xx] @ xs22 = us @ [xx] @ xs12 \<or>
+       xs21 = xs11 @ us \<and> [xx] @ xs12 = us @ [xx] @ xs22"
+    using eq_lists by (force simp: append_eq_append_conv2)
+  have main: "xs11 = xs21 \<and> xs12 = xs22"
+  proof (cases "us = []")
+    case True
+    { assume asm: "xs11 = xs21 @ us \<and> [xx] @ xs22 = us @ [xx] @ xs12"
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using asm True by simp }
+    moreover
+    { assume asm: "xs21 = xs11 @ us \<and> [xx] @ xs12 = us @ [xx] @ xs22"
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using asm True by simp }
+    ultimately show ?thesis
+      using us_prop by blast
+  next
+    case False
+    then obtain u us' where us_split: "us = u # us'"
+      using neq_Nil_conv[of us] by auto
+    { assume asm: "xs11 = xs21 @ us \<and> [xx] @ xs22 = us @ [xx] @ xs12"
+      have eq2: "[xx] @ xs22 = us @ [xx] @ xs12"
+        using asm by simp
+      have cons_eq: "xx # xs22 = u # (us' @ [xx] @ xs12)"
+        using eq2 us_split by simp
+      have xx_u: "xx = u"
+        using cons_eq by simp
+      have xx_in_us: "xx \<in> set us"
+        using us_split xx_u by simp
+      have xx_in_xs11: "xx \<in> set xs11"
+        using asm xx_in_us by auto
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using not_in1 xx_in_xs11 by blast }
+    moreover
+    { assume asm: "xs21 = xs11 @ us \<and> [xx] @ xs12 = us @ [xx] @ xs22"
+      have eq2: "[xx] @ xs12 = us @ [xx] @ xs22"
+        using asm by simp
+      have cons_eq: "xx # xs12 = u # (us' @ [xx] @ xs22)"
+        using eq2 us_split by simp
+      have xx_u: "xx = u"
+        using cons_eq by simp
+      have xx_in_us: "xx \<in> set us"
+        using us_split xx_u by simp
+      have xx_in_xs21: "xx \<in> set xs21"
+        using asm xx_in_us by auto
+      have "xs11 = xs21 \<and> xs12 = xs22"
+        using not_in3 xx_in_xs21 by blast }
+    ultimately show ?thesis
+      using us_prop by blast
+  qed
+  show "xs11 = xs21 \<and> xx = yy \<and> xs12 = xs22"
+    using main xy_eq by auto
+qed
 
 definition "last_in_list P xs y = (y \<in> set xs \<and> P y \<and> (\<nexists> xs1 xs2 z. xs = xs1@[y]@xs2 \<and> z \<in> set xs2 \<and> P z))"
 
 lemma last_in_list_unique: "unique (last_in_list P xs)"
-  by (auto simp add: unique_def last_in_list_def  )(smt (verit, del_insts) Un_iff append.assoc append_Cons in_set_conv_decomp_first insert_iff list.set(2) set_append)
+proof -
+  have key: "\<And>x y. x \<in> set xs \<Longrightarrow> P x \<Longrightarrow>
+               (\<nexists>xs1 xs2 z. xs = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and> P z) \<Longrightarrow>
+               y \<in> set xs \<Longrightarrow> P y \<Longrightarrow>
+               (\<nexists>xs1 xs2 z. xs = xs1 @ [y] @ xs2 \<and> z \<in> set xs2 \<and> P z) \<Longrightarrow>
+               x = y"
+  proof -
+    fix x y
+    assume x_in: "x \<in> set xs" and Px: "P x"
+      and x_last: "\<nexists>xs1 xs2 z. xs = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and> P z"
+    assume y_in: "y \<in> set xs" and Py: "P y"
+      and y_last: "\<nexists>xs1 xs2 z. xs = xs1 @ [y] @ xs2 \<and> z \<in> set xs2 \<and> P z"
+    show "x = y"
+    proof (rule ccontr)
+      assume neq: "x \<noteq> y"
+      obtain ys1 ys2 where y_cons: "xs = ys1 @ y # ys2"
+        using y_in[unfolded in_set_conv_decomp] by blast
+      have y_split: "xs = ys1 @ [y] @ ys2"
+        using y_cons by simp
+      have "x \<in> set ys1 \<or> x \<in> set ys2"
+        using x_in y_split neq by auto
+      thus False
+      proof
+        assume xin2: "x \<in> set ys2"
+        show False
+          using y_last y_split xin2 Px by blast
+      next
+        assume xin1: "x \<in> set ys1"
+        obtain xs1 xs2 where x_cons: "ys1 = xs1 @ x # xs2"
+          using xin1[unfolded in_set_conv_decomp] by blast
+        have x_split: "ys1 = xs1 @ [x] @ xs2"
+          using x_cons by simp
+        have xs_eq: "xs = xs1 @ [x] @ (xs2 @ [y] @ ys2)"
+          using y_split x_split by simp
+        have "y \<in> set (xs2 @ [y] @ ys2)"
+          by simp
+        thus False
+          using x_last xs_eq Py by blast
+      qed
+    qed
+  qed
+  show ?thesis
+    unfolding unique_def last_in_list_def
+    using key by blast
+qed
 
 lemma find_best_cand_chain_gives_A_suffix:
   assumes no_strong_exchange: "\<not> strong_exchange_property E F"
@@ -985,10 +1172,53 @@ next
      es = es1 @ [x] @ es2 \<and> x \<notin> set l \<and> insert x (set l) \<in> F \<and>
      (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x)))"
       have x_last_P: "last_in_list P es x"
-        using es_split
-        by (auto simp add: last_in_list_def P_def )
-          (metis DiffI append_Cons_eq_iff 
-            distinct_append es_prop(1) es_prop(2) no_strong_exchange in_set_conv_decomp not_distinct_conv_prefix)
+      proof -
+  have x_in_es: "x \<in> set es"
+    using es_split(1) by auto
+  have es_split4': "\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x"
+    using es_split(4) by blast
+  have x_in_E: "x \<in> E"
+    using x_in_es es_prop(1) by simp
+  have P_x: "\<exists>es1 es2. es = es1 @ [x] @ es2 \<and> x \<notin> set l \<and> insert x (set l) \<in> F \<and>
+       (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x)"
+    using es_split(1,2,3) es_split4' by blast
+  have unique_x: "unique (\<lambda>w. w = x)"
+    by (simp add: unique_def)
+  have no_later: "\<nexists>xs1 xs2 z. es = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and>
+       (\<exists>es1 es2. es = es1 @ [z] @ es2 \<and> z \<notin> set l \<and> insert z (set l) \<in> F \<and>
+          (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z))"
+  proof (rule notI)
+    assume "\<exists>xs1 xs2 z. es = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and>
+       (\<exists>es1 es2. es = es1 @ [z] @ es2 \<and> z \<notin> set l \<and> insert z (set l) \<in> F \<and>
+          (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z))"
+    then obtain xs1 xs2 z where later_prop1:
+      "es = xs1 @ [x] @ xs2" "z \<in> set xs2"
+      "\<exists>es1 es2. es = es1 @ [z] @ es2 \<and> z \<notin> set l \<and> insert z (set l) \<in> F \<and>
+          (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z)"
+      by blast
+    then obtain zs1 zs2 where later_prop2:
+      "es = zs1 @ [z] @ zs2" "z \<notin> set l" "insert z (set l) \<in> F"
+      "\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs z"
+      by blast
+    have split_eq: "es1 = xs1" "es2 = xs2"
+      using injective_predicate_unique_split[OF es_prop(2) unique_x es_split(1) later_prop1(1) refl refl]
+      by auto
+    have z_in_es2: "z \<in> set es2"
+      using later_prop1(2) split_eq(2) by simp
+    have z_in_E: "z \<in> E"
+      using z_in_es2 es_split(1) es_prop(1) by auto
+    have x_in_El: "x \<in> E - set l"
+      using x_in_E es_split(2) by blast
+    have x_le_z: "elements_costs costs x \<le> elements_costs costs z"
+      using later_prop2(4) x_in_El es_split(3) by blast
+    show False
+      using es_split(5) z_in_es2 later_prop2(2,3) x_le_z
+      by blast
+  qed
+  show "last_in_list P es x"
+    unfolding last_in_list_def P_def
+    using x_in_es P_x no_later by blast
+      qed
       have insert_new_element_is:"insert (A_list ! length l) (set (take (length l) A_list)) = (set (take (Suc (length l)) A_list))"
         using split_off_first by auto
       have " (A_list ! length l) \<in> set A_list" 
@@ -1033,7 +1263,7 @@ next
           case 1
           then obtain xs1 xs2 z where  es_split2:
             "es = xs1 @ [A_list ! length l] @ xs2" "z \<in> set xs2""z \<notin> set l"
-            by metis
+            by blast
           have "xs2 = rev (take index (A_list))"
             using  injective_predicate_unique_split[OF es_prop(2) _ es_split es_split2(1),
                 of "\<lambda> x.  x = A_list ! index"]
@@ -1156,7 +1386,7 @@ proof-
         using  es1es2(1) x_in_es1 A_list_props(1) BYA_list_props(1)  EBx_list_props(1) Y_list_props(1)  es_prop 
         by (auto simp add:  es_def)
       then obtain as bs where "EBx_list @ Y_list = as@[cand]@bs"
-        by (metis append.left_neutral append_Cons in_set_conv_decomp)
+        by (auto simp only: in_set_conv_decomp append_Cons append.left_neutral)
       hence es_split4: "es = as@[cand]@bs@[x]@BYA_list @ rev A_list" 
         unfolding es_def by simp
       have "as = es1" 
