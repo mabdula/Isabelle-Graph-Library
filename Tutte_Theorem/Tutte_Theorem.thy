@@ -400,11 +400,18 @@ proof(rule ccontr)
   then have "Vs (odd_comps_in_diff G X - {C}) \<inter> C = {}" 
     by (smt (verit, ccfv_SIG) Int_ac(3) Vs_def assms(1) assms(6)
         diff_component_disjoint disjoint_iff_not_equal insert_Diff insert_partition)
-  then have "card ?docX \<le> 2" 
-    by (smt (verit, ccfv_SIG) Int_lower2 Nat.le_diff_conv2 Un_upper1 
-        card2 \<open>finite ?docX\<close> add.commute assms(1-4,6-7) card_Un_disjoint card_mono diff_add_inverse 
-        diff_components_finite finite_Diff finite_Un insert_subset le_antisym nat_le_linear
-        new_components_intersection_old_is_empty)
+  have \<^marker>\<open>provenance ai\<close> "card ?docX \<le> 2"
+  proof -
+    have "finite (odd_comps_in_diff G X - {C})"
+      using diff_components_finite[OF assms(1)] by blast
+    moreover have "(odd_comps_in_diff G X - {C}) \<inter> ?docX = {}"
+      using new_components_intersection_old_is_empty[of G X C "{x}"] assms(1,3,6,7) by simp
+    ultimately have "card (odd_comps_in_diff G X - {C} \<union> ?docX) =
+                     card (odd_comps_in_diff G X - {C}) + card ?docX"
+      using \<open>finite ?docX\<close> by (simp add: card_Un_disjoint)
+    then show ?thesis
+      using card2 by linarith
+  qed
   show False
   proof(cases "card ?docX = 2")
     case True
@@ -2081,9 +2088,23 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         using \<open>Z' \<inter> X = {}\<close> by blast
       have "{connected_component (G \<setminus> X) z, {x}} \<in> ?G'" 
         using `M' \<subseteq> ?G'` edge_in_M' by blast
-      then have "x \<in> X" 
-        by (smt (verit, ccfv_SIG) \<open>z \<notin> X\<close> doubleton_eq_iff in_own_connected_component
-            mem_Collect_eq singletonD)
+      then obtain \<^marker>\<open>provenance ai\<close> a b where ab: "b \<in> X"
+        "{connected_component (G \<setminus> X) z, {x}} = {connected_component (G \<setminus> X) a, {b}}"
+        by blast
+      have \<^marker>\<open>provenance ai\<close> "x \<in> X"
+      proof (cases "{x} = {b}")
+        case True
+        then show ?thesis
+          using ab(1) by simp
+      next
+        case False
+        then have "connected_component (G \<setminus> X) z = {b}"
+          by (metis ab(2) doubleton_eq_iff)
+        then have "z = b"
+          by (metis in_own_connected_component singletonD)
+        then show ?thesis
+          using ab(1) \<open>z \<notin> X\<close> by blast
+      qed
       let ?C' = "{c. \<exists>e. e \<in> G \<and> e = {c, x} \<and> c \<notin> X \<and> c \<in> connected_component (G \<setminus> X) z}" 
       have "?C' \<in> ?Z2" 
         using edge_in_M' `x \<in> X` by blast
