@@ -212,14 +212,35 @@ lemma Vs_enum_inv_leftE:
   assumes "i < card L"
   obtains j where "j \<in> L" "Vs_enum_inv i = j"
   using assms
-  by (metis Vs_enum_inv_def card.empty from_nat_into not_less_zero)
+proof -
+  have "L \<noteq> {}"
+    using assms card.empty by fastforce
+  then have "from_nat_into L i \<in> L"
+    by (rule from_nat_into)
+  moreover have "Vs_enum_inv i = from_nat_into L i"
+    using assms unfolding Vs_enum_inv_def by simp
+  ultimately show thesis
+    by (rule that)
+qed
 
 lemma Vs_enum_inv_rightE:
   assumes "i < n"
   assumes "\<not> i < card L"
   obtains j where "j \<in> R" "Vs_enum_inv i = j"
   using assms
-  by (metis Vs_enum_inv_def add.right_neutral card.empty from_nat_into n_sum)
+proof -
+  from assms(2) have card_le: "card L \<le> i" by simp
+  have lt_R: "i - card L < card R"
+    using geq_L_less_n_less_R[OF card_le assms(1)] .
+  have card_R_pos: "0 < card R" using lt_R by linarith
+  have R_ne: "R \<noteq> {}" using card_R_pos finite_R by (auto simp: card_gt_0_iff)
+  from R_ne have mem_R: "from_nat_into R (i - card L) \<in> R"
+    by (rule from_nat_into)
+  from assms(2) have eq: "Vs_enum_inv i = from_nat_into R (i - card L)"
+    by (simp add: Vs_enum_inv_def)
+  from mem_R eq show thesis
+    by (rule that)
+qed
 
 lemma G_enum_less_m: "e \<in> G \<Longrightarrow> G_enum e < m"
   using finite_E
@@ -234,17 +255,38 @@ lemma G_not_empty_if:
 lemma from_nat_into_G_E_aux:
   assumes "i < m"
   obtains e where "e \<in> G" "from_nat_into G i = e"
-  using assms
-  by (metis G_not_empty_if from_nat_into)
+proof -
+  from assms have ne: "G \<noteq> {}" by (rule G_not_empty_if)
+  have mem: "from_nat_into G i \<in> G" by (rule from_nat_into[OF ne])
+  show thesis by (rule that[OF mem refl])
+qed
 
 lemma from_nat_into_G_E:
   assumes "i < m"
   obtains l r where "{l,r} \<in> G" "from_nat_into G i = {l,r}" "l \<in> L" "r \<in> R"
   using assms bipartite_graph
-  by (metis bipartite_edgeE from_nat_into_G_E_aux)
+proof -
+  obtain e where e_in_G: "e \<in> G" and e_eq: "from_nat_into G i = e"
+    using from_nat_into_G_E_aux[OF assms] .
+  obtain l r where e_lr: "e = {l,r}" and l_L: "l \<in> L" and r_R: "r \<in> R"
+    using e_in_G bipartite_graph by (auto elim: bipartite_edgeE)
+  from e_in_G e_eq e_lr l_L r_R show thesis
+    by (auto intro!: that)
+qed
 
 lemma Vs_enum_neqI: "\<lbrakk>v \<in> Vs G; v' \<in> Vs G; v \<noteq> v'\<rbrakk> \<Longrightarrow> Vs_enum v \<noteq> Vs_enum v'"
-  by (metis Vs_inv_enum)
+proof -
+  assume "v \<in> Vs G" and "v' \<in> Vs G" and "v \<noteq> v'"
+  show "Vs_enum v \<noteq> Vs_enum v'"
+  proof
+    assume "Vs_enum v = Vs_enum v'"
+    from Vs_inv_enum[OF \<open>v \<in> Vs G\<close>] have "Vs_enum_inv (Vs_enum v) = v" .
+    moreover from Vs_inv_enum[OF \<open>v' \<in> Vs G\<close>] have "Vs_enum_inv (Vs_enum v') = v'" .
+    ultimately have "v = v'"
+      using \<open>Vs_enum v = Vs_enum v'\<close> by argo
+    with \<open>v \<noteq> v'\<close> show False by simp
+  qed
+qed
 
 lemma G_enum_neqI: "\<lbrakk>e \<in> G; e' \<in> G; e \<noteq> e'\<rbrakk> \<Longrightarrow> G_enum e \<noteq> G_enum e'"
   by (simp add: countable_finite)

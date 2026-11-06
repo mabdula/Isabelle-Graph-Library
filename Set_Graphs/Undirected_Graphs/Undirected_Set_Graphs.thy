@@ -945,7 +945,13 @@ lemma bigraph_handshaking_lemma:
 lemma sum_card_edges2:
   assumes "graph_invar G"
   shows "sum card G = (\<Sum>e\<in>G. 2)"
-  by (smt (verit, del_insts) assms card_edge mem_Collect_eq subset_eq sum.cong)
+proof (rule sum.cong)
+  show "G = G" by simp
+next
+  fix e assume "e \<in> G"
+  thus "card e = 2"
+    using assms card_edge by blast
+qed
 
 lemma lower_bound_for_number_of_edges:
   assumes "graph_invar E"

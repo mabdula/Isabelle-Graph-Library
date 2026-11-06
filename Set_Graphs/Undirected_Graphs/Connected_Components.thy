@@ -430,13 +430,33 @@ lemma same_connected_component_SOME:
 lemma connected_component_subset:
   assumes "v \<in> Vs G"
   shows "connected_component G v \<subseteq> Vs G"
-  using assms by (metis in_connected_component_in_edges subsetI)
+proof
+  fix u
+  assume "u \<in> connected_component G v"
+  then have "u \<in> Vs G \<or> v = u"
+    by (rule in_connected_component_in_edges)
+  with assms show "u \<in> Vs G"
+    by fast
+qed
 
 lemma component_is_finite:
   assumes "graph_invar G"
   shows "finite (connected_component G v)"
-  by (metis assms connected_component_subset 
-      connected_components_notE_singletons finite.simps finite_subset)
+proof (cases "v \<in> Vs G")
+  case True
+  have sub: "connected_component G v \<subseteq> Vs G"
+    by (rule connected_component_subset[OF True])
+  moreover have "finite (Vs G)"
+    using assms graph_invar_finite_Vs by blast
+  ultimately show ?thesis
+    by (rule finite_subset)
+next
+  case False
+  then have "connected_component G v = {v}"
+    by (rule connected_components_notE_singletons)
+  then show ?thesis
+    by simp
+qed
 
 subsection \<open>Connected Components and Basic Definitions on Graphs\<close>
 
@@ -876,9 +896,26 @@ lemma path_in_comp:
   assumes "path G p"
   assumes "C \<in> connected_components G"
   assumes "last p \<in> C"
-  shows "\<forall>x \<in> set p. x \<in> C" using assms(1) assms(3)
-  by (metis assms(2) connected_components_closed' connected_components_member_eq empty_iff empty_set
-      has_path_in_connected_component nonempty_path_walk_between path_subset_conn_comp subset_eq)
+  shows "\<forall>x \<in> set p. x \<in> C"
+proof (cases "p = []")
+  case True
+  then show ?thesis by simp
+next
+  case False
+  have set_subset: "set p \<subseteq> connected_component G (hd p)"
+    using assms(1) by (simp add: path_subset_conn_comp)
+  have last_in: "last p \<in> set p"
+    using False by (simp add: last_in_set)
+  have last_in_comp: "last p \<in> connected_component G (hd p)"
+    using set_subset last_in by blast
+  have comp_eq: "connected_component G (last p) = connected_component G (hd p)"
+    using last_in_comp by (simp add: connected_components_member_eq)
+  have C_eq: "C = connected_component G (last p)"
+    using assms(2) assms(3) by (simp add: connected_components_closed')
+  have "set p \<subseteq> C"
+    using set_subset comp_eq C_eq by auto
+  then show ?thesis by auto
+qed
 
 lemma components_edges_all:
   assumes "graph_invar A"
@@ -888,8 +925,21 @@ proof(safe)
     fix e
     assume "e \<in> A"
     obtain C where "C \<in> connected_components A \<and> e \<subseteq> C"
-      using edge_in_component
-      by (metis \<open>e \<in> A\<close> assms dblton_graphE)
+    proof -
+      obtain u v where huv: "e = {u, v}" and "u \<noteq> v"
+        using dblton_graphE assms \<open>e \<in> A\<close> by blast
+      have "{u, v} \<in> A"
+        using huv \<open>e \<in> A\<close> by auto
+      from edge_in_component[OF this] obtain C' where 
+        "C' \<in> connected_components A" and "{u, v} \<subseteq> C'"
+        by blast
+      have "e \<subseteq> C'"
+        using huv \<open>{u, v} \<subseteq> C'\<close> by auto
+      with \<open>C' \<in> connected_components A\<close> have "C' \<in> connected_components A \<and> e \<subseteq> C'"
+        by auto
+      then show ?thesis
+        by (rule that)
+    qed
     then have "e \<in> component_edges A C" unfolding component_edges_def 
       using \<open>e \<in> A\<close> assms
       by blast
@@ -1197,9 +1247,41 @@ lemma edge_subset_component:
   assumes "e \<in> G"
   assumes "v \<in> e"
   shows "e \<subseteq> connected_component G v"
-  using assms connected_components_member_sym
-  by (smt (verit, best) dblton_graphE in_con_comp_insert in_own_connected_component insert_Diff
-          insert_iff singletonD subsetI) 
+proof -
+  obtain u w where uw: "e = {u, w}" and neq: "u \<noteq> w"
+    using assms(1) assms(2) dblton_graphE by blast
+  from assms(3) uw have disj: "v = u \<or> v = w"
+    by simp
+  show ?thesis
+  proof (cases "v = u")
+    case True
+    have mem_u: "u \<in> connected_component G u"
+      by (rule in_own_connected_component)
+    have "{u, w} \<in> G" 
+      using assms(2) uw by simp
+    have "reachable G u w"
+      by (rule Paths.edges_reachable) fact
+    have mem_w: "w \<in> connected_component G u"
+      using \<open>reachable G u w\<close> by (simp add: Connected_Components.in_connected_componentI)
+    with mem_u show ?thesis
+      by (simp add: uw True)
+  next
+    case False
+    then have veqw: "v = w" using disj by simp
+    have mem_w: "w \<in> connected_component G w"
+      by (rule in_own_connected_component)
+    have "{u, w} \<in> G" 
+      using assms(2) uw by simp
+    have "reachable G u w"
+      by (rule Paths.edges_reachable) fact
+    have "reachable G w u"
+      using \<open>reachable G u w\<close> by (simp add: Paths.reachable_sym)
+    have mem_u: "u \<in> connected_component G w"
+      using \<open>reachable G w u\<close> by (simp add: Connected_Components.in_connected_componentI)
+    with mem_w show ?thesis
+      by (simp add: uw veqw)
+  qed
+qed
 
 lemma exist_edge_in_component:
   assumes "graph_invar G"
@@ -1211,8 +1293,15 @@ proof -
     by (simp add: assms(2) connected_component_subs_Vs)
   then obtain e where e: "e \<in> G" "x \<in> e" 
     by (meson assms(3) subsetD vs_member_elim)
-  have "e \<subseteq> C" 
-    by (metis assms connected_components_closed' e edge_subset_component)
+  have "e \<subseteq> C"
+  proof -
+    have "e \<subseteq> connected_component G x"
+      by (rule edge_subset_component[OF assms(1) e(1) e(2)])
+    moreover have "connected_component G x = C"
+      using assms(2) assms(3) by (simp add: connected_components_closed'[symmetric])
+    ultimately show ?thesis
+      by simp
+  qed
   then show ?thesis 
     by (meson e that) 
 qed  
@@ -1575,7 +1664,7 @@ proof(safe)
     then obtain e where "x \<in> e \<and> e \<in> (component_edges A C)" 
       by (meson vs_member_elim)
     then have "e \<subseteq> C" 
-      by (smt (verit, best) component_edges_def mem_Collect_eq)
+      by (auto simp: component_edges_def)
     then show "x \<in> C"
       by (meson \<open>x \<in> e \<and> e \<in> component_edges A C\<close> subsetD)
   }
@@ -1588,7 +1677,17 @@ proof(safe)
   then obtain y where "e = {x, y}" 
     using assms(1) by fastforce
   then have "y \<in> C"
-    by (metis \<open>x \<in> C\<close> \<open>x \<in> e \<and> e \<in> A\<close> assms(2) connected_components_closed' in_con_comp_insert insert_Diff)
+  proof -
+    have xy_A: "{x, y} \<in> A"
+      using \<open>e = {x, y}\<close> \<open>x \<in> e \<and> e \<in> A\<close> by simp
+    have eq: "A = insert {x, y} (A - {{x, y}})"
+      using xy_A insert_Diff by blast
+    have "y \<in> connected_component A x"
+      by (subst eq) (rule in_con_comp_insert)
+    moreover have "C = connected_component A x"
+      using assms(2) \<open>x \<in> C\<close> by (simp add: connected_components_closed')
+    ultimately show "y \<in> C" by simp
+  qed
   then have "e \<subseteq> C" 
     by (simp add: \<open>e = {x, y}\<close> \<open>x \<in> C\<close>)
   then have "e \<in> (component_edges A C)" 
@@ -1621,12 +1720,19 @@ lemma connected_component_not_singleton:
   assumes "v\<in> Vs G"
   shows "card (connected_component G v) > 1"
 proof -
-  obtain e where "e \<in> G" "v \<in> e" using assms(2) vs_member_elim by metis
+  obtain e where "e \<in> G" "v \<in> e"
+    using assms(2) by (rule vs_member_elim)
   then have "e \<subseteq> (connected_component G v)"
     by (simp add: edge_subset_component assms(1) \<open>v\<in> Vs G\<close>)
   then have "card (connected_component G v) \<ge> 2"
     using edge_in_E_card[of G e] component_is_finite[of G v]  assms(1)
-    by (metis \<open>e \<in> G\<close> card_mono)
+  proof -
+    have "card e \<le> card (connected_component G v)"
+      using component_is_finite[OF assms(1)] \<open>e \<subseteq> connected_component G v\<close>
+      by (rule card_mono)
+    with edge_in_E_card[of G e] assms(1) \<open>e \<in> G\<close> show ?thesis
+      by linarith
+  qed
   then show ?thesis  by linarith
 qed
 
@@ -1841,7 +1947,19 @@ next
   have "v \<in> C" 
     using path2.prems by auto
   have "v' \<in> C"
-    by (metis \<open>v \<in> C\<close> assms(3) connected_components_eq' edge_in_component insert_subset path2.hyps(1))
+  proof -
+    have edge_exists: "\<exists>C'. C' \<in> connected_components G \<and> {v, v'} \<subseteq> C'"
+      using path2.hyps(1) by (rule edge_in_component)
+    obtain C' where C'_comp: "C' \<in> connected_components G" and subset: "{v, v'} \<subseteq> C'"
+      using edge_exists by blast
+    have "v \<in> C'" using subset by auto
+    with assms(3) C'_comp \<open>v \<in> C\<close> have "C = C'"
+      using connected_components_eq' by fastforce
+    then have "{v, v'} \<subseteq> C"
+      using subset by auto
+    then show "v' \<in> C"
+      by auto
+  qed
   then have "{v, v'} \<subseteq> C" 
     by (simp add: \<open>v \<in> C\<close>)
   then have "{v, v'} \<in> (component_edges G C)"

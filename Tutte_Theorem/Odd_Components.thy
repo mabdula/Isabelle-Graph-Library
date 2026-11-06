@@ -116,14 +116,37 @@ lemma singl_in_diffI:
 
 lemma odd_components_inter_singl_empty:
   shows "odd_components (G \<setminus> X) \<inter> singl_in_diff G X = {}"
-  apply(auto, elim odd_componentsE singl_in_diffE) 
-  by (metis in_connected_component_in_edges odd_component_def singletonI)
+proof (intro equals0I)
+  fix C
+  assume hboth: "C \<in> odd_components (G \<setminus> X) \<inter> singl_in_diff G X"
+  then have hOdd: "C \<in> odd_components (G \<setminus> X)"
+       and  hSingl: "C \<in> singl_in_diff G X"
+    by auto
+  from hSingl obtain v where
+    hCv: "C = {v}" and hVs: "v \<notin> Vs (G \<setminus> X)"
+    by (auto simp: singl_in_diff_member)
+  from hOdd have hOC: "odd_component (G \<setminus> X) C"
+    by (simp add: odd_component_member)
+  obtain w where
+    hw_Vs:   "w \<in> Vs (G \<setminus> X)" and
+    hw_comp: "connected_component (G \<setminus> X) w = C"
+    using odd_componentOb[OF hOC] by blast
+  have "w \<in> connected_component (G \<setminus> X) w"
+    by (rule in_own_connected_component)
+  with hw_comp hCv have "w \<in> {v}" by simp
+  hence "w = v" by simp
+  with hw_Vs hVs show False by simp
+qed
 
 lemma odd_components_sum_singletions_is_component:
   shows "(odd_components (G \<setminus> X)) \<oplus> (singl_in_diff G X) = odd_comps_in_diff G X"
-  using odd_components_inter_singl_empty 
-  by (metis (no_types, lifting) Int_Un_eq(4) Un_Diff_Int Un_left_commute odd_comps_in_diff_def
-      sup_bot_right symmetric_diff_def)
+proof -
+  have h_disj: "odd_components (G \<setminus> X) \<inter> singl_in_diff G X = {}"
+    using odd_components_inter_singl_empty .
+  show ?thesis
+    unfolding odd_comps_in_diff_def symmetric_diff_def
+    using h_disj by blast
+qed
 
 lemma odd_comps_in_diff_member[iff?]:
   "C \<in> odd_comps_in_diff G X \<longleftrightarrow> C \<in> odd_components (G \<setminus> X) \<or> C \<in> singl_in_diff G X"
@@ -153,21 +176,40 @@ lemma odd_component_is_component:
   shows "connected_component G x = C"
   using assms
   apply(elim odd_componentsE odd_componentE)
-  by (metis connected_components_member_eq)
+  by (auto simp: connected_components_member_eq)
 
 lemma singl_in_diff_is_component:
   assumes "C \<in> singl_in_diff G X"
   assumes "x \<in> C"
   shows "connected_component (G \<setminus> X) x = C"
-  by (metis assms connected_components_notE_singletons singletonD singl_in_diff_member)
+proof -
+  from assms(1) obtain v where hv_eq: "C = {v}"
+    and hv_notin_Vs: "v \<notin> Vs (G \<setminus> X)"
+    using singl_in_diffE by blast
+  have hx_eq: "x = v"
+    using assms(2) hv_eq singletonD by blast
+  have "connected_component (G \<setminus> X) v = {v}"
+    using hv_notin_Vs by (rule connected_components_notE_singletons)
+  then show ?thesis
+    using hx_eq hv_eq by simp
+qed
 
 lemma odd_comps_in_diff_is_component:
   assumes "C \<in> (odd_comps_in_diff G X)"
   assumes "x \<in> C"
   shows "connected_component (G \<setminus> X) x = C"
-  using singl_in_diff_is_component
-    odd_component_is_component 
-  by (metis assms odd_comps_in_diff_member)
+proof -
+  from assms(1) have "C \<in> odd_components (G \<setminus> X) \<or> C \<in> singl_in_diff G X"
+    by (simp add: odd_comps_in_diff_member)
+  then show ?thesis
+  proof
+    assume "C \<in> odd_components (G \<setminus> X)"
+    then show ?thesis using assms(2) by (rule odd_component_is_component)
+  next
+    assume "C \<in> singl_in_diff G X"
+    then show ?thesis using assms(2) by (rule singl_in_diff_is_component)
+  qed
+qed
 
 lemma odd_components_nonempty:
   assumes "C \<in> odd_comps_in_diff G X"
@@ -177,11 +219,14 @@ lemma odd_components_nonempty:
   unfolding odd_component_def
    apply (simp add: odd_card_imp_not_empty)
   by blast
-
 lemma odd_component_in_E:
   assumes "odd_component G C"
   shows "C \<subseteq> Vs G" 
-  by (metis assms connected_component_subset odd_component_def)
+  proof -
+  obtain v where "v \<in> Vs G" and "connected_component G v = C"
+    using assms unfolding odd_component_def by blast
+  with connected_component_subset[OF `v \<in> Vs G`] show ?thesis by simp
+qed
 
 lemma odd_components_elem_in_E:
   assumes "C \<in> odd_components G"
@@ -205,8 +250,14 @@ lemma component_in_E:
 lemma component_of_el_in_E:
   assumes "connected_component G x \<in> (odd_comps_in_diff G X)"
   shows "x \<in> Vs G"
-  using component_in_E 
-  by (metis assms in_mono in_own_connected_component)
+proof -
+  have hx: "x \<in> connected_component G x"
+    by (rule in_own_connected_component)
+  have hsub: "connected_component G x \<subseteq> Vs G"
+    using assms component_in_E by blast
+  show "x \<in> Vs G"
+    using hsub hx by blast
+qed
 
 lemma odd_comps_in_diff_not_in_X:
   assumes "C \<in> odd_comps_in_diff G X"
@@ -218,8 +269,19 @@ proof(rule ccontr)
     case True
     have "C \<subseteq> Vs (G \<setminus> X)"
       using True odd_components_elem_in_E by auto
-    then show ?thesis 
-      by (metis \<open>C \<inter> X \<noteq> {}\<close> disjoint_iff_not_equal graph_diffE subsetD vs_member_elim)
+    then show ?thesis
+    proof -
+      note Csub = \<open>C \<subseteq> Vs (G \<setminus> X)\<close>
+      obtain v where vC: "v \<in> C" and vX: "v \<in> X"
+        using \<open>C \<inter> X \<noteq> {}\<close> by blast
+      have vVs: "v \<in> Vs (G \<setminus> X)"
+        using Csub vC by (rule subsetD)
+      obtain e where eD: "e \<in> (G \<setminus> X)" and ve: "v \<in> e"
+        using vVs by (auto elim: vs_member_elim)
+      have "v \<notin> X"
+        using eD ve by (auto elim: graph_diffE)
+      with vX show False by contradiction
+    qed
   next
     case False
     then have "C \<in> singl_in_diff G X" 
@@ -234,7 +296,7 @@ lemma card_singl_in_diff_is_one:
   assumes "C \<in> singl_in_diff G X"
   shows "card C = 1" 
   using singl_in_diffE[OF assms]
-  by (metis is_singleton_altdef is_singleton_def)
+  by (rule, simp)
 
 lemma diff_odd_compoenent_has_odd_card:
   assumes "C \<in> odd_comps_in_diff G X"
@@ -251,10 +313,47 @@ lemma odd_comps_in_diff_are_components:
   apply safe
     apply(elim odd_componentsE odd_componentE )
     apply (meson subsetD vs_graph_diff) 
-   apply (metis DiffI card_singl_in_diff_is_one odd_one singl_in_diffE 
-      singl_in_diff_is_component singletonI)
-  by (metis connected_components_notE_singletons odd_componentI 
-      odd_componentsI singl_in_diffI)
+  subgoal for x
+  proof (elim singl_in_diffE)
+    fix v
+    assume h_vG: "v \<in> Vs G" and h_xv: "x = {v}" and h_vX: "v \<notin> X" and h_vVs: "v \<notin> Vs (G \<setminus> X)"
+    have h_singl: "x \<in> singl_in_diff G X"
+      using singl_in_diffI[OF h_vG h_xv h_vX h_vVs] .
+    show "\<exists>v\<in>Vs G - X. connected_component (G \<setminus> X) v = x \<and> odd (card x)"
+    proof (intro bexI[of _ v])
+      show "connected_component (G \<setminus> X) v = x \<and> odd (card x)"
+      proof (intro conjI)
+        show "connected_component (G \<setminus> X) v = x"
+          by (rule singl_in_diff_is_component[OF h_singl]) (simp add: h_xv)
+      next
+        show "odd (card x)"
+          by (simp add: card_singl_in_diff_is_one[OF h_singl] odd_one)
+      qed
+    next
+      show "v \<in> Vs G - X"
+        by (intro DiffI h_vG h_vX)
+    qed
+  qed
+proof -
+  fix x v
+  assume h1: "connected_component (G \<setminus> X) v \<notin> singl_in_diff G X"
+  assume h2: "v \<in> Vs G"
+  assume h3: "v \<notin> X"
+  assume h4: "odd (card (connected_component (G \<setminus> X) v))"
+  have v_in_Vs_diff: "v \<in> Vs (G \<setminus> X)"
+  proof (rule ccontr)
+    assume v_notin: "v \<notin> Vs (G \<setminus> X)"
+    then have cc_is_singl: "connected_component (G \<setminus> X) v = {v}"
+      by (rule connected_components_notE_singletons)
+    have "{v} \<in> singl_in_diff G X"
+      using h2 h3 v_notin by (simp add: singl_in_diffI)
+    with h1 show False using cc_is_singl by simp
+  qed
+  have odd_comp: "odd_component (G \<setminus> X) (connected_component (G \<setminus> X) v)"
+    using h4 v_in_Vs_diff by (rule odd_componentI) simp
+  from odd_comp show "connected_component (G \<setminus> X) v \<in> odd_components (G \<setminus> X)"
+    by (simp add: odd_components_def)
+qed
 
 lemma odd_comps_in_diff_are_componentsOb:
   assumes "C \<in> odd_comps_in_diff G X"
@@ -276,15 +375,32 @@ lemma odd_comps_in_diff_are_componentsI2:
   assumes "odd (card C)"
   assumes "C \<in> connected_components (G \<setminus> X)"
   shows "C \<in> odd_comps_in_diff G X"
-  by (metis assms(1) assms(2) connected_comp_has_vert odd_componentI
-      odd_component_member odd_comps_in_diff_member)
+proof -
+  from assms(2) obtain w where w_in_Vs: "w \<in> Vs (G \<setminus> X)" and C_eq: "C = connected_component (G \<setminus> X) w"
+    by (rule connected_comp_has_vert)
+  have w_in_diff: "w \<in> Vs G - X"
+    using w_in_Vs vs_graph_diff[of G X] by auto
+  show ?thesis
+    using odd_comps_in_diff_are_componentsI assms(1) w_in_diff C_eq by fastforce
+qed
 
 lemma diff_component_disjoint:
   assumes "C1 \<in> (odd_comps_in_diff G X)"
   assumes "C2 \<in> (odd_comps_in_diff G X)"
   assumes "C1 \<noteq> C2"
   shows "C1 \<inter> C2 = {}"
-  by (metis assms odd_comps_in_diff_is_component disjoint_iff_not_equal)
+proof (rule equals0I)
+  fix x
+  assume hx: "x \<in> C1 \<inter> C2"
+  hence xC1: "x \<in> C1" and xC2: "x \<in> C2" by auto
+  have comp_eq_C1: "connected_component (G \<setminus> X) x = C1"
+    using assms(1) xC1 by (rule odd_comps_in_diff_is_component)
+  have comp_eq_C2: "connected_component (G \<setminus> X) x = C2"
+    using assms(2) xC2 by (rule odd_comps_in_diff_is_component)
+  have "C1 = C2"
+    using comp_eq_C1 comp_eq_C2 by auto
+  with assms(3) show False by contradiction
+qed
 
 lemma components_is_union_even_and_odd:
   shows "connected_components G = odd_components G \<union> even_components G"
@@ -317,7 +433,8 @@ lemma diff_is_union_elements:
   shows "Vs (G \<setminus> X) \<union> Vs (singl_in_diff G X) \<union> X = Vs G"
   apply safe
      apply (meson graph_diff_subset subset_iff vs_member)
-    apply (metis insert_Diff insert_subset singl_in_diff_in_E vs_member)
+   subgoal for v
+    by (blast dest: singl_in_diffE vs_member[THEN iffD1])
   using assms(2) 
    apply blast
   by (meson singl_in_diffI singletonI vs_member_intro)
@@ -325,7 +442,16 @@ lemma diff_is_union_elements:
 lemma el_vs_singleton_is_in_singleton:
   assumes "x \<in> Vs (singl_in_diff G X)"
   shows "{x} \<in> (singl_in_diff G X)"
-  by (smt (verit, ccfv_SIG) CollectI assms singl_in_diff_member singletonD vs_member_elim)
+proof -
+  obtain e where he: "e \<in> singl_in_diff G X" "x \<in> e"
+    using assms by (auto elim: vs_member_elim)
+  from he(1) obtain v where hv: "e = {v}"
+    using singl_in_diffE by blast
+  have "x = v"
+    using he(2) hv singletonD by blast
+  then show "{x} \<in> singl_in_diff G X"
+    using he(1) hv by simp
+qed
 
 lemma diff_disjoint_elements:
   assumes "graph_invar G"
@@ -333,19 +459,74 @@ lemma diff_disjoint_elements:
   shows "Vs (G \<setminus> X) \<inter> Vs (singl_in_diff G X) = {}" 
     "Vs (G \<setminus> X) \<inter> X = {}"
     "Vs (singl_in_diff G X) \<inter> X = {}"
-    apply safe
-    apply (metis connected_component_subset el_vs_singleton_is_in_singleton insert_subset 
-      singl_in_diffE singl_in_diff_is_component singletonI)
-   apply (metis IntI graph_diffE vs_member)
-  using el_vs_singleton_is_in_singleton 
-  by (metis Diff_eq_empty_iff Diff_subset assms(2) insert_subset singl_in_diffE)
+  proof safe
+    fix x
+    assume h1: "x \<in> Vs (G \<setminus> X)" and h2: "x \<in> Vs (singl_in_diff G X)"
+    have "{x} \<in> singl_in_diff G X"
+      using h2 by (simp add: el_vs_singleton_is_in_singleton)
+    then obtain v where hv: "v \<in> Vs G" "{x} = {v}" "v \<notin> X" "v \<notin> Vs (G \<setminus> X)"
+      using singl_in_diffE by blast
+    have "x = v"
+      using hv(2) singletonD by blast
+    show "x \<in> {}"
+      using h1 hv(4) \<open>x = v\<close> by simp
+  next
+    fix x
+    assume "x \<in> Vs (G \<setminus> X)" "x \<in> X"
+    then show "x \<in> {}"
+      unfolding Vs_def graph_diff_def by blast
+  next
+    fix x
+    assume h1: "x \<in> Vs (singl_in_diff G X)" and h2: "x \<in> X"
+    have "{x} \<in> singl_in_diff G X"
+      using h1 by (simp add: el_vs_singleton_is_in_singleton)
+    then obtain v where hv: "v \<in> Vs G" "{x} = {v}" "v \<notin> X" "v \<notin> Vs (G \<setminus> X)"
+      using singl_in_diffE by blast
+    have "x = v"
+      using hv(2) singletonD by blast
+    then show "x \<in> {}"
+      using h2 hv(3) by simp
+  qed
 
 lemma diff_card_is_sum_elements:
   assumes "graph_invar G"
   assumes "X \<subseteq> Vs G"
   shows "card (Vs (G \<setminus> X)) + card (Vs (singl_in_diff G X)) + card X = card (Vs G)"
-  using diff_is_union_elements[OF assms] diff_disjoint_elements[OF assms]
-  by (metis Int_Un_distrib2 assms(1) card_Un_disjoint finite_Un sup_bot_right)
+proof -
+  (* Step 1: Name the two driver lemmas *)
+  have union_eq: "Vs (G \<setminus> X) \<union> Vs (singl_in_diff G X) \<union> X = Vs G"
+    by (rule diff_is_union_elements[OF assms])
+  (* Step 2: Obtain the pairwise disjointness facts *)
+  have disj12: "Vs (G \<setminus> X) \<inter> Vs (singl_in_diff G X) = {}"
+    by (rule diff_disjoint_elements(1)[OF assms])
+  have disj1X: "Vs (G \<setminus> X) \<inter> X = {}"
+    by (rule diff_disjoint_elements(2)[OF assms])
+  have disj2X: "Vs (singl_in_diff G X) \<inter> X = {}"
+    by (rule diff_disjoint_elements(3)[OF assms])
+  (* Step 3: Finiteness — derive from graph_invar via graph_invar_finite_Vs *)
+  have fin_G: "finite (Vs G)"
+    by (rule graph_invar_finite_Vs[OF assms(1)])
+  have fin1: "finite (Vs (G \<setminus> X))"
+    by (rule finite_subset[of _ "Vs G"]) (use union_eq fin_G in auto)
+  have fin2: "finite (Vs (singl_in_diff G X))"
+    by (rule finite_subset[of _ "Vs G"]) (use union_eq fin_G in auto)
+  have fin3: "finite X"
+    by (rule finite_subset[OF assms(2) fin_G])
+  (* Step 4: Derive combined disjointness for the outer card_Un_disjoint call *)
+  have disj_union_X: "(Vs (G \<setminus> X) \<union> Vs (singl_in_diff G X)) \<inter> X = {}"
+    by (simp add: Int_Un_distrib2 disj1X disj2X)
+  (* Step 5: Inner card_Un_disjoint *)
+  have card12: "card (Vs (G \<setminus> X) \<union> Vs (singl_in_diff G X)) =
+                card (Vs (G \<setminus> X)) + card (Vs (singl_in_diff G X))"
+    by (rule card_Un_disjoint[OF fin1 fin2 disj12])
+  (* Step 6: Outer card_Un_disjoint *)
+  have card_all: "card (Vs (G \<setminus> X) \<union> Vs (singl_in_diff G X) \<union> X) =
+                  card (Vs (G \<setminus> X) \<union> Vs (singl_in_diff G X)) + card X"
+    by (rule card_Un_disjoint[OF finite_UnI[OF fin1 fin2] fin3 disj_union_X])
+  (* Step 7: Conclude by rewriting the union and arithmetic *)
+  show ?thesis
+    using union_eq card12 card_all by auto
+qed
 
 lemma singleton_set_card_eq_vertices:
   assumes "graph_invar G"
@@ -353,8 +534,17 @@ lemma singleton_set_card_eq_vertices:
   shows "card (Vs (singl_in_diff G X)) = card (singl_in_diff G X)"
 proof -
   let ?A = "(singl_in_diff G X)"
-  have "finite ?A" 
-    by (metis Vs_def assms diff_is_union_elements finite_Un finite_UnionD)
+  have "finite ?A"
+  proof -
+    have fin_Vs: "finite (Vs G)"
+      using assms(1) by (rule graph_invar_finite_Vs)
+    have Vs_singl_subset: "Vs (singl_in_diff G X) \<subseteq> Vs G"
+      using assms diff_is_union_elements by blast
+    have fin_Vs_singl: "finite (Vs (singl_in_diff G X))"
+      using Vs_singl_subset fin_Vs by (rule finite_subset)
+    show "finite ?A"
+      using fin_Vs_singl unfolding Vs_def by (rule finite_UnionD)
+  qed
   moreover have "\<forall>C \<in> ?A. finite C" 
     by(auto elim: singl_in_diffE)
   moreover have "\<forall> C1 \<in> ?A. \<forall> C2 \<in> ?A. C1 \<noteq> C2 \<longrightarrow> C1 \<inter> C2 = {}"   
@@ -362,8 +552,16 @@ proof -
   ultimately  have "sum card ?A = card (Vs ?A)" 
     using assms Vs_def card_Union_disjoint disjnt_def pairwise_def
     by (simp add: Vs_def card_Union_disjoint disjnt_def pairwise_def)
-  also have "sum card ?A = card ?A" 
-    by (metis card_eq_sum card_singl_in_diff_is_one sum.cong)
+  also have "sum card ?A = card ?A"
+  proof -
+    have each_one: "\<forall>C \<in> ?A. card C = 1"
+      using card_singl_in_diff_is_one by blast
+    have "sum card ?A = sum (\<lambda>_. 1) ?A"
+      by (rule sum.cong) (auto simp: each_one)
+    also have "\<dots> = card ?A"
+      by (simp add: card_eq_sum[symmetric])
+    finally show ?thesis .
+  qed
   finally show ?thesis 
     by presburger
 qed
@@ -383,8 +581,23 @@ lemma finite_odd_comps_in_diff:
   assumes "X \<subseteq> Vs G" 
   shows "finite (odd_comps_in_diff G X)" 
   unfolding odd_comps_in_diff_def
-  by (metis Vs_def assms diff_is_union_elements finite_Un 
-      finite_UnionD finite_odd_components)
+proof -
+  have fin_odd: "finite (odd_components (G \<setminus> X))"
+    using assms(1) by (rule finite_odd_components)
+  have fin_singl: "finite (singl_in_diff G X)"
+  proof -
+    have fin_Vs: "finite (Vs G)"
+      using assms(1) by (rule graph_invar_finite_Vs)
+    have Vs_singl_subset: "Vs (singl_in_diff G X) \<subseteq> Vs G"
+      using assms diff_is_union_elements by blast
+    have fin_Vs_singl: "finite (Vs (singl_in_diff G X))"
+      using Vs_singl_subset fin_Vs by (rule finite_subset)
+    show ?thesis
+      using fin_Vs_singl unfolding Vs_def by (rule finite_UnionD)
+  qed
+  show "finite ((odd_components (G \<setminus> X)) \<union> (singl_in_diff G X))"
+    using fin_odd fin_singl by (simp add: finite_Un)
+qed
 
 lemma diff_odd_component_card_is_sum:
   assumes "graph_invar G"
@@ -473,20 +686,107 @@ proof -
   have "\<forall>a \<in> A. {M. perfect_matching a M} \<subseteq> {a1. a1 \<subseteq> a}" 
     by (simp add: Collect_mono perfect_matching_def)
   then have "\<forall>a \<in> A. finite {M. perfect_matching a M}"
-    by (metis Vs_def \<open>\<forall>a\<in>A. finite (Vs a)\<close> finite_Collect_subsets finite_UnionD finite_subset)
-  then have "finite (Vs ?Ms)"
-    using assms(5)
-    by (smt (verit) Vs_def \<open>finite ?Ms\<close> finite_Union mem_Collect_eq)
+  proof -
+    note pm_sub_bound = \<open>\<forall>a \<in> A. {M. perfect_matching a M} \<subseteq> {a1. a1 \<subseteq> a}\<close>
+    show ?thesis
+    proof (rule ballI)
+      fix a
+      assume ha: "a \<in> A"
+      have hvsf: "finite (Vs a)"
+        using \<open>\<forall>a \<in> A. finite (Vs a)\<close> ha by blast
+      have ha_pow: "a \<subseteq> Pow (Vs a)"
+      proof (rule subsetI)
+        fix e
+        assume "e \<in> a"
+        then show "e \<in> Pow (Vs a)"
+          unfolding Vs_def by blast
+      qed
+      have haf: "finite a"
+        using ha_pow finite_subset hvsf finite_Pow_iff by blast
+      have hpow: "finite {a1. a1 \<subseteq> a}"
+        using haf finite_Collect_subsets by blast
+      show "finite {M. perfect_matching a M}"
+        using pm_sub_bound ha hpow finite_subset by blast
+    qed
+  qed
+  then have hfin_pm: "\<forall>a \<in> A. finite {M. perfect_matching a M}" .
+  have "finite (Vs ?Ms)"
+  proof -
+    have hfin_elems: "\<forall>x \<in> ?Ms. finite x"
+    proof (rule ballI)
+      fix x assume hx: "x \<in> ?Ms"
+      then obtain a where ha: "a \<in> A" and hxa: "x = {M. perfect_matching a M}"
+        by auto
+      show "finite x"
+        using hfin_pm ha hxa by simp
+    qed
+    have hfin_union: "finite (\<Union> ?Ms)"
+      using \<open>finite ?Ms\<close> hfin_elems by (meson finite_Union)
+    show "finite (Vs ?Ms)"
+      unfolding Vs_def using hfin_union by simp
+  qed
   have "\<forall>a1 \<in> A.\<forall>a2\<in>A. a1 \<noteq> a2 \<longrightarrow>
      {M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M} = {}" 
-    apply (safe) 
-    by (metis Int_absorb assms(2,4) ex_in_conv perfect_matching_def vs_member_intro)+
-    (*by (met is assms(2) dblton_graph_def edges_are_Vs ex_in_conv inf.idem perfect_matching_member)+*)
-    (*; metis Vs_subset assms(2) edges_are_Vs empty_iff le_iff_inf perfect_matchingE)+*)
+  proof (intro ballI impI)
+    fix a1 a2
+    assume ha1: "a1 \<in> A" and ha2: "a2 \<in> A" and hne: "a1 \<noteq> a2"
+    show "{M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M} = {}"
+    proof (rule equals0I)
+      fix x
+      assume hx: "x \<in> {M. perfect_matching a1 M} \<inter> {M. perfect_matching a2 M}"
+      then have hpm1: "perfect_matching a1 x" and hpm2: "perfect_matching a2 x"
+        by auto
+      have hVs1: "Vs x = Vs a1"
+        using hpm1 unfolding perfect_matching_def by auto
+      have hVs2: "Vs x = Vs a2"
+        using hpm2 unfolding perfect_matching_def by auto
+      have hVs_eq: "Vs a1 = Vs a2"
+        using hVs1 hVs2 by auto
+      have hVs_disj: "Vs a1 \<inter> Vs a2 = {}"
+        using assms(2) ha1 ha2 hne by auto
+      have hVs_empty: "Vs a1 = {}"
+        using hVs_eq hVs_disj by auto
+      have ha1_empty: "a1 = {}"
+      proof (rule ccontr)
+        assume "a1 \<noteq> {}"
+        then obtain e where he: "e \<in> a1" by blast
+        have "e \<noteq> {}" using assms(4) ha1 he by auto
+        then obtain v where hv: "v \<in> e" by blast
+        have "v \<in> Vs a1" using vs_member_intro he hv by auto
+        then show False using hVs_empty by auto
+      qed
+      have hVs2_empty: "Vs a2 = {}"
+        using hVs_eq hVs_empty by auto
+      have ha2_empty: "a2 = {}"
+      proof (rule ccontr)
+        assume "a2 \<noteq> {}"
+        then obtain e where he: "e \<in> a2" by blast
+        have "e \<noteq> {}" using assms(4) ha2 he by auto
+        then obtain v where hv: "v \<in> e" by blast
+        have "v \<in> Vs a2" using vs_member_intro he hv by auto
+        then show False using hVs2_empty by auto
+      qed
+      show False using ha1_empty ha2_empty hne by auto
+    qed
+  qed
+
   then have matchings_are_diff: "\<forall>a1 \<in> ?Ms.\<forall>a2\<in>?Ms. a1 \<noteq> a2 \<longrightarrow> a1 \<inter> a2 = {}" 
     by force
   have "\<forall>a\<in> ?Ms. \<exists>b\<in> Vs ?Ms. b \<in> a" 
-    by (smt (z3) assms(3) mem_Collect_eq vs_member_intro)
+  proof (rule ballI)
+    fix a
+    assume ha: "a \<in> ?Ms"
+    then obtain g where hg: "g \<in> A" and ha_eq: "a = {M. perfect_matching g M}"
+      by auto
+    obtain M where hM: "perfect_matching g M"
+      using assms(3) hg by blast
+    have hMa: "M \<in> a"
+      using ha_eq hM by simp
+    have hMVs: "M \<in> Vs ?Ms"
+      using vs_member_intro ha hMa by blast
+    show "\<exists>b\<in> Vs ?Ms. b \<in> a"
+      using hMVs hMa by blast
+  qed
   then obtain C where C_sub_Ms:"C\<subseteq> Vs ?Ms \<and> (\<forall>Ms\<in> ?Ms. \<exists>!M\<in>C. M \<in> Ms)"
     using ex_subset_same_elem_card[of ?Ms] matchings_are_diff \<open>finite (Vs ?Ms)\<close> \<open>finite ?Ms\<close> by presburger
   have "\<forall>c \<in> C. matching c"
@@ -494,8 +794,16 @@ proof -
     fix c
     assume "c \<in> C"
     then have "c \<in> Vs ?Ms" using C_sub_Ms by blast
-    then have "\<exists>a\<in>A. perfect_matching a c" 
-      by (smt (verit, best) mem_Collect_eq vs_member)
+    then have "\<exists>a\<in>A. perfect_matching a c"
+    proof -
+      assume hcVs: "c \<in> Vs ?Ms"
+      obtain Ms where hMs: "Ms \<in> ?Ms" and hcMs: "c \<in> Ms"
+        using hcVs by (auto simp: vs_member)
+      obtain a where ha: "a \<in> A" and hMs_eq: "Ms = {M. perfect_matching a M}"
+        using hMs by auto
+      show "\<exists>a\<in>A. perfect_matching a c"
+        using ha hcMs hMs_eq by auto
+    qed
     then show "matching c"
       using perfect_matching_def by blast
   qed
@@ -510,18 +818,41 @@ proof -
       show " xa \<in> {}"
       proof(cases "Xa = X")
         case True
-        then show ?thesis using assums
-          by (metis \<open>\<forall>c\<in>C. matching c\<close> matching_unique_match)
+        then show ?thesis
+        proof -
+          have he2X: "e2 \<in> X"
+            using assums(3) True by simp
+          have hmatX: "matching X"
+            using \<open>\<forall>c\<in>C. matching c\<close> assums(2) by blast
+          from matching_unique_match[OF hmatX, of xa e1 e2] 
+          have "e1 = e2"
+            using assums(1) he2X assums(7) assums(8)
+            by auto
+          then show ?thesis
+            using assums(5) assums(6) by simp
+        qed
       next
         case False
         have "Xa \<in> Vs ?Ms" 
           using C_sub_Ms \<open>Xa \<in> C\<close> by blast
         then obtain a1 where a1_match:"a1 \<in> A \<and> perfect_matching a1 Xa"
-          by (smt (verit) mem_Collect_eq vs_member)
+          proof -
+            assume hXaVs: "Xa \<in> Vs ?Ms"
+            obtain Ms' where hMs'_in: "Ms' \<in> ?Ms" and hXa_in: "Xa \<in> Ms'"
+              using hXaVs by (auto simp: vs_member)
+            obtain a1 where ha1_A: "a1 \<in> A" and hMs'_eq: "Ms' = {M. perfect_matching a1 M}"
+              using hMs'_in by auto
+            have hpm: "perfect_matching a1 Xa"
+              using hXa_in hMs'_eq by simp
+            from ha1_A hpm have "a1 \<in> A \<and> perfect_matching a1 Xa"
+              by blast
+            then show ?thesis 
+              by (rule that)
+          qed
         have "X \<in> Vs ?Ms" 
           using C_sub_Ms \<open>X \<in> C\<close> by blast
         then obtain a2 where a2_match:"a2 \<in> A \<and> perfect_matching a2 X"
-          by (smt (verit) mem_Collect_eq vs_member)
+          by (auto simp: vs_member)
         have "a1 \<noteq> a2" 
           using C_sub_Ms False \<open>X \<in> C\<close> \<open>Xa \<in> C\<close> a1_match a2_match by auto
         then have "a1 \<inter> a2 = {}" 
@@ -529,8 +860,17 @@ proof -
 
         then show ?thesis 
           using assums a1_match a2_match
-          unfolding perfect_matching_def
-          by (smt (verit, ccfv_threshold) IntI \<open>a1 \<noteq> a2\<close> assms(2) vs_member_intro)
+        proof -
+          have hX_sub: "X \<subseteq> a2"       using a2_match by (auto simp: perfect_matching_def)
+          have hXa_sub: "Xa \<subseteq> a1"     using a1_match by (auto simp: perfect_matching_def)
+          have he1_a2: "e1 \<in> a2"      using assums(1) hX_sub by blast
+          have he2_a1: "e2 \<in> a1"      using assums(3) hXa_sub by blast
+          have hxa_Vs_a2: "xa \<in> Vs a2" using vs_member_intro he1_a2 assums(7) by blast
+          have hxa_Vs_a1: "xa \<in> Vs a1" using vs_member_intro he2_a1 assums(8) by blast
+          have hVs_disj: "Vs a1 \<inter> Vs a2 = {}"
+            using assms(2) a1_match a2_match \<open>a1 \<noteq> a2\<close> by blast
+          show ?thesis using hxa_Vs_a1 hxa_Vs_a2 hVs_disj by blast
+        qed
       qed
     }
     then show "e1 \<in> X \<Longrightarrow> X \<in> C \<Longrightarrow> e2 \<in> Xa \<Longrightarrow> Xa \<in> C \<Longrightarrow> x \<in> e2 \<Longrightarrow>
@@ -544,8 +884,20 @@ proof -
     then obtain c where "c\<in>C \<and> x \<in> c" by auto
     then have "c \<in> Vs ?Ms" 
       using C_sub_Ms by blast
-    then obtain a where "a\<in>A \<and> perfect_matching a c" 
-      by (smt (verit, best) mem_Collect_eq vs_member)
+    then obtain a where a_match: "a \<in> A \<and> perfect_matching a c"
+    proof -
+      assume hcVs: "c \<in> Vs ?Ms"
+      obtain Ms' where hMs'_in: "Ms' \<in> ?Ms" and hc_in: "c \<in> Ms'"
+        using hcVs by (auto simp: vs_member)
+      obtain a where ha_A: "a \<in> A" and hMs'_eq: "Ms' = {M. perfect_matching a M}"
+        using hMs'_in by auto
+      have hpm: "perfect_matching a c"
+        using hc_in hMs'_eq by simp
+      from ha_A hpm have "a \<in> A \<and> perfect_matching a c"
+        by blast
+      then show ?thesis
+        by (rule that)
+    qed
     then show "x \<in> \<Union>A" 
       using \<open>a \<in> A \<and> perfect_matching a c\<close> \<open>c \<in> C \<and> x \<in> c\<close>
       by (meson UnionI perfect_matchingE subsetD)
@@ -557,13 +909,39 @@ proof -
     then obtain e where "e \<in> (\<Union> A) \<and> x \<in> e"
       by (meson vs_member_elim)
     then obtain a where "a \<in> A \<and> e \<in> a" by auto
-    then obtain c where "c \<in> C \<and> perfect_matching a c" 
-      by (metis (mono_tags, lifting) C_sub_Ms mem_Collect_eq)
-    then have "x \<in> Vs c" 
-      using \<open>a \<in> A \<and> e \<in> a\<close> \<open>e \<in> \<Union> A \<and> x \<in> e\<close> 
-      by (metis perfect_matchingE vs_member_intro)
+    then obtain c where "c \<in> C \<and> perfect_matching a c"
+    proof -
+      have ha_Ms: "{M. perfect_matching a M} \<in> ?Ms"
+        using \<open>a \<in> A \<and> e \<in> a\<close> by blast
+      then have hex: "\<exists>!c \<in> C. c \<in> {M. perfect_matching a M}"
+        using C_sub_Ms by blast
+      then obtain c where "c \<in> C \<and> c \<in> {M. perfect_matching a M}"
+        by blast
+      then show thesis
+        using that by blast
+    qed
+    then have "x \<in> Vs c"
+    proof -
+      have hpm: "perfect_matching a c"
+        using \<open>c \<in> C \<and> perfect_matching a c\<close> by blast
+      have he_a: "e \<in> a"
+        using \<open>a \<in> A \<and> e \<in> a\<close> by blast
+      have hx_e: "x \<in> e"
+        using \<open>e \<in> \<Union> A \<and> x \<in> e\<close> by blast
+      have hVs: "Vs c = Vs a"
+        using hpm unfolding perfect_matching_def by blast
+      have hx_Vs_a: "x \<in> Vs a"
+        using vs_member_intro he_a hx_e by blast
+      show "x \<in> Vs c"
+        using hx_Vs_a hVs by blast
+    qed
     then show "x \<in> Vs (\<Union> C)" 
-      by (metis Vs_def \<open>c \<in> C \<and> perfect_matching a c\<close> vs_member)
+      proof -
+        have hc: "c \<in> C"
+          using \<open>c \<in> C \<and> perfect_matching a c\<close> by blast
+        show "x \<in> Vs (\<Union> C)"
+          using \<open>x \<in> Vs c\<close> hc unfolding Vs_def by blast
+      qed
   qed (meson Vs_subset \<open>\<Union> C \<subseteq> \<Union> A\<close> subsetD)
   then have "perfect_matching (\<Union> A) (\<Union> C)" 
     by (simp add: \<open>\<Union> C \<subseteq> \<Union> A\<close>  \<open>matching (\<Union> C)\<close> perfect_matchingI)
@@ -575,8 +953,17 @@ lemma perfect_matching_union_components:
   assumes "\<forall>a \<in> connected_components A. \<exists>M. perfect_matching (component_edges A a) M"
   shows "\<exists>M. perfect_matching A M"
 proof -
-  have "finite (components_edges A)" 
-    by (metis Vs_def assms(1) finite_UnionD graph_component_edges_partition)
+  have "finite (components_edges A)"
+  proof -
+    have fin_A: "finite A"
+      using assms(1) graph_invar_finite by blast
+    have part: "\<Union>(components_edges A) = A"
+      using graph_component_edges_partition assms(1) by blast
+    have "finite (\<Union>(components_edges A))"
+      using fin_A part by simp
+    then show ?thesis
+      by (rule finite_UnionD)
+  qed
   let ?E = "(components_edges A)" 
   have "\<forall>a \<in> ?E. \<exists>M. perfect_matching a M" using assms(2) unfolding components_edges_def
     by blast
@@ -585,7 +972,7 @@ proof -
     fix a1
     assume "a1 \<in> ?E"
     then obtain C1 where "C1 \<in> connected_components A \<and> a1 = component_edges A C1"
-      by (smt (verit) components_edges_def mem_Collect_eq)
+      unfolding components_edges_def by blast
     then have "Vs a1 = C1" 
       by (simp add: assms(1) vs_connected_component)
     show "\<forall>a2\<in>?E. a1 \<noteq> a2 \<longrightarrow> Vs a1 \<inter> Vs a2 = {}" 
@@ -593,7 +980,7 @@ proof -
       fix a2
       assume "a2 \<in> ?E"
       then obtain C2 where "C2 \<in> connected_components A \<and> a2 = component_edges A C2"
-        by (smt (verit) components_edges_def mem_Collect_eq)
+        unfolding components_edges_def by blast
       then have "Vs a2 = C2" 
         by (simp add: assms(1) vs_connected_component)
       have "C1 \<noteq> C2 \<longrightarrow> C1 \<inter> C2 = {}" 
@@ -619,11 +1006,12 @@ qed
 lemma empty_graph_odd_components:
   shows "odd_comps_in_diff {} X = {}" 
   unfolding odd_comps_in_diff_def
-  apply safe
-   apply(elim odd_componentsE odd_componentE )
-   apply (metis empty_iff graph_diff_of_empty vs_member_elim)
-  apply(elim singl_in_diffE)
-  by (simp add: graph_diff_of_empty)
+proof (rule equals0I)
+  fix C
+  assume "C \<in> odd_components ({} \<setminus> X) \<union> singl_in_diff {} X"
+  then show False
+    by (simp add: graph_diff_of_empty vs_member_elim odd_components_def odd_component_def singl_in_diff_def)
+qed
 
 lemma add_subset_change_odd_components:
   assumes "graph_invar G"
@@ -639,7 +1027,7 @@ proof(cases "C \<in> singl_in_diff G X")
     using assms(5) assms(4) by blast
 
   then obtain x where singl_x:"C = {x}" "x \<in> Vs G" "x \<notin> X" "x \<notin> Vs (G \<setminus> X)"
-    by (metis True singl_in_diffE)
+    using True unfolding singl_in_diff_def by blast
   then have "Y = {x}" 
     by (simp add: \<open>C = Y\<close>)
 
@@ -652,11 +1040,9 @@ proof(cases "C \<in> singl_in_diff G X")
     by auto
   have "(singl_in_diff G X) - {{x}} = singl_in_diff G (X \<union> {x})"
     unfolding singl_in_diff_def
-    using \<open>G \<setminus> X = G \<setminus> (X \<union> {x})\<close>         
-    apply safe 
-     apply (metis Un_iff singletonD)
-    by metis
-  have "{x} \<notin> (odd_components (G \<setminus>X))" 
+    using \<open>(G \<setminus> X) = (G \<setminus> (X \<union> {x}))\<close>         
+    by auto
+  have "{x} \<notin> (odd_components (G \<setminus> X))" 
     using odd_components_elem_in_E singl_x(4) by blast
   then have "odd_comps_in_diff G (X\<union>{x}) = ((odd_comps_in_diff G X) - {{x}})"
     unfolding odd_comps_in_diff_def 
@@ -664,13 +1050,39 @@ proof(cases "C \<in> singl_in_diff G X")
         \<open>singl_in_diff G X - {{x}} = singl_in_diff G (X \<union> {x})\<close>)
 
 
-  have "(component_edges (G \<setminus> X) C) = {}" 
-    by (smt (verit, best) assms(1) component_edges_singleton_is_empty graph_invar_remove_vertices singl_x(1))
+  have "(component_edges (G \<setminus> X) C) = {}"
+  proof -
+    have invar_diff: "graph_invar (G \<setminus> X)"
+      by (rule graph_invar_remove_vertices[OF assms(1)])
+    have "component_edges (G \<setminus> X) {x} = {}"
+      by (rule component_edges_singleton_is_empty[OF invar_diff])
+    then show ?thesis
+      using singl_x(1) by simp
+  qed
   then have "odd_comps_in_diff (component_edges (G \<setminus> X) C) Y = {}" 
     by (simp add: empty_graph_odd_components)
 
-  then show ?thesis unfolding odd_comps_in_diff_def  
-    by (metis \<open>C = Y\<close> \<open>odd_comps_in_diff G (X \<union> {x}) = odd_comps_in_diff G X - {{x}}\<close> odd_comps_in_diff_def singl_x(1) sup_bot_right)
+  then show ?thesis
+  proof -
+    have empty_comp: "odd_comps_in_diff (component_edges (G \<setminus> X) C) Y = {}"
+      by fact
+    have Y_eq: "Y = {x}"
+      using \<open>C = Y\<close> singl_x(1) by simp
+    have XY_eq: "X \<union> Y = X \<union> {x}"
+      using Y_eq by simp
+    have lhs_eq: "odd_comps_in_diff G (X \<union> Y) = odd_comps_in_diff G X - {C}"
+    proof -
+      have "odd_comps_in_diff G (X \<union> Y) = odd_comps_in_diff G (X \<union> {x})"
+        using XY_eq by simp
+      also have "\<dots> = odd_comps_in_diff G X - {{x}}"
+        by (rule \<open>odd_comps_in_diff G (X \<union> {x}) = odd_comps_in_diff G X - {{x}}\<close>)
+      also have "\<dots> = odd_comps_in_diff G X - {C}"
+        using singl_x(1) by simp
+      finally show ?thesis .
+    qed
+    then show ?thesis
+      using empty_comp by simp
+  qed
 next
   case False
   then have "C \<in> odd_components (G \<setminus> X)" 
@@ -689,8 +1101,7 @@ next
         using odd_components_nonempty by blast
       then obtain c where "c \<in> C'" by auto
       then have conn_compC':"connected_component (G \<setminus> (X \<union> Y)) c = C'"
-        using odd_comps_in_diff_is_component 
-        by (metis asmC')
+        by (rule odd_comps_in_diff_is_component[OF asmC'])
 
       show "C' \<in> odd_comps_in_diff G X - {C} \<union>
               odd_comps_in_diff (component_edges (G \<setminus> X) C) Y"
@@ -704,8 +1115,15 @@ next
         then obtain e where e: "e \<in> (G \<setminus> X)" "c \<in> e"  
           by (meson vs_member_elim)
         then have "e \<subseteq> C"
-          using edge_subset_component[of "(G \<setminus> X)" e c]
-          by (metis conn_compC assms(1) graph_invar_remove_vertices)
+        proof -
+          have invar_diff: "graph_invar (G \<setminus> X)"
+            by (rule graph_invar_remove_vertices[OF assms(1)])
+          have "e \<subseteq> connected_component (G \<setminus> X) c"
+            using edge_subset_component[of "(G \<setminus> X)" e c] invar_diff e(1) e(2)
+            by blast
+          then show ?thesis
+            using conn_compC by simp
+        qed
         have "C' = connected_component (G \<setminus> (X\<union> Y)) c" 
           by (simp add: conn_compC')
 
@@ -724,7 +1142,12 @@ next
               case False
               then have "(\<exists>p. walk_betw (G \<setminus> (X\<union> Y)) x p c)"
                 unfolding connected_component_def 
-                by (metis asm connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have "c \<in> connected_component (G \<setminus> (X \<union> Y)) x"
+                  using asm by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
               then obtain p where p_walk:"walk_betw (G \<setminus> (X\<union> Y)) x p c" 
                 by auto
               then have "last p = c"
@@ -744,38 +1167,116 @@ next
                   by (simp add: True in_own_connected_component)
               next
                 case (path2 v v' vs)
-                have "v' \<in> C" 
-                  by (metis last_ConsR list.set_intros(1) 
-                      list.simps(3) path2.hyps(3) path2.prems)
+                have "v' \<in> C"
+                proof -
+                  have last_eq: "last (v' # vs) = c"
+                    using \<open>last (v # v' # vs) = c\<close> by (simp add: last_ConsR)
+                  then have "\<forall>z \<in> set (v' # vs). z \<in> C \<and>
+                        z \<in> connected_component
+                              ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+                    using path2(3) by auto
+                  moreover have "v' \<in> set (v' # vs)"
+                    by simp
+                  ultimately show ?thesis
+                    by auto
+                qed
                 have "{v, v'} \<inter> (X\<union>Y) = {}" 
                   by (meson graph_diffE path2.hyps(1))
                 then have "{v, v'} \<inter> X = {}" 
                   by (simp add: Int_Un_distrib)
                 then have "{v, v'} \<in> (G \<setminus> X)"   
                   by (meson graph_diffE graph_diffI path2.hyps(1))
-                then have "v \<in> C" 
-                  by (metis \<open>v' \<in> C\<close> conn_compC connected_components_member_eq insert_commute 
-                      vertices_edges_in_same_component)
+                then have "v \<in> C"
+                proof -
+                  have invar_diff_X: "graph_invar (G \<setminus> X)"
+                    by (rule graph_invar_remove_vertices[OF assms(1)])
+                  have v'_in_comp: "v' \<in> connected_component (G \<setminus> X) c"
+                    using \<open>v' \<in> C\<close> conn_compC by simp
+                  have comp_v'_eq: "connected_component (G \<setminus> X) v' = C"
+                    using connected_components_member_eq[OF v'_in_comp] conn_compC by simp
+                  have edge_sub: "{v, v'} \<subseteq> connected_component (G \<setminus> X) v'"
+                    using edge_subset_component[OF invar_diff_X \<open>{v, v'} \<in> (G \<setminus> X)\<close>]
+                    by simp
+                  then have "v \<in> connected_component (G \<setminus> X) v'"
+                    by blast
+                  then show ?thesis
+                    using comp_v'_eq by simp
+                qed
                 then have "{v, v'} \<in> (component_edges (G \<setminus> X) C)"
-                  using \<open>v' \<in> C\<close> \<open>{v, v'} \<in> G \<setminus> X\<close> component_edges_def by blast     
+                  using \<open>v' \<in> C\<close> \<open>{v, v'} \<in> (G \<setminus> X)\<close> component_edges_def by blast     
                 then have "{v, v'} \<in> ((component_edges (G \<setminus> X) C) \<setminus> Y)"
                   using \<open>{v, v'} \<inter> (X \<union> Y) = {}\<close> 
                   by (simp add: graph_diffI)       
                 then have "v' \<in> connected_component 
-                                ((component_edges (G \<setminus> X) C) \<setminus> Y) c" 
-                  by (metis last_ConsR list.set_intros(1) list.simps(3) path2.hyps(3) 
-                      path2.prems)
+                                ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+                proof -
+                  have "last (v' # vs) = c"
+                    using path2.prems by (simp add: last_ConsR)
+                  then have "\<forall>z \<in> set (v' # vs). z \<in> C \<and> 
+                      z \<in> connected_component ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+                    using path2.hyps(3) by blast
+                  moreover have "v' \<in> set (v' # vs)"
+                    by simp
+                  ultimately show ?thesis
+                    by blast
+                qed
                 then have "v \<in> connected_component 
-                                ((component_edges (G \<setminus> X) C) \<setminus>Y) c"
-                  by (metis \<open>{v, v'} \<in> (component_edges (G \<setminus> X) C) \<setminus> Y\<close> 
-                      connected_components_member_eq insert_commute 
-                      vertices_edges_in_same_component)
-                then show ?case 
-                  by (metis \<open>v \<in> C\<close> last_ConsR list.simps(3) path2.hyps(3) path2.prems set_ConsD)
+                                ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+                proof -
+                  let ?H = "((component_edges (G \<setminus> X) C) \<setminus> Y)"
+                  note v'_in_comp = \<open>v' \<in> connected_component ?H c\<close>
+                  note edge_in_H  = \<open>{v, v'} \<in> ((component_edges (G \<setminus> X) C) \<setminus> Y)\<close>
+                  have comp_eq: "connected_component ?H v' = connected_component ?H c"
+                    by (rule connected_components_member_eq[OF v'_in_comp])
+                  have "v' \<in> connected_component ?H v"
+                    by (rule vertices_edges_in_same_component[OF edge_in_H])
+                  then have "v \<in> connected_component ?H v'"
+                    by (rule connected_components_member_sym)
+                  then show ?thesis
+                    using comp_eq by simp
+                qed
+                note v_in_comp = this
+                show ?case
+                proof -
+                  have last_vs: "last (v' # vs) = c"
+                    using path2.prems by (simp add: last_ConsR)
+                  with path2.hyps(3) have ih: "\<forall>z \<in> set (v' # vs). z \<in> C \<and>
+                        z \<in> connected_component
+                              ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+                    by blast
+                  show ?case
+                  proof (rule ballI)
+                    fix z
+                    assume "z \<in> set (v # v' # vs)"
+                    then consider (head) "z = v" | (tail) "z \<in> set (v' # vs)"
+                      by auto
+                    then show "z \<in> C \<and> z \<in> connected_component
+                                          ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+                    proof cases
+                      case head
+                      then show ?thesis using \<open>v \<in> C\<close> v_in_comp by simp
+                    next
+                      case tail
+                      then show ?thesis using ih by blast
+                    qed
+                  qed
+                qed
               qed
               then show "x \<in> connected_component 
                           ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
-                by (metis list.set_sel(1) p_walk walk_betw_def)
+              proof -
+                note all_z =
+                  \<open>\<forall>z\<in>set p. z \<in> C \<and>
+                       z \<in> connected_component
+                             ((component_edges (G \<setminus> X) C) \<setminus> Y) c\<close>
+                have p_nonempty: "p \<noteq> []"
+                  using p_walk unfolding walk_betw_def by simp
+                have hd_x: "hd p = x"
+                  using p_walk unfolding walk_betw_def by simp
+                have "x \<in> set p"
+                  using hd_in_set[OF p_nonempty] hd_x by simp
+                with all_z show ?thesis by blast
+              qed
             qed
           }
           fix x
@@ -789,7 +1290,12 @@ next
             case False
             then have "(\<exists>p. walk_betw  ((component_edges (G \<setminus> X) C) \<setminus> Y) x p c)"
               unfolding connected_component_def 
-              by (metis asm connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have "c \<in> connected_component ((component_edges (G \<setminus> X) C) \<setminus> Y) x"
+                  using asm by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
             then obtain p where p_walk:
               "walk_betw  ((component_edges (G \<setminus> X) C) \<setminus> Y) x p c" 
               by auto
@@ -835,13 +1341,32 @@ next
               then have "v' \<in> connected_component (G \<setminus> (X\<union>Y)) c" 
                 by (simp add: in_c)
               then have "v \<in> connected_component (G \<setminus> (X\<union>Y)) c"
-                by (metis \<open>{v, v'} \<in> G \<setminus> (X \<union> Y)\<close> connected_components_member_eq 
-                    connected_components_member_sym vertices_edges_in_same_component)
+              proof -
+                have step1: "v' \<in> connected_component (G \<setminus> (X \<union> Y)) v"
+                  by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> (G \<setminus> (X \<union> Y))\<close>])
+                have step2: "v \<in> connected_component (G \<setminus> (X \<union> Y)) v'"
+                  by (rule connected_components_member_sym[OF step1])
+                have step3: "connected_component (G \<setminus> (X \<union> Y)) v' =
+                             connected_component (G \<setminus> (X \<union> Y)) c"
+                  by (rule connected_components_member_eq[OF \<open>v' \<in> connected_component (G \<setminus> (X\<union>Y)) c\<close>])
+                show ?thesis
+                  using step2 step3 by simp
+              qed
               then show ?case 
                 using in_c by fastforce
             qed 
-            then show ?thesis 
-              by (metis list.set_sel(1) p_walk walk_betw_def)
+            note all_in_comp = this
+            show ?thesis
+            proof -
+              have p_nonempty: "p \<noteq> []"
+                using p_walk unfolding walk_betw_def by simp
+              have hd_x: "hd p = x"
+                using p_walk unfolding walk_betw_def by simp
+              have x_in_p: "x \<in> set p"
+                using hd_in_set[OF p_nonempty] hd_x by simp
+              show ?thesis
+                using all_in_comp x_in_p by blast
+            qed
           qed
         qed
         then have c_in_diff:
@@ -849,9 +1374,13 @@ next
           using conn_compC' by presburger
         have "odd (card C')" 
           using asmC' diff_odd_compoenent_has_odd_card by auto
-        have c_in_C: "c \<in> Vs (component_edges (G \<setminus> X) C)" 
-          by (smt (verit, ccfv_SIG) \<open>e \<subseteq> C\<close> assms(1) e edge_in_component_edges 
-              graph_invar_remove_vertices vs_member)
+        have c_in_C: "c \<in> Vs (component_edges (G \<setminus> X) C)"
+        proof -
+          from edge_in_component_edges[OF graph_invar_remove_vertices[OF assms(1)] e(1) \<open>e \<subseteq> C\<close>] 
+          have e_in_comp: "e \<in> component_edges (G \<setminus> X) C" .
+          show ?thesis
+            using e(2) e_in_comp vs_member_intro by blast
+        qed
         have "c \<notin> Y"
           by (meson \<open>c \<in> C'\<close> asmC' disjoint_iff_not_equal 
               odd_comps_in_diff_not_in_X subsetD sup_ge2)
@@ -878,8 +1407,13 @@ next
             next
               case False
               then have "\<exists>p. walk_betw (G \<setminus> X) x p c"
-                unfolding connected_component_def 
-                by (metis asmx connected_components_member_sym in_con_comp_has_walk)
+                unfolding connected_component_def
+              proof -
+                have sym: "c \<in> connected_component (G \<setminus> X) x"
+                  using asmx by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
               then obtain p where p_walk:"walk_betw (G \<setminus> X) x p c" by auto
               then have "last p = c"
                 by (simp add: walk_between_nonempty_pathD(4))
@@ -893,9 +1427,14 @@ next
                   by auto
               next
                 case (path1 v)
-                then show ?case 
-                  using \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> 
-                  by (metis empty_iff empty_set in_own_connected_component last_ConsL set_ConsD)
+                then show ?case
+                  using \<open>c \<in> C'\<close> \<open>c \<notin> C\<close>
+                proof -
+                  have v_eq_c: "v = c"
+                    using path1.prems by simp
+                  show ?thesis
+                    using v_eq_c \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> in_own_connected_component by auto
+                qed
               next
                 case (path2 v v' vs)
                 have "last (v' # vs) = c" 
@@ -915,8 +1454,21 @@ next
                   by (meson \<open>v' \<in> connected_component (G \<setminus> X) c\<close> 
                       connected_components_member_trans)
                 then have "v \<notin> C" 
-                  by (metis assms(3) connected_components_member_eq list.set_intros(1)
-                      odd_comps_in_diff_is_component zhyps)
+proof -
+                    show ?thesis
+                    proof (rule notI)
+                      assume v_in_C: "v \<in> C"
+                      have v'_not_C: "v' \<notin> C"
+                        using zhyps list.set_intros(1) by auto
+                      have comp_eq: "connected_component (G \<setminus> X) v = C"
+                        by (rule odd_comps_in_diff_is_component[OF assms(3) v_in_C])
+                      have "v' \<in> connected_component (G \<setminus> X) v"
+                        by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> (G \<setminus> X)\<close>])
+                      then have "v' \<in> C"
+                        using comp_eq by simp
+                      with v'_not_C show False by contradiction
+                    qed
+                  qed
                 then have "v \<notin> Y" 
                   using assms(4) by blast
                 have "v' \<notin> Y" 
@@ -930,15 +1482,40 @@ next
                 then have "{v, v'} \<inter> (X\<union>Y) = {}" 
                   by (simp add: Int_Un_distrib \<open>{v, v'} \<inter> Y = {}\<close>)
                 then have "{v, v'} \<in> (G \<setminus> (X \<union> Y))" 
-                  by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq path2.hyps(1))
-                then have "v \<in> C'" 
-                  by (metis conn_compC' connected_components_member_trans insert_commute
-                      list.set_intros(1) vertices_edges_in_same_component zhyps)
+                  using path2.hyps(1)
+                  unfolding graph_diff_def by blast
+                then have "v \<in> C'"
+                proof -
+                  have v'_in_C': "v' \<in> C'"
+                    using zhyps by simp
+                  have v'_in_comp: "v' \<in> connected_component (G \<setminus> (X \<union> Y)) c"
+                    using v'_in_C' conn_compC' by simp
+                  have edge_comm: "{v', v} \<in> (G \<setminus> (X \<union> Y))"
+                    using \<open>{v, v'} \<in> (G \<setminus> (X \<union> Y))\<close>
+                    by (simp add: insert_commute)
+                  have v_in_comp_v': "v \<in> connected_component (G \<setminus> (X \<union> Y)) v'"
+                    by (rule vertices_edges_in_same_component[OF edge_comm])
+                  have comp_eq: "connected_component (G \<setminus> (X \<union> Y)) v' =
+                                 connected_component (G \<setminus> (X \<union> Y)) c"
+                    by (rule connected_components_member_eq[OF v'_in_comp])
+                  show ?thesis
+                    using v_in_comp_v' comp_eq conn_compC' by simp
+                qed
                 then show ?case 
                   using \<open>v \<in> connected_component (G \<setminus> X) c\<close> \<open>v \<notin> C\<close> zhyps by auto
               qed
-              then have "x \<in> C' \<and> x \<notin> C \<and> x \<in> connected_component (G \<setminus> X) c" 
-                by (metis list.set_sel(1) p_walk walk_betw_def)
+              note all_z = this
+              have "x \<in> C' \<and> x \<notin> C \<and> x \<in> connected_component (G \<setminus> X) c"
+              proof -
+                have p_nonempty: "p \<noteq> []"
+                  using p_walk unfolding walk_betw_def by simp
+                have hd_x: "hd p = x"
+                  using p_walk unfolding walk_betw_def by simp
+                have x_in_p: "x \<in> set p"
+                  using hd_in_set[OF p_nonempty] hd_x by simp
+                show ?thesis
+                  using all_z x_in_p by blast
+              qed
               then show " x \<in> connected_component (G \<setminus> (X \<union> Y)) c" 
                 using conn_compC' by auto
             qed
@@ -953,8 +1530,12 @@ next
           next
             case False
             then have "\<exists>p. walk_betw (G \<setminus> (X \<union> Y)) x p c"
-              unfolding connected_component_def
-              by (metis asmx connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have "c \<in> connected_component (G \<setminus> (X \<union> Y)) x"
+                  using asmx by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
             then obtain p where p_walk:"walk_betw (G \<setminus> (X \<union> Y)) x p c" 
               by auto
             then have "last p = c"
@@ -969,9 +1550,8 @@ next
                 by auto
             next
               case (path1 v)
-              then show ?case 
-                using \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> 
-                by (metis empty_iff empty_set in_own_connected_component last_ConsL set_ConsD)
+              then have "v = c" by simp
+              then show ?case by (simp add: in_own_connected_component)
             next
               case (path2 v v' vs)
               have "last (v' # vs) = c" 
@@ -986,12 +1566,36 @@ next
                 by blast
               then have "v' \<in> connected_component (G \<setminus> X) c" 
                 by (simp add: zhyps)
-              then show ?case 
-                by (metis zhyps \<open>{v, v'} \<in> G \<setminus> X\<close> connected_components_member_eq
-                    insert_commute set_ConsD vertices_edges_in_same_component)
+              then show ?case
+              proof -
+                have v'_in_comp: "v' \<in> connected_component (G \<setminus> X) c" by fact
+                have v'_in_comp_v: "v' \<in> connected_component (G \<setminus> X) v"
+                  by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> (G \<setminus> X)\<close>])
+                have v_in_comp_v': "v \<in> connected_component (G \<setminus> X) v'"
+                  by (rule connected_components_member_sym[OF v'_in_comp_v])
+                have comp_v'_eq_c:
+                  "connected_component (G \<setminus> X) v' = connected_component (G \<setminus> X) c"
+                  by (rule connected_components_member_eq[OF v'_in_comp])
+                have v_in_comp_c: "v \<in> connected_component (G \<setminus> X) c"
+                  using v_in_comp_v' comp_v'_eq_c by simp
+                show "\<forall>z\<in>set (v # v' # vs). z \<in> connected_component (G \<setminus> X) c"
+                  using v_in_comp_c zhyps by auto
+              qed
             qed
-            then show " x \<in> connected_component (G \<setminus> (X)) c" 
-              by (metis list.set_sel(1) p_walk walk_betw_def)
+            show " x \<in> connected_component (G \<setminus> (X)) c" 
+            proof -
+              have all_in_p: "\<forall>z\<in>set p. z \<in> connected_component (G \<setminus> X) c"
+                using \<open>\<forall>z\<in>set p. z \<in> connected_component (G \<setminus> X) c\<close> .
+              have p_nonempty: "p \<noteq> []"
+                using p_walk unfolding walk_betw_def by simp
+              have hd_x: "hd p = x"
+                using p_walk unfolding walk_betw_def by simp
+              have x_in_p: "x \<in> set p"
+                using hd_in_set[OF p_nonempty] hd_x by simp
+              show ?thesis
+                using all_in_p x_in_p by blast
+            qed
+
           qed
         qed
         then have conn_compC: "connected_component (G \<setminus> X) c = C'" 
@@ -1012,7 +1616,16 @@ next
             then obtain e where e: "c \<in> e \<and> e \<in> (G \<setminus> X)" 
               by auto
             then have "e \<subseteq> connected_component (G \<setminus> X) c" 
-              by (metis assms(1) edge_subset_component graph_invar_remove_vertices)
+            proof -
+              have invar_diff: "graph_invar (G \<setminus> X)"
+                by (rule graph_invar_remove_vertices[OF assms(1)])
+              have c_in_e: "c \<in> e" using e by simp
+              have e_in_diff: "e \<in> (G \<setminus> X)" using e by simp
+              show "e \<subseteq> connected_component (G \<setminus> X) c"
+                using edge_subset_component[of "(G \<setminus> X)" e c]
+                      invar_diff e_in_diff c_in_e
+                by blast
+            qed
             then show False
               using \<open>connected_component (G \<setminus> X) c = {c}\<close> assms(1) e graph_invar_remove_vertices
               by fastforce
@@ -1025,8 +1638,13 @@ next
             by simp
         next
           case False
-          then have "C' \<in> odd_components (G \<setminus> (X\<union>Y))" 
-            by (metis UnE asmC' odd_comps_in_diff_def)
+          have "C' \<in> odd_components (G \<setminus> (X \<union> Y))" 
+          proof -
+            have "C' \<in> odd_components (G \<setminus> (X \<union> Y)) \<union> singl_in_diff G (X \<union> Y)"
+              using asmC' unfolding odd_comps_in_diff_def .
+            then show ?thesis
+              using False by blast
+          qed
           then have "odd (card C')" 
             by (simp add: odd_components_def odd_component_def)
           have "c\<in>Vs (G \<setminus> X)"
@@ -1053,7 +1671,13 @@ next
                 using \<open>c \<notin> Vs (G \<setminus> X)\<close> by blast
             qed
             have "c \<notin> X \<union> Y" 
-              by (metis IntI \<open>c \<in> C'\<close> asmC' empty_iff odd_comps_in_diff_not_in_X)
+            proof
+              assume c_in_XY: "c \<in> X \<union> Y"
+              have disj: "C' \<inter> (X \<union> Y) = {}"
+                using odd_comps_in_diff_not_in_X asmC' by blast
+              then show False
+                using \<open>c \<in> C'\<close> c_in_XY by blast
+            qed
             then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
               unfolding singl_in_diff_def 
               using \<open>c \<in> C'\<close> c_notin_U asmC' component_in_E by fastforce
@@ -1091,7 +1715,13 @@ next
         then have "C' \<noteq> C" 
           by blast
         then have "C' \<inter> C = {}"
-          by (metis Diff_iff True assms(3) diff_component_disjoint)
+        proof -
+          have C'_in: "C' \<in> odd_comps_in_diff G X"
+            using True by blast
+          show "C' \<inter> C = {}"
+            using diff_component_disjoint[OF C'_in assms(3)] \<open>C' \<noteq> C\<close>
+            by (simp add: Int_commute)
+        qed
         have C'_odd: "C' \<in> odd_comps_in_diff G X" 
           using True by auto
         have "C' \<noteq> {}" 
@@ -1116,8 +1746,12 @@ next
             next
               case False
               then have "\<exists>p. walk_betw (G \<setminus> X) x p c"
-                unfolding connected_component_def 
-                by (metis asmx connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have sym: "c \<in> connected_component (G \<setminus> X) x"
+                  using asmx by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
               then obtain p where p_walk:"walk_betw (G \<setminus> X) x p c"
                 by auto
               then have "last p = c"
@@ -1132,9 +1766,9 @@ next
                   by auto
               next
                 case (path1 v)
-                then show ?case 
-                  by (metis \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> empty_iff empty_set in_own_connected_component 
-                      last_ConsL set_ConsD)
+                then have v_eq_c: "v = c" by simp
+                show ?case
+                  using v_eq_c \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> in_own_connected_component by auto
               next
                 case (path2 v v' vs)
                 have "last (v' # vs) = c" 
@@ -1144,16 +1778,28 @@ next
                   using \<open>last (v' # vs) = c\<close> path2.hyps(3) by blast
                 have "{v, v'} \<in> (G \<setminus> X)" 
                   by (simp add: path2.hyps(1))
-                then have "{v, v'} \<inter> X = {}" 
-                  by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq)
+                then have "{v, v'} \<inter> X = {}"
+                  unfolding graph_diff_def by blast
                 then have v'_conn:"v' \<in> connected_component (G \<setminus> X) c" 
                   by (simp add: conn_C' zhyp)
                 then have "v \<in> connected_component (G \<setminus> X) v'"
                   by (meson connected_components_member_sym path2.hyps(1) 
                       vertices_edges_in_same_component)
-                then have "v \<notin> C" 
-                  by (metis \<open>C' \<inter> C = {}\<close> conn_C' 
-                      connected_components_member_eq disjoint_iff_not_equal v'_conn)
+                then have "v \<notin> C"
+                proof -
+                  have v_in_comp_v': "v \<in> connected_component (G \<setminus> X) v'"
+                    by fact
+                  have v'_in_C': "v' \<in> C'"
+                    using zhyp by simp
+                  have v'_in_comp_c: "v' \<in> connected_component (G \<setminus> X) c"
+                    using conn_C' v'_in_C' by simp
+                  have comp_v'_eq_C': "connected_component (G \<setminus> X) v' = C'"
+                    using connected_components_member_eq[OF v'_in_comp_c] conn_C' by simp
+                  have v_in_C': "v \<in> C'"
+                    using v_in_comp_v' comp_v'_eq_C' by simp
+                  show ?thesis
+                    using v_in_C' \<open>C' \<inter> C = {}\<close> by blast
+                qed
                 then have "v \<notin> Y" 
                   using assms(4) by blast
                 have "v' \<notin> Y" 
@@ -1166,15 +1812,42 @@ next
                   by fastforce
                 then have "{v, v'} \<inter> (X \<union> Y) = {}" 
                   by (simp add: Int_Un_distrib \<open>{v, v'} \<inter> Y = {}\<close>)
-                then have "{v, v'} \<in> (G \<setminus> (X \<union> Y))" 
-                  by (metis (mono_tags, lifting) graph_diff_def mem_Collect_eq path2.hyps(1))
+                then have "{v, v'} \<in> (G \<setminus> (X \<union> Y))"
+                proof -
+                  have in_G: "{v, v'} \<in> G"
+                    using path2.hyps(1) graph_diff_subset by blast
+                  show ?thesis
+                    using in_G \<open>{v, v'} \<inter> (X \<union> Y) = {}\<close>
+                    unfolding graph_diff_def by blast
+                qed
                 then show ?case 
-                  by (metis \<open>v \<in> connected_component (G \<setminus> X) v'\<close> \<open>v \<notin> C\<close> conn_C' 
-                      connected_components_member_eq connected_components_member_sym 
-                      list.set_intros(1) set_ConsD vertices_edges_in_same_component zhyp)
+                proof -
+                  have edge_XY: "{v, v'} \<in> (G \<setminus> (X \<union> Y))" by fact
+                  have v'_in_C': "v' \<in> C'"
+                    using zhyp by simp
+                  have v'_in_comp_c: "v' \<in> connected_component (G \<setminus> X) c"
+                    using v'_in_C' conn_C' by simp
+                  have comp_v'_eq_C': "connected_component (G \<setminus> X) v' = C'"
+                    using connected_components_member_eq[OF v'_in_comp_c] conn_C' by simp
+                  have v_in_C': "v \<in> C'"
+                    using \<open>v \<in> connected_component (G \<setminus> X) v'\<close> comp_v'_eq_C' by simp
+                  have v'_in_comp_XY: "v' \<in> connected_component (G \<setminus> (X \<union> Y)) c"
+                    using zhyp by simp
+                  have v'_in_comp_v: "v' \<in> connected_component (G \<setminus> (X \<union> Y)) v"
+                    by (rule vertices_edges_in_same_component[OF edge_XY])
+                  have v_in_comp_v': "v \<in> connected_component (G \<setminus> (X \<union> Y)) v'"
+                    by (rule connected_components_member_sym[OF v'_in_comp_v])
+                  have comp_v'_eq_c: "connected_component (G \<setminus> (X \<union> Y)) v' =
+                                      connected_component (G \<setminus> (X \<union> Y)) c"
+                    by (rule connected_components_member_eq[OF v'_in_comp_XY])
+                  have v_in_comp_c: "v \<in> connected_component (G \<setminus> (X \<union> Y)) c"
+                    using v_in_comp_v' comp_v'_eq_c by simp
+                  show ?thesis
+                    using v_in_C' \<open>v \<notin> C\<close> v_in_comp_c zhyp by auto
+                qed
               qed
               then show "x \<in> connected_component (G \<setminus> (X \<union> Y)) c" 
-                by (metis list.set_sel(1) p_walk walk_betw_def)
+                using p_walk walk_between_nonempty_pathD(3) by fastforce
             qed
           }
           fix x
@@ -1187,8 +1860,12 @@ next
           next 
             case False
             then have "\<exists>p. walk_betw (G \<setminus> (X \<union> Y)) x p c"
-              unfolding connected_component_def 
-              by (metis asmx connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have "c \<in> connected_component (G \<setminus> (X \<union> Y)) x"
+                  using asmx by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
             then obtain p where p_walk:"walk_betw (G \<setminus> (X \<union> Y)) x p c"
               by auto
             then have "last p = c"
@@ -1201,11 +1878,9 @@ next
               case path0
               then show ?case 
                 by auto
-            next
-              case (path1 v)
-              then show ?case 
-                using \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> 
-                by (metis empty_iff empty_set in_own_connected_component last_ConsL set_ConsD)
+            next  case (path1 v)
+  then have "v = c" by simp
+  then show ?case by (simp add: in_own_connected_component)
             next
               case (path2 v v' vs)
               have "last (v' # vs) = c" 
@@ -1220,12 +1895,34 @@ next
                 by blast
               then have "v' \<in> connected_component (G \<setminus> X) c" 
                 by (simp add: zhyp)
-              then show ?case 
-                by (metis zhyp \<open>{v, v'} \<in> G \<setminus> X\<close> connected_components_member_eq 
-                    insert_commute set_ConsD vertices_edges_in_same_component)
+              then show ?case
+              proof -
+                have v'_in_comp_c: "v' \<in> connected_component (G \<setminus> X) c"
+                  by fact
+                have v'_in_comp_v: "v' \<in> connected_component (G \<setminus> X) v"
+                  by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> (G \<setminus> X)\<close>])
+                have v_in_comp_v': "v \<in> connected_component (G \<setminus> X) v'"
+                  by (rule connected_components_member_sym[OF v'_in_comp_v])
+                have comp_eq:
+                  "connected_component (G \<setminus> X) v' = connected_component (G \<setminus> X) c"
+                  by (rule connected_components_member_eq[OF v'_in_comp_c])
+                have v_in_comp_c: "v \<in> connected_component (G \<setminus> X) c"
+                  using v_in_comp_v' comp_eq by simp
+                show "\<forall>z\<in>set (v # v' # vs). z \<in> connected_component (G \<setminus> X) c"
+                  using v_in_comp_c zhyp by auto
+              qed
             qed
-            then show "x \<in> connected_component (G \<setminus> X) c" 
-              by (metis list.set_sel(1) p_walk walk_betw_def)
+            then show "x \<in> connected_component (G \<setminus> (X)) c" 
+            proof -
+              have p_nonempty: "p \<noteq> []"
+                using p_walk unfolding walk_betw_def by simp
+              have hd_x: "hd p = x"
+                using p_walk unfolding walk_betw_def by simp
+              have x_in_p: "x \<in> set p"
+                using hd_in_set[OF p_nonempty] hd_x by simp
+              with \<open>\<forall>z\<in>set p. z \<in> connected_component (G \<setminus> X) c\<close>
+              show ?thesis by blast
+            qed
           qed
         qed
         then have conn_diff_C':"connected_component (G \<setminus> (X \<union> Y)) c = C'" 
@@ -1251,12 +1948,23 @@ next
               by (simp add: assms(1) edge_subset_component graph_invar_remove_vertices)
             then show False
               using assms(1) comp_singl e graph_invar_remove_vertices
-              by fastforce 
+              by fastforce          qed
+        have "c \<notin> X \<union> Y"
+        proof (rule notI)
+          assume h: "c \<in> X \<union> Y"
+          have c_notin_X: "c \<notin> X"
+          proof -
+            have "C' \<inter> X = {}"
+              using C'_odd odd_comps_in_diff_not_in_X by blast
+            then show ?thesis
+              using \<open>c \<in> C'\<close> by blast
           qed
-          have "c \<notin> X \<union> Y" 
-            by (metis C'_odd IntI Un_iff \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> assms(4) empty_iff 
-                odd_comps_in_diff_not_in_X subsetD)
-          then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
+          have c_notin_Y: "c \<notin> Y"
+            using \<open>c \<notin> C\<close> assms(4) by blast
+          show False
+            using h c_notin_X c_notin_Y by blast
+        qed
+        then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
             by (meson C'_odd \<open>c \<in> C'\<close> c_notin_diff component_in_E singl_in_diffI subsetD)
           then have "C' \<in> singl_in_diff G (X\<union>Y)" 
             by (simp add: \<open>C' = {c}\<close>)
@@ -1268,17 +1976,39 @@ next
             using C'_odd odd_comps_in_diffE by blast
           then have "odd (card C')" 
             by (simp add: odd_components_def odd_component_def)
-          have "c \<notin> X \<union> Y" 
-            by (metis C'_odd IntI Un_iff \<open>c \<in> C'\<close> \<open>c \<notin> C\<close> assms(4) empty_iff 
-                odd_comps_in_diff_not_in_X subsetD)
+          have "c \<notin> X \<union> Y"
+          proof -
+            have "c \<notin> X"
+            proof -
+              have "C' \<inter> X = {}"
+                using C'_odd odd_comps_in_diff_not_in_X by blast
+              then show ?thesis
+                using \<open>c \<in> C'\<close> by blast
+            qed
+            moreover have "c \<notin> Y"
+              using \<open>c \<notin> C\<close> assms(4) by blast
+            ultimately show ?thesis by blast
+          qed
           have "c \<in> Vs (G \<setminus> X)"
             using \<open>C' \<in> odd_components (G \<setminus> X)\<close> \<open>c \<in> C'\<close> odd_components_elem_in_E by auto
-          then obtain e where e:"c \<in> e \<and> e \<in> G \<setminus> X" 
+          then obtain e where e:"c \<in> e \<and> e \<in> (G \<setminus> X)" 
             by (meson vs_member_elim)
           then have e_unfold:"c \<in> e \<and> e \<in> G \<and> e \<inter> X = {}" 
             by (simp add: graph_diff_def)
-          have "e \<subseteq> C'" 
-            by (metis assms(1) conn_C' e edge_subset_component graph_invar_remove_vertices)
+          have "e \<subseteq> C'"
+          proof -
+            have invar_diff: "graph_invar (G \<setminus> X)"
+              by (rule graph_invar_remove_vertices[OF assms(1)])
+            have c_in_e: "c \<in> e"
+              using e by blast
+            have e_in_diff: "e \<in> (G \<setminus> X)"
+              using e by blast
+            have e_sub_comp: "e \<subseteq> connected_component (G \<setminus> X) c"
+              using edge_subset_component[of "(G \<setminus> X)" e c] invar_diff e_in_diff c_in_e
+              by blast
+            then show ?thesis
+              using conn_C' by simp
+          qed
           then have "e \<inter> Y = {}" 
             using \<open>C' \<inter> C = {}\<close> assms(4) by blast
           then have "e \<inter> (X \<union> Y) = {}" 
@@ -1304,7 +2034,7 @@ next
           by (meson C'diffY component_in_E)
         have "Vs ?C \<subseteq> C"
           unfolding component_edges_def 
-          by (smt (verit, ccfv_SIG) mem_Collect_eq subset_eq vs_member)
+          by (auto simp: subset_iff vs_member)
         then have "C' \<subseteq> C" 
           using \<open>C' \<subseteq> Vs ?C\<close> by auto
         have "C' \<inter> Y = {}" 
@@ -1329,8 +2059,12 @@ next
             next
               case False
               then have "\<exists>p. walk_betw (G \<setminus> (X \<union> Y)) x p c"
-                unfolding connected_component_def 
-                by (metis asmx connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have "c \<in> connected_component (G \<setminus> (X \<union> Y)) x"
+                  using asmx by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
               then obtain p where p_walk:"walk_betw (G \<setminus> (X \<union> Y)) x p c"
                 by auto
               then have "last p = c" 
@@ -1371,13 +2105,28 @@ next
                 then have "v' \<in> C"
                   using \<open>C' \<subseteq> C\<close> by blast
                 then have "C = connected_component (G \<setminus> X) c" 
-                  by (metis \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> assms(3) in_mono odd_comps_in_diff_is_component)
+                proof -
+                  have c_in_C: "c \<in> C"
+                    using \<open>c \<in> C'\<close> \<open>C' \<subseteq> C\<close> by blast
+                  show ?thesis
+                    using odd_comps_in_diff_is_component[OF assms(3) c_in_C] by simp
+                qed
                 then have "v' \<in> connected_component (G \<setminus> X) c"
                   using \<open>v' \<in> C\<close> by blast
-                then have "v \<in> C" 
-                  by (metis \<open>v' \<in> C\<close> \<open>{v, v'} \<in> G \<setminus> X\<close> assms(3) 
-                      connected_components_member_sym odd_comps_in_diff_is_component
-                      vertices_edges_in_same_component)
+                then have "v \<in> C"
+                proof -
+                  have v'_in_comp_v: "v' \<in> connected_component (G \<setminus> X) v"
+                    by (rule vertices_edges_in_same_component[OF \<open>{v, v'} \<in> (G \<setminus> X)\<close>])
+                  have v_in_comp_v': "v \<in> connected_component (G \<setminus> X) v'"
+                    by (rule connected_components_member_sym[OF v'_in_comp_v])
+                  have comp_eq: "connected_component (G \<setminus> X) v' =
+                                 connected_component (G \<setminus> X) c"
+                    by (rule connected_components_member_eq[OF
+                          \<open>v' \<in> connected_component (G \<setminus> X) c\<close>])
+                  show ?thesis
+                    using v_in_comp_v' comp_eq \<open>C = connected_component (G \<setminus> X) c\<close>
+                    by simp
+                qed
                 then have "{v, v'} \<subseteq> C" 
                   by (simp add: \<open>v' \<in> C\<close>)
                 then have "{v, v'} \<in> ?C" 
@@ -1387,15 +2136,37 @@ next
                 then have "v' \<in> connected_component (?C \<setminus> Y) c" 
                   using \<open>v' \<in> C'\<close> conn_diffY by blast
                 then have "v \<in> connected_component (?C \<setminus> Y) c" 
-                  by (metis vv' connected_components_member_eq insert_commute
-                    vertices_edges_in_same_component)
+                proof -
+                  have vv'_comm: "{v', v} \<in> (?C \<setminus> Y)"
+                    using vv' by (simp add: insert_commute)
+                  have v_in_comp_v': "v \<in> connected_component (?C \<setminus> Y) v'"
+                    by (rule vertices_edges_in_same_component[OF vv'_comm])
+                  have comp_eq: "connected_component (?C \<setminus> Y) v' =
+                                 connected_component (?C \<setminus> Y) c"
+                    by (rule connected_components_member_eq[OF
+                          \<open>v' \<in> connected_component (?C \<setminus> Y) c\<close>])
+                  show ?thesis
+                    using v_in_comp_v' comp_eq by simp
+                qed
                 then have "v \<in> C'" 
                   using conn_diffY by auto
                 then show ?case 
                   using \<open>\<forall>z\<in>set (v' # vs). z \<in> C'\<close> by fastforce
               qed
               then show "x \<in> connected_component ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
-                by (metis conn_diffY list.set_sel(1) p_walk walk_betw_def)
+              proof -
+                have all_z: "\<forall>z \<in> set p. z \<in> C'" by fact
+                have p_nonempty: "p \<noteq> []"
+                  using p_walk unfolding walk_betw_def by simp
+                have hd_x: "hd p = x"
+                  using p_walk unfolding walk_betw_def by simp
+                have x_in_p: "x \<in> set p"
+                  using hd_in_set[OF p_nonempty] hd_x by simp
+                have x_in_C': "x \<in> C'"
+                  using all_z x_in_p by blast
+                show ?thesis
+                  using x_in_C' conn_diffY by simp
+              qed
             qed
           }
           fix x
@@ -1409,8 +2180,13 @@ next
           next
             case False
             then have "\<exists>p. walk_betw  ((component_edges (G \<setminus> X) C) \<setminus> Y) x p c"
-              unfolding connected_component_def 
-              by (metis asm connected_components_member_sym in_con_comp_has_walk)
+              proof -
+                have sym: "c \<in> connected_component
+                     ((component_edges (G \<setminus> X) C) \<setminus> Y) x"
+                  using asm by (rule connected_components_member_sym)
+                with \<open>x \<noteq> c\<close> show ?thesis
+                  by (fastforce elim: in_con_comp_has_walk)
+              qed
             then obtain p where p_walk:
                 "walk_betw  ((component_edges (G \<setminus> X) C) \<setminus> Y) x p c" 
               by auto
@@ -1424,10 +2200,9 @@ next
               case path0
               then show ?case 
                 by auto
-            next
-              case (path1 v)
-              then show ?case 
-                by (metis empty_iff empty_set in_own_connected_component last_ConsL set_ConsD)
+            next case (path1 v)
+              then have v_eq_c: "v = c" by simp
+              then show ?case by (simp add: in_own_connected_component)
             next
               case (path2 v v' vs)
               have "last (v' # vs) = c" 
@@ -1482,9 +2257,26 @@ next
               using \<open>connected_component (G \<setminus> (X \<union> Y)) c = {c}\<close> 
                 assms(1) e graph_invar_remove_vertices by fastforce
           qed
-          have "c \<notin> X \<union> Y" 
-          by (metis Un_iff \<open>C' \<inter> Y = {}\<close> \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> assms(3) 
-              odd_comps_in_diff_not_in_X disjoint_iff_not_equal subset_eq)
+          have "c \<notin> X \<union> Y"
+          proof (rule notI)
+            assume "c \<in> X \<union> Y"
+            then consider (inX) "c \<in> X" | (inY) "c \<in> Y"
+              by blast
+            then show False
+            proof cases
+              case inX
+              have c_in_C: "c \<in> C"
+                using \<open>c \<in> C'\<close> \<open>C' \<subseteq> C\<close> by blast
+              have "C \<inter> X = {}"
+                using odd_comps_in_diff_not_in_X[OF assms(3)] .
+              then show False
+                using c_in_C inX by blast
+            next
+              case inY
+              show False
+                using \<open>c \<in> C'\<close> \<open>C' \<inter> Y = {}\<close> inY by blast
+            qed
+          qed
         then have "{c} \<in> singl_in_diff G (X \<union> Y)" 
           by (meson \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> \<open>c \<notin> Vs (G \<setminus> (X \<union> Y))\<close> assms(3) 
               component_in_E singl_in_diffI subsetD)
@@ -1498,9 +2290,20 @@ next
             using C'diffY by (simp add: odd_comps_in_diff_def)
           then have "odd (card C')" 
             by (simp add: odd_components_def odd_component_def)
-          have "c \<notin> X \<union> Y" 
-            by (metis UnE \<open>C' \<inter> Y = {}\<close> \<open>C' \<subseteq> C\<close> \<open>c \<in> C'\<close> assms(3) disjoint_iff_not_equal
-                odd_comps_in_diff_not_in_X subset_eq)
+          have "c \<notin> X \<union> Y"
+          proof -
+            have c_notin_Y: "c \<notin> Y"
+              using \<open>C' \<inter> Y = {}\<close> \<open>c \<in> C'\<close> by blast
+            have c_notin_X: "c \<notin> X"
+            proof -
+              have "C \<inter> X = {}"
+                using odd_comps_in_diff_not_in_X assms(3) by blast
+              then show ?thesis
+                using \<open>c \<in> C'\<close> \<open>C' \<subseteq> C\<close> by blast
+            qed
+            show ?thesis
+              using c_notin_X c_notin_Y by blast
+          qed
           have "c \<in> Vs (?C \<setminus> Y)" 
             using False \<open>C' \<subseteq> Vs ?C\<close> \<open>c \<notin> X \<union> Y\<close> conn_diffY 
               connected_components_notE_singletons singl_in_diffI by fastforce
@@ -1508,11 +2311,32 @@ next
               by (meson vs_member_elim)
           then have "c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}" 
             by (simp add: graph_diff_def)
-          then have "e \<subseteq> C'"
-            by (metis \<open>graph_invar (component_edges (G \<setminus>X) C)\<close> conn_diffY e edge_subset_component graph_invar_remove_vertices)
+        then have "e \<subseteq> C'"
+        proof -
+          have invar_diff_CY: "graph_invar ((component_edges (G \<setminus> X) C) \<setminus> Y)"
+            by (rule graph_invar_remove_vertices[OF \<open>graph_invar (component_edges (G \<setminus> X) C)\<close>])
+          have e_in_CY: "e \<in> ((component_edges (G \<setminus> X) C) \<setminus> Y)"
+            using e by blast
+          have c_in_e: "c \<in> e"
+            using e by blast
+          have "e \<subseteq> connected_component ((component_edges (G \<setminus> X) C) \<setminus> Y) c"
+            using edge_subset_component[OF invar_diff_CY e_in_CY c_in_e] by blast
+          then show ?thesis
+            using conn_diffY by simp
+        qed
           then have "e \<inter> (X \<union> Y) = {}" 
-            by (smt (z3) Int_Un_distrib Int_Un_eq(4) Un_Int_assoc_eq Un_absorb Un_commute \<open>C' \<subseteq> C\<close>
-                \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> assms(3) odd_comps_in_diff_not_in_X subset_trans)
+          proof -
+            have e_in_CE: "e \<in> component_edges (G \<setminus> X) C"
+              using \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> by blast
+            have e_in_diffX: "e \<in> (G \<setminus> X)"
+              using Connected_Components.component_edges_subset e_in_CE by blast
+            have e_inter_X: "e \<inter> X = {}"
+              using e_in_diffX unfolding graph_diff_def by fastforce
+            have e_inter_Y: "e \<inter> Y = {}"
+              using \<open>c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}\<close> by blast
+            show ?thesis
+              using e_inter_X e_inter_Y by blast
+          qed
           have "e \<in> G" 
             using `c \<in> e \<and> e \<in> ?C \<and> e \<inter> Y = {}` Connected_Components.component_edges_subset 
                   graph_diff_member 

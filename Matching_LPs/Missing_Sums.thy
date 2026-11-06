@@ -126,7 +126,12 @@ lemma swap_zero_fun_nonneg:
   assumes "\<forall>ia < length xs. 0 \<le> f ia" 
   shows "\<forall>ia < length xs. 0 \<le> (f(0 := f j, j := f 0)) ia"
   using assms swap_fun_nonneg 
-  by (metis bot_nat_0.not_eq_extremum less_nat_zero_code)
+proof -
+  have "0 < length xs"
+    using assms(1) by linarith
+  then show ?thesis
+    using swap_fun_nonneg[of 0 xs j f] assms(1) assms(2) by simp
+qed
 
 lemma sum_of_swap_fun_eq:
   assumes "finite A"
@@ -261,12 +266,36 @@ proof -
     then have "c i = 1"
       using  nonneg_sum_range_each_le[of "length L" c] 
         assms(5) nonneg_sum_1 order_le_imp_less_or_eq 
-      by metis
+    proof -
+      have nonneg_c: "\<forall>j<length L. c j \<ge> 0" using nonneg_sum_1 by blast
+      have le_sum: "c i \<le> sum c {0..<length L}"
+        using nonneg_sum_range_each_le[of "length L" c, OF nonneg_c] assms(5) by blast
+      have sum_one: "sum c {0..<length L} = 1" using nonneg_sum_1 by blast
+      show "c i = 1" using le_sum sum_one \<open>\<not> c i < 1\<close> by linarith
+    qed
     have "\<forall>j < length L. i \<noteq> j \<longrightarrow> c j = 0" 
       using sum_eq_one_elem_other_zero[of "{0..<length L}" c i] 
       by (auto simp: \<open>c i = 1\<close> assms(5) nonneg_sum_1) 
     then have "x \<in> \<int>\<^sub>v" using convex_lincom_int[of c L x] 
-      by (metis Ints_0 Ints_1 \<open>c i = 1\<close> assms(1) assms(3) assms(4))
+proof -
+  have "\<forall>k < length L. c k \<in> \<int>"
+  proof (intro allI impI)
+    fix k
+    assume "k < length L"
+    show "c k \<in> \<int>"
+    proof (cases "k = i")
+      case True
+      then show ?thesis using \<open>c i = 1\<close> by simp
+    next
+      case False
+      then have "c k = 0"
+        using \<open>\<forall>j < length L. i \<noteq> j \<longrightarrow> c j = 0\<close> \<open>k < length L\<close> by blast
+      then show ?thesis by simp
+    qed
+  qed
+  then show "x \<in> \<int>\<^sub>v"
+    using convex_lincom_int[of c L x] assms(1) assms(3) assms(4) by blast
+qed
     then show False 
       by (simp add: assms(2))
   qed
@@ -280,8 +309,21 @@ proof -
     using nth_upt[of 1 _ "length ax + 1"] by auto
   have "(map (\<lambda> i. (f (i+1) \<cdot>\<^sub>v (a # ax) ! (i+1))) [0..<length ax]) = 
     (map (\<lambda> i. (f i \<cdot>\<^sub>v (a # ax) ! i)) [1..<length ax + 1])"
-    apply (auto simp: map_eq_conv' append_shift) 
-    by (metis Suc_leI length_greater_0_conv)
+  proof (rule nth_equalityI)
+    show "length (map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax]) =
+          length (map (\<lambda>i. f i \<cdot>\<^sub>v (a # ax) ! i) [1..<length ax + 1])"
+      by (simp add: length_upt del: upt_Suc)
+  next
+    fix i
+    assume "i < length (map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax])"
+    then have i_less: "i < length ax"
+      by simp
+    have idx: "[1..<length ax + 1] ! i = i + 1"
+      using append_shift i_less by auto
+    show "map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax] ! i =
+          map (\<lambda>i. f i \<cdot>\<^sub>v (a # ax) ! i) [1..<length ax + 1] ! i"
+      using i_less idx by (simp add: nth_map del: upt_Suc)
+  qed
   then show ?thesis
     by auto
 qed
@@ -339,8 +381,8 @@ proof -
     using sumlist_upt_same[of Wsl i c] apply (simp add: x_sumlist assms(2) assms(3))
     using swap_zero_fun_nonneg[of i Wsl c] assms(3) cll  apply presburger
     using sum_of_swap_fun_eq[of "{0..<length Wsl}" 0 i c] 
-    by (metis assms(3) atLeastLessThan_iff cll linorder_le_less_linear 
-        not_less_zero sum.infinite zero_less_iff_neq_zero)
+using sum_of_swap_fun_eq[of "{0..<length Wsl}" 0 i c] cll assms(3)
+      by force
 qed
 
 lemma convex_lincomb_in_convex_hull_list:
@@ -373,20 +415,37 @@ proof -
   have "length (a # ax) = 1 + length ax" 
     by simp
   then have 0:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = sum (\<lambda>i. f i) {1..<length (a # ax)}"
-    by (metis Nat.add_0_right  add.commute sum.shift_bounds_nat_ivl)
+proof -
+  have shift: "sum f {0 + 1..<length ax + 1} = sum (\<lambda>i. f (i + 1)) {0..<length ax}"
+    by (rule sum.shift_bounds_nat_ivl)
+  have len: "length (a # ax) = length ax + 1"
+    by simp
+  from shift len show ?thesis
+    by simp
+qed
   then have "(1/(1 - f 0)) * sum (\<lambda>i. f (i + 1)) {0..<length ax} =
               (1/(1 - f 0)) * sum (\<lambda>i. f i) {1..<length (a # ax)}" by simp
   have 1:"sum ?g {0..<length ax} = (1/(1 - f 0)) * sum (\<lambda>i. f (i + 1)) {0..<length ax}"  
     using mult_hom.hom_sum[of "(1/(1 - f 0))" "(\<lambda>i. f (i + 1))" "{0..<length ax}"]
     by simp
   then have "f 0 + sum f {1..<length (a#ax)} = sum f {0..<length (a#ax)}" 
-    by (metis \<open>length (a # ax) = 1 + length ax\<close> add.commute sum_range_divided_at_zero)
+  proof -
+    have "length (a # ax) = length ax + 1"
+      using \<open>length (a # ax) = 1 + length ax\<close> by (simp add: add.commute)
+    then show ?thesis
+      using sum_range_divided_at_zero[of f "length ax"] by simp
+  qed
   then have "f 0 + sum f {1..<length (a#ax)} = 1" 
-    by (metis  \<open>sum f {0..<length (a#ax)} = 1\<close>)
+    using assms(1) by linarith
   then have 2:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = 1 - f 0" 
     using 0 by linarith 
   then have "(1/(1 - f 0)) * (1 - f 0) =  1" using `f 0 \<noteq> 1` 
-    by (metis nonzero_eq_divide_eq r_right_minus_eq)
+  proof -
+    have "1 - f 0 \<noteq> 0"
+      using `f 0 \<noteq> 1` by simp
+    then show ?thesis
+      by (simp add: divide_simps)
+  qed
   then show ?thesis 
     using 1 2 by presburger
 qed
@@ -394,7 +453,14 @@ qed
 lemma sumlist_distr_zero:
   assumes "m > 0"
   shows "sumlist (map f [0..<m]) = f 0 + sumlist (map f [1..<m])" 
-  by (metis M.sumlist_Cons add_zero_to_range_list assms list.simps(9))
+proof -
+  have "[0..<m] = 0 # [1..<m]"
+    using add_zero_to_range_list[OF assms] by simp
+  then have "map f [0..<m] = f 0 # map f [1..<m]"
+    by simp
+  then show ?thesis
+    by (simp add: M.sumlist_Cons)
+qed
 
 lemma sumlist_as_lincomb_two_elems:
   assumes "c 0 \<noteq> 1"
@@ -435,7 +501,16 @@ lemma elem_int_hull_lincomb_list:
 proof -
 obtain Ws c' where Ws_c':"finite Ws" "Ws \<subseteq> P \<inter> \<int>\<^sub>v" "convex_lincomb c' Ws x"
   using assms(2) unfolding integer_hull_def
-        by (smt (verit, ccfv_SIG) IntD1 \<open>x \<in> P\<close> gram_schmidt.convex_hull_def mem_Collect_eq)
+proof -
+  have "P = convex_hull (P \<inter> \<int>\<^sub>v)"
+    using assms(2) unfolding integer_hull_def by blast
+  then have "x \<in> convex_hull (P \<inter> \<int>\<^sub>v)"
+    using \<open>x \<in> P\<close> by blast
+  then obtain Ws c' where "finite Ws" "Ws \<subseteq> P \<inter> \<int>\<^sub>v" "convex_lincomb c' Ws x"
+    unfolding convex_hull_def by blast
+  then show thesis
+    using that by blast
+qed
   have Ws_subs: "Ws \<subseteq> carrier_vec n" 
     by (meson Int_subset_iff Ws_c'(2) assms(1) dual_order.trans)
   have "x \<in> convex_hull Ws" 
@@ -444,17 +519,67 @@ obtain Ws c' where Ws_c':"finite Ws" "Ws \<subseteq> P \<inter> \<int>\<^sub>v" 
     by (meson Ws_c'(1) finite_list)
   then obtain c where c: "convex_lincomb_list c Wsl x" 
     using Ws_subs Ws_c' obt_convect_lincomb_list by blast
+  have set_int: "set Wsl \<subseteq> \<int>\<^sub>v"
+    using Wsl Ws_c'(2) by blast
+  have set_carr: "set Wsl \<subseteq> carrier_vec n"
+    using Wsl Ws_subs by blast
+  have "\<exists>i. i < length Wsl \<and> c i \<noteq> 0"
+  proof (rule ccontr)
+    assume "\<nexists>i. i < length Wsl \<and> c i \<noteq> 0"
+    then have all_zero: "\<forall>i < length Wsl. c i = 0"
+      by blast
+    then have all_int: "\<forall>i < length Wsl. c i \<in> \<int>"
+      by simp
+    have "x \<in> \<int>\<^sub>v"
+      using convex_lincom_int[OF c set_int set_carr all_int] .
+    then show False
+      using assms(4) by blast
+  qed
   then obtain i where i: "i < length Wsl \<and> c i \<noteq> 0" 
-    by (metis Ints_0 Ws_c'(2) Ws_subs Wsl assms(4) convex_lincom_int inf.boundedE)
+    by blast
   have Ws_swap: "Ws = set (Wsl[0:= Wsl ! i, i:=Wsl ! 0])"
-    by (metis i Wsl length_pos_if_in_set nth_mem set_swap)
+  proof -
+  have i_len: "i < length Wsl"
+    using i by blast
+  have i_mem: "Wsl ! i \<in> set Wsl"
+    using i_len by (rule nth_mem)
+  have len_pos: "0 < length Wsl"
+    using i_mem by (rule length_pos_if_in_set)
+  have swap_eq: "set (Wsl[0 := Wsl ! i, i := Wsl ! 0]) = set Wsl"
+    using set_swap[OF len_pos i_len] .
+  show ?thesis
+    using Wsl swap_eq by simp
+  qed
  have "Ws \<noteq> {}" 
     using \<open>x \<in> convex_hull Ws\<close> convex_hull_empty(2) by blast
  then have "Wsl \<noteq> []" 
     using \<open>Ws \<noteq> {}\<close> Wsl by fastforce
-  then show ?thesis
-    using convex_lincomb_list_swap[of c Wsl x i] Ws_c'
-    by (metis Ws_swap Ws_subs Wsl c fun_upd_other fun_upd_same i list_update_nonempty that)
+  show ?thesis
+  proof (rule that[of "c(0 := c i, i := c 0)" "Wsl[0 := Wsl ! i, i := Wsl ! 0]"])
+    have i_lt: "i < length Wsl" and ci_neq: "c i \<noteq> 0"
+      using i by auto
+    have Wsl_carr: "set Wsl \<subseteq> carrier_vec n"
+      using Ws_subs Wsl by simp
+    have swap_conv: "convex_lincomb_list (c(0 := c i, i := c 0)) (Wsl[0 := Wsl ! i, i := Wsl ! 0]) x"
+      by (rule convex_lincomb_list_swap[OF c Wsl_carr i_lt])
+    have c0_neq: "(c(0 := c i, i := c 0)) 0 \<noteq> 0"
+    proof (cases "i = 0")
+      case True
+      then show ?thesis using ci_neq by simp
+    next
+      case False
+      then show ?thesis using ci_neq by simp
+    qed
+    have set_sub: "set (Wsl[0 := Wsl ! i, i := Wsl ! 0]) \<subseteq> P \<inter> \<int>\<^sub>v"
+      unfolding Ws_swap[symmetric] using Ws_c'(2) .
+    have nonempty: "Wsl[0 := Wsl ! i, i := Wsl ! 0] \<noteq> []"
+      using \<open>Wsl \<noteq> []\<close> by (simp add: list_update_nonempty)
+    show "convex_lincomb_list (c(0 := c i, i := c 0)) (Wsl[0 := Wsl ! i, i := Wsl ! 0]) x \<and>
+          (c(0 := c i, i := c 0)) 0 \<noteq> 0 \<and>
+          set (Wsl[0 := Wsl ! i, i := Wsl ! 0]) \<subseteq> P \<inter> \<int>\<^sub>v \<and>
+          Wsl[0 := Wsl ! i, i := Wsl ! 0] \<noteq> []"
+      using swap_conv c0_neq set_sub nonempty by blast
+  qed
 qed
 
 lemma elem_of_P_is_lin_comb:
@@ -466,8 +591,7 @@ lemma elem_of_P_is_lin_comb:
   obtains y z l where "y \<in> P \<inter> \<int>\<^sub>v" "z \<in> P" "x = l \<cdot>\<^sub>v y + (1 - l) \<cdot>\<^sub>v z" "l > 0 \<and> l < 1"
 proof -
   obtain Wsl c where Wc: "convex_lincomb_list c Wsl x \<and> c 0 \<noteq> 0 \<and> (set Wsl) \<subseteq> P \<inter> \<int>\<^sub>v \<and> Wsl \<noteq> []"
-    using elem_int_hull_lincomb_list 
-    by (metis assms)
+    by (rule elem_int_hull_lincomb_list[OF assms(1) assms(2) assms(3) assms(4)])
   then have lin_comb_x: 
     "lincomb_list c Wsl = x \<and> (\<forall> i < length Wsl. c i \<ge> 0) \<and> sum c {0..<length Wsl} = 1"
     using convex_lincomb_list_def nonneg_lincomb_list_def Wc by blast
@@ -479,10 +603,20 @@ proof -
     using convex_lincomb_less_1_coeff[of c Wsl x] using Wc assms(1) 
     using assms(4) by blast
   then have "c 0 \<noteq> 1" 
-    by (metis Wc length_greater_0_conv less_numeral_extra(4))
+  proof -
+    assume c_lt_1: "\<forall>i<length Wsl. c i < 1"
+    have "Wsl \<noteq> []" using Wc by auto
+    hence "0 < length Wsl" by (simp add: length_greater_0_conv)
+    hence "c 0 < 1" using c_lt_1 by blast
+    thus "c 0 \<noteq> 1" by (simp add: less_imp_neq)
+  qed
   let ?f = "(\<lambda>i. c (i + 1) / (1 - c 0))" 
   have "sum ?f {0..<length ax} = 1" using sum_except_one 
-    by (metis \<open>Wsl = a # ax\<close> \<open>c 0 \<noteq> 1\<close> \<open>sum c {0..<length Wsl} = 1\<close>)
+  proof -
+    have "sum c {0..<length (a # ax)} = 1"
+      using \<open>sum c {0..<length Wsl} = 1\<close> \<open>Wsl = a # ax\<close> by simp
+    from sum_except_one[OF this \<open>c 0 \<noteq> 1\<close>] show ?thesis .
+  qed
   have "set ax \<subseteq> set Wsl" 
     using \<open>Wsl = a # ax\<close> by auto
   then have "set ax \<subseteq> carrier_vec n" using assms(1) Wc
@@ -506,7 +640,13 @@ proof -
   have 3:"a \<in> P \<inter> \<int>\<^sub>v" 
     using \<open>Wsl = a # ax\<close> Wc  by force
   have 4:"c 0 > 0" 
-    by (metis Wc \<open>\<forall>i<length Wsl. 0 \<le> c i\<close> length_greater_0_conv order_le_imp_less_or_eq)
+  proof -
+    from Wc have "Wsl \<noteq> []" by blast
+    hence "0 < length Wsl" by (simp add: length_greater_0_conv)
+    hence "0 \<le> c 0" using \<open>\<forall>i<length Wsl. 0 \<le> c i\<close> by blast
+    moreover from Wc have "c 0 \<noteq> 0" by blast
+    ultimately show "c 0 > 0" by (simp add: order_less_le)
+  qed
   have 5:"c 0 \<le> 1" using member_le_sum[of 0 "{0..<length Wsl}" c] 
     using \<open>Wsl = a # ax\<close> lin_comb_x by force
   then show ?thesis using 1 2 3 4 5

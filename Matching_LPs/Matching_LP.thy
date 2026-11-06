@@ -178,11 +178,12 @@ proof -
     unfolding scalar_prod_def
     using A c x yA x0
     by (auto intro!: sum_mono mult_right_mono simp: less_eq_vec_def)
-  also have "\<dots> = y \<bullet> (A *\<^sub>v x)" using x y A by (metis transpose_vec_mult_scalar)
+  also have "\<dots> = y \<bullet> (A *\<^sub>v x)"
+  using x y A by (simp add: transpose_vec_mult_scalar)
   also have "\<dots> \<le> y \<bullet> b" 
     unfolding scalar_prod_def using A b Axb y0
     by (auto intro!: sum_mono mult_left_mono simp: less_eq_vec_def)
-  also have "\<dots> = b \<bullet> y" using y b by (metis comm_scalar_prod)
+  also have "\<dots> = b \<bullet> y" using y b by (rule comm_scalar_prod)
   finally show ?thesis . 
 qed
 (*TODO fix type*)
@@ -198,15 +199,35 @@ lemma general_complementary_slackness:
   shows "c \<bullet> x = b \<bullet> y" 
 proof-
   have a1:"b\<bullet>y - (A *\<^sub>v x) \<bullet>y = 0" 
-    using slack_primal by (metis A b minus_scalar_prod_distrib mult_mat_vec_carrier x y)
+proof -
+  have Ax: "A *\<^sub>v x \<in> carrier_vec nr"
+    using mult_mat_vec_carrier[OF A x] .
+  have "(b - A *\<^sub>v x) \<bullet> y = b \<bullet> y - (A *\<^sub>v x) \<bullet> y"
+    using minus_scalar_prod_distrib[OF b Ax y] .
+  thus "b\<bullet>y - (A *\<^sub>v x) \<bullet>y = 0"
+    using slack_primal by simp
+qed
   hence a2:"b\<bullet>y  =  (A *\<^sub>v x) \<bullet>y" by auto
   have "c\<bullet>x - (A\<^sup>T *\<^sub>v y)\<bullet>x = 0"
     using slack_dual
-    by (metis A c carrier_matD(2) carrier_vecI dim_mult_mat_vec index_transpose_mat(2)
-        minus_scalar_prod_distrib x)
+  proof -
+    have AT: "A\<^sup>T \<in> carrier_mat nc nr"
+      using A by simp
+    have ATy: "A\<^sup>T *\<^sub>v y \<in> carrier_vec nc"
+      using AT y by (rule mult_mat_vec_carrier)
+    have "(c - A\<^sup>T *\<^sub>v y) \<bullet> x = c \<bullet> x - (A\<^sup>T *\<^sub>v y) \<bullet> x"
+      using minus_scalar_prod_distrib[OF c ATy x] .
+    with slack_dual show ?thesis by simp
+  qed
   hence a3:  "c\<bullet>x = (A\<^sup>T *\<^sub>v y)\<bullet>x " by simp
   moreover have "... = (A *\<^sub>v x) \<bullet>y"
-    by (metis A comm_scalar_prod mult_mat_vec_carrier transpose_vec_mult_scalar x y)
+  proof -
+    have "(A\<^sup>T *\<^sub>v y) \<bullet> x = y \<bullet> (A *\<^sub>v x)"
+      using A x y by (simp add: transpose_vec_mult_scalar)
+    also have "\<dots> = (A *\<^sub>v x) \<bullet> y"
+      using mult_mat_vec_carrier[OF A x] y by (simp add: comm_scalar_prod)
+    finally show ?thesis .
+  qed
   ultimately show ?thesis
     using a2 by simp
 qed
@@ -275,12 +296,64 @@ named_theorems matching_lp_theorems
 lemma bij_Vs_enum_inv[matching_lp_theorems]: "bij_betw Vs_enum_inv {0..< card V} V"
 proof-
   have "\<lbrakk>x < card V; y < card V; Vs_enum_inv x = Vs_enum_inv y\<rbrakk> \<Longrightarrow> x = y" for x y
-    by (metis Vs_enum_Vs_enum_inv atLeastLessThan_iff bij_Vs_enum bij_betw_def imageE zero_le)
+  proof -
+    assume x_less: "x < card V" and y_less: "y < card V"
+      and eq: "Vs_enum_inv x = Vs_enum_inv y"
+    have surj: "Vs_enum ` V = {0..<card V}"
+      using bij_Vs_enum by (rule bij_betw_imp_surj_on)
+    have "x \<in> Vs_enum ` V"
+      using surj x_less by (simp add: atLeastLessThan_iff zero_le)
+    then obtain vx where vx: "vx \<in> V" "Vs_enum vx = x"
+      by auto
+    have "y \<in> Vs_enum ` V"
+      using surj y_less by (simp add: atLeastLessThan_iff zero_le)
+    then obtain vy where vy: "vy \<in> V" "Vs_enum vy = y"
+      by auto
+    have "Vs_enum_inv x = Vs_enum_inv (Vs_enum vx)"
+      using vx(2) by simp
+    then have invx: "Vs_enum_inv x = vx"
+      using vx(1) by (simp add: Vs_enum_Vs_enum_inv)
+    have "Vs_enum_inv y = Vs_enum_inv (Vs_enum vy)"
+      using vy(2) by simp
+    then have invy: "Vs_enum_inv y = vy"
+      using vy(1) by (simp add: Vs_enum_Vs_enum_inv)
+    have gx: "Vs_enum (Vs_enum_inv x) = x"
+      using invx vx(2) by simp
+    have gy: "Vs_enum (Vs_enum_inv y) = y"
+      using invy vy(2) by simp
+    have "x = Vs_enum (Vs_enum_inv x)"
+      using gx by simp
+    also have "Vs_enum (Vs_enum_inv x) = Vs_enum (Vs_enum_inv y)"
+      using eq by (rule arg_cong)
+    also have "Vs_enum (Vs_enum_inv y) = y"
+      using gy by simp
+    finally show "x = y" .
+  qed
   moreover have "xa < card V \<Longrightarrow> Vs_enum_inv xa \<in> V" for xa
-    by (metis (full_types) atLeastLessThan_iff bij_Vs_enum bij_betw_def imageE
-        Vs_enum_Vs_enum_inv  zero_le)
+    proof -
+  assume xa: "xa < card V"
+  then have "xa \<in> {0..<card V}"
+    by simp
+  then have "xa \<in> Vs_enum ` V"
+    using bij_Vs_enum by (simp add: bij_betw_def)
+  then obtain v where v: "v \<in> V" "Vs_enum v = xa"
+    by blast
+  have "Vs_enum_inv xa = v"
+    using v Vs_enum_Vs_enum_inv by fastforce
+  then show "Vs_enum_inv xa \<in> V"
+    using v(1) by simp
+qed
+
   moreover have "x \<in> V \<Longrightarrow> x \<in> Vs_enum_inv ` {0..<card V}" for x
-    by (metis Vs_enum_Vs_enum_inv bij_Vs_enum bij_betwE imageI)
+  proof -
+    assume x: "x \<in> V"
+    from bij_Vs_enum x have "Vs_enum x \<in> {0..<card V}"
+      by (rule bij_betw_apply)
+    hence "Vs_enum_inv (Vs_enum x) \<in> Vs_enum_inv ` {0..<card V}"
+      by (rule imageI)
+    with Vs_enum_Vs_enum_inv[OF x] show "x \<in> Vs_enum_inv ` {0..<card V}"
+      by simp
+  qed
   ultimately show ?thesis
     by(auto simp add: bij_betw_def inj_on_def)
 qed
@@ -288,13 +361,44 @@ qed
 lemma bij_G_enum_inv[matching_lp_theorems]: "bij_betw G_enum_inv {0..< card G} G"
 proof-
   have "\<lbrakk>x < card G; y < card G; G_enum_inv x = G_enum_inv y\<rbrakk> \<Longrightarrow> x = y" for x y
-    by (metis G_enum_G_enum_inv atLeastLessThan_iff bij_G_enum bij_betw_def imageE
-        zero_le)
+  proof -
+    assume x_less: "x < card G" and y_less: "y < card G"
+      and eq: "G_enum_inv x = G_enum_inv y"
+    have im: "{0..<card G} = G_enum ` G"
+      using bij_G_enum by (simp add: bij_betw_def)
+    from x_less have "x \<in> {0..<card G}" by simp
+    with im obtain ex where ex: "ex \<in> G" "G_enum ex = x" by auto
+    from y_less have "y \<in> {0..<card G}" by simp
+    with im obtain ey where ey: "ey \<in> G" "G_enum ey = y" by auto
+    have "G_enum_inv x = ex" using ex(1) ex(2)[symmetric] by (simp add: G_enum_G_enum_inv)
+    moreover have "G_enum_inv y = ey" using ey(1) ey(2)[symmetric] by (simp add: G_enum_G_enum_inv)
+    ultimately have "ex = ey" using eq by simp
+    thus "x = y" using ex ey by simp
+  qed
   moreover have "xa < card G \<Longrightarrow> G_enum_inv xa \<in> G" for xa
-    by (metis (no_types, lifting) G_enum_G_enum_inv atLeastLessThan_iff bij_G_enum bij_betw_def
-        imageE zero_le)
+  proof -
+    assume xa_less: "xa < card G"
+    have im: "{0..<card G} = G_enum ` G"
+      using bij_G_enum by (simp add: bij_betw_def)
+    from xa_less have "xa \<in> {0..<card G}" by simp
+    with im obtain e where "e \<in> G" "G_enum e = xa"
+      by auto
+    thus "G_enum_inv xa \<in> G"
+      using G_enum_G_enum_inv by fastforce
+  qed
   moreover have "x \<in> G \<Longrightarrow> x \<in> G_enum_inv ` {0..<card G}" for x
-    by (metis G_enum_G_enum_inv bij_G_enum bij_betwE image_eqI)
+  proof -
+    assume x_in_G: "x \<in> G"
+    have "G_enum x \<in> G_enum ` G"
+      using x_in_G by (rule imageI)
+    also have "G_enum ` G = {0..<card G}"
+      using bij_G_enum by (simp add: bij_betw_def)
+    finally have "G_enum x \<in> {0..<card G}" .
+    hence "G_enum_inv (G_enum x) \<in> G_enum_inv ` {0..<card G}"
+      by (rule imageI)
+    thus "x \<in> G_enum_inv ` {0..<card G}"
+      using G_enum_G_enum_inv[OF x_in_G] by simp
+  qed
   ultimately show ?thesis
     by(auto simp add: bij_betw_def inj_on_def)
 qed
@@ -391,7 +495,15 @@ proof(rule ccontr)
 qed
 
 lemma  Vs_enum_less_card[matching_lp_theorems]: "v \<in> V \<Longrightarrow> Vs_enum v < card V"
-  by (metis atLeastLessThan_iff bij_Vs_enum bij_betw_def imageI)
+proof -
+  assume "v \<in> V"
+  hence "Vs_enum v \<in> Vs_enum ` V"
+    by blast
+  also have "\<dots> = {0..<card V}"
+    using bij_Vs_enum by (simp add: bij_betw_def)
+  finally show "Vs_enum v < card V"
+    by (simp add: atLeastLessThan_iff)
+qed
 
 lemma Vs_enum_less_n[matching_lp_theorems]: "v \<in> V \<Longrightarrow> Vs_enum v  < n"
   by (simp add: Vs_enum_less_card n_def)
@@ -404,8 +516,9 @@ lemma
     and Vs_enum_inv[simp,matching_lp_theorems]: "i < n \<Longrightarrow> Vs_enum (Vs_enum_inv i) = i"
     and Vs_enum_inv_in_G[simp,matching_lp_theorems]: "i < n \<Longrightarrow> (Vs_enum_inv i) \<in> V"
   using G_in_V V_inv_enum apply blast
-  apply (simp add: n_def) 
-  by (metis atLeastLessThan_iff bij_Vs_enum_inv Fun.bij_betwE n_def zero_le)
+  apply (simp add: n_def)
+  using Fun.bij_betwE[OF bij_Vs_enum_inv]
+  by (fastforce simp add: n_def)
 
 lemma G_enum_inv_in_G[simp,matching_lp_theorems]: "i < m \<Longrightarrow> (G_enum_inv i) \<in> G"
 and G_enum_less_card_G[simp,matching_lp_theorems]: "e \<in> G \<Longrightarrow> (G_enum e) < card G"
@@ -421,7 +534,13 @@ lemma dual_sol_i_is[matching_lp_theorems]: "i < n \<Longrightarrow> dual_sol y $
 
 lemma G_enum_inv_same_args_same[matching_lp_theorems]:
   "\<lbrakk>i < m; j < m; G_enum_inv i = G_enum_inv j\<rbrakk> \<Longrightarrow> i = j"
-  by (metis G_enum_inv)
+proof -
+  assume i: "i < m" and j: "j < m" and eq: "G_enum_inv i = G_enum_inv j"
+  from eq have "G_enum (G_enum_inv i) = G_enum (G_enum_inv j)"
+    by simp
+  with i j show "i = j"
+    by (simp add: G_enum_inv)
+qed
 
 lemma matching_zero_one_entries[matching_lp_theorems]:
   assumes "matching M" 
@@ -437,13 +556,34 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
     by blast
   ultimately have gt_1: "1 < card ?indices" 
     using Suc_lessI   card_gt_0_iff 
-    by (metis One_nat_def)
+  proof -
+    have ne: "?indices \<noteq> {}" and neq: "card ?indices \<noteq> Suc 0"
+      using \<open>?indices \<noteq> {} \<and> (card ?indices) \<noteq> Suc 0\<close> by auto
+    have "0 < card ?indices"
+      using ne \<open>finite ?indices\<close> by (simp add: card_gt_0_iff)
+    with neq show "1 < card ?indices"
+      by linarith
+  qed
   then obtain ei1 where ei1: "ei1 \<in> ?indices"
-    by (metis card_eq_0_iff ex_in_conv not_less0)
+  proof -
+    have "?indices \<noteq> {}"
+      using gt_1 \<open>finite ?indices\<close> by (auto simp add: card_gt_0_iff)
+    then show thesis
+      using that by blast
+  qed
   with gt_1 have "0 < card (?indices - {ei1})"
     by auto
   then obtain ei2 where ei2: "ei2 \<in> ?indices" "ei1 \<noteq> ei2"
-    by (metis Diff_eq_empty_iff card_0_eq card_ge_0_finite insertCI not_gr_zero subsetI)
+  proof -
+    from \<open>0 < card (?indices - {ei1})\<close> have "?indices - {ei1} \<noteq> {}"
+      by (simp add: card_gt_0_iff)
+    then obtain e where "e \<in> ?indices - {ei1}"
+      by blast
+    then have "e \<in> ?indices" "ei1 \<noteq> e"
+      by auto
+    then show thesis
+      using that by blast
+  qed
   with ei1 have "G_enum_inv ei1 \<in> M" "G_enum_inv ei2 \<in> M" 
     "Vs_enum_inv i \<in> G_enum_inv ei1" "Vs_enum_inv i \<in> G_enum_inv ei2"
     by auto
