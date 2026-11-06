@@ -751,8 +751,19 @@ proof
   then obtain p where "matching_augmenting_path M p" "path G p" "distinct p"
     by blast
   then obtain M' where "M' \<subseteq> G" "matching M'" "card M < card M'"
-    using Berge_2 matching
-    by metis
+    proof -
+      have mtch: "matching (M \<oplus> set (edges_of_path p))"
+        by (rule Berge_2(1)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
+                               \<open>distinct p\<close> matching(1) matching(2)])
+      have bigger: "card M < card (M \<oplus> set (edges_of_path p))"
+        by (rule Berge_2(2)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
+                               \<open>distinct p\<close> matching(1) matching(2)])
+      have sub: "(M \<oplus> set (edges_of_path p)) \<subseteq> G"
+        by (rule Berge_2(3)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
+                               \<open>distinct p\<close> matching(1) matching(2)])
+      show thesis
+        by (rule that[OF sub mtch bigger])
+    qed
   then show "\<exists>M'\<subseteq>G. matching M' \<and> card M < card M'"
     by blast
 next
@@ -788,9 +799,30 @@ lemma laterally_transfer_aug_path':
   obtains q where "graph_augmenting_path G M' q"
 proof-
   from graph_augmenting_path
-  obtain N where N_def: "N \<subseteq> G" "matching N" "card M < card N" using Berge matching' graph by metis
+  have M_in_G: "M \<subseteq> G" and match_M: "matching M"
+    using matching'(1) by auto
+  have berge_M:
+    "(\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p) =
+       (\<exists>N\<subseteq>G. matching N \<and> card M < card N)"
+    by (rule Berge[OF matching'(2) match_M M_in_G graph])
+  have "\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p"
+    using graph_augmenting_path by blast
+  with berge_M have "\<exists>N\<subseteq>G. matching N \<and> card M < card N"
+    by blast
+  then obtain N where N_def: "N \<subseteq> G" "matching N" "card M < card N"
+    by blast
   hence "card M' < card N" using assms(1) by linarith
-  then obtain q where "graph_augmenting_path G M' q" using Berge matching graph N_def(1, 2) by metis
+  have M'_sub: "M' \<subseteq> G" and M'_match: "matching M'"
+    using matching(1) by auto
+  have card_M'_N: "card M' < card N"
+    using assms(1) N_def(3) by simp
+  have bigger: "\<exists>N'\<subseteq>G. matching N' \<and> card M' < card N'"
+    using N_def(1,2) card_M'_N by blast
+  have "\<exists>q. matching_augmenting_path M' q \<and> path G q \<and> distinct q"
+    using Berge[OF matching(2) M'_match M'_sub graph] bigger
+    by blast
+  then obtain q where "graph_augmenting_path G M' q"
+    by blast
   then show ?thesis using that by simp
 qed
 
@@ -803,9 +835,21 @@ lemma laterally_transfer_aug_path:
 proof-
   from assms(1) have card': "card M' = card M" by simp
   show ?thesis
-    using laterally_transfer_aug_path'[OF assms(1) matching matching' graph]
-          laterally_transfer_aug_path'[OF card' matching' matching graph]
-    by metis
+  proof (intro iffI)
+    assume "\<exists>p. graph_augmenting_path G M p"
+    then obtain p where p: "graph_augmenting_path G M p"
+      by blast
+    obtain q where "graph_augmenting_path G M' q"
+      by (rule laterally_transfer_aug_path'[OF assms(1) matching matching' graph p])
+    thus "\<exists>p. graph_augmenting_path G M' p"
+      by blast
+  next
+    assume "\<exists>p. graph_augmenting_path G M' p"
+    then obtain p where p: "graph_augmenting_path G M' p"
+      by blast
+    show "\<exists>p. graph_augmenting_path G M p"
+      by (rule laterally_transfer_aug_path'[OF card' matching' matching graph p]) blast
+  qed
 qed
 
 locale graph_matching_defs =

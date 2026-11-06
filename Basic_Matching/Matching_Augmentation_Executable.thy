@@ -241,9 +241,52 @@ qed
 lemma symmetric_buddy_matching:
   assumes "symmetric_buddies M" "no_self_loop_buddy M" 
   shows "matching (\<M> M)"
-  using assms
-  apply(auto simp add: symmetric_buddies_def \<M>_def' matching_def no_self_loop_buddy_def)
-  by (metis option.sel)+
+proof -
+  have edge_form: "\<exists> z. buddy_lookup M w = Some z \<and> e = {w, z}"
+    if "e \<in> \<M> M" "w \<in> e" for e w
+  proof -
+    from that(1) obtain u v where uv: "e = {u, v}" "buddy_lookup M u = Some v"
+      by(auto simp add: \<M>_def')
+    have sym: "buddy_lookup M v = Some u"
+      using uv(2) symmetric_buddiesD[OF assms(1)] by blast
+    from that(2) uv(1) have "w = u \<or> w = v" by auto
+    then show ?thesis
+    proof
+      assume w_is: "w = u"
+      have "buddy_lookup M w = Some v" using uv(2) w_is by simp
+      moreover have "e = {w, v}" using uv(1) w_is by simp
+      ultimately show ?thesis by blast
+    next
+      assume w_is: "w = v"
+      have "buddy_lookup M w = Some u" using sym w_is by simp
+      moreover have "e = {w, u}" using uv(1) w_is by(simp add: insert_commute)
+      ultimately show ?thesis by blast
+    qed
+  qed
+  have key: "e1 = e2"
+    if e1: "e1 \<in> \<M> M" and e2: "e2 \<in> \<M> M" and w1: "w \<in> e1" and w2: "w \<in> e2" for e1 e2 w
+  proof -
+    obtain z1 where z1: "buddy_lookup M w = Some z1" "e1 = {w, z1}"
+      using edge_form[OF e1 w1] by blast
+    obtain z2 where z2: "buddy_lookup M w = Some z2" "e2 = {w, z2}"
+      using edge_form[OF e2 w2] by blast
+    have "z1 = z2" using z1(1) z2(1) by simp
+    thus ?thesis using z1(2) z2(2) by simp
+  qed
+  show ?thesis
+    unfolding matching_def
+  proof(intro ballI impI)
+    fix e1 e2
+    assume e1: "e1 \<in> \<M> M" and e2: "e2 \<in> \<M> M" and neq: "e1 \<noteq> e2"
+    show "e1 \<inter> e2 = {}"
+    proof(rule ccontr)
+      assume "e1 \<inter> e2 \<noteq> {}"
+      then obtain w where w: "w \<in> e1" "w \<in> e2" by auto
+      have "e1 = e2" by(rule key[OF e1 e2 w(1) w(2)])
+      thus False using neq by simp
+    qed
+  qed
+qed
 
 lemma \<M>_\<M>_dir_UD:
   shows "\<M> M = UD (\<M>_dir M)"

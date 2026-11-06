@@ -958,8 +958,14 @@ proof(safe)
   have "hd (support p i) = i" 
     by (simp add: assms(1) hd_conv_nth least_power_of_permutation(2) p_is_permutation)
   then have "i \<in> set ?l" 
-    by (metis Nil_is_map_conv assms(1) finite le_zero_eq least_power_of_permutation(2) 
-        list.set_sel(1) neq0_conv permutation_permutes upt_eq_Nil_conv)  
+  proof -
+    have "0 < least_power p i"
+      by (simp add: assms(1) p_is_permutation least_power_of_permutation(2))
+    then have "0 \<in> {0..<least_power p i}" by simp
+    then have "(p ^^ 0) i \<in> (\<lambda>n. (p ^^ n) i) ` {0..<least_power p i}"
+      by (rule imageI)
+    then show ?thesis by simp
+  qed
   {
     fix x
     assume "x \<in> set ?l" 
@@ -968,12 +974,29 @@ proof(safe)
     have "path (u_edges p) ?l" 
       using assms(1) circuit_is_upath by blast
     obtain ys zs where "?l = ys @ x # zs" 
-      by (metis \<open>x \<in> set ?l\<close> split_list)
+    proof -
+      have "\<exists>ys zs. ?l = ys @ x # zs"
+        using \<open>x \<in> set ?l\<close> by (rule split_list)
+      then show thesis using that by blast
+    qed
     then have "(ys @ [x]) @ zs = ?l" by simp
     then have "path (u_edges p) (ys @ [x])" 
-      by (metis \<open>path (u_edges p) ?l\<close> path_pref)
+      proof -
+        have "path (u_edges p) ((ys @ [x]) @ zs)"
+          using \<open>path (u_edges p) ?l\<close> \<open>(ys @ [x]) @ zs = ?l\<close> by simp
+        then show ?thesis
+          by (rule path_pref)
+      qed
     then have "hd (ys @ [x]) = i" using `hd ?l = i`
-      by (metis Nil_is_append_conv \<open>(ys @ [x]) @ zs = ?l\<close> hd_append2 list.distinct(1))
+    proof -
+      have "hd (ys @ [x]) = hd ((ys @ [x]) @ zs)"
+        by (cases ys) simp_all
+      also have "\<dots> = hd ?l"
+        using \<open>(ys @ [x]) @ zs = ?l\<close> by simp
+      also have "\<dots> = i"
+        using \<open>hd ?l = i\<close> .
+      finally show ?thesis .
+    qed
     have "last (ys @ [x]) = x" 
       by simp 
     have "walk_betw (u_edges p) i (ys @ [x]) x" 
@@ -1004,12 +1027,34 @@ proof(safe)
     case (path1 v)
     have "v = i" 
       using path1.prems by auto
-    then show ?case 
-      by (metis funpow_0 list.set_cases neq_Nil_conv set_ConsD)
+    show ?case
+    proof (intro ballI)
+      fix y
+      assume "y \<in> set [v]"
+      then have "y = v" by simp
+      moreover have "v = i" using path1.prems by simp
+      ultimately have "(p ^^ (0::nat)) i = y" by simp
+      then show "\<exists>n. (p ^^ n) i = y" by blast
+    qed
   next
     case (path2 v v' vs)
     have "v = p v' \<or> v' = p v" 
-      by (metis doubleton_eq_iff path2.hyps(1) u_edges_elim)
+      proof -
+        from path2.hyps(1) obtain w where w: "{v, v'} = {w, p w}"
+          unfolding u_edges_def by blast
+        then have "(v = w \<and> v' = p w) \<or> (v = p w \<and> v' = w)"
+          by (simp add: doubleton_eq_iff)
+        then show ?thesis
+        proof
+          assume "v = w \<and> v' = p w"
+          then have "v' = p v" by simp
+          then show ?thesis by blast
+        next
+          assume "v = p w \<and> v' = w"
+          then have "v = p v'" by simp
+          then show ?thesis by blast
+        qed
+      qed
 
     obtain n where "(p^^n) i = v'" 
       using path2.hyps(3) path2.prems by auto
@@ -1025,7 +1070,33 @@ proof(safe)
       then have "(p^^(n+1)) i = v" by simp
 
       then show ?thesis 
-        by (metis last_ConsR list.discI path2.hyps(3) path2.prems set_ConsD)
+      proof -
+        have last_eq: "last (v' # vs) = i"
+          using path2.prems by simp
+        have IH: "\<forall>z \<in> set (v' # vs). \<exists>m. (p ^^ m) i = z"
+          using path2.hyps(3) last_eq by blast
+        have "(p ^^ Suc n) i = p ((p ^^ n) i)"
+          by simp
+        then have v_eq: "(p ^^ Suc n) i = v"
+          using True \<open>(p ^^ n) i = v'\<close> by simp
+        show ?thesis
+        proof
+          fix y
+          assume y: "y \<in> set (v # v' # vs)"
+          show "\<exists>m. (p ^^ m) i = y"
+          proof (cases "y = v")
+            case True
+            then have "(p ^^ Suc n) i = y"
+              using v_eq by simp
+            then show ?thesis by blast
+          next
+            case False
+            then have "y \<in> set (v' # vs)"
+              using y by auto
+            then show ?thesis using IH by blast
+          qed
+        qed
+      qed
     next
       case False
       have " v' = p v" 
@@ -1036,8 +1107,16 @@ proof(safe)
         using elemnets_in_support_expo'[of p v' i "(1::nat)" v] 
         using \<open>v' \<in> set (support p i)\<close> assms(1) p_is_permutation by blast
       then obtain j where "v = support p i!j \<and> j < least_power p i" 
-        by (smt (verit, best) add.left_neutral atLeastLessThan_iff diff_zero imageE 
-            length_upt nth_map nth_upt set_map set_upt)
+      proof -
+        obtain m where m_less: "m < least_power p i" and m_eq: "v = (p ^^ m) i"
+          using \<open>v \<in> set (support p i)\<close> by fastforce
+        have "support p i ! m = (p ^^ m) i"
+          using m_less by simp
+        with m_eq m_less have "v = support p i ! m \<and> m < least_power p i"
+          by simp
+        then show thesis
+          using that by blast
+      qed
       then have "(p^^j) i = v" 
         by simp
       then show ?thesis 
@@ -1047,7 +1126,9 @@ proof(safe)
   then obtain n where "(p^^n) i = x" 
     using \<open>x \<in> set xs\<close> by blast
   then show "x \<in> set (support p i)" 
-    by (metis \<open>i \<in> set (support p i)\<close> assms(1) elemnets_in_support_expo p_is_permutation)
+    using elemnets_in_support_expo[OF p_is_permutation[OF assms(1)]
+            \<open>i \<in> set (support p i)\<close> \<open>(p ^^ n) i = x\<close>[symmetric]]
+    by blast
 qed
 
 
@@ -1065,8 +1146,14 @@ lemma p_in_same_cycle:
   assumes "p permutes (UNIV :: 'a set)"
   assumes "a \<in> set (support p i)"
   shows "p a \<in> set (support p i)" 
-  by (metis (no_types, lifting) assms(1) assms(2) cycle_is_surj cycle_restrict image_iff 
-      map_eq_conv p_is_permutation perm_support_distinct)
+proof -
+  have perm: "permutation p"
+    using assms(1) by (simp add: p_is_permutation)
+  have "p a = (p ^^ (1::nat)) a"
+    by simp
+  with perm assms(2) show ?thesis
+    by (rule elemnets_in_support_expo)
+qed
 
 lemma nths_in_result:
   assumes "i \<in> I"
@@ -1077,8 +1164,14 @@ lemma nths_in_result:
 lemma nths_obtain_index:
   assumes "a \<in>  set (nths xs I)"
   obtains i where "a = xs!i" "i \<in> I" "i < length xs"
-  using assms(1)  set_nths
-  by (smt (verit, ccfv_threshold) mem_Collect_eq)
+proof -
+  have "a \<in> {xs ! i | i. i < length xs \<and> i \<in> I}"
+    using assms by (simp only: set_nths)
+  then obtain i where "a = xs ! i" and "i < length xs" and "i \<in> I"
+    by blast
+  then show ?thesis
+    using that by blast
+qed
 
 lemma next_elem_by_p:
   assumes "p permutes (UNIV :: 'a set)"
@@ -1091,7 +1184,13 @@ proof -
   have "(support p i)!(n-1) = (p^^(n-1)) i" 
     using assms(3) by fastforce
   have "(p^^n) i = (p \<circ> (p^^(n-1))) i" 
-    by (metis Suc_diff_1 assms(2) funpow.simps(2))
+  proof -
+    have "(p ^^ n) i = (p ^^ Suc (n - 1)) i"
+      using assms(2) by simp
+    also have "\<dots> = (p \<circ> (p ^^ (n - 1))) i"
+      by (simp only: funpow.simps(2))
+    finally show ?thesis .
+  qed
   then have "(p^^n) i = p ((p^^(n-1)) i)" 
     by simp
   then show ?thesis 
@@ -1106,8 +1205,8 @@ proof -
   have "0 < n+1"   using zero_less_one by blast
   have "n + 1< length (support p i)" using assms(2) by linarith
   then show ?thesis
-    using next_elem_by_p[of p "n+1"] assms 
-    by (metis (no_types, lifting) \<open>0 < n + 1\<close> add_diff_cancel_right'  length_map length_upt)
+    using next_elem_by_p[of p "n+1"] assms(1) \<open>0 < n + 1\<close>
+    by simp
 qed
 
 lemma perm_verts_in_all_verts:
@@ -1120,8 +1219,20 @@ lemma perm_verts_eq_all:
   shows "Vs (u_edges p) = Vs G" 
 proof - 
   have "Vs (u_edges p) = UNIV" 
-    by (smt (verit, ccfv_SIG) insertCI mem_Collect_eq subsetI subset_antisym
-        top_greatest tutte_matrix.u_edges_def tutte_matrix_axioms vs_member) 
+    proof (rule equalityI)
+    show "Vs (u_edges p) \<subseteq> (UNIV :: 'a set)"
+      by (rule subset_UNIV)
+  next
+    show "(UNIV :: 'a set) \<subseteq> Vs (u_edges p)"
+    proof
+      fix i :: 'a
+      assume "i \<in> (UNIV :: 'a set)"
+      have "{i, p i} \<in> u_edges p"
+        unfolding u_edges_def by blast
+      then show "i \<in> Vs (u_edges p)"
+        unfolding Vs_def by blast
+    qed
+  qed
   then show " Vs (u_edges p) = Vs G" 
     by (simp add: univ)
 qed
@@ -1138,7 +1249,14 @@ proof -
   have "C \<subseteq> Vs (u_edges p)" 
     by (simp add: \<open>C \<in> connected_components (u_edges p)\<close> connected_component_subs_Vs)
   obtain x where "x \<in> C" 
-    by (metis \<open>C \<in> connected_components (u_edges p)\<close> connected_comp_nempty ex_in_conv)
+  proof -
+    have "C \<noteq> {}"
+      using assms(2) by (rule connected_comp_nempty)
+    then have "\<exists>x. x \<in> C"
+      by (simp add: ex_in_conv)
+    then show thesis
+      using that by blast
+  qed
   then have "x \<in> Vs (u_edges p)" 
     by (meson \<open>C \<in> connected_components (u_edges p)\<close> connected_comp_verts_in_verts)
   have "set (support p x) = C" 
@@ -1152,7 +1270,7 @@ proof -
   have "even (card (set (support p x)))" 
     using \<open>set (support p x) = C\<close> assms(3) by blast
   then have "even (length (support p x))" 
-    by (metis \<open>p permutes UNIV\<close> distinct_card perm_support_distinct)
+    using distinct_card[OF perm_support_distinct[OF \<open>p permutes UNIV\<close>]] by simp
   have 3:"set ?start_vert \<subseteq> (UNIV :: 'a set)" 
     by blast
   then have "?m_edges \<subseteq> u_edges p" 
@@ -1162,22 +1280,68 @@ proof -
     {  fix y
       assume "y \<in> Vs ?m_edges"
       then obtain a where "y \<in> {a, (p a)} \<and> a \<in> set ?start_vert" 
-        by (smt (z3) mem_Collect_eq vs_member_elim)
+      proof -
+        from \<open>y \<in> Vs ?m_edges\<close> obtain e where ye: "y \<in> e" and em: "e \<in> ?m_edges"
+          by (auto simp add: Vs_def)
+        from em obtain b where eb: "e = {b, p b}" and bs: "b \<in> set ?start_vert"
+          by blast
+        have "y \<in> {b, p b}" using ye eb by simp
+        then show thesis using that bs by blast
+      qed
       then show "y \<in> set (support p x)" 
-        by (metis (no_types, lifting)  \<open>p permutes UNIV\<close> \<open>set (support p x) = C\<close> empty_iff 
-            insertE notin_set_nthsI p_in_same_cycle)
+      proof -
+        assume ya: "y \<in> {a, p a} \<and> a \<in> set ?start_vert"
+        have a_in: "a \<in> set (support p x)"
+        proof (rule ccontr)
+          assume "a \<notin> set (support p x)"
+          then have "a \<notin> set ?start_vert"
+            by (rule notin_set_nthsI)
+          with ya show False by blast
+        qed
+        have pa_in: "p a \<in> set (support p x)"
+          using \<open>p permutes UNIV\<close> a_in by (rule p_in_same_cycle)
+        from ya have "y = a \<or> y = p a" by simp
+        then show "y \<in> set (support p x)"
+        proof
+          assume "y = a"
+          then show ?thesis using a_in by simp
+        next
+          assume "y = p a"
+          then show ?thesis using pa_in by simp
+        qed
+      qed
     }
     fix y
     assume "y \<in> set (support p x)" 
     then obtain n where n_exp: "y = (support p x)!n \<and> n < least_power p x" 
-      by (metis diff_zero in_set_conv_nth length_map length_upt)
+      proof -
+        have len: "length (support p x) = least_power p x"
+          by simp
+        from \<open>y \<in> set (support p x)\<close> obtain k
+          where k_less: "k < length (support p x)" and k_eq: "support p x ! k = y"
+          using in_set_conv_nth[of y "support p x"] by blast
+        have "y = support p x ! k \<and> k < least_power p x"
+          using k_eq k_less len by simp
+        then show thesis
+          by (rule that)
+      qed
     show "y \<in> Vs ?m_edges" 
     proof(cases "even n")
       case True
       then have "n \<in>  {j \<in> {0..<length (support p x)}. even j}" 
         by (simp add: n_exp)
       then have "y \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})" 
-        by (metis (mono_tags, lifting) n_exp diff_zero length_map length_upt nths_in_result)
+      proof -
+        have n_lt: "n < length (support p x)"
+          using n_exp by simp
+        have n_mem: "n \<in> {j \<in> {0..<length (support p x)}. even j}"
+          using True n_lt by simp
+        have "support p x ! n
+                \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"
+          by (rule nths_in_result[OF n_mem n_lt])
+        then show ?thesis
+          using n_exp by simp
+      qed
       then have "{y, p y} \<in> ?m_edges" 
         by blast
       then show ?thesis by blast 
@@ -1191,8 +1355,14 @@ proof -
         by (simp add: n_exp less_imp_diff_less)
       then have 1:"(support p x)!(n-1) \<in> 
                  set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"      
-        by (metis (no_types, lifting) n_exp  diff_zero length_map length_upt 
-            less_imp_diff_less nths_in_result)
+      proof -
+        have lt: "n - 1 < length (support p x)"
+          using n_exp by (simp add: less_imp_diff_less)
+        have mem: "n - 1 \<in> {j \<in> {0..<length (support p x)}. even j}"
+          using lt \<open>even (n - 1)\<close> by simp
+        show ?thesis
+          by (rule nths_in_result[OF mem lt])
+      qed
       have "support p x ! n = p ((support p x)!(n-1))"  
         using \<open>0 < n\<close> n_exp \<open>p permutes UNIV\<close> length_upt map_eq_conv next_elem_by_p by force
       have 2:"{((support p x)!(n-1)), (p ((support p x)!(n-1)))} \<in> ?m_edges"  
@@ -1222,21 +1392,63 @@ proof -
           assume "e1 \<inter> e2 \<noteq> {}" 
           then obtain t where "t \<in> e1 \<inter> e2" by auto
           obtain u v where uv:"e1 = {u, t} \<and> e2 = {t, v}" 
-            by (smt (z3) IntD1 IntD2 asme1 asme2 \<open>t \<in> e1 \<inter> e2\<close> empty_iff insert_commute insert_iff 
-                mem_Collect_eq)
+            proof -
+              have te1: "t \<in> e1" and te2: "t \<in> e2"
+                using \<open>t \<in> e1 \<inter> e2\<close> by auto
+              from asme1 obtain a1 where a1: "e1 = {a1, p a1}" by blast
+              from asme2 obtain b1 where b1: "e2 = {b1, p b1}" by blast
+              have ex1: "\<exists>u. e1 = {u, t}"
+              proof(cases "t = a1")
+                case True
+                have "e1 = {p a1, t}"
+                  using a1 True by (simp add: insert_commute)
+                then show ?thesis by blast
+              next
+                case False
+                have "t = p a1"
+                  using te1 a1 False by simp
+                then have "e1 = {a1, t}"
+                  using a1 by simp
+                then show ?thesis by blast
+              qed
+              have ex2: "\<exists>v. e2 = {t, v}"
+              proof(cases "t = b1")
+                case True
+                have "e2 = {t, p b1}"
+                  using b1 True by simp
+                then show ?thesis by blast
+              next
+                case False
+                have "t = p b1"
+                  using te2 b1 False by simp
+                then have "e2 = {t, b1}"
+                  using b1 by (simp add: insert_commute)
+                then show ?thesis by blast
+              qed
+              show thesis using ex1 ex2 that by blast
+            qed
           then have "u \<noteq> v" 
             using \<open>e1 \<noteq> e2\<close> by fastforce
           then obtain a where a_elem:"{a, (p a)} = {u, t}  \<and> a \<in> set ?start_vert" 
             using asme1 uv by blast
           obtain b where b_elem:"{b, (p b)} = {v, t}  \<and> b \<in> set ?start_vert" 
-            by (smt (verit, ccfv_SIG) asme2 insert_commute mem_Collect_eq uv)
+          proof -
+            from asme2 obtain b where b1: "e2 = {b, p b}" and b2: "b \<in> set ?start_vert"
+              by blast
+            have "{b, p b} = e2" using b1 by (rule sym)
+            also have "e2 = {t, v}" using uv by simp
+            also have "{t, v} = {v, t}" by auto
+            finally have b3: "{b, p b} = {v, t}" .
+            from b3 b2 have "{b, p b} = {v, t} \<and> b \<in> set ?start_vert" by (rule conjI)
+            then show thesis by (rule that)
+          qed
           have "even (length (support p x))" 
             using \<open>even (length (support p x))\<close> by blast
           have "a \<in> set (support p x)"  
             using a_elem notin_set_nthsI by fastforce
           then obtain an where an: "a = (support p x)!an \<and> 
                                     an \<in> {j \<in> {0..<length (support p x)}. even j}" 
-            using a_elem nths_obtain_index[of a "(support p x)"] by (metis (no_types, lifting))
+            using a_elem by (blast elim: nths_obtain_index)
           then have "even an"  
             by blast
           then have 4:"an < (length (support p x)) - 1"
@@ -1248,7 +1460,14 @@ proof -
           then obtain bn where bn: "b = (support p x)!bn \<and> 
                                     bn \<in> {j \<in> {0..<length (support p x)}. even j}"
             using b_elem  nths_obtain_index 
-            by (metis (no_types, lifting))
+          proof -
+            have bmem: "b \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"
+              using b_elem by blast
+            have "\<exists>bn. b = (support p x)!bn \<and> bn \<in> {j \<in> {0..<length (support p x)}. even j}"
+              using bmem[unfolded set_nths] by blast
+            then show thesis
+              using that by blast
+          qed
           then have 5:"bn < (length (support p x)) - 1" 
             using `even (length (support p x))` by fastforce
           have "even bn" 
@@ -1263,8 +1482,7 @@ proof -
                 using `a = u \<and> (p a) = t` True 
                 by auto
               then have "a = b" 
-                by (smt (verit, ccfv_SIG) \<open>p permutes UNIV\<close> 3 a_elem b_elem bij_betw_iff_bijections
-                    permutes_imp_bij subsetD)
+                by (blast intro: injD permutes_inj \<open>p permutes UNIV\<close>)
               then show ?thesis 
                 using True uv \<open>e1 \<noteq> e2\<close> a_elem by blast
             next
@@ -1281,8 +1499,22 @@ proof -
               have "an + 1 \<noteq> bn" 
                 using \<open>even an\<close> \<open>even bn\<close> even_add odd_one by blast
               then have "\<not> distinct (support p x)" 
-                by (metis (no_types, lifting) 4 5 6 add_diff_cancel_right' less_diff_conv 
-                    less_imp_diff_less nth_eq_iff_index_eq)
+                proof -
+                  have len1: "an + 1 < length (support p x)"
+                    using 4 by (simp add: less_diff_conv)
+                  have len2: "bn < length (support p x)"
+                    using 5 by (meson diff_le_self less_le_trans)
+                  show "\<not> distinct (support p x)"
+                  proof
+                    assume dist: "distinct (support p x)"
+                    have "(support p x ! (an + 1) = support p x ! bn) = (an + 1 = bn)"
+                      by (rule nth_eq_iff_index_eq[OF dist len1 len2])
+                    then have "an + 1 = bn"
+                      using 6 by simp
+                    then show False
+                      using \<open>an + 1 \<noteq> bn\<close> by simp
+                  qed
+                qed
               then show ?thesis 
                 using \<open>p permutes UNIV\<close> perm_support_distinct by force
             qed
@@ -1305,7 +1537,22 @@ proof -
               have "bn + 1 \<noteq> an" 
                 using \<open>even an\<close> \<open>even bn\<close> even_add odd_one by blast
               then have "\<not> distinct (support p x)" 
-                by (metis 4 5 7 add_lessD1 less_diff_conv nth_eq_iff_index_eq)
+              proof -
+                have ean: "even an" using an by auto
+                have ebn: "even bn" using bn by auto
+                have Bl: "bn + 1 < length (support p x)"
+                  using 5 by (simp add: less_diff_conv)
+                have Al: "an + 1 < length (support p x)"
+                  using 4 by (simp add: less_diff_conv)
+                then have Al': "an < length (support p x)" by linarith
+                show ?thesis
+                proof
+                  assume dist: "distinct (support p x)"
+                  have eq: "bn + 1 = an"
+                    using 7 nth_eq_iff_index_eq[OF dist Bl Al'] by simp
+                  show False using ean ebn eq by presburger
+                qed
+              qed
               then show ?thesis 
                 using \<open>p permutes UNIV\<close> perm_support_distinct by force
             next
@@ -1385,7 +1632,19 @@ proof -
   have "(p^^n) i = ((p^^n) \<circ> (p^^least_power p i)) i" 
     by (simp add: assms(1) least_power_of_permutation(1))
   then have "((p^^least_power p i)\<circ>(p^^n)) i = (p^^n) i" 
-    by (metis add.commute funpow_add)
+  proof -
+  have fix_i: "(p ^^ least_power p i) i = i"
+    by (simp add: assms(1) least_power_of_permutation(1))
+  have "(p ^^ least_power p i) \<circ> (p ^^ n) = p ^^ (least_power p i + n)"
+    by (simp add: funpow_add)
+  also have "\<dots> = p ^^ (n + least_power p i)"
+    by (simp add: add.commute)
+  also have "\<dots> = (p ^^ n) \<circ> (p ^^ least_power p i)"
+    by (simp add: funpow_add)
+  finally have comm: "(p ^^ least_power p i) \<circ> (p ^^ n) = (p ^^ n) \<circ> (p ^^ least_power p i)" .
+  show ?thesis
+    using comm fix_i by simp
+  qed
   then have "(p^^least_power p i) ((p^^n) i) = (p^^n) i" 
     by simp
   then show ?thesis 
@@ -1402,8 +1661,8 @@ proof  -
   moreover have "a \<in> set (support (inv p) i)" 
     using assms(1) assms(2) inv_support_same by fastforce
   ultimately have "(inv p) a \<in> set (support (inv p) i)" 
-    by (smt (verit, ccfv_SIG) cycle_is_surj cycle_of_permutation cycle_restrict 
-        image_iff map_eq_conv)
+    using elemnets_in_support_expo[where n = 1 and p = "inv p" and x = a and i = i and y = "inv p a"]
+    by simp
   then show ?thesis 
     using assms(1) inv_support_same by fastforce
 qed
@@ -1419,8 +1678,13 @@ proof(rule ccontr)
   then have "p ((inv p) a) = a" 
     by (meson assms(1) bij_inv_eq_iff permutation_bijective)
   have "p ((inv p) a) \<in> set (support p i)" 
-    by (metis (no_types, lifting) \<open>inv p a \<in> set (support p i)\<close> assms(1) cycle_is_surj 
-        cycle_of_permutation cycle_restrict image_iff map_eq_conv)
+  proof -
+    have "p (inv p a) = (p ^^ (1::nat)) (inv p a)"
+      by simp
+    then show ?thesis
+      using elemnets_in_support_expo[OF assms(1) \<open>inv p a \<in> set (support p i)\<close>]
+      by blast
+  qed
   then show False 
     using \<open>p (inv p a) = a\<close> assms(2) by auto
 qed
@@ -1430,11 +1694,13 @@ lemma p_rev_p_same:
   assumes "x \<in> set (support p (least_odd p))" 
   shows "p (rev_p p x) = x" 
 proof -
-  have "(rev_p p x) = (inv p) x" 
-    using rev_p_def 
-    using assms(2) by presburger
-  then show ?thesis 
-    by (metis assms(1) permutes_inv_eq)
+  have "rev_p p x = inv p x"
+    using assms(2) by (simp add: rev_p_def)
+  hence "p (rev_p p x) = p (inv p x)"
+    by simp
+  also have "\<dots> = x"
+    by (rule permutes_inverses(1)[OF assms(1)])
+  finally show ?thesis .
 qed
 
 lemma p_rev_p_same':
@@ -1475,7 +1741,19 @@ lemma on_odd_p_permutes:
 proof -
   let ?A = "set (support p  (least_odd p))"
   have "(\<forall>x\<in>?A. \<forall>y\<in>?A. (on_odd p) x = (on_odd p) y \<longrightarrow> x = y)"
-    by (rule+; metis assms on_odd_def permutes_inv_eq)
+  proof (intro ballI impI)
+    fix x y
+    assume xA: "x \<in> set (support p (least_odd p))"
+      and yA: "y \<in> set (support p (least_odd p))"
+      and eq: "on_odd p x = on_odd p y"
+    have hx: "on_odd p x = p x"
+      unfolding on_odd_def using xA by simp
+    have hy: "on_odd p y = p y"
+      unfolding on_odd_def using yA by simp
+    from eq hx hy have "p x = p y" by simp
+    moreover have "inj p" using assms by (rule permutes_inj)
+    ultimately show "x = y" by (rule injD[rotated])
+  qed
   then have "inj_on (on_odd p) ?A" 
     using inj_on_def by blast
   have "(on_odd p) ` ?A = ?A"
@@ -1488,9 +1766,15 @@ proof -
       using \<open>x \<in> ?A\<close> assms inv_in_support p_is_permutation
       by fast
     have "(on_odd p) ((inv p) x) = x" 
-      by (metis \<open>inv p x \<in> ?A\<close> assms  on_odd_def permutes_inverses(1))
+    proof -
+      have "on_odd p (inv p x) = p (inv p x)"
+        using \<open>inv p x \<in> ?A\<close> by (rule on_odd_in)
+      also have "\<dots> = x"
+        using assms by (rule permutes_inverses(1))
+      finally show ?thesis .
+    qed
     then show "x \<in> (on_odd p) ` ?A" 
-      by (metis \<open>inv p x \<in> ?A\<close> image_eqI)
+      by (rule image_eqI[OF sym]) fact
   qed
   then have "bij_betw (on_odd p) ?A ?A" 
     unfolding bij_betw_def 
@@ -1521,7 +1805,17 @@ proof -
     then have "not_on_odd p y = p y" 
       using not_on_odd_in  \<open>y \<in> ?A\<close> by blast
     then show "x = y" 
-      by (metis \<open>not_on_odd p x = not_on_odd p y\<close> \<open>not_on_odd p x = p x\<close> assms permutes_inv_eq)
+    proof -
+      have inj_p: "inj p"
+        using assms by (rule permutes_inj)
+      have "p x = not_on_odd p y"
+        using \<open>not_on_odd p x = not_on_odd p y\<close> \<open>not_on_odd p x = p x\<close>
+        by simp
+      then have "p x = p y"
+        using \<open>not_on_odd p y = p y\<close> by simp
+      with inj_p show "x = y"
+        by (rule injD)
+    qed
   qed
   then have "inj_on (not_on_odd p) ?A" 
     using inj_on_def by blast
@@ -1532,20 +1826,50 @@ proof -
       fix x
       assume "x \<in> ?A"
       then have "p x \<in> ?A" 
-        by (smt (z3) Diff_iff UNIV_I assms bij_betw_inv_into_left inv_in_support map_eq_conv 
-            p_is_permutation permutes_imp_bij)
+      proof -
+        have perm: "permutation p"
+          using assms by (rule p_is_permutation)
+        have xout: "x \<notin> set (support p (least_odd p))"
+          using \<open>x \<in> ?A\<close> by blast
+        have "p x \<notin> set (support p (least_odd p))"
+        proof
+          assume px: "p x \<in> set (support p (least_odd p))"
+          have "p x = (p ^^ Suc 0) x" by simp
+          then have "x \<in> set (support p (least_odd p))"
+            using elemnets_in_support_expo'[OF perm px] by blast
+          then show False using xout by blast
+        qed
+        then show ?thesis by blast
+      qed
       then show "x \<in> not_on_odd p ` ?A" 
-        using \<open>x \<in> ?A\<close> not_on_odd_def 
-        by (smt (z3) Diff_iff assms bij_is_surj image_iff inj_onD map_eq_conv on_odd_def
-            on_odd_p_permutes permutes_imp_bij permutes_inj)
+      proof -
+        have perm: "permutation p"
+          using assms by (rule p_is_permutation)
+        have "x \<notin> set (support p (least_odd p))"
+          using \<open>x \<in> ?A\<close> by simp
+        with perm have inv_notin: "inv p x \<notin> set (support p (least_odd p))"
+          by (rule inv_notin_support)
+        then have mem: "inv p x \<in> ?A"
+          by simp
+        have eq: "not_on_odd p (inv p x) = p (inv p x)"
+          using inv_notin by (rule not_on_odd_in)
+        have px: "p (inv p x) = x"
+          by (rule permutes_inverses(1)[OF assms])
+        show ?thesis
+        proof (rule image_eqI[where x = "inv p x"])
+          show "x = not_on_odd p (inv p x)"
+            using eq px by simp
+          show "inv p x \<in> ?A"
+            by (rule mem)
+        qed
+      qed
     qed
     fix x
     assume asmx: "x \<in>  not_on_odd p ` ?A"  "x \<in>  set (support p (least_odd p)) " 
     have "(inv p x) \<in> set (support p (least_odd p))" 
       using asmx assms inv_in_support p_is_permutation by fast
     then have "x \<in> ?A" 
-      using asmx unfolding not_on_odd_def 
-      by (smt (z3) DiffD2 UNIV_I assms image_iff inv_into_f_f permutes_inj )
+      using asmx by (force simp add: not_on_odd_in permutes_inverses(2)[OF assms])
     then show False 
       using \<open>x \<in> set (support p (least_odd p))\<close> by force
   qed
@@ -1578,9 +1902,21 @@ proof
     have " (on_odd  p) x = p x" using on_odd_in[of x "inv p"] True 
       using on_odd_def by presburger
     then have "inv (on_odd  p) x = (inv p) x" 
-      by (smt (verit, ccfv_threshold) assms on_odd_p_permutes_UNIV permutes_inv_eq on_odd_def)
+      proof -
+  have xA: "inv p x \<in> set (support p (least_odd p))"
+    by (rule inv_in_support[OF p_is_permutation[OF assms], OF True])
+  have "on_odd p (inv p x) = p (inv p x)"
+    using xA by (rule on_odd_in)
+  also have "\<dots> = x"
+    using assms by (rule permutes_inverses(1))
+  finally have qx: "on_odd p (inv p x) = x" .
+  have q: "on_odd p permutes UNIV"
+    using assms by (rule on_odd_p_permutes_UNIV)
+  show "inv (on_odd p) x = inv p x"
+    using qx by (rule iffD2[OF permutes_inv_eq[OF q]])
+qed
     then have "rev_p p x = (inv p x)" 
-      by (metis \<open>on_odd p x = p x\<close> assms on_odd_def permutes_inv_eq rev_p_def)
+      using True by (simp add: rev_p_def)
     then show ?thesis 
       by (simp add: \<open>inv (on_odd p) x = inv p x\<close> \<open>not_on_odd p x = x\<close>)
   next
@@ -1590,8 +1926,21 @@ proof
     have "not_on_odd p x = p x" 
       using False not_on_odd_in by presburger
     then have "inv (on_odd  p) (p x) = p x" 
-      by (smt (z3)  assms bij_is_surj inj_imp_surj_inv not_on_odd_def surj_f_inv_f
-          on_odd_def on_odd_p_permutes_UNIV permutes_imp_bij permutes_inj permutes_inv_inv )
+    proof -
+      have notin: "p x \<notin> set (support p (least_odd p))"
+      proof
+        assume "p x \<in> set (support p (least_odd p))"
+        then have "inv p (p x) \<in> set (support p (least_odd p))"
+          using inv_in_support[OF p_is_permutation[OF assms]] by blast
+        moreover have "inv p (p x) = x"
+          by (simp add: permutes_inv_eq[OF assms])
+        ultimately show False using False by simp
+      qed
+      have "on_odd p (p x) = p x"
+        by (rule on_odd_out[OF notin])
+      then show ?thesis
+        using permutes_inv_eq[OF on_odd_p_permutes_UNIV[OF assms]] by simp
+    qed
     then show ?thesis 
       using \<open>not_on_odd p x = p x\<close> \<open>rev_p p x = p x\<close> by force
   qed
@@ -1611,14 +1960,40 @@ proof -
   obtain C where C:"C \<in> connected_components (u_edges p) \<and> odd (card C)"
     using assms by blast
   then obtain x where "x \<in> C" 
-    by (metis card.empty card.infinite finite_has_maximal odd_card_imp_not_empty)
+proof -
+  have "C \<noteq> {}"
+  proof
+    assume "C = {}"
+    then have "card C = 0"
+      by simp
+    then show False
+      using C by simp
+  qed
+  then obtain y where "y \<in> C"
+    by blast
+  then show thesis
+    by (rule that)
+qed
   then have "x \<in> Vs (u_edges p)" 
     by (meson C connected_comp_verts_in_verts)
   have "C = set (support p x)" 
     using support_is_connected_component[of p C x] C \<open>x \<in> C\<close> assms(1) by fastforce
   then have " odd (least_power p x)" 
-    by (metis (no_types, lifting) C assms(1) cycle_vert_is_distict diff_zero distinct_card 
-        length_map length_upt)
+proof -
+  have dist: "distinct (support p x)"
+    using assms(1) by (rule cycle_vert_is_distict)
+  have "card C = card (set (support p x))"
+    using \<open>C = set (support p x)\<close> by simp
+  also have "\<dots> = length (support p x)"
+    using dist by (rule distinct_card)
+  also have "\<dots> = least_power p x"
+    by simp
+  finally have "card C = least_power p x" .
+  moreover have "odd (card C)"
+    using C by blast
+  ultimately show ?thesis
+    by simp
+  qed
   show ?thesis 
     using \<open>odd (least_power p x)\<close> that by auto
 qed
@@ -1631,7 +2006,8 @@ proof -
   obtain i where "odd (least_power p i)" 
     using odd_component_then_odd_circuit[of p] assms by blast
   then show ?thesis
-    by (metis least_odd_def wellorder_Least_lemma(1))
+    unfolding least_odd_def
+    using LeastI[of "\<lambda>a. odd (least_power p a)"] by blast
 qed
 
 lemma reverse_for_each_product:
@@ -1643,15 +2019,31 @@ lemma reverse_for_each_product:
 proof(induct "card A" arbitrary: A rule: less_induct)
   case less
   have "finite A" 
-    by (metis card_eq_0_iff dvd_0_right less.prems(2))
+  proof (rule ccontr)
+    assume "infinite A"
+    then have "card A = 0"
+      by (rule card.infinite)
+    with less.prems(2) show False by simp
+  qed
   then show ?case
   proof(cases "card A = 1")
     case True
     obtain a where "a \<in> A" 
-      by (metis True card.empty card_mono finite.emptyI le_0_eq subset_eq zero_neq_one)
+      proof -
+        from True obtain b where "A = {b}"
+          by (rule card_1_singletonE)
+        then have "b \<in> A"
+          by simp
+        then show thesis
+          using that by blast
+      qed
     then have "A = {a}" 
-      using True card_1_singletonE 
-      by (metis empty_iff insertE)
+      proof -
+        obtain b where "A = {b}"
+          using True by (rule card_1_singletonE)
+        then show "A = {a}"
+          using \<open>a \<in> A\<close> by simp
+      qed
     then have "prod h A = h a" 
       by simp
     have "prod g A = g a" using `A = {a}` by simp
@@ -1661,15 +2053,88 @@ proof(induct "card A" arbitrary: A rule: less_induct)
   next
     case False
     then have "card A > 1" 
-      by (metis card.empty less.prems(2) less_one linorder_neqE_nat odd_card_imp_not_empty)
+      proof -
+        have "card A \<noteq> 0"
+          using less.prems(2) by presburger
+        moreover have "card A \<noteq> 1"
+          using False by blast
+        ultimately show ?thesis
+          by linarith
+      qed
     then obtain a b where ab: "a \<in> A \<and> b \<in> A \<and> a \<noteq> b" 
-      by (metis Diff_iff One_nat_def card_Suc_Diff1 card_eq_0_iff ex_in_conv less_imp_not_less 
-          not_one_less_zero singletonI)
+    proof -
+      assume gt: "1 < card A"
+      then have "A \<noteq> {}" by force
+      then obtain x where x: "x \<in> A" by blast
+      have "\<exists>y \<in> A. x \<noteq> y"
+      proof (rule ccontr)
+        assume "\<not> (\<exists>y \<in> A. x \<noteq> y)"
+        have sub: "A \<subseteq> {x}"
+        proof (rule subsetI)
+          fix z
+          assume zA: "z \<in> A"
+          show "z \<in> {x}"
+          proof (rule ccontr)
+            assume "z \<notin> {x}"
+            then have "x \<noteq> z" by simp
+            with zA have "\<exists>y \<in> A. x \<noteq> y" by blast
+            with \<open>\<not> (\<exists>y \<in> A. x \<noteq> y)\<close> show False by blast
+          qed
+        qed
+        have "card A \<le> card {x}"
+        proof (rule card_mono)
+          show "finite {x}" by simp
+          show "A \<subseteq> {x}" using sub by blast
+        qed
+        then have "card A \<le> 1" by simp
+        with gt show False by linarith
+      qed
+      then obtain y where y: "y \<in> A" "x \<noteq> y" by blast
+      have "x \<in> A \<and> y \<in> A \<and> x \<noteq> y" using x y by blast
+      then show thesis by (rule that)
+    qed
     then have "odd (card (A - {a, b}))" 
-      by (metis False One_nat_def \<open>finite A\<close> card_Diff_insert card_Diff_singleton card_Suc_Diff1
-          even_add even_diff_nat less.prems(2) less_one odd_one singletonD)
+      proof -
+  have aA: "a \<in> A" and bA: "b \<in> A" and neq: "a \<noteq> b"
+    using \<open>a \<in> A \<and> b \<in> A \<and> a \<noteq> b\<close> by auto
+  have finb: "finite (A - {b})"
+    using \<open>finite A\<close> by (rule finite_Diff)
+  have amem: "a \<in> A - {b}"
+    using aA neq by blast
+  have c1: "Suc (card (A - {b} - {a})) = card (A - {b})"
+    using finb amem by (rule card_Suc_Diff1)
+  have c2: "Suc (card (A - {b})) = card A"
+    using \<open>finite A\<close> bA by (rule card_Suc_Diff1)
+  have card2: "card {a, b} = 2" using neq by simp
+  have fin2: "finite {a, b}" by simp
+  have sub: "{a, b} \<subseteq> A" using aA bA by simp
+  have "card {a, b} \<le> card A"
+    using \<open>finite A\<close> sub by (rule card_mono)
+  with card2 have "2 \<le> card A" by simp
+  then show "odd (card (A - {a, b}))"
+    using card_Diff_subset[OF fin2 sub] card2 less.prems(2) by presburger
+      qed
     have "(card (A - {a, b})) < card A" 
-      by (metis Diff_insert2 ab \<open>finite A\<close> card_Diff2_less)
+      proof -
+        have finA: "finite A"
+          using \<open>finite A\<close> .
+        have aA: "a \<in> A"
+          using ab by blast
+        have finA': "finite (A - {a})"
+          using finA by blast
+        have bA': "b \<in> A - {a}"
+          using ab by blast
+        have less1: "card (A - {a} - {b}) < card (A - {a})"
+          by (rule card_Diff1_less[OF finA' bA'])
+        have less2: "card (A - {a}) < card A"
+          by (rule card_Diff1_less[OF finA aA])
+        have eq: "A - {a, b} = A - {a} - {b}"
+          by blast
+        have "card (A - {a, b}) = card (A - {a} - {b})"
+          using eq by simp
+        then show ?thesis
+          using less1 less2 by linarith
+      qed
     have "\<forall>a \<in> (A - {a, b}). h a = - (g a)" 
       by (meson DiffD1 less.prems(1))
     then have "prod h (A - {a, b}) = - prod g (A - {a, b})" 
@@ -1703,7 +2168,12 @@ proof
     have "not_on_odd p x = x" 
       using True not_on_odd_out by presburger
     have "on_odd p x = p x" 
-      by (metis \<open>not_on_odd p x = x\<close> not_on_odd_def on_odd_def)
+  proof -
+    have "x \<in> set (support p (least_odd p))"
+      using True by blast
+    then show ?thesis
+      by (rule on_odd_in)
+  qed
     then show ?thesis 
       by (simp add: \<open>not_on_odd p x = x\<close>)
   next
@@ -1712,7 +2182,9 @@ proof
       using False not_on_odd_in by presburger
     then have "on_odd p (p x) = p x" 
       unfolding on_odd_def
-      by (metis assms not_on_odd_def not_on_odd_p_permutes_UNIV permutes_inv_eq)
+      using False
+        inv_in_support[OF p_is_permutation[OF assms], where a = "p x" and i = "least_odd p"]
+      by (auto simp add: on_odd_def permutes_inverses(2)[OF assms])
     then show ?thesis 
       by (simp add: \<open>not_on_odd p x = p x\<close>)
   qed
@@ -1724,13 +2196,17 @@ lemma rev_p_opposit_tutte_value:
   shows "(tutte_matrix )$i$p i = - (tutte_matrix )$p i$(rev_p p) (p i)"
 proof - 
   have "p i \<in> set (support p  (least_odd p))" 
-    by (metis assms on_odd_def on_odd_p_permutes permutes_inv_eq)   
+    by (rule p_in_same_cycle[OF assms]) 
   then have "(rev_p p) (p i) = i"  
     unfolding rev_p_def 
-    by (metis assms(1) permutes_inv_eq)
-  then show ?thesis 
-    using  assms(1) tutte_skew_symmetric 
-    by metis
+    by (simp add: rev_p_def
+                   if_P[OF p_in_same_cycle[OF assms(1) assms(2)]]
+                   permutes_inv_eq[OF assms(1)])
+  note rev_eq = this
+  have "tutte_matrix $ i $ p i = - tutte_matrix $ (p i) $ i"
+    by (rule tutte_skew_symmetric)
+  then show ?thesis
+    by (simp only: rev_eq)
 qed
 
 lemma least_odd_support_is_odd:
@@ -1754,9 +2230,16 @@ proof -
   let ?h = "(\<lambda>i. (tutte_matrix )$i$p i)" 
   let ?g = "(\<lambda>i. (tutte_matrix )$i$(rev_p p) i)" 
   have 3: "prod ?h UNIV =  prod ?h ?A *  prod ?h (UNIV - ?A)" 
-    by (metis (no_types, lifting) mult.commute prod.subset_diff top_greatest univ_is_finite)
+  proof -
+    have fin: "finite (UNIV :: 'a set)"
+      by (rule univ_is_finite)
+    have subs: "?A \<subseteq> (UNIV :: 'a set)"
+      by (rule subset_UNIV)
+    show ?thesis
+      by (rule trans[OF prod.subset_diff[OF subs fin] mult.commute])
+  qed
   have 4:"prod ?g UNIV =  prod ?g ?A *  prod ?g (UNIV - ?A)"
-    by (metis (no_types, lifting) mult.commute prod.subset_diff top_greatest univ_is_finite)
+    by (rule trans[OF prod.subset_diff[OF subset_UNIV univ_is_finite] mult.commute])
   have "\<forall> i\<in> (UNIV - ?A). (rev_p p) i = p i" 
     using assms p_rev_p_same' by auto
   then have 2:" prod ?h (UNIV  - ?A) =  prod ?g (UNIV - ?A)"    
@@ -1792,7 +2275,14 @@ proof -
   have 4:"(rev_p p) = (inv (on_odd  p)) \<circ>  not_on_odd p"
     using rev_is_composition assms(1) by auto
   have 5: "evenperm p \<longleftrightarrow> evenperm (on_odd  p) = evenperm (not_on_odd p)" 
-    by (metis 1 2 3 evenperm_comp)
+  proof -
+    have "evenperm (on_odd p \<circ> not_on_odd p) \<longleftrightarrow>
+          (evenperm (on_odd p) = evenperm (not_on_odd p))"
+      using 1 2 by (rule evenperm_comp)
+    moreover have "on_odd p \<circ> not_on_odd p = p"
+      using 3 by (rule sym)
+    ultimately show ?thesis by simp
+  qed
   have "evenperm (rev_p p) \<longleftrightarrow> evenperm (inv (on_odd  p)) = evenperm (not_on_odd p)"
     by (simp add: 1 2 4 evenperm_comp permutation_inverse)
   then show ?thesis 
@@ -1852,10 +2342,29 @@ proof (induct n)
     have "\<forall>n. p (inv p n) = n"
       by (meson assms(1) permutes_inverses(1))
     then show ?thesis 
-      by (smt (verit, ccfv_SIG) same_support assms inv_in_support map_eq_conv p_is_permutation)
+      proof -
+        have pperm: "permutation p"
+          by (rule p_is_permutation[OF assms(1)])
+        have "inv p a \<in> set (support p (least_odd p))"
+          by (rule inv_in_support[OF pperm assms(2)])
+        moreover have "set (support p (least_odd p)) = set (support (inv p) (least_odd p))"
+          by (rule inv_support_same[OF pperm])
+        ultimately show ?thesis by simp
+      qed
   qed
   then have "(inv p ^^ n) a \<in> set (support (inv p)  (least_odd p))"
-    by (metis same_support assms elemnets_in_support_expo p_is_permutation permutation_inverse)
+  proof -
+    have perm: "permutation p"
+      using assms(1) p_is_permutation by blast
+    then have perm_inv: "permutation (inv p)"
+      using permutation_inverse by blast
+    have supp_eq: "set (support p (least_odd p)) = set (support (inv p) (least_odd p))"
+      by (rule inv_support_same[OF perm])
+    have a_in: "a \<in> set (support (inv p) (least_odd p))"
+      using assms(2) supp_eq by simp
+    show ?thesis
+      by (rule elemnets_in_support_expo[OF perm_inv a_in refl])
+  qed
   then have "(inv p ^^ n) a \<in> set (support p (least_odd p))"
     using same_support by blast
   then have "(rev_p p) ((inv p ^^ n) a) = (inv p) ((inv p ^^ n) a)"  
@@ -1872,7 +2381,15 @@ proof (induct n)
   case (Suc n)
   let ?A = "(set (support p (least_odd p)))" 
   have "(p^^n) a \<notin>  (set (support p  (least_odd p)))" 
-    by (smt (verit, best) assms elemnets_in_support_expo' map_eq_conv p_is_permutation)
+  proof (rule ccontr)
+    assume "\<not> (p ^^ n) a \<notin> set (support p (least_odd p))"
+    then have h1: "(p ^^ n) a \<in> set (support p (least_odd p))" by blast
+    have h2: "permutation p" using assms(1) p_is_permutation by blast
+    have h3: "(p ^^ n) a = (p ^^ n) a" by (rule refl)
+    have "a \<in> set (support p (least_odd p))"
+      using elemnets_in_support_expo'[OF h2 h1 h3] .
+    then show False using assms(2) by blast
+  qed
   then have "(rev_p p) ((p ^^ n) a) = p ((p ^^ n) a)" 
     using assms(1) p_rev_p_same' by presburger
   then show "(p ^^ Suc n) a = (rev_p p ^^ Suc n) a" 
@@ -1898,7 +2415,12 @@ proof(safe)
     then obtain j where j:"x = (p^^j) i \<and> j < least_power p i" 
       by fastforce
     then have "((inv p)^^j) x= i" 
-      by (metis assms bij_fn bij_inv_eq_iff inv_fn permutes_imp_bij)
+  proof -
+    have bij_p: "bij p" using assms permutes_imp_bij by blast
+    then have inj_pj: "inj (p ^^ j)" using bij_fn bij_is_inj by blast
+    have "inv (p ^^ j) x = i" using j inj_pj inv_f_f by fastforce
+    then show "((inv p)^^j) x= i" using inv_fn [OF bij_p, symmetric] by simp
+  qed
     have 1: "(least_power p i)-j > 0" 
       by (simp add: j)
     have "(p^^(least_power p i)) x = (p^^((least_power p i) + j)) i" 
@@ -1906,7 +2428,18 @@ proof(safe)
     then have "(p^^(((least_power p i)-j)+j)) x = (p^^((least_power p i)+j)) i"
       using 1 by simp
     then have "(p^^(((least_power p i)-j))) x = (p^^((least_power p i))) i"
-      by (metis (mono_tags, lifting) comp_apply funpow_add j le_add_diff_inverse2 order_less_imp_le)
+    proof -
+      have j1: "x = (p ^^ j) i" and j2: "j < least_power p i"
+        using j by auto
+      have j3: "j \<le> least_power p i"
+        using j2 by (rule order_less_imp_le)
+      have "least_power p i - j + j = least_power p i"
+        using j3 by (simp add: le_add_diff_inverse2)
+      moreover have "(p ^^ (least_power p i - j)) x = (p ^^ (least_power p i - j + j)) i"
+        by (simp add: j1 funpow_add)
+      ultimately show "(p ^^ (least_power p i - j)) x = (p ^^ least_power p i) i"
+        by simp
+    qed
     then have "(p^^((least_power p i)-j)) x = i" 
       by (simp add: assms least_power_of_permutation(1) p_is_permutation)
     show "x \<in>  set (support (rev_p p) i)" 
@@ -1942,8 +2475,17 @@ proof(safe)
     using `?lp-j > 0`  
     by simp
   then have "((rev_p p)^^((?lp-j))) x = ((rev_p p)^^(?lp)) i"
-    by (metis (no_types, lifting) Nat.add_diff_assoc2 j_sup add_diff_cancel_right' funpow_add
-        less_imp_le o_apply)
+  proof -
+    have j_le: "j \<le> ?lp" using j_sup by linarith
+    have exp_eq: "(?lp - j) + j = ?lp" using j_le by linarith
+    have "((rev_p p)^^(?lp-j)) x = ((rev_p p)^^(?lp-j)) (((rev_p p)^^j) i)"
+      using j_sup by simp
+    also have "\<dots> = ((rev_p p)^^((?lp-j)+j)) i"
+      by (simp add: funpow_add)
+    also have "\<dots> = ((rev_p p)^^?lp) i"
+      by (simp add: exp_eq)
+    finally show ?thesis .
+  qed
   then have "((rev_p p)^^(?lp-j)) x = i" 
     by (simp add: \<open>permutation (rev_p p)\<close> least_power_of_permutation(1))
   show "x \<in>  set (support p i)" 
@@ -1954,7 +2496,23 @@ proof(safe)
     then have "((inv p)^^j) i = x" 
       using j_sup by presburger
     then have "i = (p^^j) x" 
-      by (metis (no_types, lifting) assms bij_fn bij_inv_eq_iff inv_fn permutes_imp_bij)
+    proof -
+      assume inv_fact: "(inv p ^^ j) i = x"
+      have bij_p: "bij p"
+        using assms permutes_imp_bij by blast
+      have bij_pow: "bij (p ^^ j)"
+        using bij_p by (rule bij_fn)
+      have inv_pow: "inv (p ^^ j) = (inv p) ^^ j"
+        using bij_p by (rule inv_fn)
+      have "inv (p ^^ j) i = x"
+        using inv_pow inv_fact by simp
+      have id_c: "p ^^ j \<circ> inv p ^^ j = (\<lambda>x::'a. x)"
+        using bij_p by (rule fn_o_inv_fn_is_id)
+      have "((p ^^ j) o (inv p ^^ j)) i = i"
+        using id_c by simp
+      then show "i = (p ^^ j) x"
+        using inv_fact by simp
+    qed
     then show ?thesis using 
         `i \<in> set (support p  i)` 
         elemnets_in_support_expo'[of p i i j x] assms 
@@ -1966,10 +2524,21 @@ proof(safe)
       using False assms by blast
     then have "((rev_p p)^^(?lp-j)) x = i" 
       using \<open>(rev_p p ^^ (least_power (rev_p p) i - j)) x = i\<close> by blast 
-    then show ?thesis using
-        `i \<in> set (support p i)` 
-        elemnets_in_support_expo' `permutation p` 
-      by (metis False assms j_sup pow_rev_p_is_same)
+    show ?thesis
+    proof -
+      have i_in_supp: "i \<in> set (support p i)"
+        using assms el_in_own_support by blast
+      have perm_p: "permutation p"
+        using assms p_is_permutation by blast
+      have eq1: "(p ^^ j) i = (rev_p p ^^ j) i"
+        by (rule pow_rev_p_is_same[OF assms False])
+      have eq2: "(rev_p p ^^ j) i = x"
+        using j_sup by simp
+      have eq3: "x = (p ^^ j) i"
+        using eq1 eq2 by simp
+      show "x \<in> set (support p i)"
+        using elemnets_in_support_expo[OF perm_p i_in_supp eq3] .
+    qed
   qed
 qed
 
@@ -1988,12 +2557,16 @@ proof(safe)
     proof(cases "i \<in> ?A")
       case True
       then have "p i \<in> ?A" 
-        by (smt (verit, best) assms(1) comp_apply map_eq_conv not_on_odd_def on_odd_p_permutes 
-            p_is_composition permutes_in_image)
+        by (blast intro: p_in_same_cycle assms(1))
       then have "(rev_p p) (p i) = (inv p) (p i)" 
         using rev_p_def by presburger
       then have "(rev_p p) (p i) = i " 
-        by (metis assms(1) permutes_inverses(2))
+      proof -
+        have "inv p (p i) = i"
+          by (rule permutes_inverses(2)[OF assms(1)])
+        with \<open>rev_p p (p i) = inv p (p i)\<close> show ?thesis
+          by simp
+      qed
       have "{(p i), ((rev_p p) (p i))} \<in> (u_edges (rev_p p))"  
         using tutte_matrix.u_edges_def tutte_matrix_axioms by fastforce
       then show ?thesis 
@@ -2019,7 +2592,16 @@ proof(safe)
     have "{((inv p) i), (p ((inv p) i))} \<in> u_edges p" 
       using u_edges_def by auto
     then show ?thesis 
-      by (metis i \<open>rev_p p i = inv p i\<close> assms(1) doubleton_eq_iff permutes_inv_eq)
+    proof -
+      have p_inv: "p (inv p i) = i"
+        using permutes_inv_eq[OF assms(1)] by blast
+      have mem: "{inv p i, p (inv p i)} \<in> u_edges p"
+        using u_edges_def by auto
+      have e_eq: "e = {inv p i, p (inv p i)}"
+        using i \<open>rev_p p i = inv p i\<close> p_inv by (simp add: insert_commute)
+      show ?thesis
+        using mem e_eq by simp
+    qed
   next
     case False
     have "(rev_p p) i = p i" using False 
@@ -2035,7 +2617,7 @@ lemma least_odd_least:
   assumes "odd (least_power p a)"
   shows "(least_odd p) \<le> a" 
   unfolding least_odd_def
-  by (metis Least_le  assms(3))
+  using assms(3) by (rule Least_le[of _ a])
 
 lemma rev_least_odd_same:
   assumes "p permutes (UNIV:: 'a set)"
@@ -2057,8 +2639,28 @@ proof -
   have "?sup p ?i = ?sup (rev_p p) ?i" 
     using assms(1) rev_p_support_same by presburger
   then have 5: "odd (least_power (rev_p p) ?i)" 
-    by (smt (verit, best) \<open>odd (least_power p (least_odd p))\<close> 1 assms(1) 
-        diff_zero distinct_card length_map length_upt map_eq_conv perm_support_distinct)
+  proof -
+    have supp_eq: "set (support p (least_odd p)) = set (support (rev_p p) (least_odd p))"
+      using assms(1) rev_p_support_same by presburger
+    have dist_p: "distinct (support p (least_odd p))"
+      using perm_support_distinct assms(1) by blast
+    have dist_rev: "distinct (support (rev_p p) (least_odd p))"
+      using perm_support_distinct "1" by blast
+    have len_p: "length (support p (least_odd p)) = least_power p (least_odd p)"
+      by simp
+    have len_rev: "length (support (rev_p p) (least_odd p)) = least_power (rev_p p) (least_odd p)"
+      by simp
+    have card_p: "card (set (support p (least_odd p))) = least_power p (least_odd p)"
+      using dist_p len_p distinct_card by fastforce
+    have card_rev: "card (set (support (rev_p p) (least_odd p))) = least_power (rev_p p) (least_odd p)"
+      using dist_rev len_rev distinct_card by fastforce
+    have card_eq: "card (set (support p (least_odd p))) = card (set (support (rev_p p) (least_odd p)))"
+      using supp_eq by simp
+    have "least_power p (least_odd p) = least_power (rev_p p) (least_odd p)"
+      using card_p card_rev card_eq by simp
+    then show ?thesis
+      using \<open>odd (least_power p (least_odd p))\<close> by simp
+  qed
   have 3: "?sup p ?i_rev = ?sup (rev_p p) ?i_rev" 
     using assms(1) rev_p_support_same by presburger
   then have "odd (least_power p ?i_rev)"  
@@ -2069,10 +2671,22 @@ proof -
           least_power (rev_p p) (least_odd (rev_p p))"
       using 1 3 distinct_card perm_support_distinct by force
     then show ?thesis
-      using f1 by (metis (no_types) 4 diff_zero distinct_card length_map length_upt)
+    proof -
+      have card_eq_p: "card (set (support p (least_odd (rev_p p)))) = 
+                    least_power p (least_odd (rev_p p))"
+        using assms(1) distinct_card perm_support_distinct by force
+      have "least_power p (least_odd (rev_p p)) = card (set (support p (least_odd (rev_p p))))"
+        using card_eq_p by simp
+      also have "... = least_power (rev_p p) (least_odd (rev_p p))"
+        using \<open>card (set (support p (least_odd (rev_p p)))) = 
+           least_power (rev_p p) (least_odd (rev_p p))\<close> by simp
+      finally have "least_power p (least_odd (rev_p p)) = 
+                least_power (rev_p p) (least_odd (rev_p p))" .
+      then show ?thesis using 4 by simp
+    qed
   qed
   then have "least_odd p \<le> least_odd (rev_p p)" 
-    by (metis least_odd_def wellorder_Least_lemma(2))
+    unfolding least_odd_def by (rule Least_le)
   have "least_odd p \<ge> least_odd (rev_p p)"  
     using 5 least_odd_def wellorder_Least_lemma(2) by fastforce
   then show ?thesis 
@@ -2094,7 +2708,7 @@ proof(rule ccontr)
   then have "(inv p) (p x) \<in> set (support (inv p) i)" 
     using assms(1) inv_in_support inv_support_same p_is_permutation by fast
   then have "x \<in> set (support (inv p) i)" 
-    by (metis assms(1) permutes_inv_eq)
+    using permutes_inverses(2)[OF assms(1)] by simp
   then show False 
     using assms inv_support_same p_is_permutation by fast
 qed
@@ -2122,14 +2736,23 @@ proof
     then have "not_on_odd (rev_p p) x = x" 
       using \<open>?A = ?A'\<close> not_on_odd_out by force
     have "p x \<in> ?A" 
-      by (smt (z3) True assms(1) bij_imp_bij_inv bij_is_surj map_eq_conv on_odd_def 
-          on_odd_p_permutes_UNIV permutes_imp_bij permutes_inv_inv surj_f_inv_f)
+      using p_in_same_cycle[OF assms(1) True] by blast
     then have "(on_odd  (rev_p p)) (p x) = (inv p) (p x)"   
       unfolding on_odd_def using \<open>?A = ?A'\<close> unfolding rev_p_def by presburger 
     then have "(on_odd  (rev_p p)) (p x) = x" 
-      by (metis assms(1) permutes_inv_eq) 
+      by (simp add: permutes_inverses(2)[OF assms(1)])
     then have "inv ((on_odd  (rev_p p))) x = p x" 
-      by (metis assms(1) on_odd_p_permutes_UNIV permutes_inv_eq rev_p_permutes)
+      proof -
+        assume prev: "on_odd (rev_p p) (p x) = x"
+        have "rev_p p permutes UNIV"
+          using assms(1) rev_p_permutes by blast
+        then have q_perm: "on_odd (rev_p p) permutes UNIV"
+          using on_odd_p_permutes_UNIV by blast
+        have "inv (on_odd (rev_p p)) x = p x \<longleftrightarrow> on_odd (rev_p p) (p x) = x"
+          by (rule permutes_inv_eq[OF q_perm])
+        then show ?thesis
+          using prev by simp
+      qed
     then show "(rev_p (rev_p p)) x = p x" 
       by (simp add: \<open>not_on_odd (rev_p p) x = x\<close> 2)
   next
@@ -2141,10 +2764,25 @@ proof
     have "p x \<notin> ?A" 
       using False p_also_not_in_support assms(1) by presburger
     then  have "(on_odd  (rev_p p)) (p x) = (p x)" 
-      by (metis 3 \<open>rev_p p x = p x\<close> assms(1) comp_def tutte_matrix.p_is_composition 
-          tutte_matrix.rev_p_permutes tutte_matrix_axioms)
+    proof -
+      have "p x \<notin> set (support (rev_p p) (least_odd (rev_p p)))"
+        using \<open>set (support p (least_odd p)) = set (support (rev_p p) (least_odd (rev_p p)))\<close>
+              \<open>p x \<notin> set (support p (least_odd p))\<close>
+        by blast
+      then show ?thesis
+        by (rule on_odd_out)
+    qed
     then have "inv (on_odd  (rev_p p)) (p x) = (p x)" 
-      by (metis assms(1) on_odd_p_permutes_UNIV permutes_inv_eq rev_p_permutes)
+    proof -
+      assume E: "on_odd (rev_p p) (p x) = p x"
+      have perm: "on_odd (rev_p p) permutes UNIV"
+        using assms(1) rev_p_permutes on_odd_p_permutes_UNIV by blast
+      have "inv (on_odd (rev_p p)) (p x) = inv (on_odd (rev_p p)) (on_odd (rev_p p) (p x))"
+        using E[symmetric] by (rule arg_cong)
+      also have "inv (on_odd (rev_p p)) (on_odd (rev_p p) (p x)) = p x"
+        by (rule permutes_inverses(2)[OF perm])
+      finally show ?thesis .
+    qed
     then show "(rev_p (rev_p p)) x = p x"  
       by (simp add: 3 2 \<open>rev_p p x = p x\<close>)
   qed
@@ -2201,7 +2839,22 @@ proof -
       by (simp add: sign_def)
     then have "(\<Prod>i\<in>UNIV. local.tutte_matrix  $ i $ p i) = 0"
       using `?g p = 0` unfolding sign_def
-      by (smt (verit, best) add.inverse_neutral lambda_one minus_mult_minus of_int_1 of_int_minus)
+    proof -
+      have zero: "of_int (sign p) * (\<Prod>i\<in>UNIV. local.tutte_matrix $ i $ p i) = 0"
+        using `?g p = 0` by simp
+      show ?thesis
+      proof (cases "evenperm p")
+        case True
+        then have "sign p = 1"
+          by (simp add: sign_def)
+        with zero show ?thesis by simp
+      next
+        case False
+        then have "sign p = - 1"
+          by (simp add: sign_def)
+        with zero show ?thesis by simp
+      qed
+    qed
     then show False 
       using 1 by blast
   qed
@@ -2254,17 +2907,37 @@ proof -
       then have "a (a i) = i" 
         using \<open>a = rev_p a\<close> by auto
       then have "(a^^2) i = i" 
-        by (metis One_nat_def funpow.simps(2) funpow_0 nat_1_add_1 o_apply plus_1_eq_Suc)
+      proof -
+        have "(a ^^ 2) i = a (a ((a ^^ 0) i))"
+          by (simp add: numeral_2_eq_2 funpow.simps o_apply)
+        also have "\<dots> = a (a i)"
+          by (simp add: funpow_0)
+        finally have "(a ^^ 2) i = a (a i)" .
+        then show ?thesis
+          using \<open>a (a i) = i\<close> by simp
+      qed
       then have "least_power a i \<le> 2" 
         by (simp add: least_power_le)
       have "odd (least_power a i)" 
         using \<open>a \<in> nonzero_perms\<close> a_perm i assms least_odd_is_odd by blast
       then have "(least_power a i) = 1" 
-        using \<open>least_power a i \<le> 2\<close> dbl_simps(5) 
-        by (smt (z3) dbl_simps(3) dvd_0_right even_numeral even_of_nat int_ops(2) le_antisym 
-            negative_zle numeral_One of_nat_le_iff of_nat_numeral)
+        using \<open>least_power a i \<le> 2\<close> \<open>odd (least_power a i)\<close>
+proof -
+  assume le: "least_power a i \<le> 2" and odd: "odd (least_power a i)"
+  have "least_power a i = 0 \<or> least_power a i = 1 \<or> least_power a i = 2"
+    using le by auto
+  then show "least_power a i = 1"
+    using odd by auto
+qed
       then have "(a^^1) i = i" 
-        by (metis a_perm least_power_dvd one_dvd p_is_permutation)
+      proof -
+        have perm: "permutation a"
+          by (rule p_is_permutation[OF a_perm])
+        have "(a ^^ least_power a i) i = i"
+          by (rule least_power_of_permutation(1)[OF perm])
+        then show "(a ^^ 1) i = i"
+          using \<open>least_power a i = 1\<close> by simp
+      qed
       then have "a i = i" 
         by simp
       show "?g a = 0" 
@@ -2336,7 +3009,45 @@ proof(induct A)
       have "(tutte_matrix)$a$p a =  Var\<^sub>0  {a, p a}" 
         by (simp add: True in_oriented)
       then show ?thesis 
-        by (smt (z3) "1" "2" insert.hyps(3) insert.prems insert_iff mult_minus_left)
+        proof -
+          assume eq_a: "tutte_matrix $ a $ p a = Var\<^sub>0 {a, p a}"
+          have F_sub: "\<forall>i\<in>F. {i, p i} \<in> G"
+            using insert.prems by auto
+          have F_disj: "(\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i}) \<or>
+                        - (\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            using insert.hyps(3) F_sub by blast
+          have pt: "(\<Prod>i\<in>insert a F. tutte_matrix $ i $ p i)
+                      = Var\<^sub>0 {a, p a} * (\<Prod>i\<in>F. tutte_matrix $ i $ p i)"
+            using insert.hyps(1) insert.hyps(2) eq_a by simp
+          have pv: "(\<Prod>i\<in>insert a F. Var\<^sub>0 {i, p i})
+                      = Var\<^sub>0 {a, p a} * (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            using insert.hyps(1) insert.hyps(2) by simp
+          consider (F_pos) "(\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            | (F_neg) "- (\<Prod>i\<in>F. tutte_matrix $ i $ p i) = (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            using F_disj by blast
+          then show ?thesis
+          proof cases
+            case F_pos
+            have "(\<Prod>i\<in>insert a F. tutte_matrix $ i $ p i)
+                    = (\<Prod>i\<in>insert a F. Var\<^sub>0 {i, p i})"
+              unfolding pt pv using F_pos by simp
+            then show ?thesis by (rule disjI1)
+          next
+            case F_neg
+            have F_neg': "(\<Prod>i\<in>F. tutte_matrix $ i $ p i)
+                                 = - (\<Prod>i\<in>F. Var\<^sub>0 {i, p i})"
+            proof -
+              have "(\<Prod>i\<in>F. Var\<^sub>0 {i, p i})
+                      = - (\<Prod>i\<in>F. tutte_matrix $ i $ p i)"
+                using F_neg by simp
+              then show ?thesis by simp
+            qed
+            have "- (\<Prod>i\<in>insert a F. tutte_matrix $ i $ p i)
+                    = (\<Prod>i\<in>insert a F. Var\<^sub>0 {i, p i})"
+              unfolding pt pv using F_neg' by simp
+            then show ?thesis by (rule disjI2)
+          qed
+        qed
     next
       case False
       then have "(p a, a) \<in> oriented_edges"
@@ -2352,7 +3063,20 @@ proof(induct A)
   next
     case False
     then have "(prod (\<lambda>i. (tutte_matrix)$i$p i) F) = - prod (\<lambda> i.  Var\<^sub>0 ({i, p i})) F"
-      by (metis (no_types, lifting) add.inverse_inverse insert.hyps(3) insert.prems insert_iff)
+    proof -
+      have "\<forall>i\<in>F. {i, p i} \<in> G"
+        using insert.prems by blast
+      then have "(prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F \<or>
+                 - (prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F"
+        using insert.hyps(3) by blast
+      with False have B: "- (prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F"
+        by blast
+      have "prod (\<lambda>i. (tutte_matrix)$i$p i) F = - (- (prod (\<lambda>i. (tutte_matrix)$i$p i) F))"
+        by simp
+      also have "\<dots> = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F"
+        using B by simp
+      finally show ?thesis .
+    qed
     have 1:"(prod (\<lambda>i. (tutte_matrix)$i$p i) (insert a F) =
             (prod (\<lambda>i. (tutte_matrix)$i$p i) F) * (tutte_matrix)$a$p a)" 
       by (simp add: insert.hyps(2))
@@ -2365,7 +3089,43 @@ proof(induct A)
       have "(tutte_matrix)$a$p a =  Var\<^sub>0  {a, p a}" 
         by (simp add: True in_oriented)
       then show ?thesis 
-        by (smt (z3) "1" "2" insert.hyps(3) insert.prems insert_iff mult_minus_left)
+      proof -
+        have eq_a: "(tutte_matrix)$a$p a = Var\<^sub>0 {a, p a}"
+          by (simp add: True in_oriented)
+        have F_sub: "\<forall>i\<in>F. {i, p i} \<in> G"
+          using insert.prems by auto
+        have F_disj: "prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F \<or>
+                      - prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F"
+          using insert.hyps(3) F_sub by blast
+        consider (F_pos) "prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F"
+               | (F_neg) "- prod (\<lambda>i. (tutte_matrix)$i$p i) F = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F"
+          using F_disj by blast
+        then show ?thesis
+        proof cases
+          case F_pos
+          have "prod (\<lambda>i. (tutte_matrix)$i$p i) (insert a F) = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F * (tutte_matrix)$a$p a"
+            using "1" F_pos by simp
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F * Var\<^sub>0 {a, p a}"
+            using eq_a by simp
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) (insert a F)"
+            by (simp add: "2")
+          finally show ?thesis by (rule disjI1)
+        next
+          case F_neg
+          have "- prod (\<lambda>i. (tutte_matrix)$i$p i) (insert a F)
+                = - (prod (\<lambda>i. (tutte_matrix)$i$p i) F * (tutte_matrix)$a$p a)"
+            using "1" by simp
+          also have "... = - (prod (\<lambda>i. (tutte_matrix)$i$p i) F * Var\<^sub>0 {a, p a})"
+            using eq_a by simp
+          also have "... = (- prod (\<lambda>i. (tutte_matrix)$i$p i) F) * Var\<^sub>0 {a, p a}"
+            by (simp add: mult_minus_left)
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) F * Var\<^sub>0 {a, p a}"
+            using F_neg by simp
+          also have "... = prod (\<lambda>i. Var\<^sub>0 ({i, p i})) (insert a F)"
+            by (simp add: "2")
+          finally show ?thesis by (rule disjI2)
+        qed
+      qed
     next
       case False
       then have "(p a, a) \<in> oriented_edges"
@@ -2410,8 +3170,24 @@ next
   have "var_sign p = -1"
     by (meson False var_sign_def)
   have "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
-    by (metis (no_types, lifting) \<open>var_sign p = - 1\<close> assms finite_class.finite_UNIV 
-        minus_equation_iff one_neq_neg_one  product_is_var_product var_sign_def)
+  proof -
+    have disj: "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV \<or>
+        - (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+      using product_is_var_product[OF assms finite_class.finite_UNIV] .
+    show ?thesis
+      using disj False
+    proof (elim disjE)
+      assume "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+      then show ?thesis
+        using False by simp
+    next
+      assume "- (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+      then have "- (- (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set))) = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
+        by (rule arg_cong)
+      then show ?thesis
+        by simp
+    qed
+  qed
   then show ?thesis 
     by (simp add: \<open>var_sign p = - 1\<close>)
 qed
@@ -2438,7 +3214,7 @@ proof(induct A)
   then have "Poly_Mapping.single (sum (\<lambda> i. Poly_Mapping.single {i, p i} 1) (insert x F)) (1::real) 
              = 
             (Poly_Mapping.single (sum (\<lambda> i. Poly_Mapping.single {i, p i} 1) F) 1) * Var\<^sub>0 {x, p x}" 
-    unfolding Var\<^sub>0_def by (smt (z3) 2)
+    unfolding Var\<^sub>0_def by (simp add: 2 mult_single insert.hyps(2) sum.insert add.commute)
   then show ?case
     by (simp add:1 insert.hyps(3))
 qed simp
@@ -2459,7 +3235,22 @@ proof -
     by simp
   then have "Poly_Mapping.single 
             (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) \<noteq> 0" 
-    by (smt (z3) lookup_zero)
+  proof -
+    assume lookup_neq: "Poly_Mapping.lookup (Poly_Mapping.single 
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real))
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) \<noteq> 0"
+    show "Poly_Mapping.single 
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) \<noteq> 0"
+    proof
+      assume "Poly_Mapping.single 
+              (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) = 0"
+      then have "Poly_Mapping.lookup (Poly_Mapping.single 
+                  (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real))
+                  (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) = 0"
+        by (simp add: lookup_zero)
+      with lookup_neq show False by simp
+    qed
+  qed
   then have "prod (\<lambda> i. Var\<^sub>0 ({i, p i}) ::(_\<Rightarrow>\<^sub>0 real)) (UNIV::'a set) \<noteq> 0" 
     using 1 by presburger
   have "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV \<or>
@@ -2501,7 +3292,12 @@ proof(induct A)
       have 3: "poly_mapping.lookup (\<Sum>b\<in>(insert t T). ?m b) (f a) = 
             poly_mapping.lookup (\<Sum>b\<in>T. ?m b) (f a) +
       poly_mapping.lookup (?m t) (f a)" 
-        by (smt (verit, del_insts) insert.hyps(1-2) lookup_sum sum.insert)
+      proof -
+        have "(\<Sum>b\<in>insert t T. ?m b) = ?m t + (\<Sum>b\<in>T. ?m b)"
+          by (simp add: sum.insert insert.hyps(1) insert.hyps(2))
+        then show ?thesis
+          by (simp add: lookup_add add.commute)
+      qed
       have "a \<noteq> t" 
         using insert.prems by auto
       have "\<forall>a'\<in>T - {a}. f a \<noteq> f a'" 
@@ -2509,8 +3305,29 @@ proof(induct A)
       then have "f a \<noteq> f t" 
         using insert.prems(1-2) by force
       then have "poly_mapping.lookup (?m t) (f a) = 0" 
-        by (metis (no_types, lifting) lookup_single_not_eq mult.assoc mult_1 
-            mult_single single_of_int single_one)
+      proof -
+        have e1: "of_int (sign t) = Poly_Mapping.single 0 (of_int (sign t) :: real)"
+          by (simp add: single_of_int)
+        have e2: "of_int (g t) = Poly_Mapping.single 0 (of_int (g t) :: real)"
+          by (simp add: single_of_int)
+        have s2: "(Poly_Mapping.single 0 (of_int (sign t)) * Poly_Mapping.single 0 (of_int (g t)))
+                   * Poly_Mapping.single (f t) (1::real)
+                 = of_int (sign t) * of_int (g t) * Poly_Mapping.single (f t) (1::real)"
+          by (simp add: single_of_int)
+        have s3: "(Poly_Mapping.single 0 (of_int (sign t)) * Poly_Mapping.single 0 (of_int (g t)))
+                   * Poly_Mapping.single (f t) (1::real)
+                 = Poly_Mapping.single (0 + 0 + f t) (of_int (sign t) * of_int (g t) * 1)"
+          by (simp only: mult_single)
+        then have s4: "(Poly_Mapping.single 0 (of_int (sign t)) * Poly_Mapping.single 0 (of_int (g t)))
+                   * Poly_Mapping.single (f t) (1::real)
+                 = Poly_Mapping.single (f t) (of_int (sign t) * of_int (g t))"
+          by simp
+        have mp: "of_int (sign t) * of_int (g t) * Poly_Mapping.single (f t) (1::real)
+                 = Poly_Mapping.single (f t) (of_int (sign t) * of_int (g t))"
+          by (rule trans [OF s2 [symmetric] s4])
+        then show ?thesis
+          using \<open>f a \<noteq> f t\<close> by (simp add: lookup_single_not_eq)
+      qed
       then have "poly_mapping.lookup (\<Sum>b\<in>(insert t T). ?m b) (f a) =  
                  poly_mapping.lookup (\<Sum>b\<in>T. ?m b) (f a)"
         using 3 by linarith
@@ -2531,12 +3348,71 @@ proof(induct A)
       by auto
     then have "poly_mapping.lookup (of_int (sign a) * of_int (g a) * 
               (Poly_Mapping.single (f a) (int 1))) (f a) \<noteq> 0"
-      by (smt (z3) insert_iff int_ops(2) lookup_single_eq mult_1 mult_minus_left of_int_1 
-          of_int_minus sign_cases single_uminus singletonD)
+    proof -
+  have g_ne: "g a \<noteq> (0::int)"
+    using assms(2) assms(4) by auto
+  have sign_ne: "of_int (sign a) \<noteq> (0::real)"
+    by (simp add: sign_def)
+  have g_ne': "of_int (g a) \<noteq> (0::real)"
+    using g_ne by simp
+  have sign_ne_i: "of_int (sign a) \<noteq> (0::int)"
+    by (simp add: sign_def)
+  have e1: "of_int (sign a) = Poly_Mapping.single 0 (of_int (sign a) :: int)"
+    by (simp only: single_of_int)
+  have e2: "of_int (g a) = Poly_Mapping.single 0 (of_int (g a) :: int)"
+    by (simp only: single_of_int)
+  have s2: "(Poly_Mapping.single 0 (of_int (sign a) :: int) * Poly_Mapping.single 0 (of_int (g a) :: int))
+             * Poly_Mapping.single (f a) (1::int)
+           = of_int (sign a) * of_int (g a) * Poly_Mapping.single (f a) (1::int)"
+    by (simp only: single_of_int)
+  have s3: "(Poly_Mapping.single 0 (of_int (sign a) :: int) * Poly_Mapping.single 0 (of_int (g a) :: int))
+             * Poly_Mapping.single (f a) (1::int)
+           = Poly_Mapping.single (0 + 0 + f a) (of_int (sign a) * of_int (g a) * 1)"
+    by (simp only: mult_single)
+  then have s4: "(Poly_Mapping.single 0 (of_int (sign a) :: int) * Poly_Mapping.single 0 (of_int (g a) :: int))
+             * Poly_Mapping.single (f a) (1::int)
+           = Poly_Mapping.single (f a) (of_int (sign a) * of_int (g a))"
+    by simp
+  have mp: "of_int (sign a) * of_int (g a) * Poly_Mapping.single (f a) (1::int)
+           = Poly_Mapping.single (f a) (of_int (sign a) * of_int (g a))"
+    by (rule trans [OF s2 [symmetric] s4])
+  show ?thesis
+    using mp g_ne sign_ne_i by (simp add: lookup_single_eq)
+qed
     then  have "poly_mapping.lookup (?m x) (f a) \<noteq> 0" 
       using True 
-      by (smt (z3) \<open>g a \<in> {1, - 1}\<close> insert_iff lambda_one lookup_single_eq mult_minus_left of_int_1
-          of_int_minus sign_def single_uminus singletonD)
+      proof -
+        have gx: "g x \<in> {1::int, - 1}"
+          using True insert.prems by auto
+        have sx: "sign x \<in> {1::int, - 1}"
+          by (simp add: sign_def)
+        have key: "?m x = Poly_Mapping.single (f x) (of_int (sign x) * of_int (g x) :: real)"
+        proof -
+          have "?m x = (Poly_Mapping.single 0 (of_int (sign x) :: real)
+                          * Poly_Mapping.single 0 (of_int (g x) :: real))
+                       * Poly_Mapping.single (f x) (1::real)"
+            by (simp add: single_of_int)
+          also have "\<dots> = Poly_Mapping.single (0 + 0) (of_int (sign x) * of_int (g x) :: real)
+                       * Poly_Mapping.single (f x) (1::real)"
+            by (simp add: mult_single del: single_of_int)
+          also have "\<dots> = Poly_Mapping.single (0 + 0 + f x)
+                            (of_int (sign x) * of_int (g x) * 1 :: real)"
+            by (simp add: mult_single del: single_of_int)
+          finally show ?thesis by simp
+        qed
+        have lk: "poly_mapping.lookup (?m x) (f x)
+                    = (of_int (sign x) * of_int (g x) :: real)"
+          by (simp add: key lookup_single_eq)
+        have nz: "(of_int (sign x) * of_int (g x) :: real) \<noteq> 0"
+        proof -
+          have s0: "sign x \<noteq> (0::int)" using sx by auto
+          have g0: "g x \<noteq> (0::int)" using gx by auto
+          show ?thesis using s0 g0 by simp
+        qed
+        have "poly_mapping.lookup (?m x) (f a) = poly_mapping.lookup (?m x) (f x)"
+          using True by simp
+        then show ?thesis using lk nz by simp
+      qed
     then show ?thesis 
       using 5 by presburger
   next 
@@ -2546,15 +3422,45 @@ proof(induct A)
     then have 7: "poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a) \<noteq> 0" 
       using insert.hyps 1 insert.prems(3) by blast
     have "(f x ) \<noteq> (f a )" 
-      by (metis False insert.prems(1) insert.prems(2) insert_Diff insert_iff)
+      proof -
+      have "x \<in> insert x F - {a}"
+        using False by simp
+      then have "f a \<noteq> f x"
+        using insert.prems(2) by blast
+      then show ?thesis
+        by simp
+    qed
     have "(\<Sum>b\<in>(insert x F). ?m b) =  (\<Sum>b\<in>F. ?m b) +  ?m x" 
       by (simp add: insert.hyps(1) insert.hyps(2))
     then have 6: "poly_mapping.lookup (\<Sum>b\<in>(insert x F). ?m b) (f a) = 
                   poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a) + poly_mapping.lookup (?m x) (f a)" 
       by (simp add: lookup_add)
     have " poly_mapping.lookup (?m x) (f a) = 0"
-      by (metis (no_types, lifting) \<open>f x \<noteq> f a\<close>  lookup_single_not_eq mult.assoc mult.left_neutral 
-          mult_single single_of_int single_one)
+    proof -
+      have scalar: "of_int (sign x) * of_int (g x)
+          = Poly_Mapping.single 0 (of_int (sign x) * of_int (g x))"
+      proof -
+        have "of_int (sign x) * of_int (g x)
+            = Poly_Mapping.single 0 (of_int (sign x)) * Poly_Mapping.single 0 (of_int (g x))"
+          by (simp add: single_of_int)
+        also have "\<dots> = Poly_Mapping.single (0 + 0) (of_int (sign x) * of_int (g x))"
+          by (rule mult_single)
+        then show ?thesis by simp
+      qed
+      have key: "of_int (sign x) * of_int (g x) * (Poly_Mapping.single (f x) (1::real))
+          = Poly_Mapping.single (f x) (of_int (sign x) * of_int (g x))"
+      proof -
+        have "of_int (sign x) * of_int (g x) * (Poly_Mapping.single (f x) (1::real))
+            = Poly_Mapping.single 0 (of_int (sign x) * of_int (g x))
+              * Poly_Mapping.single (f x) (1::real)"
+          by (simp add: scalar)
+        also have "\<dots> = Poly_Mapping.single (0 + f x) (of_int (sign x) * of_int (g x) * 1)"
+          by (simp add: mult_single)
+        finally show ?thesis by simp
+      qed
+      show "poly_mapping.lookup (?m x) (f a) = 0"
+        using \<open>f x \<noteq> f a\<close> by (simp add: key lookup_single_not_eq)
+    qed
     then have "poly_mapping.lookup (\<Sum>b\<in>(insert x F). ?m b) (f a) = 
                poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a)"
       by (simp add: 6)
@@ -2568,7 +3474,25 @@ lemma el_in_sum_is_nonzero:
   assumes "a \<in> A"
   shows "Poly_Mapping.lookup (sum (\<lambda> b. (Poly_Mapping.single (f b) (1::nat))) A) (f a) \<noteq> 0" 
   using assms
-  by (metis (mono_tags, lifting) lookup_single_eq lookup_sum one_neq_zero sum_eq_0_iff)
+proof -
+  have lookup_eq: "Poly_Mapping.lookup (sum (\<lambda>b. Poly_Mapping.single (f b) (1::nat)) A) (f a) =
+        (\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a))"
+    by (simp add: lookup_sum)
+  have term_a: "Poly_Mapping.lookup (Poly_Mapping.single (f a) (1::nat)) (f a) = 1"
+    by (simp add: lookup_single_eq)
+  have "(\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a)) \<noteq> 0"
+  proof (rule notI)
+    assume "(\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a)) = 0"
+    with assms(1) have "\<forall>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a) = 0"
+      by (simp add: sum_eq_0_iff)
+    with assms(2) have "Poly_Mapping.lookup (Poly_Mapping.single (f a) (1::nat)) (f a) = 0"
+      by blast
+    with term_a show False
+      by linarith
+  qed
+  then show ?thesis
+    using lookup_eq by simp
+qed
 
 lemma monom_is_nonzero_for_unique_p:
   assumes "p \<in> nonzero_perms" 
@@ -2585,12 +3509,36 @@ proof -
   let ?f = "(\<lambda> p'. (\<Sum>i\<in>(UNIV:: 'a set). Poly_Mapping.single {i, p' i} (1::nat)))"
   have "\<forall>a' \<in> nonzero_perms - {p}.  ?f p  \<noteq> ?f a'" 
     using assms(2) by blast
-  then have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
+  have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
           (Poly_Mapping.single (?f b) (1::real))) nonzero_perms) (?f p) \<noteq> 0" 
-    using unique_single_sum[of nonzero_perms p ?f var_sign] 
-      \<open>finite nonzero_perms\<close> \<open>p \<in> nonzero_perms\<close> 
-    unfolding var_sign_def 
-    by (smt (verit) insert_iff of_int_1 of_int_minus sum.cong)
+  proof -
+    have mem_int: "\<forall>a' \<in> nonzero_perms. (var_sign a' :: int) \<in> {1, -1}"
+      unfolding var_sign_def by auto
+    have cast_eq: "\<And>b. of_int (var_sign b :: int) = (var_sign b :: real)"
+      unfolding var_sign_def by auto
+    have int_fact: "Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * of_int (var_sign b :: int) *
+          (Poly_Mapping.single (?f b) (1::real))) nonzero_perms) (?f p) \<noteq> 0"
+      by (rule unique_single_sum[OF \<open>finite nonzero_perms\<close> \<open>p \<in> nonzero_perms\<close>
+            \<open>\<forall>a' \<in> nonzero_perms - {p}.  ?f p \<noteq> ?f a'\<close> mem_int])
+    have sum_eq: "sum (\<lambda> b. of_int (sign b) * of_int (var_sign b :: int) *
+          (Poly_Mapping.single (?f b) (1::real))) nonzero_perms =
+        sum (\<lambda> b. of_int (sign b) * (var_sign b) *
+          (Poly_Mapping.single (?f b) (1::real))) nonzero_perms"
+    proof (rule sum.cong[OF refl])
+      fix x
+      assume "x \<in> nonzero_perms"
+      have cast_x: "of_int (var_sign x :: int) =
+            (var_sign x :: (('a set, nat) poly_mapping, real) poly_mapping)"
+        unfolding var_sign_def by auto
+      show "of_int (sign x) * of_int (var_sign x :: int) *
+            (Poly_Mapping.single (?f x) (1::real)) =
+            of_int (sign x) * (var_sign x) *
+            (Poly_Mapping.single (?f x) (1::real))"
+        by (simp add: cast_x)
+    qed
+    then show ?thesis
+      using int_fact by simp
+  qed
   have "\<forall>b \<in> nonzero_perms. (var_sign b)* (Poly_Mapping.single (?f b) (1::real)) =  
                              var_sign b * prod (\<lambda> i. Var\<^sub>0 ({i, b i})) UNIV" 
     by (simp add: nonzero_perms_def product_Var_mapping)
@@ -2601,8 +3549,21 @@ proof -
              (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))) nonzero_perms) =
              (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
              (Poly_Mapping.single (?f b) (1::nat))) nonzero_perms)"
-    by (smt (z3) mult.commute mult.right_neutral mult_minus_right of_int_1 of_int_minus of_nat_1 
-        sign_def sum.cong)
+  proof -
+    assume eq: "\<forall>b \<in> nonzero_perms. (var_sign b)*  (Poly_Mapping.single (?f b) (1::real)) = 
+                                  (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))"
+    show ?thesis
+    proof (intro sum.cong refl)
+      fix b
+      assume "b \<in> nonzero_perms"
+      then have "var_sign b * (Poly_Mapping.single (?f b) 1) =
+                 prod (\<lambda> i. tutte_matrix $ i $ b i) (UNIV::'a set)"
+        using eq by blast
+      then show "of_int (sign b) * (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set)) =
+                 of_int (sign b) * (var_sign b) * (Poly_Mapping.single (?f b) (1::nat))"
+        by (simp add: algebra_simps)
+    qed
+  qed
   then have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * 
             (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))) nonzero_perms) (?f p) \<noteq> 0"
     using 1 by force
@@ -2634,9 +3595,23 @@ proof -
       using el_in_sum_is_nonzero[of UNIV a "\<lambda> j. {j, p j}"] 
             a finite_class.finite_UNIV by blast 
     have "Poly_Mapping.lookup (\<Sum>i\<in>UNIV. Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
-      using lookup_single_eq lookup_sum 
-      by (smt (verit, best) \<open>e \<notin> u_edges p'\<close> lookup_single_not_eq mem_Collect_eq sum_eq_0_iff
-          u_edges_def univ_is_finite)
+      proof -
+        have "\<And>i. i \<in> (UNIV::'a set) \<Longrightarrow> 
+              Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
+        proof -
+          fix i :: 'a
+          assume "i \<in> (UNIV::'a set)"
+          have "{i, p' i} \<noteq> e" 
+            using \<open>e \<notin> u_edges p'\<close> unfolding u_edges_def by blast
+          then show "Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
+            by (simp add: lookup_single_not_eq)
+        qed
+        then have "(\<Sum>i\<in>(UNIV::'a set). 
+              Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e) = 0"
+          by (auto intro: sum.neutral)
+        then show ?thesis
+          by (simp add: lookup_sum)
+      qed
     then show ?thesis 
       using 1 by fastforce
   next
@@ -2653,9 +3628,24 @@ proof -
       using el_in_sum_is_nonzero[of UNIV a "\<lambda> j. {j, p' j}"] 
             a finite_class.finite_UNIV by blast 
     have "Poly_Mapping.lookup (\<Sum>i\<in>UNIV. Poly_Mapping.single {i, p i} (1::nat)) e = 0" 
-      using lookup_single_eq lookup_sum 
-      by (smt (verit, best) \<open>e \<notin> u_edges p\<close> lookup_single_not_eq mem_Collect_eq sum_eq_0_iff
-          u_edges_def univ_is_finite)
+    proof -
+      have "\<And>i. {i, p i} \<noteq> e"
+      proof -
+        fix i
+        show "{i, p i} \<noteq> e"
+        proof
+          assume "{i, p i} = e"
+          then have "e \<in> u_edges p"
+            unfolding u_edges_def by blast
+          then show False
+            using \<open>e \<notin> u_edges p\<close> by blast
+        qed
+      qed
+      then have "\<And>i. Poly_Mapping.lookup (Poly_Mapping.single {i, p i} (1::nat)) e = 0"
+        by (simp add: lookup_single_not_eq)
+      then show ?thesis
+        by (simp add: lookup_sum)
+    qed
     then show ?thesis 
       using 1 by fastforce
   qed
@@ -2714,7 +3704,15 @@ proof -
   then have M_match: "matching M" 
     using perfect_matching_def by blast
   have "Vs M = UNIV" 
-    by (metis \<open>perfect_matching G M\<close> perfect_matching_member univ)
+  proof -
+    have MG: "Vs M = Vs G"
+      using \<open>perfect_matching G M\<close>
+      unfolding perfect_matching_def by simp
+    have GU: "Vs G = (UNIV :: 'a set)"
+      by (rule univ[symmetric])
+    show ?thesis
+      by (rule trans[OF MG GU])
+  qed
   have "graph_invar M" 
     by (meson M graph_invar_subset perfect_matchingE assms(2))
   let ?singletons = "(\<lambda> i. {e - {i}| e. e \<in> M \<and> i \<in> e})" 
@@ -2723,7 +3721,7 @@ proof -
     fix i
     assume asmi: "i \<in> Vs M" 
     have 1:"\<exists>!e.  e \<in> M \<and> i \<in> e" 
-      by (metis asmi M_match matching_def2)
+      using M_match asmi unfolding matching_def2 by blast
     then obtain e where e:"e \<in> M \<and> i \<in> e" 
       by auto
     then have "{e . e \<in> M \<and> i \<in> e} =  {e}" 
@@ -2740,7 +3738,7 @@ proof -
     fix i
     assume asmi: "i \<in> Vs M" 
     have 1: "\<exists>!e. e \<in> M \<and> i \<in> e" 
-      by (metis asmi M_match matching_def2)
+      using M_match asmi unfolding matching_def2 by blast
     then obtain e where e: "e \<in> M \<and> i \<in> e" 
       by auto
     then have "{e . e \<in> M \<and> i \<in> e} =  {e}" 
@@ -2772,33 +3770,86 @@ proof -
           by blast
         have "is_singleton (\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e})" 
           using 1 by blast
-        then have 3: "\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e} = {a}" 
-          by (metis (no_types, lifting) a is_singleton_the_elem)
+        then have 3: "\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e} = {a}"
+          using 1 a by (simp add: is_singleton_the_elem)
         have "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {x} |e. e \<in> M \<and> x \<in> e}" 
-          by (metis (no_types, lifting) 3 ccpo_Sup_singleton is_singleton_the_elem singletonI)
+          proof -
+            from 2 have s: "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" by auto
+            then have eq: "{e - {x} |e. e \<in> M \<and> x \<in> e} = {the_elem {e - {x} |e. e \<in> M \<and> x \<in> e}}"
+              by (simp add: is_singleton_the_elem)
+            from eq 3 have "\<Union> {the_elem {e - {x} |e. e \<in> M \<and> x \<in> e}} = {a}"
+              by (rule subst)
+            then have u: "the_elem {e - {x} |e. e \<in> M \<and> x \<in> e} = {a}"
+              by simp
+            from u eq have "{e - {x} |e. e \<in> M \<and> x \<in> e} = {{a}}"
+              by (rule subst)
+            then show "{a} \<in> {e - {x} |e. e \<in> M \<and> x \<in> e}"
+              by simp
+          qed
         then have "{x, a} \<in> M" 
           using  insert_Diff by force
         have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})" 
           using 1 by blast
         then have 4:"\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} = {a}" 
-          by (metis (no_types, lifting) a asm(3) is_singleton_the_elem)
+        proof -
+          have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})"
+            using 1 by blast
+          then have singleton_eq: "\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} =
+                     {the_elem (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})}"
+            by (simp add: is_singleton_the_elem)
+          have "the_elem (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e}) =
+                the_elem (\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e})"
+            using asm(3) by simp
+          also have "\<dots> = a"
+            using a by simp
+          finally show "\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} = {a}"
+            using singleton_eq by simp
+        qed
         have "is_singleton {e - {y} |e. e \<in> M \<and> y \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {y} |e. e \<in> M \<and> y \<in> e}" 
-          by (metis (no_types, lifting) 4 ccpo_Sup_singleton is_singleton_the_elem singletonI)
+        proof -
+          let ?S = "{e - {y} |e. e \<in> M \<and> y \<in> e}"
+          have "is_singleton ?S"
+            using 2 by auto
+          then have S_eq: "?S = {the_elem ?S}"
+            by (rule is_singleton_the_elem[THEN iffD1])
+          have "the_elem ?S = \<Union>?S"
+          proof -
+            have "\<Union>?S = \<Union>{the_elem ?S}"
+              by (rule arg_cong[OF S_eq])
+            also have "\<dots> = the_elem ?S"
+              by simp
+            finally show "the_elem ?S = \<Union>?S"
+              by (rule sym)
+          qed
+          also have "\<dots> = {a}"
+            using 4 by simp
+          finally have "the_elem ?S = {a}" .
+          with S_eq show "{a} \<in> ?S"
+            by simp
+        qed
         then have "{y, a} \<in> M" 
           using insert_Diff by force
         then show "x = y"
-          by (metis M_match \<open>{x, a} \<in> M\<close> doubleton_eq_iff insertCI matching_unique_match)
+        proof -
+          have "{x, a} = {y, a}"
+            using matching_unique_match[of M a "{x, a}" "{y, a}"]
+              M_match \<open>{x, a} \<in> M\<close> \<open>{y, a} \<in> M\<close>
+            by simp
+          then show "x = y"
+            by (auto simp: doubleton_eq_iff)
+        qed
       qed
       show "?f ` UNIV = UNIV"
       proof safe
         fix x
         assume "x \<in> (UNIV :: 'a set)"
         obtain e where e: "x \<in> e \<and> e \<in> M" 
-          by (metis \<open>Vs M = UNIV\<close> \<open>x \<in> UNIV\<close> vs_member)
+        using \<open>Vs M = UNIV\<close>
+        by (blast dest: vs_member[THEN iffD1])
         then obtain y where y: "e = {x, y}" 
           using \<open>graph_invar M\<close> by fastforce
         then have "y \<in> e \<and> e \<in> M" 
@@ -2806,7 +3857,7 @@ proof -
         then have "y \<in> Vs M" 
           by (simp add: \<open>Vs M = UNIV\<close>)
         have "\<exists>!e. e \<in> M \<and> y \<in> e" 
-          by (metis \<open>y \<in> Vs M\<close> \<open>matching M\<close> matching_def2)
+          using \<open>matching M\<close>[unfolded matching_def2] \<open>y \<in> Vs M\<close> by blast
         then have "{e . e \<in> M \<and> y \<in> e} =  {e}" 
           using `y \<in> e \<and> e \<in> M` by blast
         then have "{e - {y} |e. e \<in> M \<and> y \<in> e} = {e - {y}}" 
@@ -2835,14 +3886,33 @@ proof -
       have "is_singleton (\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e})" 
         using 1 by blast
       then have 6: "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
-        by (metis (no_types, lifting) b is_singleton_the_elem)
+        by (simp add: is_singleton_the_elem b)
       have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
         using 2 by auto
       then have "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}" 
-        by (metis (no_types, lifting) 6 ccpo_Sup_singleton is_singleton_the_elem singletonI)
-      then have "{a, b} \<in> M" 
-        using  insert_Diff 
-        by (smt (verit, del_insts) insert_commute mem_Collect_eq)
+      proof -
+        assume "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}"
+        then have eq: "{e - {a} |e. e \<in> M \<and> a \<in> e} = {the_elem {e - {a} |e. e \<in> M \<and> a \<in> e}}"
+          by (simp add: is_singleton_the_elem)
+        then have "\<Union>{the_elem {e - {a} |e. e \<in> M \<and> a \<in> e}} = {b}"
+          using 6 by simp
+        then have "the_elem {e - {a} |e. e \<in> M \<and> a \<in> e} = {b}"
+          by (simp add: ccpo_Sup_singleton)
+        with eq show "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}"
+          by simp
+      qed
+      then have "{a, b} \<in> M"
+      proof -
+        obtain e' where e': "e' \<in> M" "a \<in> e'" "e' - {a} = {b}"
+          using \<open>{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}\<close>
+          by blast
+        from e'(2) have eq1: "insert a (e' - {a}) = e'"
+          by (rule insert_Diff)
+        have "e' = {a, b}"
+          using e'(2,3) eq1 by simp
+        with e'(1) show "{a, b} \<in> M"
+          by simp
+      qed
       then show "e \<in> M" 
         by (simp add: b a) 
     }
@@ -2857,7 +3927,14 @@ proof -
     have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
       using 2 by auto
     then have "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
-      by (metis (no_types, lifting) 7 ccpo_Sup_singleton is_singleton_def singletonD)
+    proof -
+      have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}"
+        using 2 by auto
+      then obtain x where x: "{e - {a} |e. e \<in> M \<and> a \<in> e} = {x}"
+        unfolding is_singleton_def by blast
+      from 7 x have "{b} = x" by auto
+      with x show "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" by auto
+    qed
     then have "?f a = b" 
       by simp   
     have "{a, ?f a} \<in> u_edges ?f"
@@ -2898,7 +3975,7 @@ proof -
           using 1 \<open>u_edges ?f = u_edges p\<close> \<open>{x, ?f x} \<in> u_edges ?f\<close> 
           using \<open>u_edges ?f = M\<close> by force
         then show "?f x = p x" 
-          by (metis (no_types, lifting) doubleton_eq_iff)
+          by (fastforce simp: doubleton_eq_iff)
       qed
       then have "?f = p"by auto 
       then show False 
