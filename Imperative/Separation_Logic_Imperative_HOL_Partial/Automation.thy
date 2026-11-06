@@ -4,7 +4,7 @@
 
 section \<open>Automation\<close>
 theory Automation
-imports Hoare_Triple "Tools/Basic_Tools" (*"../Lib/Refine_Util"*)
+imports Hoare_Triple Separation_Logic_Imperative_HOL_Partial.Basic_Tools (*"../Lib/Refine_Util"*)
 begin
 
 provenance human

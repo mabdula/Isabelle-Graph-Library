@@ -2,9 +2,54 @@ session "Data_Structures" = "HOL-Data_Structures" +
 
   sessions
     AI_Provenance
+    Separation_Logic_Imperative_HOL_Partial
+
+  directories
+    Implementations
+
+  theories [document = false]
+    More_Logic
+    More_Arith
+    More_Lists
 
   theories
     Set_Addons
     Map_Addons
     Set2_Addons             
     Set_Choose
+    Fixed_Univ_Set_Specs
+    Fixed_Univ_Map_Specs
+    Iterable_Set_Specs
+    Fixed_Univ_Key_Value_Queue_Specs
+    Real_Embedding
+    Bounded_Queue_Specs
+    Bounded_Stack_Specs
+    Fixed_Univ_Buckets_Specs
+    Fixed_Univ_List_Specs
+    
+    Fixed_Univ_Set_Specs_Imp
+    Fixed_Univ_Map_Specs_Imp
+    Iterable_Set_Specs_Imp
+    Fixed_Univ_Key_Value_Queue_Specs_Imp  
+    Fixed_Univ_Set_Iterate_Imp
+    Bounded_Queue_Specs_Imp
+    Bounded_Stack_Specs_Imp
+    Fixed_Univ_Buckets_Specs_Imp
+    Fixed_Univ_List_Specs_Imp
+    Imp_Map_Set_Addons
+    Array_Map_Set_Addons
+    
+    "Implementations/Indexed_Heap" 
+    "Implementations/Indexed_Heap_Imperative"
+    "Implementations/Imp_Bool_Set"
+    "Implementations/Imp_Range_Iteration"
+    "Implementations/Imp_Bool_Set_Iterate"
+    "Implementations/Imp_Array_Fun"
+    "Implementations/List_Cursor"
+    "Implementations/List_Cursor_Imperative"
+    "Implementations/Array_Linked_Lists"
+    "Implementations/Imp_Array_Buckets"
+    "Implementations/Imp_Array_Move_To_Front_List"
+    "Implementations/Imp_Array_Ring_Queue"
+    "Implementations/Imp_Array_Stack"
+    

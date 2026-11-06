@@ -7,7 +7,7 @@ theory Hash_Table
 imports
   Collections.HashCode
   "HOL-Library.Code_Target_Numeral"
-  "../Sep_Main"
+  Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
 provenance human

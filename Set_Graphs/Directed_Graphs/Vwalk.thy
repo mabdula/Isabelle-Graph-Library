@@ -3,7 +3,8 @@
 *)
 
 theory Vwalk
-  imports Pair_Graph
+  imports Pair_Graph "HOL-Eisbach.Eisbach" 
+Data_Structures.More_Lists
 begin
 
 provenance human
@@ -236,6 +237,10 @@ lemma edges_of_vwalk_append_3:
   using assms
   by (auto simp flip: append_butlast_last_cancel simp: edges_of_vwalk_append_2)
 
+lemma edges_of_vwalk_snoc:
+  "p \<noteq> [] \<Longrightarrow> edges_of_vwalk (p @ [z]) = edges_of_vwalk p @ [(last p, z)]"
+  by (induction p rule: induct_list012) auto
+
 lemmas edges_of_vwalk_append_two_vertices = edges_of_vwalk_append_3[of "_ @[_]" "[_]", simplified]
 
 lemma vwalk_vertex_has_edge:
@@ -287,6 +292,14 @@ lemma v_in_edge_in_vwalk_gen:
 lemma edges_of_vwalk_dVs: "dVs (set (edges_of_vwalk p)) \<subseteq> set p"
   by (auto intro: v_in_edge_in_vwalk simp: dVs_def)
 
+lemma edges_of_vwalk_prepend_one:
+   "set (edges_of_vwalk xs) \<subseteq> set (edges_of_vwalk (x#xs))"
+  by(cases xs) auto
+
+lemma edges_of_vwalk_append_one:
+   "set (edges_of_vwalk xs) \<subseteq> set (edges_of_vwalk (xs@[x]))"
+  by(cases xs rule: rev_cases) (auto simp add: edges_of_vwalk_append_two_vertices)
+
 lemma last_v_snd_last_e:
   assumes "length p \<ge> 2"
   shows "last p = snd (last (edges_of_vwalk p))" \<comment> \<open>is this the best formulation for this?\<close>
@@ -337,6 +350,12 @@ lemma vwalk_bet_reflexive_cong:
 "\<lbrakk>w \<in> dVs E;  a = w; b = w\<rbrakk> \<Longrightarrow> vwalk_bet E a [w] b" 
   by (meson vwalk_bet_reflexive)
 
+lemma vwalk_bet_singleD: 
+  "vwalk_bet E a [w] b \<Longrightarrow> w \<in> dVs E" 
+  "vwalk_bet E a [w] b \<Longrightarrow> a = w" 
+  "vwalk_bet E a [w] b \<Longrightarrow> b = w" 
+  by (auto simp add: vwalk_bet_def)
+
 lemma singleton_hd_last: "q \<noteq> [] \<Longrightarrow> tl q = [] \<Longrightarrow> hd q = last q"
   by (cases q) simp_all
 
@@ -383,6 +402,13 @@ lemma edges_are_vwalk_bet:
   using assms
   by (simp add: dVsI)
 
+lemma edges_are_vwalk_bet_length2:
+  assumes "(v, w) \<in> E"
+  shows "vwalk_bet E v [v, w] w" "length [v, w] \<ge> 2"
+  unfolding vwalk_bet_def
+  using assms
+  by (simp add: dVsI)+
+
 lemma  edges_are_vwalk_bet_cong: 
  "\<lbrakk>(v,w)\<in> E; a = v;  b = w\<rbrakk> \<Longrightarrow> vwalk_bet E a [v, w] b" for v E w a b
   using edges_are_vwalk_bet by auto
@@ -390,7 +416,7 @@ lemma  edges_are_vwalk_bet_cong:
 lemma induct_vwalk_bet[case_names path1 path2, consumes 1, induct set: vwalk_bet]:
   assumes "vwalk_bet E a p b"
   assumes Path1: "\<And>v. v \<in> dVs E \<Longrightarrow> P E [v] v v"
-  assumes Path2: "\<And>v v' vs b. (v, v') \<in> E \<Longrightarrow> vwalk_bet E v' (v' # vs) b \<Longrightarrow> P E (v' # vs) v' b \<Longrightarrow> P E (v # v' # vs) v b"
+  assumes Path2: "\<And>v v' vs b. \<lbrakk>(v, v') \<in> E; vwalk_bet E v' (v' # vs) b; P E (v' # vs) v' b\<rbrakk> \<Longrightarrow> P E (v # v' # vs) v b"
   shows "P E p a b"
 proof -
   have "vwalk E p" "p \<noteq> []" "hd p = a" "last p = b" using assms(1) by auto
@@ -409,6 +435,31 @@ proof -
       by auto
   qed
 qed
+
+text \<open>A walk stays inside any vertex set closed under its arcs.\<close>
+
+lemma walk_stays_closed:
+  assumes "vwalk_bet E x p y" "x \<in> R" "\<And>a b. \<lbrakk>(a, b) \<in> E; a \<in> R\<rbrakk> \<Longrightarrow> b
+    \<in> R"
+  shows "y \<in> R"
+  using assms
+  by (induction rule: induct_vwalk_bet) auto
+
+text \<open>A walk transfers to another digraph as long as its source lies in a set \<open>R\<close> that is closed
+  under the original arcs and whose out-arcs are preserved.\<close>
+
+lemma walk_transfer:
+  assumes "vwalk_bet E u p v" "u \<in> R"
+    "\<And>a b. \<lbrakk>(a, b) \<in> E; a \<in> R\<rbrakk> \<Longrightarrow> b \<in> R"
+    "\<And>a b. \<lbrakk>(a, b) \<in> E; a \<in> R\<rbrakk> \<Longrightarrow> (a, b) \<in> E'"
+  shows "vwalk_bet E' u p v \<or> (p = [u] \<and> u = v)"
+  using assms
+proof(induction rule: induct_vwalk_bet)
+  case (path2 x x' xs b)
+  thus ?case
+    using edges_are_vwalk_bet[of x x' E'] 
+    by(auto simp add: vwalk_bet_def)
+qed simp
 
 lemma vwalk_append:
   assumes "vwalk E xs" "vwalk E ys" "last xs = hd ys"
@@ -510,6 +561,21 @@ lemma reachable_vwalk_betD:
   using iffD2[OF reachable_vwalk_bet_iff]
   by force
 
+lemma walk_trancl:
+  assumes "vwalk_bet E u p v" "u \<noteq> v"
+  shows "(u, v) \<in> E\<^sup>+"
+  using reachable_vwalk_betD[OF assms(1)] assms(2) by (rule reachable_neq_reachable1)
+
+lemma trancl_walk:
+  assumes "(u, v) \<in> E\<^sup>+"
+  obtains p where "vwalk_bet E u p v"
+proof -
+  have "\<exists>p. vwalk_bet E u p v"
+    using reachable1_reachable[OF assms] by (simp only: reachable_vwalk_bet_iff)
+  then show ?thesis
+    using that by blast
+qed
+
 lemma vwalk_reachable1:
   "vwalk E (u # p @ [v]) \<Longrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
   by (induction p arbitrary: u) (auto simp add: trancl_into_trancl2)
@@ -578,6 +644,10 @@ abbreviation closed_vwalk_bet :: "('a \<times> 'a) set \<Rightarrow> 'a list \<R
   "closed_vwalk_bet E c v \<equiv> vwalk_bet E v c v \<and> Suc 0 < length c"
 
 lemma edge_iff_vwalk_bet: "(u, v) \<in> E = vwalk_bet E u [u, v] v"
+  by (auto simp: edges_are_vwalk_bet vwalk_bet_def dVsI)
+
+lemma edge_iff_vwalk_bet': 
+  "vwalk_bet E u' [u, v] v' \<longleftrightarrow> ((u, v) \<in> E \<and> u = u' \<and> v = v')"
   by (auto simp: edges_are_vwalk_bet vwalk_bet_def dVsI)
 
 lemma vwalk_bet_in_vertices: "vwalk_bet E u p v \<Longrightarrow> w \<in> set p \<Longrightarrow> w \<in> dVs E"
@@ -794,6 +864,58 @@ lemma distinct_vwalk_bets_finite:
   "finite E \<Longrightarrow> finite {p. distinct_vwalk_bet E u p v}"
   by (rule finite_surj[OF  distinct_vwalk_bet_triples_finite]) auto
 
+subsection \<open>Graph homomorphisms\<close>
+
+lemma vwalk_map:
+  assumes "Vwalk.vwalk {(u, v). (h u, h v) \<in> R} p"
+  shows "Vwalk.vwalk R (map h p)"
+  using assms by (induction p rule: induct_list012) (auto elim!: in_dVsE(1))
+
+lemma vwalk_bet_map:
+  assumes "vwalk_bet {(u, v). (h u, h v) \<in> R} s p t"
+  shows "vwalk_bet R (h s) (map h p) (h t)"
+  using assms vwalk_map unfolding vwalk_bet_def by (auto simp: hd_map last_map)
+
+lemma vwalk_unmap:
+  assumes h: "inj h" "dVs R \<subseteq> range h" and q: "Vwalk.vwalk R q"
+  shows "Vwalk.vwalk {(u, v). (h u, h v) \<in> R} (map (inv h) q)"
+  using q
+proof (induction q rule: induct_list012)
+  case (2 x)
+  then obtain w where w: "(x, w) \<in> R \<or> (w, x) \<in> R"
+    by (auto elim: in_dVsE(1))
+  then have rng: "x \<in> range h" "w \<in> range h"
+    using h(2) by auto
+  show ?case
+    using w
+  proof
+    assume "(x, w) \<in> R"
+    then have "(inv h x, inv h w) \<in> {(u, v). (h u, h v) \<in> R}"
+      using rng by (simp add: f_inv_into_f)
+    then show ?thesis
+      by (simp add: dVsI(1))
+  next
+    assume "(w, x) \<in> R"
+    then have "(inv h w, inv h x) \<in> {(u, v). (h u, h v) \<in> R}"
+      using rng by (simp add: f_inv_into_f)
+    then show ?thesis
+      by (simp add: dVsI(2))
+  qed
+next
+  case (3 x y zs)
+  then have xy: "(x, y) \<in> R" "Vwalk.vwalk R (y # zs)"
+    by simp_all
+  then have "x \<in> range h" "y \<in> range h"
+    using h(2) by auto
+  then show ?case
+    using 3(2)[OF xy(2)] xy(1) by (simp add: f_inv_into_f)
+qed simp
+
+lemma vwalk_bet_unmap:
+  assumes h: "inj h" "dVs R \<subseteq> range h" and q: "vwalk_bet R (h s) q (h t)"
+  shows "vwalk_bet {(u, v). (h u, h v) \<in> R} s (map (inv h) q) t"
+  using q vwalk_unmap[OF h] h(1) unfolding vwalk_bet_def by (auto simp: hd_map last_map)
+
 section\<open>Vwalks to paths (as opposed to arc walks (\<^term>\<open>awalk_to_apath\<close> before)\<close>
 fun is_closed_decomp :: "('a \<times> 'a) set \<Rightarrow> 'a list \<Rightarrow> 'a list \<times> 'a list \<times> 'a list \<Rightarrow> bool" where
   "is_closed_decomp E p (q, r, s) \<longleftrightarrow>
@@ -959,6 +1081,44 @@ lemma vwalk_bet_to_distinct_is_distinct_vwalk_bet:
   using assms
   by (induction rule: vwalk_bet_to_distinct_induct) (auto simp: distinct_vwalk_bet_def)
 
+lemma edges_of_vwalk_bet_to_distinct_subset:
+  assumes "vwalk_bet E u p v"
+  shows "set (edges_of_vwalk (vwalk_bet_to_distinct E p)) \<subseteq> set (edges_of_vwalk p)"
+  using assms
+proof (induction rule: vwalk_bet_to_distinct_induct)
+  case (path p)
+  thus ?case
+    by (simp only: vwalk_bet_to_distinct.simps[of E p]) (simp del: vwalk_bet_to_distinct.simps)
+next
+  case (decomp p q r s)
+  obtain w where q: "vwalk_bet E u q w" and r: "vwalk_bet E w r w" "Suc 0 < length r"
+    and s: "vwalk_bet E w s v" and p: "p = q @ tl r @ tl s"
+    using closed_vwalk_bet_decompE_2[OF decomp(1,2,3)] by blast
+  have eq: "vwalk_bet_to_distinct E p = vwalk_bet_to_distinct E (q @ tl s)"
+    using decomp(1,2,3)
+    by (simp only: vwalk_bet_to_distinct.simps[of E p]) (auto simp del: vwalk_bet_to_distinct.simps)
+  have q_props: "q \<noteq> []" "last q = w"
+    using q by (auto simp add: vwalk_bet_def)
+  obtain s' where s': "s = w # s'"
+    using s by (cases s) (auto simp add: vwalk_bet_def)
+  obtain r' where r': "r = w # r'"
+    using r by (cases r) (auto simp add: vwalk_bet_def)
+  have last_r: "last r = w"
+    using r by (simp add: vwalk_bet_def)
+  have "edges_of_vwalk (q @ tl s) = edges_of_vwalk q @ edges_of_vwalk s"
+    using edges_of_vwalk_append_3[of q s'] q_props s' by simp
+  moreover have "edges_of_vwalk p = edges_of_vwalk q @ edges_of_vwalk r @ edges_of_vwalk s"
+  proof -
+    have "edges_of_vwalk p = edges_of_vwalk q @ edges_of_vwalk (r @ s')"
+      using p r' s' edges_of_vwalk_append_3[of q "r' @ s'"] q_props by simp
+    also have "\<dots> = edges_of_vwalk q @ edges_of_vwalk r @ edges_of_vwalk s"
+      using edges_of_vwalk_append_3[of r s'] last_r r' s' by simp
+    finally show ?thesis .
+  qed
+  ultimately show ?case
+    using decomp(4) unfolding eq by (auto simp del: vwalk_bet_to_distinct.simps)
+qed
+
 lemma vwalk_betE[elim?]:
   assumes "vwalk_bet E u p v"
   assumes singleton: "\<lbrakk> v\<in> dVs E; u = v\<rbrakk> \<Longrightarrow> P"
@@ -996,11 +1156,68 @@ lemma reachableE[elim?]:
   by (metis converse_tranclE reachable1_reachable reachable_in_dVs(2) reachable_neq_reachable1 reachable_refl)
 
 
+text \<open>An edge \<open>(a, t)\<close> creates a walk from \<open>s\<close> to \<open>t\<close> iff \<open>s\<close> reaches \<open>a\<close>, if there was none before.\<close>
+
+lemma walk_insert_target:
+  assumes no: "\<not> (\<exists>p. vwalk_bet R s p t)" and sa: "s \<noteq> a" and st: "s \<noteq> t"
+  shows "(\<exists>p. vwalk_bet (insert (a, t) R) s p t) \<longleftrightarrow> (\<exists>p. vwalk_bet R s p a)"
+proof
+  assume "\<exists>p. vwalk_bet R s p a"
+  then obtain p where "vwalk_bet R s p a"
+    by blast
+  then have "(s, a) \<in> R\<^sup>+"
+    using sa by (rule walk_trancl)
+  then have "(s, a) \<in> (insert (a, t) R)\<^sup>+"
+    by (rule trancl_mono) blast
+  then have "(s, t) \<in> (insert (a, t) R)\<^sup>+"
+    by (rule trancl_into_trancl) simp
+  then obtain q where "vwalk_bet (insert (a, t) R) s q t"
+    by (rule trancl_walk)
+  then show "\<exists>p. vwalk_bet (insert (a, t) R) s p t"
+    by blast
+next
+  assume "\<exists>p. vwalk_bet (insert (a, t) R) s p t"
+  then obtain q where "vwalk_bet (insert (a, t) R) s q t"
+    by blast
+  then have "(s, t) \<in> (insert (a, t) R)\<^sup>+"
+    using st by (rule walk_trancl)
+  then have "\<exists>y. (s, y) \<in> {e \<in> insert (a, t) R. snd e \<noteq> t}\<^sup>* \<and> (y, t) \<in> insert (a, t) R"
+    by (rule trancl_first_arrival)
+  then obtain y where y: "(s, y) \<in> {e \<in> insert (a, t) R. snd e \<noteq> t}\<^sup>*" "(y, t) \<in> insert (a, t) R"
+    by (elim exE conjE)
+  have sub: "{e \<in> insert (a, t) R. snd e \<noteq> t} \<subseteq> R"
+    by auto
+  have ry: "(s, y) \<in> R\<^sup>*"
+    using rtrancl_mono[OF sub] y(1) by (rule subsetD)
+  show "\<exists>p. vwalk_bet R s p a"
+  proof (cases "y = a")
+    case True
+    then have "(s, a) \<in> R\<^sup>*"
+      using ry by simp
+    then have "(s, a) \<in> R\<^sup>+"
+      using sa by (auto dest: rtranclD)
+    then obtain p where "vwalk_bet R s p a"
+      by (rule trancl_walk)
+    then show ?thesis
+      by blast
+  next
+    case False
+    then have "(y, t) \<in> R"
+      using y(2) by simp
+    with ry have "(s, t) \<in> R\<^sup>+"
+      by (rule rtrancl_into_trancl1)
+    then obtain p where "vwalk_bet R s p t"
+      by (rule trancl_walk)
+    then show ?thesis
+      using no by blast
+  qed
+qed
+
 lemma vwalk_insertE[case_names nil sing1 sing2 in_e in_E]:
    "\<lbrakk>vwalk (insert e E) p; 
      (p = [] \<Longrightarrow> P);
-     (\<And>u v. p = [v] \<Longrightarrow> e = (u,v) \<Longrightarrow> P);
-     (\<And>u v. p = [v] \<Longrightarrow> e = (v,u) \<Longrightarrow> P);
+     (\<And>u v. \<lbrakk>p = [v]; e = (u,v)\<rbrakk> \<Longrightarrow> P);
+     (\<And>u v. \<lbrakk>p = [v]; e = (v,u)\<rbrakk> \<Longrightarrow> P);
      (\<And>v. p = [v] \<Longrightarrow> v \<in> dVs E \<Longrightarrow> P);
      (\<And>p' v1 v2. \<lbrakk>vwalk {e} [v1, v2]; vwalk (insert e E) (v2 # p'); p = v1 # v2 # p'\<rbrakk> \<Longrightarrow> P);
      (\<And>p' v1 v2. \<lbrakk>vwalk E [v1,v2]; vwalk (insert e E) (v2 # p'); p = v1 # v2 # p'\<rbrakk> \<Longrightarrow> P )\<rbrakk>
@@ -1026,7 +1243,7 @@ lemma vwalk_bet_insertE[case_names nil sing1 sing2 in_e in_E]:
    "\<lbrakk>vwalk_bet (insert e E) v1 p v2; 
      (\<lbrakk>v1\<in>dVs (insert e E); v1 = v2; p = []\<rbrakk> \<Longrightarrow> P);
      (\<And>u v. p = [u] \<Longrightarrow> e = (u,v) \<Longrightarrow> P);
-     (\<And>u v. p = [v] \<Longrightarrow> e = (u,v) \<Longrightarrow> P);
+     (\<And>u v. \<lbrakk>p = [v]; e = (u,v)\<rbrakk> \<Longrightarrow> P);
      (\<And>v. p = [v] \<Longrightarrow> v = v1 \<Longrightarrow> v = v2 \<Longrightarrow> v \<in> dVs E \<Longrightarrow> P);
      (\<And>p' v3. \<lbrakk>vwalk_bet {e} v1 [v1,v3] v3; vwalk_bet (insert e E) v3 (v3 # p') v2; p = v1 # v3 # p'\<rbrakk> \<Longrightarrow> P);
      (\<And>p' v3. \<lbrakk>vwalk_bet E v1 [v1,v3] v3; vwalk_bet (insert e E) v3 (v3 # p') v2; p = v1 # v3 # p'\<rbrakk> \<Longrightarrow> P)\<rbrakk>
@@ -1038,6 +1255,10 @@ lemma vwalk_bet_insertE[case_names nil sing1 sing2 in_e in_E]:
 
 lemma vwalk_bet2[simp]:
   "vwalk_bet G u (u # v # vs) b \<longleftrightarrow> ((u,v) \<in> G \<and> vwalk_bet G v (v # vs) b)"
+  by(auto simp: vwalk_bet_def)
+
+lemma vwalk_bet3:
+  "vwalk_bet G u (u' # v # vs) b \<longleftrightarrow> ((u,v) \<in> G \<and> vwalk_bet G v (v # vs) b \<and> u = u')"
   by(auto simp: vwalk_bet_def)
 
 (*lemma assumes "vwalk_bet G' u p v""G \<subseteq> G'""u \<in> dVs G"
@@ -1105,7 +1326,11 @@ lemma vwalk_bet_transitive_2:
   unfolding vwalk_bet_def
   by (auto intro!: vwalk_concat_2 simp: last_append singleton_hd_last' neq_Nil_conv)
 
- lemma vwalk_not_vwalk: 
+lemma vwalk_add_edge_right: 
+  "\<lbrakk>(a, x) \<in> G; vwalk_bet G u (vs @ [a]) a; b = x\<rbrakk> \<Longrightarrow> vwalk_bet G u (vs @ [a, b]) x"
+  by (metis butlast_snoc edge_iff_vwalk_bet vwalk_bet_transitive_2)
+
+lemma vwalk_not_vwalk: 
    "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 
           (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G')) \<or> 
           (\<exists>v\<in>set p. v \<in> (dVs G - dVs G'))"
@@ -1196,6 +1421,17 @@ lemma vwalk_bet_in_its_own_edges: "Vwalk.vwalk_bet E u p  v
   \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk_bet (set (edges_of_vwalk p)) u p v" 
   using  vwalk_in_its_own_edges by(auto simp add: vwalk_bet_def)
 
+lemma vwalk_bet_3_verts:
+  "\<lbrakk>(a, b) \<in> G; (b, c) \<in> G\<rbrakk> \<Longrightarrow> vwalk_bet G a [a,b,c] c"
+  by auto
+
+lemmas vwalk_bet_if_edges_in =
+   vwalk_bet_subset[OF vwalk_bet_in_its_own_edges]
+
+lemma vwalk_another_edge_in_front:
+ "\<lbrakk>(y, x) \<in> G;  vwalk_bet G x q' z\<rbrakk> \<Longrightarrow> vwalk_bet G y (y # q') z" 
+  using hd_of_vwalk_bet by fastforce
+
 lemma vwalk_bet_cycle_delete: "vwalk_bet Y x ( xs@[a]@ys@[a]@zs) y \<Longrightarrow> vwalk_bet Y x ( xs@[a]@zs) y"
   by(auto intro!: vwalk_bet_transitive[of Y x "xs@[a]" a "[a]@zs" y, simplified]
            intro: vwalk_bet_pref vwalk_bet_suff[of Y x "xs@a#ys" a zs y])
@@ -1203,6 +1439,90 @@ lemma vwalk_bet_cycle_delete: "vwalk_bet Y x ( xs@[a]@ys@[a]@zs) y \<Longrightar
 lemma edges_of_vwalk_rev: "edges_of_vwalk (rev xs) = map prod.swap (rev (edges_of_vwalk  xs))"
   by(induction xs rule: edges_of_vwalk.induct)
     (simp | subst edges_of_vwalk_append_2)+
+
+lemma vwalk_bet_rev: "\<lbrakk>vwalk_bet G u p v; G' = {(u, v) | v u. (v, u) \<in> G}\<rbrakk> \<Longrightarrow> 
+       vwalk_bet G' v (rev p) u"
+  by(induction p arbitrary: u rule: edges_of_vwalk.induct)
+    (auto intro!: vwalk_add_edge_right vwalk_bet_reflexive_cong
+        simp add: vwalk_bet3 dVs_rev_all dest: vwalk_bet_singleD)
+
+lemma vwalk_rev_bet3:
+  "vwalk_bet G u (vs@[a,b]) x \<longleftrightarrow> ((a,b) \<in> G \<and> vwalk_bet G u (vs@[a]) a \<and> b = x)"
+  using split_vwalk last_of_vwalk_bet 
+  by (fastforce simp add: vwalk_bet_pref intro: vwalk_add_edge_right)
+
+lemma in_edges_of_vwalkE:
+  "\<lbrakk>(y, x) \<in> set (edges_of_vwalk xs); \<And> xs1 xs2. xs = xs1@[y,x]@xs2 \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by (meson edges_in_vwalk_split)
+
+lemma v_in_edge_in_vwalk': 
+  assumes "(u, v) \<in> set (edges_of_vwalk p)"
+  shows "u \<in> set (butlast p)" "v \<in> set (tl p)"
+  using assms
+  by (induction p rule: edges_of_vwalk.induct) auto
+
+lemma edges_of_vwalk_double_Cons:
+  "edges_of_vwalk (xs@[x,y]@ys) = edges_of_vwalk (xs@[x]) @[(x,y)]@edges_of_vwalk (y#ys)"
+  using  edges_of_vwalk_append_2 [of "y#ys" "xs@[x]"]
+  by (auto simp add: edges_of_vwalk_append_two_vertices)
+
+lemma distinct_edge_one_known_other_fixed1:
+  "\<lbrakk>distinct xs; (y, x) \<in> set (edges_of_vwalk xs); (y', x) \<in> set (edges_of_vwalk xs)\<rbrakk>  \<Longrightarrow> y = y'" 
+proof(goal_cases)
+  case 1
+  note one = this
+  obtain xs1 xs2 where xs1xs2: "xs = xs1@[y,x]@xs2" 
+    using "1"(2) edges_in_vwalk_split by fastforce
+  obtain xs1' xs2' where xs1'xs2': "xs = xs1'@[y',x]@xs2'" 
+    using "1"(3) edges_in_vwalk_split by fastforce
+  have "(y', x) \<in> set (edges_of_vwalk (xs1@[y])) \<Longrightarrow> False"
+  proof(goal_cases)
+    case 1
+    hence "x \<in> set (xs1@[y])" 
+      using v_in_edge_in_vwalk(2) by force
+    thus False
+      using one(1) xs1xs2 by auto
+  qed
+  moreover have "(y', x) \<in> set (edges_of_vwalk (x#xs2)) \<Longrightarrow> False"
+  proof(goal_cases)
+    case 1
+    hence "x \<in> set xs2" 
+      using  v_in_edge_in_vwalk' by force
+    thus False
+      using one(1) xs1xs2 by auto
+  qed
+  ultimately show "y = y'"
+    using one(3) by(auto simp add: xs1xs2 edges_of_vwalk_double_Cons[simplified])
+qed
+
+lemma distinct_edge_one_known_other_fixed2:
+  "\<lbrakk>distinct xs; (y, x) \<in> set (edges_of_vwalk xs); (y, x') \<in> set (edges_of_vwalk xs)\<rbrakk>  \<Longrightarrow> x = x'" 
+proof(goal_cases)
+  case 1
+  note one = this
+  obtain xs1 xs2 where xs1xs2: "xs = xs1@[y,x]@xs2" 
+    using "1"(2) edges_in_vwalk_split by fastforce
+  obtain xs1' xs2' where xs1'xs2': "xs = xs1'@[y,x']@xs2'" 
+    using "1"(3) edges_in_vwalk_split by fastforce
+  have "(y, x') \<in> set (edges_of_vwalk (xs1@[y])) \<Longrightarrow> False"
+  proof(goal_cases)
+    case 1
+    hence "y \<in> set xs1" 
+      using butlast_snoc v_in_edge_in_vwalk'(1) by force
+    thus False
+      using one(1) xs1xs2 by auto
+  qed
+  moreover have "(y, x') \<in> set (edges_of_vwalk (x#xs2)) \<Longrightarrow> False"
+  proof(goal_cases)
+    case 1
+    hence "x' \<in> set xs2" 
+      using v_in_edge_in_vwalk'(2) by fastforce
+    thus False
+      using "1" one(1) v_in_edge_in_vwalk(1) xs1xs2 by fastforce
+  qed
+  ultimately show "x = x'"
+    using one(3) by(auto simp add: xs1xs2 edges_of_vwalk_double_Cons[simplified])
+qed
 
 lemma shortest_vwalk_bet_distinct: 
   assumes "vwalk_bet Y x p y"  "\<nexists> q. vwalk_bet Y x q y \<and> length q < length p"
@@ -1219,18 +1539,132 @@ proof(rule ccontr, goal_cases)
     using assms(2) by auto
 qed
 
-lemma vwalk_append_intermediate_edge:"vwalk_bet A x p y \<Longrightarrow> (y, x') \<in> A \<Longrightarrow> vwalk_bet A x' p' y' \<Longrightarrow> vwalk_bet A x (p@p') y'"
+lemma vwalk_append_intermediate_edge:"\<lbrakk>vwalk_bet A x p y; (y, x') \<in> A; vwalk_bet A x' p' y'\<rbrakk> \<Longrightarrow> vwalk_bet A x (p@p') y'"
   by (simp add: append_vwalk vwalk_bet_def)
 
-lemma vwalk_bet_diff_verts_length_geq_2:"vwalk_bet E s  p t\<Longrightarrow> s \<noteq> t \<Longrightarrow> length p \<ge> 2"
+text \<open>On a shortest walk, no edge leads from a vertex to a vertex at least two positions further.\<close>
+
+lemma shortest_vwalk_no_shortcut:
+  assumes "vwalk_bet G x p y" "\<nexists> q. vwalk_bet G x q y \<and> length q < length p" "Suc a < b"
+    "b < length p"
+  shows "(p ! a, p ! b) \<notin> G"
+proof(rule notI, goal_cases)
+  case 1
+  have "vwalk_bet G x (take (Suc a) p) (p ! a)"
+    using assms(1,3,4) vwalk_bet_prefix_is_vwalk_bet[of "take (Suc a) p" G x "drop (Suc a) p" y, simplified]
+    by (simp add: take_Suc_conv_app_nth)
+  moreover have "vwalk_bet G (p ! b) (drop b p) y"
+    using assms(1,4) vwalk_bet_suffix_is_vwalk_bet[of "drop b p" G x "take b p" y, simplified]
+    by (simp add: hd_drop_conv_nth)
+  ultimately have "vwalk_bet G x (take (Suc a) p @ drop b p) y"
+    by (rule vwalk_append_intermediate_edge[OF _ 1])
+  moreover have "length (take (Suc a) p @ drop b p) < length p"
+    using assms(3,4)
+    by simp
+  ultimately show False
+    using assms(2)
+    by blast
+qed
+
+lemma vwalk_bet_diff_verts_length_geq_2:"\<lbrakk>vwalk_bet E s p t; s \<noteq> t\<rbrakk> \<Longrightarrow> length p \<ge> 2"
   by(cases p rule: edges_of_vwalk.cases) (auto simp add: vwalk_bet_def)
 
 definition "dir_acyc G = (\<nexists> p u. vwalk_bet G u p u \<and> length p \<ge> 2)"
 
-lemma dir_acycI: "(\<And> u p. vwalk_bet G u p u \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> False) \<Longrightarrow> dir_acyc G"
+lemma dir_acycI: "(\<And> u p. \<lbrakk>vwalk_bet G u p u; length p \<ge> 2\<rbrakk> \<Longrightarrow> False) \<Longrightarrow> dir_acyc G"
   by(auto simp add: dir_acyc_def)
 
-lemma dir_acycE: "dir_acyc G \<Longrightarrow>
-((\<And> u p. vwalk_bet G u p u \<Longrightarrow> length p \<ge> 2 \<Longrightarrow> False) \<Longrightarrow> P) \<Longrightarrow> P"
+lemma dir_acycE:
+  "\<lbrakk>dir_acyc G;
+    (\<And> u p. \<lbrakk>vwalk_bet G u p u; length p \<ge> 2\<rbrakk> \<Longrightarrow> False) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   by(auto simp add: dir_acyc_def)
+
+lemma acyc_rel_vwalk_bet: "acyclic G \<longleftrightarrow> (\<nexists> u p. vwalk_bet G u p u \<and> length p \<ge> 2)"
+proof(rule, all \<open>rule ccontr\<close>, goal_cases)
+  case 1
+  then obtain u p where "vwalk_bet G u p u" "2 \<le> length p"
+    by auto
+  hence "(u, u) \<in> G\<^sup>+" 
+    by(cases p rule: list_cases_betw)
+      (auto intro!: exI[of _ "butlast (tl p)"] simp add: reachable1_vwalk_iff vwalk_bet_def)
+  then show ?case 
+    using 1(1)
+    by(auto simp add: acyclic_def)
+next
+  case 2
+  then obtain u where "(u, u) \<in> G\<^sup>+"
+    by(auto simp add: acyclic_def)
+  then obtain p where "Vwalk.vwalk G (u#p@[u])"
+    by (auto simp add: reachable1_vwalk_iff)
+  hence "vwalk_bet G u (u#p@[u]) u" "length (u#p@[u]) \<ge> 2"
+    by(auto simp add: vwalk_bet_def)
+  then show ?case
+    using 2(1) by fast
+qed
+
+lemma cycle_rotate: 
+ "\<lbrakk>vwalk_bet G u p u; v \<in> set p\<rbrakk> 
+  \<Longrightarrow> \<exists> q. vwalk_bet G v q v \<and> length q = length p \<and> set p = set q
+        \<and> set (edges_of_vwalk q) = set (edges_of_vwalk p)"
+proof(goal_cases)
+  case 1
+  then obtain p1 p2 where p_split: "p = p1@[v]@p2"
+    by (metis single_in_append split_list)
+  have h1: "vwalk_bet G v (v # p2 @ tl p1 @ [v]) v" 
+    if "vwalk_bet G u (p1 @ v # p2) u" "p = p1 @ v # p2" "p1 \<noteq> []"
+    apply(rule  vwalk_bet_vertex_decompE[OF that(1) refl])
+    using that(3) vwalk_bet_transitive by fastforce
+   have h2: "(a, b) \<in> set (edges_of_vwalk (p1 @ [v]))"
+    if "vwalk_bet G u (p1 @ [v]) u" "p1 \<noteq> []" "p = p1 @ [v]" 
+       "(a, b) \<in> set (edges_of_vwalk (v # tl p1 @ [v]))"
+     for a b
+    using that
+    by(auto simp add: vwalk_bet_def append_Cons[symmetric] simp del: append_Cons)
+  have h3: "(a, b) \<in> set (edges_of_vwalk (v # tl p1 @ [v]))"
+    if "vwalk_bet G u (p1 @ [v]) u" "p1 \<noteq> []"
+       "(a, b) \<in> set (edges_of_vwalk (p1 @ [v]))"
+     for a b
+    using that
+    by(auto simp add: vwalk_bet_def append_Cons[symmetric] simp del: append_Cons)
+  have h4: "(a, b) \<in> set (edges_of_vwalk (p1 @ v # p2)) 
+             \<longleftrightarrow> (a, b) \<in> set (edges_of_vwalk (v # p2 @ tl p1 @ [v]))"
+    if "vwalk_bet G u (p1 @ v # p2) u" "p1 \<noteq> []" "p2 \<noteq> []" "p = p1 @ v # p2"  for a b
+    using that
+    by(cases p1, all \<open> cases p2 rule: rev_cases\<close>)
+      (auto simp add: edges_of_vwalk_append_3 append_Cons[symmetric] vwalk_bet_def 
+            simp del: append_Cons)
+  have h5: "\<lbrakk>vwalk_bet G u (p1 @ [v]) u; x \<in> set p1; x \<notin> set (tl p1)\<rbrakk> \<Longrightarrow> x = v" for x
+    by(cases p1)
+      (auto simp add:  append_Cons[symmetric] vwalk_bet_def 
+            simp del: append_Cons)
+  have h6: "\<lbrakk>vwalk_bet G u (p1 @ v # p2) u; x \<in> set p1; x \<noteq> v; x \<notin> set (tl p1)\<rbrakk> \<Longrightarrow> x \<in> set p2"
+    for x
+    by(cases p1)
+      (auto simp add: append_Cons[symmetric] vwalk_bet_def simp del: append_Cons)
+  have h7: "vwalk_bet G u (v # p2) u \<Longrightarrow> vwalk_bet G v (v # p2) v"
+    using hd_of_vwalk_bet' by fastforce
+  show ?case
+    using 1(1) hd_of_vwalk_bet'  p_split h1 h2 h3 h4 
+    apply(cases "p1 = []")
+    apply(all \<open>cases "p2 = []"\<close>)
+    by(auto intro!: exI[of _ "if p1 = [] \<and> p2 = [] then [v]
+                               else if p1 = [] then p
+                               else v#p2@tl p1@[v]"]
+           simp add: vwalk_bet_in_vertices vwalk_bet_reflexive_cong 
+               dest: vwalk_bet_snoc Vwalk.list_set_tl
+             intro: h5 h6 h7)
+qed
+
+lemma cycle_distinct_cycle:
+  "\<lbrakk>vwalk_bet G u p u; length p \<ge> 2\<rbrakk> \<Longrightarrow> \<exists> q. vwalk_bet G u (u#q) u \<and>  distinct q \<and> length q \<ge> 1"
+proof(cases p rule: list_cases3, goal_cases)
+  case (3 x y xs)
+  obtain q where "vwalk_bet G y q u" "distinct q"
+    apply(rule distinct_vwalk_betE[OF  vwalk_bet_to_distinct_is_distinct_vwalk_bet, of G y "y#xs" u]) 
+    using 3(1) split_vwalk vwalk_bet2[of G x y xs] vwalk_bet_transitive_2 
+    by (fastforce simp add: 3(3))+
+  then show ?case 
+    using 3 vwalk_bet3[of G u x y xs] hd_of_vwalk_bet
+    by(fastforce intro!: exI[of _ q])
+qed auto
 end

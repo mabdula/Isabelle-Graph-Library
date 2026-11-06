@@ -4,7 +4,7 @@
 *)
 
 theory BFS_Subprocedures
-  imports BFS_2 "HOL-Data_Structures.RBT_Map" Data_Structures.Set_Addons 
+  imports BFS_2 Data_Structures.Set_Addons 
 begin
 
 provenance human
@@ -242,6 +242,149 @@ qed
 end
 
 lemmas [code] = expand_tree_def next_frontier_def
+
+end
+
+lemma quat_conjD:
+  "A \<and> B \<and> C \<and> D \<Longrightarrow> A"
+  "A \<and> B \<and> C \<and> D \<Longrightarrow> B"
+  "A \<and> B \<and> C \<and> D \<Longrightarrow> C"
+  "A \<and> B \<and> C \<and> D \<Longrightarrow> D"
+  for A B C D
+  by auto
+
+lemma quat_conjI:
+ "\<lbrakk>A; B; C; D\<rbrakk> \<Longrightarrow> A \<and> B \<and> C \<and> D" for A B C D
+  by auto
+
+locale BFS_subprocedures_3 = 
+ BFS_subprocedures where lookup = lookup
+for lookup :: "'adjmap \<Rightarrow> 'ver \<Rightarrow> 'vset option" +
+fixes fold2_vset::"('ver \<Rightarrow> ('vset \<times> 'vset) \<Rightarrow> ('vset \<times> 'vset)) \<Rightarrow> 'vset \<Rightarrow> ('vset \<times> 'vset) \<Rightarrow> ('vset \<times> 'vset)"
+fixes fold2_vset'::"('ver \<Rightarrow> ('vset \<times> 'vset) \<Rightarrow> ('vset \<times> 'vset)) \<Rightarrow> 'vset \<Rightarrow> ('vset \<times> 'vset) \<Rightarrow> ('vset \<times> 'vset)"
+and fast_insert:: "'ver \<Rightarrow> 'vset \<Rightarrow> 'vset"
+and vset_inv2::"'vset \<Rightarrow> bool"
+assumes fold2_vset:"\<And> N f acc. vset_inv N \<Longrightarrow> \<exists> xs. set xs = t_set N \<and> fold2_vset f N acc = foldr f xs acc"
+assumes fold2_vset':"\<And> N f acc. vset_inv N \<Longrightarrow> \<exists> xs. set xs = t_set N \<and> fold2_vset' f N acc = foldr f xs acc"
+assumes fast_insert[simp, intro]:"\<And> x X. \<lbrakk>vset_inv2 X; x \<notin> t_set X\<rbrakk> \<Longrightarrow> vset_inv2 (fast_insert x X)"
+   "\<And> x X. \<lbrakk>vset_inv2 X; x \<notin> t_set X\<rbrakk> \<Longrightarrow> t_set (fast_insert x X) = t_set X \<union> {x}"
+ assumes vset_inv2_empty[simp]: "vset_inv2 vset_empty"
+ assumes vset_isin2[simp]: "\<And> s x. vset_inv2 s \<Longrightarrow> (x \<in>\<^sub>G s) = (x \<in> [s]\<^sub>s)"
+ assumes vset_inv2_impl_vset_inv[intro, simp]: "\<And> S. vset_inv2 S \<Longrightarrow> vset_inv S"
+begin
+find_theorems vset_inv isin
+
+definition next_frontier_and_current::"'vset \<Rightarrow> 'vset \<Rightarrow> ('vset \<times> 'vset)"  where
+"next_frontier_and_current frontier vis= 
+   fold2_vset' (\<lambda> u (nf, vis). 
+     fold2_vset (\<lambda> v (nf, vis). if \<not> isin vis v 
+                                then (fast_insert v nf, insert v vis) 
+                                else (nf, vis)) (\<N>\<^sub>G u) (nf, vis))
+         frontier (\<emptyset>\<^sub>N, vis)"
+
+lemma next_frontier_and_curent_correct:
+  assumes "vset_inv frontier" "vset_inv vis" "Graph.graph_inv G" "t_set frontier \<subseteq> t_set vis"
+      "next_frontier_and_current frontier vis = (front', vis')" "t_set vis \<subseteq> dVs (Graph.digraph_abs G)"
+  shows 
+   "vset_inv2 front'"
+   "t_set front' = (\<Union> {Pair_Graph.neighbourhood (Graph.digraph_abs G) u | u . u \<in> t_set frontier}) - t_set vis"
+  and next_vis:
+    "vset_inv vis'"
+    "t_set vis' = t_set vis \<union> t_set front'"
+proof-
+
+  define f_inner where 
+    "f_inner = (\<lambda>v (nf, vis). if v \<notin>\<^sub>G vis then (fast_insert v nf, insert v vis) else (nf, vis))"
+  define f_outer where 
+    "f_outer = (\<lambda>u (nf, vis). fold2_vset f_inner (\<N>\<^sub>G u) (nf, vis))"
+  define start_nf  where "start_nf = \<emptyset>\<^sub>N"
+
+  obtain fs where fs_def: "[frontier]\<^sub>s = set fs"
+               "fold2_vset' f_outer frontier (start_nf, vis) = foldr f_outer fs (start_nf, vis)"
+    using fold2_vset'[of frontier f_outer "(start_nf, vis)"]  assms(1)
+    by auto
+  have start_nf_vset_inv: "vset_inv2 start_nf"
+    by (simp add: start_nf_def)
+
+  have f_outer_correct:
+    "vset_inv2 (fst (f_outer u (start_nf, vis))) \<and>
+    [fst (f_outer u  (start_nf, vis))]\<^sub>s =
+    neighbourhood [G]\<^sub>g u - [vis]\<^sub>s \<union> [start_nf]\<^sub>s \<and>
+    vset_inv (snd (f_outer u  (start_nf, vis))) \<and>
+    [snd (f_outer u (start_nf, vis))]\<^sub>s =
+    [vis]\<^sub>s \<union> neighbourhood [G]\<^sub>g u"
+    if asm: "vset_inv vis" "u \<in> [vis]\<^sub>s" "[vis]\<^sub>s \<subseteq> dVs [G]\<^sub>g"
+            "vset_inv2 start_nf" "[start_nf]\<^sub>s \<subseteq> [vis]\<^sub>s"
+  for u start_nf vis 
+  proof-
+    have "vset_inv (\<N>\<^sub>G u)" 
+      using assms(3) by blast
+    then obtain vs where vs_def: "[\<N>\<^sub>G u]\<^sub>s = set vs" 
+           "fold2_vset f_inner (\<N>\<^sub>G u) (start_nf, vis) = foldr f_inner vs (start_nf, vis)"
+      using fold2_vset[of "\<N>\<^sub>G u" f_inner "(start_nf, vis)"] by auto
+    have nhd_rw:"neighbourhood [G]\<^sub>g u = [\<N>\<^sub>G u]\<^sub>s"
+      by (simp add: assms(3))
+    show ?thesis
+      unfolding f_outer_def prod.case
+      unfolding vs_def nhd_rw
+      using asm
+    proof(induction vs arbitrary: start_nf vis)
+      case Nil
+      then show ?case
+        by simp
+    next
+      case (Cons v vs)
+      note IH = quat_conjD[OF Cons(1)]
+
+      show ?case 
+      proof(cases "foldr f_inner vs (start_nf, vis)")
+        case (Pair res1 res2)
+        note IH = IH[of vis start_nf, simplified Pair fst_conv snd_conv, OF Cons(2,3,4,5,6)]
+        show ?thesis 
+        unfolding foldr.foldr_Cons o_apply
+        apply(subst (1) f_inner_def, subst (2) f_inner_def, subst (3) f_inner_def, subst (4) f_inner_def)
+        unfolding Pair prod.case
+        using IH(1-4) Cons.prems(5) 
+        by(auto intro!: fast_insert(1)  dest:  fast_insert(2)[of res1 v] )
+    qed
+  qed
+qed
+
+  have "vset_inv2 front' \<and> [front']\<^sub>s = (\<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s)  \<union> [start_nf]\<^sub>s\<and>
+        vset_inv vis' \<and> [vis']\<^sub>s = [vis]\<^sub>s \<union> (\<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s)"
+    using assms(1,2,4,6) start_nf_vset_inv
+    unfolding  fstI[OF assms(5), symmetric] sndI[OF assms(5), symmetric]
+    unfolding next_frontier_and_current_def f_inner_def[symmetric] f_outer_def[symmetric]
+    unfolding start_nf_def[symmetric] fs_def
+    apply(subst (3) start_nf_def)
+    apply(subst (6) start_nf_def)
+    apply(subst (asm) start_nf_def)
+  proof(induction fs arbitrary: front' vis')
+    case Nil
+    then show ?case 
+      by simp
+  next
+    case (Cons u fs)
+    hence fs_in_vis:"set fs \<subseteq> [vis]\<^sub>s"
+      by auto
+    note IH = quat_conjD[OF Cons(1), OF Cons(2,3) fs_in_vis Cons(5,6)]
+    note f_outer_correct = quat_conjD[OF f_outer_correct]
+    have u_there:"u \<in> [snd (foldr f_outer fs (start_nf, vis))]\<^sub>s"
+      using Cons.prems(3) IH(4) by fastforce
+    have new_vis_in_G:"[snd (foldr f_outer fs (start_nf, vis))]\<^sub>s \<subseteq> dVs [G]\<^sub>g"
+      using assms(6) by(auto simp add: IH(4))
+    have subgl:"[fst (foldr f_outer fs (start_nf, vis))]\<^sub>s \<subseteq> [snd (foldr f_outer fs (start_nf, vis))]\<^sub>s"
+      using IH(2,4) start_nf_def by auto
+    note f_outer_correct = f_outer_correct[OF IH(3) u_there new_vis_in_G IH(1) subgl, simplified prod.collapse]
+    show ?case 
+      by(auto simp add: f_outer_correct IH(4,2)) 
+  qed
+
+  thus "vset_inv2 front'" "[front']\<^sub>s = \<Union> {neighbourhood [G]\<^sub>g u |u. u \<in> [frontier]\<^sub>s} - [vis]\<^sub>s"
+       "vset_inv vis'" "[vis']\<^sub>s = [vis]\<^sub>s \<union> [front']\<^sub>s"
+    by(simp_all add: start_nf_def)
+qed
+
 
 end
 end

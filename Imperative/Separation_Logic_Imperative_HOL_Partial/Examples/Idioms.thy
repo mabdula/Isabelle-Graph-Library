@@ -4,7 +4,7 @@
 
 section \<open>Common Proof Methods and Idioms\<close> 
 theory Idioms 
-imports "../Sep_Main" Open_List Circ_List Hash_Set_Impl Array_List
+imports Separation_Logic_Imperative_HOL_Partial.Sep_Main Open_List Circ_List Hash_Set_Impl Array_List
 begin
 
 provenance human

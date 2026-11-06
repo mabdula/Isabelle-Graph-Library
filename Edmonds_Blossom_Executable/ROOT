@@ -11,7 +11,11 @@ session Blossom_Executable = Basic_Matching +
 
   theories
     Blossom_Misc
+    Blossom_Facts
     Graph_Quotient
+    Alternating_Forest_Contraction
+    Alternating_Forest_Expansion
+    Matching_Contraction_Expansion
     Graph_Quotient_Lifting
     Blossom_Prefixes
     Compute_Alt_Path_Invars

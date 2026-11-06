@@ -142,7 +142,7 @@ sublocale alt: Alt_BFS_distance
     and dist_lookup = "\<lambda>d w. d w" and dist_invar = "\<lambda>_ _. True" and some_dist = "\<lambda>_. 0"
   apply unfold_locales
   using next_frontier_and_visited_l_correct upd_dists_l_new upd_dists_l_old
-        set_all_dists_l_old set_all_dists_l_new
+        set_all_dists_l_old set_all_dists_l_new (*takes long*)
   by (auto simp: init_dists_l_def digraph_abs_lists graph_inv_lists
                  expand_tree_l_def new_edges_def next_frontier_def next_frontier_l_def
                  Pair_Graph.neighbourhood_def nbs_def

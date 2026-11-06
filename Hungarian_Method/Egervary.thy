@@ -8,9 +8,9 @@ begin
 
 provenance human
 
-section \<open>Egerváry's Theorem\<close>
+section \<open>Egervary's Theorem\<close>
 
-text \<open>This is a formalisation of Egerváry's Theorem which inspired Kuhn for his Hungarian Method.
+text \<open>This is a formalisation of Egervary's Theorem which inspired Kuhn for his Hungarian Method.
       We follow the proof by Schrijver (Theorem 17.1 in his book).\<close>
 
 lemma PD_adjustment_max_weight:
@@ -243,9 +243,9 @@ proof-
   qed
 qed
 
-subsection \<open>König's Theorem\<close>
+subsection \<open>Koenig's Theorem\<close>
 
-text \<open>We also formally prove the unweighted version, König's Theorem.\<close>
+text \<open>We also formally prove the unweighted version, Koenig's Theorem.\<close>
 
 definition "vertex_cover G X = ((X \<subseteq> Vs G) \<and> (\<forall> e \<in> G. \<exists> x \<in> X. x \<in> e))"
 

@@ -88,23 +88,6 @@ locale Hopcroft_Karp_Loop = Hopcroft_Karp_Input where lookup = lookup
     and matching_invar :: "'matching \<Rightarrow> bool"
     and matching_abstract :: "'matching \<Rightarrow> 'v set set"
     and phase :: "'matching \<Rightarrow> 'v list list"
-  assumes matching:
-      "\<And>M. matching_invar M \<Longrightarrow> graph_matching ugraph_abs (matching_abstract M)"
-      "matching_invar empty_matching"
-      "matching_abstract empty_matching = {}"
-    and augment:
-      "\<And>M p. \<lbrakk>matching_invar M; graph_augmenting_path ugraph_abs (matching_abstract M) p\<rbrakk>
-         \<Longrightarrow> matching_invar (augment M p)"
-      "\<And>M p. \<lbrakk>matching_invar M; graph_augmenting_path ugraph_abs (matching_abstract M) p\<rbrakk>
-         \<Longrightarrow> matching_abstract (augment M p) = matching_abstract M \<oplus> set (edges_of_path p)"
-    and phase:
-      "\<And>M p. \<lbrakk>Hopcroft_Karp_axiom; matching_invar M; p \<in> set (phase M)\<rbrakk>
-         \<Longrightarrow> graph_augmenting_path ugraph_abs (matching_abstract M) p"
-      "\<And>M. \<lbrakk>Hopcroft_Karp_axiom; matching_invar M\<rbrakk>
-         \<Longrightarrow> sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) (phase M)"
-      "\<And>M. \<lbrakk>Hopcroft_Karp_axiom; matching_invar M;
-             \<exists>p. graph_augmenting_path ugraph_abs (matching_abstract M) p\<rbrakk>
-         \<Longrightarrow> phase M \<noteq> []"
 begin
 
 function (domintros) Hopcroft_Karp_Loop ::
@@ -214,7 +197,24 @@ end
 subsection \<open>Locale for the proofs\<close>
 
 locale Hopcroft_Karp_Loop_thms = Hopcroft_Karp_Loop +
-  assumes Hopcroft_Karp_axiom: Hopcroft_Karp_axiom
+  assumes matching:
+      "\<And>M. matching_invar M \<Longrightarrow> graph_matching ugraph_abs (matching_abstract M)"
+      "matching_invar empty_matching"
+      "matching_abstract empty_matching = {}"
+    and augment:
+      "\<And>M p. \<lbrakk>matching_invar M; graph_augmenting_path ugraph_abs (matching_abstract M) p\<rbrakk>
+         \<Longrightarrow> matching_invar (augment M p)"
+      "\<And>M p. \<lbrakk>matching_invar M; graph_augmenting_path ugraph_abs (matching_abstract M) p\<rbrakk>
+         \<Longrightarrow> matching_abstract (augment M p) = matching_abstract M \<oplus> set (edges_of_path p)"
+    and phase:
+      "\<And>M p. \<lbrakk>Hopcroft_Karp_axiom; matching_invar M; p \<in> set (phase M)\<rbrakk>
+         \<Longrightarrow> graph_augmenting_path ugraph_abs (matching_abstract M) p"
+      "\<And>M. \<lbrakk>Hopcroft_Karp_axiom; matching_invar M\<rbrakk>
+         \<Longrightarrow> sorted_wrt (\<lambda>p q. set p \<inter> set q = {}) (phase M)"
+      "\<And>M. \<lbrakk>Hopcroft_Karp_axiom; matching_invar M;
+             \<exists>p. graph_augmenting_path ugraph_abs (matching_abstract M) p\<rbrakk>
+         \<Longrightarrow> phase M \<noteq> []"
+    and Hopcroft_Karp_axiom: Hopcroft_Karp_axiom
 begin
 
 lemma ugraph_abs_graph_invar[simp]: "graph_invar ugraph_abs"

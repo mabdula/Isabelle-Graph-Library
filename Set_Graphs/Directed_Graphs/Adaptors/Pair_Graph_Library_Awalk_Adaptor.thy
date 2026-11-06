@@ -3,7 +3,7 @@
 *)
 theory Pair_Graph_Library_Awalk_Adaptor
   imports
-    "../Awalk_Defs"
+    Directed_Set_Graphs.Awalk_Defs
     Pair_Graph_Library_Adaptor
 begin
 

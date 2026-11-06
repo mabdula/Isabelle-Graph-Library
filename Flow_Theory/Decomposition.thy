@@ -11,9 +11,9 @@ provenance human
 context flow_network_spec
 begin
 
-text \<open>We define integrality for balance and flow functions.\<close>
+text \<open>We define integrality for balance functions. Integrality of flows is defined in
+@{theory Flow_Theory.Augmentation}.\<close>
 
-definition "is_integral_flow (f::_\<Rightarrow> real) = (\<forall> e \<in> \<E>. \<exists> n::int. f e =  n)"
 
 definition "is_integral_balance (b::'a \<Rightarrow> real) = (\<forall> v \<in> \<V>. \<exists> n::int. b v = n)"
 

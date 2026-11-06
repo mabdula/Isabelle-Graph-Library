@@ -85,7 +85,8 @@ and blocking_flow_simple=dinic_subprocedures.blocking_flow_simple
 and residual_add_flow=dinic_subprocedures.residual_add_flow
 and residual_blocking_flow=dinic_subprocedures.find_blocking_flow
 and split_flow_single=dinic_subprocedures.split_flow_single
-  by(auto intro!: blocking_level_residual_spec.intro simp add: M.Map_axioms)
+  by(auto intro!: blocking_level_residual_spec.intro residual_buckets_spec.intro
+      simp add: M.Map_axioms)
 
 definition "find_blocking_flow flow_lookup fst snd es \<u> s t f
  = residual_blocking_flow fst snd \<u> (abstract_real_map (flow_lookup f))

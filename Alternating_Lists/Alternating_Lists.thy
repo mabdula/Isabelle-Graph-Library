@@ -377,6 +377,7 @@ lemma alternating_eq_even_2:
   using alternating_eq_iff_even by blast
                                          
 lemmas last_even_P2 = alternating_list_even_last
+lemmas last_odd_P2 = alternating_list_odd_last
 
 lemma alternating_eq_even':
   "\<lbrakk>alt_list P1 P2 l; odd (length l); \<forall>x\<in>set l. P1 x \<longleftrightarrow> \<not> P2 x\<rbrakk> \<Longrightarrow> 
@@ -386,6 +387,11 @@ lemma alternating_eq_even':
 lemma last_odd_P1':
   "\<lbrakk>alt_list P1 P2 l; P1 (last l); \<forall>x\<in>set l. P1 x \<longleftrightarrow> \<not> P2 x; l \<noteq> []\<rbrakk> \<Longrightarrow> odd (length l)"
   using last_even_P2
+  by auto
+
+lemma last_even_P1':
+  "\<lbrakk>alt_list P1 P2 l; P2 (last l); \<forall>x\<in>set l. P1 x \<longleftrightarrow> \<not> P2 x; l \<noteq> []\<rbrakk> \<Longrightarrow> even (length l)"
+  using last_odd_P2[of P1 P2 l]
   by auto
 
 lemma alternating_gt_odd:
@@ -458,6 +464,150 @@ next
   thus ?case
     using Cons.prems(1)
     by(force intro!: alt_list.intros)
+qed
+
+lemma alt_list_last_known_append_one:
+  assumes "alt_list P Q xs" "xs \<noteq> []" "\<And> x. x\<in>set xs \<Longrightarrow> P x = (\<not> Q x)"
+  shows   "P (last xs) \<Longrightarrow> Q x \<Longrightarrow> alt_list P Q (xs@[x])"
+          "Q (last xs) \<Longrightarrow> P x \<Longrightarrow> alt_list P Q (xs@[x])"
+proof(goal_cases)
+  case 1
+  have odd_length_xs: "odd (length xs)"
+    by(intro last_odd_P1'[OF assms(1) 1(1)]) 
+      (auto simp add: assms(2,3))
+  thus ?case
+     by(auto intro!: alt_list_append_2[OF assms(1)] alt_list.intros(1)
+           simp add: alt_list_step 1(2))
+next
+  case 2
+  have even_length_xs: "even (length xs)"
+    by(intro last_even_P1'[OF assms(1) 2(1)]) 
+      (auto simp add: assms(2,3))
+  thus ?case
+     by(auto intro!: alt_list_append_3[OF assms(1)] alt_list.intros(1)
+           simp add: alt_list_step 2(2))
+ qed
+
+lemma alt_list_split_last_off:
+  "alt_list P Q (xs@[x]) \<Longrightarrow> alt_list P Q xs"
+  using alt_list_append_1 by auto
+
+lemma alt_list_tl: "alt_list P Q xs \<Longrightarrow> alt_list Q P (tl xs)"
+  by(cases rule: alt_list.cases[of P Q xs]) (auto simp add: alt_list.intros)
+
+lemma alt_list_image:
+  assumes "\<And> x. x \<in> set xs \<Longrightarrow> P' (f x) \<longleftrightarrow> P x"
+    "\<And> x. x \<in> set xs \<Longrightarrow> Q' (f x) \<longleftrightarrow> Q x"
+  shows "alt_list P' Q' (map f xs) \<longleftrightarrow> alt_list P Q xs"
+  using assms
+proof(induction xs arbitrary: P Q P' Q')
+  case Nil
+  then show ?case
+    by (simp add: alt_list.intros(1))
+next
+  case (Cons a xs)
+  show ?case 
+    using Cons(2,3)
+    unfolding alt_list_step list.map(2)
+    by(subst Cons(1)[of Q' Q P' P]) auto
+qed
+
+fun take_evens where
+ "take_evens Nil = Nil"|
+ "take_evens [x] = [x]" |
+ "take_evens (x1#x2#xs) = x1#take_evens xs"
+
+fun take_odds where
+ "take_odds Nil = Nil"|
+ "take_odds [x] = Nil" |
+ "take_odds (x1#x2#xs) = x2#take_odds xs"
+
+lemma take_evens_odds_splice: "splice (take_evens xs) (take_odds xs) = xs"
+  by(induction xs rule: take_evens.induct) auto
+
+lemma upto_map_init: 
+  "upto (int i+j) (i+k) = map (\<lambda> x. x + i) (upto j k)"
+proof(cases "j \<le> k")
+  case True
+  then obtain n where "int n = k - j"
+    by (metis diff_ge_0_iff_ge zero_le_imp_eq_int)
+  then show ?thesis 
+  proof(induction n arbitrary: i j k)
+    case 0
+    then show ?case by auto
+  next
+    case (Suc n)
+    have "[int i + j..int i + k] = (int i + j) # [int i + j + 1..int i + k]" 
+      using Suc.prems upto_rec1 by force
+    also have "... = (int i + j) # map (\<lambda>x. x + int i) [j + 1..k]"
+      using Suc(2) 
+      by (subst Suc(1)[of k "j + 1" i, symmetric])
+         (auto intro!: arg_cong2[where f = upto])
+    also have "... = map (\<lambda>x. x + int i) [j..k]"
+      using Suc(2) by(subst  upto_rec1[of j k]) auto
+    finally show ?case 
+      by simp
+  qed  
+qed auto
+
+lemma take_evens_is:
+  "take_evens xs = [xs! i . i <- map nat [0..int (length xs) - 1], even i]"
+proof(induction xs rule: take_evens.induct)
+  case (3 x1 x2 xs)
+  have indices_split_off_0_1:"[0..int (length (x1 # x2 # xs)) - 1] =
+        0#1#map (\<lambda> x. x + 2) [0..int (length xs) - 1]"
+    by(subst upto_split2[of 0 1 "int (length (x1 # x2 # xs)) - 1"])
+       (auto simp add: upto_map_init[of "nat (2::int)" 0 "int (length xs) - 1",
+                        symmetric, simplified], simp add: upto.simps)
+  have nat_indices_are:"map nat [0..int (length (x1 # x2 # xs)) - 1] = 
+        0 # Suc 0 # map (Suc o Suc) (map nat [0..int (length xs) - 1])"
+    by(subst indices_split_off_0_1) auto
+  have fun_comp_is: "(\<lambda>i. if even i then [(x1 # x2 # xs) ! i] else []) \<circ> (Suc \<circ> Suc \<circ> nat) =
+       (\<lambda>i. if even i then [xs ! i] else []) \<circ>  nat" 
+    by auto
+  show ?case 
+    using 3(1)
+    by(subst nat_indices_are)(auto simp add: fun_comp_is)
+qed auto
+
+lemma take_evens_set:
+  "set (take_evens xs) = {xs ! i | i. i < length xs \<and> even i}"
+proof-
+  have "\<lbrakk>i < length xs; even i\<rbrakk> 
+      \<Longrightarrow> \<exists>x\<in>{0..int (length xs) - 1} \<inter> {x. even (nat x)}. xs ! i = xs ! nat x" for i
+    by(auto intro!: bexI[of _ "int i"])
+  thus ?thesis
+    by(auto simp add: take_evens_is nat_less_iff)
+qed
+ 
+lemma take_odds_is:
+  "take_odds xs = [xs! i . i <- map nat [0..int (length xs) - 1], odd i]"
+proof(induction xs rule: take_odds.induct)
+  case (3 x1 x2 xs)
+  have indices_split_off_0_1:"[0..int (length (x1 # x2 # xs)) - 1] =
+        0#1#map (\<lambda> x. x + 2) [0..int (length xs) - 1]"
+    by(subst upto_split2[of 0 1 "int (length (x1 # x2 # xs)) - 1"])
+       (auto simp add: upto_map_init[of "nat (2::int)" 0 "int (length xs) - 1",
+                        symmetric, simplified], simp add: upto.simps)
+  have nat_indices_are:"map nat [0..int (length (x1 # x2 # xs)) - 1] = 
+        0 # Suc 0 # map (Suc o Suc) (map nat [0..int (length xs) - 1])"
+    by(subst indices_split_off_0_1) auto
+  have fun_comp_is: "(\<lambda>i. if odd i then [(x1 # x2 # xs) ! i] else []) \<circ> (Suc \<circ> Suc \<circ> nat) =
+       (\<lambda>i. if odd i then [xs ! i] else []) \<circ>  nat" 
+    by auto
+  show ?case 
+    using 3(1)
+    by(subst nat_indices_are)(auto simp add: fun_comp_is)
+qed auto
+
+lemma take_odds_set:
+  "set (take_odds xs) = {xs ! i | i. i < length xs \<and> odd i}"
+proof-
+  have "\<lbrakk>i < length xs; odd i\<rbrakk> 
+      \<Longrightarrow> \<exists>x\<in>{0..int (length xs) - 1} \<inter> {x. odd (nat x)}. xs ! i = xs ! nat x" for i
+    by(auto intro!: bexI[of _ "int i"])
+  thus ?thesis
+    by(auto simp add: take_odds_is nat_less_iff)
 qed
 
 end

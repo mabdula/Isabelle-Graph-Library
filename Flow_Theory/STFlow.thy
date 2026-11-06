@@ -943,11 +943,90 @@ lemma max_flow_iff_not_resreach:
   shows   "is_max_flow s t f \<longleftrightarrow> \<not> resreach f s t"
   using assms max_flow_no_augpath no_max_flow_resreach_standard_proof by blast
 
+end
+
+text \<open>Hence an \<open>s\<close>-\<open>t\<close> flow is maximum iff there is no walk from \<open>s\<close> to \<open>t\<close>
+in the projection.\<close>
+
+lemma max_flow_iff_no_vwalk:
+  assumes "f is s -- t flow"
+  shows "is_max_flow s t f \<longleftrightarrow>
+    \<not> (\<exists>p. vwalk_bet (to_vertex_pair ` {e | e. e \<in> \<EE> \<and> rcap f e > 0}) s p t)"
+proof-
+  have "s \<in> \<V>" "t \<in> \<V>" "s \<noteq> t"
+    using assms
+    by (auto elim: is_s_t_flowE)
+  then show ?thesis
+    using assms
+    by (simp add: max_flow_iff_not_resreach resreach_iff_vwalk)
+qed
+
+
+text \<open>The amount by which the proof of @{thm flow_network.max_flow_no_augpath} augments.\<close>
+
+definition (in flow_network_spec) aug_amount :: "('edge \<Rightarrow> real) \<Rightarrow> 'edge Redge list \<Rightarrow> real" where
+  "aug_amount f q = (if Rcap f (set q) < PInfty then real_of_ereal (Rcap f (set q)) else 1)"
+
+lemma max_in_class_no_augpath:
+  assumes "f is s -- t flow" "Q f"
+    "\<And>g. \<lbrakk>g is s -- t flow; Q g\<rbrakk> \<Longrightarrow> ex g t \<le> ex f t"
+    "\<And>q. \<lbrakk>augpath f q; distinct q; set q \<subseteq> \<EE>; fstv (hd q) = s; sndv (last q) = t\<rbrakk> \<Longrightarrow>
+       Q (augment_edges f (aug_amount f q) q)"
+  shows "\<not> resreach f s t"
+proof
+  assume reach: "resreach f s t"
+  have props: "isuflow f" "ex f s \<le> 0" "s \<in> \<V>" "t \<in> \<V>" "s \<noteq> t"
+    "\<And>x. \<lbrakk>x \<in> \<V>; x \<noteq> s; x \<noteq> t\<rbrakk> \<Longrightarrow> ex f x = 0"
+    using assms(1) by (auto simp add: is_s_t_flow_def)
+  hence bflow: "isbflow f (\<lambda>v. - ex f v)"
+    by (auto simp add: isbflow_def)
+  obtain p where p_prop: "augpath f p" "fstv (hd p) = s" "sndv (last p) = t" "set p \<subseteq> \<EE>"
+    "p \<noteq> []"
+    using resreach_imp_augpath[of f s t] reach
+    by (auto simp add: augpath_def prepath_def)
+  then obtain q where q_prop: "augpath f q" "fstv (hd q) = s" "sndv (last q) = t" "set q \<subseteq> \<EE>"
+    "distinct q" "q \<noteq> []"
+    by (cases "distinct p")
+      (fastforce elim!: prepath_drop_cycles[of p "set p"] intro!: Min_antimono
+        simp add: Rcap_def augpath_def)+
+  define \<gamma> where "\<gamma> = aug_amount f q"
+  have gamma_geq_0: "0 \<le> \<gamma>"
+    using augpath_def order.order_iff_strict q_prop(1)
+    by (auto intro: real_of_ereal_pos simp add: \<gamma>_def aug_amount_def)
+  moreover hence gamma_soft: "ereal \<gamma> \<le> Rcap f (set q)"
+    using augpath_def order.order_iff_strict q_prop(1)
+    by (auto simp add: ereal_real \<gamma>_def aug_amount_def)
+  ultimately have bflow': "(augment_edges f \<gamma> q) is (\<lambda>v. if v = s then - ex f v + \<gamma>
+                             else if v = t then - ex f v - \<gamma> else - ex f v) flow"
+    using q_prop(4) q_prop(5) props(5)
+    by (auto intro!: augment_path_validness_b_pres_source_target_distinct[OF bflow _ q_prop(1),
+          simplified q_prop(2,3)])
+  moreover have "\<gamma> > 0"
+    using gamma_soft gamma_geq_0
+    by (auto simp add: augpath_rcap q_prop(1) \<gamma>_def aug_amount_def zero_less_real_of_ereal)
+  ultimately have "ex (augment_edges f \<gamma> q) t > ex f t"
+    using props(4,5) by (fastforce simp add: isbflow_def)
+  moreover have "(augment_edges f \<gamma> q) is s -- t flow"
+    using bflow' \<open>0 < \<gamma>\<close> props by (auto simp add: is_s_t_flow_def isbflow_def)
+  moreover have "Q (augment_edges f \<gamma> q)"
+    using assms(4)[OF q_prop(1,5,4,2,3)] by (simp add: \<gamma>_def)
+  ultimately show False
+    using assms(3) by fastforce
+qed
+
+
+context
+  fixes s t::'a
+  assumes s_in_V: "s \<in> \<V>"
+  assumes t_in_V: "t \<in> \<V>"
+  assumes s_neq_t: "s \<noteq> t"
+begin
+
 lemma Rescut_min_cut_max_flow:
   assumes "is_s_t_flow f s t"
     "is_min_cut s t (Rescut f s)"
   shows "is_max_flow s t f" 
-  using assms(2) max_flow_iff_not_resreach[OF assms(1)]
+  using assms(2) max_flow_iff_not_resreach[OF s_in_V t_in_V s_neq_t assms(1)]
   by(auto simp add: is_min_cut_def is_s_t_cut_def Rescut_def)
 
 lemma Rescut_of_max_flow_is_min_cut:
@@ -957,23 +1036,23 @@ proof-
   have stflow: "is_s_t_flow f s t" 
     using assms by(auto elim: is_max_flowE)
   obtain X where min_cutX:"is_min_cut s t X"
-    using min_cut_exists by auto
+    using min_cut_exists[OF s_in_V t_in_V s_neq_t] by auto
   have s_in_Rescut_f_s: "s \<in> Rescut f s"
-    using assms is_s_t_cutE max_flow_Rescut_s_t_cut by blast
+    using assms s_in_V t_in_V s_neq_t is_s_t_cutE max_flow_Rescut_s_t_cut by blast
   have "(\<Sum>x\<in>Rescut f s. ereal (if x = s then ex\<^bsub>f\<^esub> t else if x = t then - ex\<^bsub>f\<^esub> t else 0)) =
     ereal (ex\<^bsub>f\<^esub> t + 0)"
-    using max_flow_Rescut_s_t_cut[OF assms] 
+    using max_flow_Rescut_s_t_cut[OF s_in_V t_in_V s_neq_t assms]
     by(subst insert_Diff[symmetric, OF s_in_Rescut_f_s])
       (auto intro: is_min_cutE[OF min_cutX]
         elim!:  is_s_t_cutE[of s t "(Rescut f s)"] 
         simp add:  comm_monoid_add_class.sum.neutral 
         comm_monoid_add_class.sum.insert_remove[OF finite_Rescut[OF s_in_V]])
   hence "Cap (Rescut f s) = ereal (ex\<^bsub>f\<^esub> t + 0)"
-    using max_flow_Rescut_s_t_cut[OF assms]    
+    using max_flow_Rescut_s_t_cut[OF s_in_V t_in_V s_neq_t assms]
     by(subst flow_saturates_res_cut[symmetric, OF _ Rescut_around_in_V[OF s_in_V]])
       (auto intro: s_t_flow_is_ex_bflow[OF stflow])
   then show ?thesis 
-    using max_flow_Rescut_s_t_cut[OF assms]  max_flow_min_cut(1)[OF assms min_cutX]
+    using max_flow_Rescut_s_t_cut[OF s_in_V t_in_V s_neq_t assms]  max_flow_min_cut(1)[OF s_in_V t_in_V s_neq_t assms min_cutX]
     by(auto intro: is_min_cutE[OF min_cutX] simp add:  is_min_cut_def)
 qed
 
@@ -1397,5 +1476,65 @@ proof-
 qed
 
 end
+
+subsection \<open>Integral Maximum Flows\<close>
+
+text \<open>If all capacities are natural numbers or infinite, and some \<open>s\<close>-\<open>t\<close> cut has finite capacity,
+then there is an integral maximum flow. We obtain this from a generalisation of
+@{thm flow_network.max_flow_no_augpath}: a flow that is maximal within a class of flows closed under
+augmentation along augmenting paths admits no augmenting path.\<close>
+
+lemma integral_max_flow_exists:
+  assumes "s \<in> \<V>" "t \<in> \<V>" "s \<noteq> t"
+    "\<And>e. e \<in> \<E> \<Longrightarrow> \<u> e = PInfty \<or> (\<exists>r \<in> \<int>. \<u> e = ereal r)"
+    "is_s_t_cut s t Y" "Cap Y < PInfty"
+  obtains f where "is_max_flow s t f" "is_integral_flow f"
+proof -
+  have "0 \<le> Cap Y"
+    by (auto intro: sum_nonneg simp add: Cap_def u_non_neg)
+  then obtain c where c: "Cap Y = ereal c"
+    using assms(6) by (cases "Cap Y") auto
+  define Vals where
+    "Vals = {n::int. \<exists>f. (f is s -- t flow) \<and> is_integral_flow f \<and> ex f t = of_int n}"
+  have ex_bound: "0 \<le> ex f t \<and> ex f t \<le> c" if "f is s -- t flow" for f
+    using s_t_flow_excess_s_t[OF that] ex_less_cut_cap[OF assms(1-3,5) that] c that
+    by (auto simp add: is_s_t_flow_def)
+  hence "Vals \<subseteq> {0..\<lfloor>c\<rfloor>}"
+    by (fastforce simp add: Vals_def le_floor_iff)
+  hence fin: "finite Vals"
+    by (rule finite_subset) simp
+  have "0 \<in> Vals"
+    using zero_flow_is_s_t_flow[OF assms(1-3)]
+    by (auto simp add: Vals_def is_integral_flow_def ex_def intro!: exI[of _ "\<lambda>e. 0"])
+  then obtain f where f: "f is s -- t flow" "is_integral_flow f" "ex f t = of_int (Max Vals)"
+    using Max_in[OF fin] by (fastforce simp add: Vals_def)
+  have max: "ex g t \<le> ex f t" if g: "g is s -- t flow" "is_integral_flow g" for g
+  proof -
+    obtain n where n: "ex g t = of_int n"
+      using integral_ex[OF g(2)] Ints_cases by metis
+    hence "n \<in> Vals"
+      using g by (auto simp add: Vals_def)
+    thus ?thesis
+      using fin f(3) n by simp
+  qed
+  have closed: "is_integral_flow (augment_edges f (aug_amount f q) q)" if q: "set q \<subseteq> \<EE>" for q
+  proof (rule augment_edges_integral[OF f(2) _ q])
+    show "aug_amount f q \<in> \<int>"
+    proof (cases "Rcap f (set q) < PInfty")
+      case True
+      then obtain r where "Rcap f (set q) = ereal r" "r \<in> \<int>"
+        using Rcap_integral[OF f(2) assms(4) q] by blast
+      thus ?thesis
+        using True by (simp add: aug_amount_def)
+    qed (simp add: aug_amount_def)
+  qed
+  have "\<not> resreach f s t"
+    using max_in_class_no_augpath[of f s t is_integral_flow] f(1,2) max closed by blast
+  hence "is_max_flow s t f"
+    using no_max_flow_resreach[OF assms(1-3) f(1)] by simp
+  thus ?thesis
+    using that f(2) by blast
+qed
+
 end
 end

@@ -4,6 +4,8 @@ session Hopcroft_Karp = Micali_Vazirani +
     Basic_Matching
     Imperative
     Separation_Logic_Imperative_HOL_Partial
+  directories
+    Refinements
   theories
     Hopcroft_Karp_Top_Loop
     Disjoint_Paths_Search
@@ -11,8 +13,8 @@ session Hopcroft_Karp = Micali_Vazirani +
     Hopcroft_Karp_Phase
     Hopcroft_Karp_Subprocedures
     Hopcroft_Karp_Example
-    Disjoint_Paths_Search_Imperative
-    Hopcroft_Karp_Phase_Imperative
-    Hopcroft_Karp_Builders_Imperative
-    Hopcroft_Karp_Top_Loop_Imperative
-    Hopcroft_Karp_Imperative
+    "Refinements/Disjoint_Paths_Search_Imperative"
+    "Refinements/Hopcroft_Karp_Phase_Imperative"
+    "Refinements/Hopcroft_Karp_Builders_Imperative"
+    "Refinements/Hopcroft_Karp_Top_Loop_Imperative"
+    "Refinements/Hopcroft_Karp_Imperative"

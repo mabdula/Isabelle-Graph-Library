@@ -1,6 +1,6 @@
 theory Alt_BFS
   imports Directed_Set_Graphs.Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" Alt_Dist
-          Data_Structures.Set2_Addons Directed_Set_Graphs.More_Lists
+          Data_Structures.Set2_Addons Data_Structures.More_Lists
 begin
 
 record ('graph, 'vset, 'dmap) BFS_state =

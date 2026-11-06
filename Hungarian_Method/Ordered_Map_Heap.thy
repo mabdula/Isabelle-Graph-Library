@@ -3,7 +3,8 @@
 *)
 
 theory Ordered_Map_Heap (*TODO rename to Key_Value_Queue_Instantiation*)
-  imports Complex_Main "Priority_Search_Trees.PST_RBT" Key_Value_Queue_Spec
+  imports Complex_Main "Priority_Search_Trees.PST_RBT" 
+          Data_Structures.Fixed_Univ_Key_Value_Queue_Specs AI_Provenance.Provenance
 begin
 
 provenance human
@@ -48,59 +49,86 @@ queue_insert_def
 queue_invar_def
 queue_abstract_def
 
-interpretation key_value_queue_spec_satisfied:
-   key_value_queue queue_empty queue_extract_min queue_decrease_key
-                   queue_insert queue_invar queue_abstract
+text \<open>The queue satisfies the specification for every universe @{term U}, provided its
+      invariant additionally requires all elements to lie in @{term U}.\<close>
+
+definition "queue_invar_in U =
+(\<lambda> (Q::('a::linorder) real_queue). queue_invar Q \<and> fst ` queue_abstract Q \<subseteq> U)"
+
+lemma queue_abstract_update:
+  "queue_invar Q \<Longrightarrow> queue_abstract (update x k Q) = 
+     queue_abstract Q - {(x, k') | k'. True} \<union> {(x, k)}"
+  by(auto simp add: queue_defs PM.map_update split: if_splits)
+
+lemma queue_abstract_delete:
+  "queue_invar Q \<Longrightarrow> queue_abstract (delete x Q) = queue_abstract Q - {(x, k') | k'. True}"
+  by(auto simp add: queue_defs PM.map_delete split: if_splits)
+
+lemma queue_key_value_queue:
+  "key_value_queue U queue_empty queue_extract_min queue_decrease_key
+                   queue_insert (queue_invar_in U) queue_abstract"
 proof(rule key_value_queue.intro, goal_cases)
-  case 1
-  then show ?case 
-    by(simp add: queue_defs PM.invar_empty)
+  case (1 H x k)
+  then show ?case
+    by(force simp add: queue_invar_in_def)
 next
   case 2
   then show ?case 
+    by(simp add: queue_invar_in_def queue_defs PM.invar_empty PM.map_empty)
+next
+  case 3
+  then show ?case 
     by(simp add: queue_defs PST_RBT.empty_def)
 next
-  case (3 H)
+  case (4 H)
   then show ?case 
-    by(auto simp add: queue_defs Let_def PM.invar_delete)
+    by(auto simp add: queue_invar_in_def queue_extract_min_def Let_def queue_abstract_delete
+                      queue_invar_def PM.invar_delete)
 next
-  case (4 H x)
+  case (5 H x)
   then show ?case 
     by(cases "H = \<langle>\<rangle>")
       (auto intro: PM.map_getminE[OF surjective_pairing, of H] 
              dest: PM.map_is_empty[simplified rbt_is_empty_def]
-         simp add: queue_defs Let_def)
+         simp add: queue_invar_in_def queue_defs Let_def)
 next
-  case (5 H)
+  case (6 H)
   then show ?case
   by(cases "H = \<langle>\<rangle>")
-    (auto simp add: queue_defs Let_def)
-next
-  case (6 H x k)
-  then show ?case 
-    by(cases "H = \<langle>\<rangle>")
-      (auto simp add: queue_defs Let_def PM.map_delete[of H] 
-                      if_split[of "\<lambda> x. x = Some _"])
+    (auto simp add: queue_invar_in_def queue_defs Let_def)
 next
   case (7 H x k)
   then show ?case 
-    by(auto simp add: queue_defs PM.invar_update)
-next
-  case (8 H x k)
-  then show ?case 
-    by(auto simp add: queue_defs PM.map_specs(2)
+    by(cases "H = \<langle>\<rangle>")
+      (auto simp add: queue_invar_in_def queue_defs Let_def PM.map_delete[of H] 
                       if_split[of "\<lambda> x. x = Some _"])
 next
-  case (9 H x k k')
-  then show ?case 
-    by(auto simp add: queue_defs PM.invar_update)
+  case (8 H)
+  then show ?case
+  by(cases "H = \<langle>\<rangle>")
+    (auto simp add: queue_invar_in_def queue_defs Let_def)
 next
-  case (10 H x k k')
+  case (9 H x k)
   then show ?case 
-    by(auto simp add: queue_defs PM.map_update 
+    by(auto simp add: queue_invar_in_def queue_insert_def queue_decrease_key_def
+                      queue_abstract_update queue_invar_def PM.invar_update)
+next
+  case (10 H x k)
+  then show ?case 
+    by(auto simp add: queue_invar_in_def queue_defs PM.map_specs(2)
                       if_split[of "\<lambda> x. x = Some _"])
 next
   case (11 H x k k')
+  then show ?case 
+    by(auto simp add: queue_invar_in_def queue_insert_def queue_decrease_key_def
+                      queue_abstract_update queue_invar_def PM.invar_update)
+next
+  case (12 H x k k')
+  then show ?case 
+    by(auto simp add: queue_invar_in_def queue_defs PM.map_update 
+                      if_split[of "\<lambda> x. x = Some _"])
+next
+  case (13 H x k k')
   then show ?case 
     by(auto simp add: queue_defs)
 qed

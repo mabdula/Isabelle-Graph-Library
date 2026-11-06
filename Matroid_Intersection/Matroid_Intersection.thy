@@ -13,8 +13,8 @@ section \<open>Theory for Matroid Intersection\<close>
 
 text \<open>This file contains theory for matroid intersection, including Edmonds' Rank Criterion,
 his Max-Min Equality,
-the auxiliary graph for intersection (see Korte&Vygen),
- augmentation lemmas and a characterisation of optimality (Korte&Vygen).\<close>
+the auxiliary graph for intersection (see Korte and Vygen),
+ augmentation lemmas and a characterisation of optimality (Korte and Vygen).\<close>
 
 lemma exists_smallest_witness: 
   assumes "P x" "fx = f x"
@@ -93,6 +93,11 @@ next
     using assms(1) by simp
 qed
 
+lemma the_circuit_insert_in_X:
+  "\<lbrakk>indep X; y \<in> carrier; x \<in> the_circuit (insert y X) - {y}\<rbrakk> \<Longrightarrow> x \<in> X"
+  using the_circuit_X_in_X[of "insert y X" "insert y X"] indep_subset_carrier
+  by blast
+
 lemma the_circuit_is_circuit:
   assumes "indep X" "\<not> indep (insert x X)" "insert x X \<subseteq> carrier" 
   shows "circuit (the_circuit (insert x X))" (is ?thesis1)
@@ -168,6 +173,19 @@ next
       using  circuit(2)  min_dep_imp_supset_circuit[OF 2(3)  circuit(1), of x] by auto
   qed
 qed
+
+lemma circuit_exchange:
+  "\<lbrakk>indep X; x \<in> X; y \<in> carrier - X\<rbrakk> \<Longrightarrow>
+     x \<in> the_circuit (insert y X) - {y} \<longleftrightarrow>
+       \<not> indep (insert y X) \<and> indep (insert y (X - {x}))"
+  by (auto simp: circuit_extensional insert_Diff_if)
+
+lemma circuit_exchange_gen:
+  "\<lbrakk>indep X; y \<in> carrier - X\<rbrakk> \<Longrightarrow>
+     x \<in> the_circuit (insert y X) - {y} \<longleftrightarrow>
+       x \<in> X \<and> \<not> indep (insert y X) \<and> indep (insert y (X - {x}))"
+  using circuit_exchange the_circuit_insert_in_X
+  by blast
 
 lemma single_matroid_augment_general: 
   assumes "indep X"

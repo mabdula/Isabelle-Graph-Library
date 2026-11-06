@@ -1,0 +1,287 @@
+theory Bipartite_Matching_Imp
+  imports Matroid_Intersection_Imp Bipartite_Arrays
+begin
+
+section \<open>Maximum Bipartite Matching in Imperative HOL\<close>
+
+text \<open>The input graph is given by two arrays of the same length \<open>m\<close>: edge \<open>i\<close> joins the
+  left vertex \<open>fs ! i\<close> and the right vertex \<open>ts ! i\<close>, and all vertices are below
+    \<open>nv\<close>. The
+  elements of the matroids are the edges, i.e. their positions, and the matroids are the unit
+  partition matroids of the left and the right endpoints; the algorithm is the generic one of
+  @{theory Matroid_Intersection.Matroid_Intersection_Imp}. The two input arrays are the arrays of
+  blocks of the two oracles. The solution handle consists of the Boolean array of the solution,
+  the two arrays counting the solution elements per block and the two input arrays; the partner
+  handles hold the edges grouped by block and the range of the block of every edge. The result
+  is the Boolean array of the positions of a maximum matching.\<close>
+
+subsection \<open>Code\<close>
+
+definition bm_ins1 :: "bm_sol \<Rightarrow> nat \<Rightarrow> bool Heap" where
+  "bm_ins1 Si y = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> part_ins_imp Bl C1 y)"
+
+definition bm_exch1 :: "bm_sol \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
+  "bm_exch1 Si x y = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> part_exch_imp Bl x y)"
+
+definition bm_ins2 :: "bm_sol \<Rightarrow> nat \<Rightarrow> bool Heap" where
+  "bm_ins2 Si y = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> part_ins_imp Br C2 y)"
+
+definition bm_exch2 :: "bm_sol \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
+  "bm_exch2 Si x y = (case Si of (Xi, C1, C2, Bl, Br) \<Rightarrow> part_exch_imp Br x y)"
+
+global_interpretation mx: matroid_intersection_imp_spec n id id bm_memb bm_ins1 bm_exch1
+  bm_ins2 bm_exch2 bm_ins bm_del part_npts_imp part_pt_imp part_npts_imp part_pt_imp
+  for n
+  defines mx_nb1 = mx.ids.nb1_imp
+    and mx_nb2 = mx.ids.nb2_imp
+    and mx_filt = mx.ids.filt_imp
+    and mx_xnbs = mx.ids.xnbs
+    and mx_x_inner = mx.ids.x_inner
+    and mx_x_outer = mx.ids.x_outer
+    and mx_xround = mx.ids.xround
+    and mx_x_loop = mx.ids.x_loop
+    and mx_bfs_run = mx.ids.bfs_run
+    and mx_has_nb = mx.ids.has_nb_imp
+    and mx_s = mx.ids.s_imp
+    and mx_t = mx.ids.t_imp
+    and mx_st = mx.ids.st_imp
+    and mx_src = mx.ids.is_src_imp
+    and mx_tgt = mx.ids.is_tgt_imp
+    and mx_tail = mx.ids.tail_imp
+    and mx_round = mx.ids.round_imp
+    and mx_aug_path = mx.ids.aug_path_imp
+    and mx_mi_ids = mx.ids.mi_imp
+    and mx_mi = mx.mi_imp
+  done
+
+text \<open>The BFS of the library with the iterator fixed at code generation time.\<close>
+
+declare mx.ids.x_inner_code[code] mx.ids.x_outer_code[code] mx.ids.xround_code[code]
+  mx.ids.x_loop_code[code] mx.ids.bfs_run_code[code]
+
+definition "matching_imp nv Fa Ta =
+   bm_setup_imp nv Fa Ta (\<lambda> m H1 H2 Xi C1 C2. do {
+     mx_mi m H1 H2 (Xi, C1, C2, Fa, Ta);
+     return Xi })"
+
+export_code matching_imp checking SML_imp
+
+text \<open>A small example: the edges of the returned array. The result is
+  \<open>[(1, 6), (3, 10), (9, 8)]\<close>.\<close>
+
+ML_val \<open>
+  let
+    val nat = @{code nat_of_integer}
+    val es = [(1, 6), (1, 8), (1, 10), (3, 6), (3, 10), (9, 8), (7, 10)]
+    val Fa = Array.fromList (map (nat o #1) es)
+    val Ta = Array.fromList (map (nat o #2) es)
+    val r = @{code matching_imp} (nat 11) Fa Ta ()
+  in
+    List.filter (fn (j, _) => Array.sub (r, j)) (ListPair.zip (List.tabulate (length es, I), es))
+    |> map #2
+  end
+\<close>
+
+
+subsection \<open>Correctness\<close>
+
+context bipartite_matching_imp
+begin
+
+abbreviation "sa \<equiv> bm_sol_assn (length fs) nv fs ts"
+
+sublocale lf: unit_partition_oracle "\<lambda> i. fs ! i" sorted_list_of_set "{}" Set.insert
+  "\<lambda> b B. b \<in> B" "{0..<length fs}" "\<lambda> X. X" finite "\<lambda> _. True" id
+  by (unfold_locales; auto)
+
+sublocale rt: unit_partition_oracle "\<lambda> i. ts ! i" sorted_list_of_set "{}" Set.insert
+  "\<lambda> b B. b \<in> B" "{0..<length fs}" "\<lambda> X. X" finite "\<lambda> _. True" id
+  by (unfold_locales; auto)
+
+text \<open>Sets of positions independent in both partition matroids represent the matchings of
+  the graph.\<close>
+
+lemma indep_disjoint:
+  "\<lbrakk>lf.part_indep X; rt.part_indep X; i \<in> X; j \<in> X; i \<noteq> j\<rbrakk>
+    \<Longrightarrow> {fs ! i, ts ! i} \<inter> {fs ! j, ts ! j} = {}"
+  using left_right[of i j] left_right[of j i]
+  by (fastforce simp: lf.part_indep_def rt.part_indep_def inj_on_def)
+
+lemma indep_matching:
+  assumes "lf.part_indep X" "rt.part_indep X"
+  shows "graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
+  by (rule conjI, rule matchingI, elim imageE, hypsubst, rule indep_disjoint;
+      insert assms; auto simp: lf.part_indep_def)
+
+lemma matching_idx_eq:
+  "\<lbrakk>matching M; i < length fs; j < length fs; {fs ! i, ts ! i} \<in> M;
+    {fs ! j, ts ! j} \<in> M; fs ! i = fs ! j \<or> ts ! i = ts ! j\<rbrakk> \<Longrightarrow> i = j"
+  by (rule inj_onD[OF dbltn_inj];
+      insert matching_unique_match[where M = M and v = "fs ! i" and e = "{fs ! i, ts ! i}"
+          and f = "{fs ! j, ts ! j}"]
+        matching_unique_match[where M = M and v = "ts ! i" and e = "{fs ! i, ts ! i}"
+          and f = "{fs ! j, ts ! j}"]; auto)
+
+lemma matching_indep:
+  assumes "M \<subseteq> (\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}" "matching M"
+  obtains Y where "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y" "lf.part_indep Y" "rt.part_indep Y"
+proof-
+  let ?Y = "{i \<in> {0..<length fs}. {fs ! i, ts ! i} \<in> M}"
+  have "M = (\<lambda> i. {fs ! i, ts ! i}) ` ?Y"
+    using assms(1)
+    by blast
+  moreover have "lf.part_indep ?Y" "rt.part_indep ?Y"
+    using assms(2)
+    by (auto simp: lf.part_indep_def rt.part_indep_def inj_on_def intro: matching_idx_eq)
+  ultimately show ?thesis
+    by (rule that)
+qed
+
+lemma ins1_rule:
+  "<(sa X Si) * emp * \<up>(y < length fs)> bm_ins1 Si y
+   <\<lambda> r. sa X Si * emp * \<up>(r = lf.part_ins (lf.part_prep X) y)>"
+  by (cases Si rule: prod_cases5) (sep_auto simp: bm_ins1_def lf.part_ins heap: part_ins_imp_rule)
+
+lemma ins2_rule:
+  "<(sa X Si) * emp * \<up>(y < length fs)> bm_ins2 Si y
+   <\<lambda> r. sa X Si * emp * \<up>(r = rt.part_ins (rt.part_prep X) y)>"
+  by (cases Si rule: prod_cases5) (sep_auto simp: bm_ins2_def rt.part_ins heap: part_ins_imp_rule)
+
+lemma exch1_rule:
+  "<(sa X Si) * emp * \<up>(x < length fs \<and> y < length fs)> bm_exch1 Si x y
+   <\<lambda> r. sa X Si * emp * \<up>(r = lf.part_exch (lf.part_prep X) x y)>"
+  by (cases Si rule: prod_cases5) (sep_auto simp: bm_exch1_def lf.part_exch_def heap: part_exch_imp_rule)
+
+lemma exch2_rule:
+  "<(sa X Si) * emp * \<up>(x < length fs \<and> y < length fs)> bm_exch2 Si x y
+   <\<lambda> r. sa X Si * emp * \<up>(r = rt.part_exch (rt.part_prep X) x y)>"
+  by (cases Si rule: prod_cases5) (sep_auto simp: bm_exch2_def rt.part_exch_def heap: part_exch_imp_rule)
+
+text \<open>The elements are the positions themselves, so the indexation is the identity.\<close>
+
+lemma mi_inst:
+  "matroid_intersection_imp (length fs) id id bm_memb bm_ins1 bm_exch1 bm_ins2 bm_exch2 bm_ins bm_del
+     part_npts_imp part_pt_imp part_npts_imp part_pt_imp {0..<length fs} lf.part_prep lf.part_ins
+     lf.part_exch lf.part_indep sa emp (part_pts fs) (part_pst (length fs) fs) rt.part_prep
+     rt.part_ins rt.part_exch rt.part_indep emp (part_pts ts) (part_pst (length fs) ts)"
+  apply(intro matroid_intersection_imp.intro indexed_oracle_imp.intro matroid_ids.intro
+        indexed_oracle_imp_axioms.intro fixed_univ_set_basic_imp.intro set_fixed_univ_set
+        fixed_univ_set_basic_imp_axioms.intro)
+  subgoal
+  by (rule bij_betw_id)
+  subgoal
+  by simp
+  subgoal
+  by (rule lf.indep_oracle_axioms)
+  subgoal
+  by (use ins1_rule in simp)
+  subgoal
+  by (use exch1_rule in simp)
+  subgoal
+  by (simp add: part_pts_sorted)
+  subgoal for x y
+  using part_pts_bound[of y fs x]
+  by simp
+  subgoal
+  by (intro part_pts_cover) (auto simp: lf.part_exch_def)
+  subgoal
+  by (use part_npts_rule in simp)
+  subgoal
+  by (use part_pt_rule in simp)
+  subgoal
+  by (rule bij_betw_id)
+  subgoal
+  by simp
+  subgoal
+  by (rule rt.indep_oracle_axioms)
+  subgoal
+  by (use ins2_rule in simp)
+  subgoal
+  by (use exch2_rule in simp)
+  subgoal
+  by (simp add: part_pts_sorted)
+  subgoal for x y
+  using part_pts_bound[of y ts x] lengths
+  by simp
+  subgoal
+  using lengths
+  by (intro part_pts_cover) (auto simp: rt.part_exch_def)
+  subgoal
+  by (use part_npts_rule in simp)
+  subgoal
+  by (use part_pt_rule in simp)
+  subgoal
+  by (sep_auto heap: bm_ins_rule)
+  subgoal
+  by (sep_auto heap: bm_del_rule)
+  subgoal
+  by (sep_auto heap: bm_memb_rule)
+  done
+
+interpretation m: matroid_intersection_imp where n = "length fs" and idx = id and elt = id
+  and smemb_imp = bm_memb and ins1_imp = bm_ins1 and exch1_imp = bm_exch1 and ins2_imp = bm_ins2
+  and exch2_imp = bm_exch2 and sins_imp = bm_ins and sdel_imp = bm_del
+  and npts1_imp = part_npts_imp and pt1_imp = part_pt_imp and npts2_imp = part_npts_imp
+  and pt2_imp = part_pt_imp and carrier = "{0..<length fs}"
+  and sol_assn = sa and ost1 = emp and ost2 = emp
+  and orcl_prep1 = lf.part_prep and ins_orcl1 = lf.part_ins and exch_orcl1 = lf.part_exch
+  and orcl_prep2 = rt.part_prep and ins_orcl2 = rt.part_ins and exch_orcl2 = rt.part_exch
+  and indep1 = lf.part_indep and indep2 = rt.part_indep
+  and pts1 = "part_pts fs" and pst1 = "part_pst (length fs) fs"
+  and pts2 = "part_pts ts" and pst2 = "part_pst (length fs) ts"
+  by (rule mi_inst)
+
+lemma matching_card:
+  "lf.part_indep X \<Longrightarrow> card ((\<lambda> i. {fs ! i, ts ! i}) ` X) = card X"
+  by (rule card_image, rule inj_on_subset[OF dbltn_inj]) (simp add: lf.part_indep_def)
+
+lemma is_max_matching:
+  assumes "m.is_max X"
+  shows "max_card_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
+proof(rule max_card_matchingI')
+  show "graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
+    by (rule indep_matching; use assms[unfolded m.is_max_def] in auto)
+next
+  fix M
+  assume "graph_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs}) M"
+  then obtain Y where "M = (\<lambda> i. {fs ! i, ts ! i}) ` Y" "lf.part_indep Y" "rt.part_indep Y"
+    by (auto elim: matching_indep)
+  then show "card M \<le> card ((\<lambda> i. {fs ! i, ts ! i}) ` X)"
+    using assms
+    by (auto simp: m.is_max_def matching_card)
+qed
+
+text \<open>The generic algorithm on the allocated handles.\<close>
+
+theorem handles_correct:
+  "<(part_pst (length fs) fs H1) * part_pst (length fs) ts H2 * bool_array_set_assn (length fs) {} Xi *
+    cnt_assn nv fs {} C1 * cnt_assn nv ts {} C2 *
+    blocks_assn (length fs) nv fs Fa * blocks_assn (length fs) nv ts Ta>
+     mx_mi (length fs) H1 H2 (Xi, C1, C2, Fa, Ta)
+   <\<lambda> _. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * blocks_assn (length fs) nv fs Fa *
+              blocks_assn (length fs) nv ts Ta * true *
+              \<up>(max_card_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs})
+                                   ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
+  by (rule ht_cons[OF _ _ m.mi_imp_correct[folded mx_mi_def]])
+     ((simp only: bm_sol_assn.simps star_aci, rule ent_refl),
+      sep_auto dest: is_max_matching)
+
+subsubsection \<open>The Program\<close>
+
+theorem matching_imp_correct:
+  "<Fa \<mapsto>\<^sub>a fs * Ta \<mapsto>\<^sub>a ts> matching_imp nv Fa Ta
+   <\<lambda> Xi. \<exists>\<^sub>A X. bool_array_set_assn (length fs) X Xi * Fa \<mapsto>\<^sub>a fs * Ta
+     \<mapsto>\<^sub>a ts * true *
+              \<up>(max_card_matching ((\<lambda> i. {fs ! i, ts ! i}) ` {0..<length fs})
+                                   ((\<lambda> i. {fs ! i, ts ! i}) ` X))>"
+  unfolding matching_imp_def
+  apply(rule ht_cons_pre[OF _ bm_setup_rule[where F = emp]], simp)
+  apply(rule ht_bind[OF ht_frame_ac[OF handles_correct, where R = true]])
+    prefer 3 apply(rule ht_return_wp)
+   apply(simp only: star_aci, rule ent_refl)
+  apply(sep_auto simp: blocks_assn_def)
+  done
+
+end
+
+end

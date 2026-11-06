@@ -4,7 +4,7 @@
 
 theory Array_Set_Impl
 imports 
-  "../Sep_Main" Imp_Set_Spec Array_Blit
+  Separation_Logic_Imperative_HOL_Partial.Sep_Main Imp_Set_Spec Array_Blit
   "HOL-Library.Code_Target_Numeral"
 begin
 

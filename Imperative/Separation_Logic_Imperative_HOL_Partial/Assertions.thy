@@ -6,7 +6,7 @@ section "Assertions"
 
 theory Assertions
 imports 
-  "Tools/Imperative_HOL_Add" 
+  Separation_Logic_Imperative_HOL_Partial.Imperative_HOL_Add 
   Automatic_Refinement.Misc
 begin
 

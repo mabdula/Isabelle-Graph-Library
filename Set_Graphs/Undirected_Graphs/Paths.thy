@@ -594,6 +594,94 @@ next
   qed
 qed
 
+lemma path_image:
+  assumes "inj_on f (Vs G \<union> set p)"
+  shows "path ((`) f ` G) (map f p) \<longleftrightarrow> path G p"
+  using assms
+proof(induction p rule: list_induct3, goal_cases)
+  case 1
+  then show ?case 
+    by auto
+next
+  case (2 v)
+  then show ?case 
+    by (auto simp add: Vs_of_imaged_graph)
+next
+  case (3 v v' l)
+  note three = this
+  hence path_iff:"path ((`) f ` G) (f v' # map f l) = path G (v' # l)"
+    by auto
+  have edge_iff: "{f v, f v'} \<in> (`) f ` G \<longleftrightarrow> {v, v'} \<in> G"
+  proof(rule, elim imageE, goal_cases)
+    case (1 e)
+    hence "f  ` {v, v'} = f ` e"
+      by auto
+    hence "{v,v'} = e" 
+    proof(intro inj_onD[of "image f" "G"], goal_cases)
+      case 1
+      then show ?case 
+        using assms inj_on_Un[of f "Vs G" "set p"] inj_on_image[of f G]
+        by(auto simp add: Vs_def)
+    next
+      case 3
+      then obtain x y where xy:"e \<supseteq> {x, y}" "f x = f v" "f y = f v'" 
+        by(auto elim!: two_fun_values_is_other_imageE)
+      hence e_is: "e = {x, y}" 
+        using "1"(2) three(2) Vs_def "3" inj_on_Un[of f "Vs G" "set (v # v' # l)"] 
+          inj_on_image_eq_iff[of f "Vs G" e "{x, y}"]
+        by (auto simp add: Vs_def)
+      have "x \<noteq> v' \<Longrightarrow> y = v'" 
+        using "1"(2) e_is three(2)  xy(1,3) inj_on_contraD[of f "insert v' (\<Union> G \<union> set l)" v' y] 
+        by(auto simp add: Vs_def)
+      hence "{x, y} = {v, v'}"
+        using "1"(2) e_is three(2) xy(2,3) edges_are_Vs_2[of x y G]
+          inj_onD[of f "Vs G \<union> set (v # v' # l)" x v] edges_are_Vs[of x v' G] 
+          inj_on_contraD[of f "Vs G \<union> set (v # v' # l)" x v]
+          inj_onD[of f "Vs G \<union> set (v # v' # l)" y v']
+        by (auto simp add: doubleton_eq_iff)
+      then show ?case 
+        using "1"(2) e_is by auto
+    qed (auto simp add: "1"(2))
+    then show ?case
+      using "1"(2) by fastforce
+  next
+    case 2
+    thus ?case
+      using not_in_imageD by fastforce
+  qed
+
+  then show ?case 
+    unfolding list.map(2) path_2 path_iff
+    by auto
+qed
+
+lemma path_in_image_to_original_path:
+  assumes "dblton_graph G" "inj_on f (Vs G)"
+  shows "path ((`) f ` G) p \<Longrightarrow> \<exists> q. path G q \<and> map f q = p"
+proof(induction p rule: path.induct)
+  case path0
+  then show ?case 
+    by auto
+next
+  case (path1 v)
+  then show ?case 
+    by(auto simp add: Vs_of_imaged_graph intro: path.path1)
+next
+  case (path2 v v' vs)
+  then obtain q where "path G q" "map f q = v' # vs"
+    by auto
+  then obtain q vv'' where "path G (vv''# q)" "map f (vv''#q) = v' # vs"
+    by(cases q) auto
+  moreover obtain vv vv' where "f vv = v" "f vv' = v'" "{vv, vv'} \<in> G"
+    using path2(1) assms
+    by (auto elim!: dblton_graphE simp add: doubleton_eq_iff insert_commute)
+  moreover have "vv'' = vv'" 
+    using assms(2) calculation(1,2,4,5) mem_path_Vs[of G "vv'' # q" vv'']  edges_are_Vs_2[of vv vv' G]
+    by (auto simp add: inj_on_def)
+  ultimately show ?case 
+    by(intro exI[of _ "vv #vv'#q"]) auto
+qed
+
 subsection \<open>Paths over Edges\<close>
 
 fun epath :: "'a set set \<Rightarrow> 'a \<Rightarrow> ('a set) list \<Rightarrow> 'a \<Rightarrow> bool" where
@@ -995,9 +1083,44 @@ lemma path_edges_subset:
   using assms
   by (induction, simp_all)
 
-lemma edges_of_path_symmetric_split:"edges_of_path (xs@[x,y]@ys) = edges_of_path (xs@[x]) @[{x,y}] @ edges_of_path (y#ys)"
-  by (metis append_is_Nil_conv edges_of_path.simps(2) edges_of_path.simps(3) edges_of_path_append_2 
-           edges_of_path_append_3 hd_append2 last_ConsL last_ConsR list.discI list.sel(1))
+lemma Vs_of_edges_of_path:
+  assumes "length p \<ge> 2"
+  shows "Vs (set (edges_of_path p)) = set p"
+  by(induction rule: list_induct_longer_2[OF assms])
+    (simp_all add: vs_insert insert_commute)
+
+lemma Vs_of_graph_inter_path:
+  "\<lbrakk>length p \<ge> 2; path G p\<rbrakk> \<Longrightarrow> Vs (G \<lbrakk>set p\<rbrakk>) = set p"
+proof(rule, all \<open>rule\<close>, goal_cases)
+  case (1 x)
+  then show ?case 
+    by (auto simp add: vs_member elim!: in_graph_inter_VsE)
+next
+  case (2 x)
+  then obtain e where "e \<in> set (edges_of_path p)" "x \<in> e"
+    by(auto elim!: Paths.path_vertex_has_edge)
+  then show ?case
+    using 2
+    by(auto intro!: bexI[of _ e]  in_graph_inter_VsI
+             intro: path_ball_edges  v_in_edge_in_path_gen 
+          simp add: vs_member)
+qed
+
+lemma edges_of_path_subset_path:
+  assumes "e \<in> set (edges_of_path p)"
+  shows "e \<subseteq> set p"
+  using assms
+  by (induction p rule: edges_of_path.induct) auto
+
+lemma path_is_path_in_graph_on_path: 
+  "path G p \<Longrightarrow> set (edges_of_path p) \<subseteq> G \<lbrakk>set p\<rbrakk>"
+  using edges_of_path_subset_path
+  by(auto intro!: in_graph_inter_VsI simp add: path_ball_edges)
+
+lemma edges_of_path_symmetric_split:
+  "edges_of_path (xs@[x,y]@ys) = edges_of_path (xs@[x]) @[{x,y}] @ edges_of_path (y#ys)"
+  using edges_of_path_append_3[of "[x, y]" ys] edges_of_path_append_2[of "[x, y] @ ys" xs]
+  by auto
 
 lemma non_last_vertex_or_even_list_in_even_edge:
   assumes "distinct p" "length p \<ge> 2" "x \<in> set p"
@@ -1042,9 +1165,49 @@ qed simp_all
 lemma edges_of_path_Vs: "Vs (set (edges_of_path p)) \<subseteq> set p"
   by (auto elim: vs_member_elim intro: v_in_edge_in_path_gen)
 
+lemma path_mono:
+"\<lbrakk>path E p; length p \<ge> 2; set (edges_of_path p) \<subseteq> E'\<rbrakk> \<Longrightarrow> path E' p"
+proof(induction  rule: path.induct)
+  case (path2 v v' vs)
+  then show ?case 
+    by(cases vs) auto
+qed auto
+
+lemma path_on_graph_inter_path:
+  "\<lbrakk>length p \<ge> 2; path G p\<rbrakk> \<Longrightarrow> path (G \<lbrakk>set p\<rbrakk>) p"
+  by(auto intro!: path_subset[OF _ path_is_path_in_graph_on_path] path_edges_of_path_refl)
+
 lemma graph_abs_edges_of_distinct_path:
   "distinct p \<Longrightarrow> graph_invar (set (edges_of_path p))"
   by (induction p rule: edges_of_path.induct) auto
+
+lemma dblton_graph_edges_of_distinct_path_clsd_hd:
+  assumes  "distinct p" "length p \<ge> 2"
+  shows "dblton_graph (set (edges_of_path (p @ [hd p])))"
+  using assms(1)
+  by(induction rule: list_induct3_len_geq_2[OF assms(2)])
+    (auto simp add: graph_abs_edges_of_distinct_path)
+
+lemma dblton_graph_edges_of_distinct_path_clsd_last:
+  assumes  "distinct p" "length p \<ge> 2"
+  shows "dblton_graph (set (edges_of_path (last p # p)))"
+  using assms hd_rev[of p] set_rev[of "edges_of_path (last p # p)"]
+        edges_of_path_rev[of "last p # p"]
+  by (intro forw_subst[of _ _ dblton_graph, OF _
+          dblton_graph_edges_of_distinct_path_clsd_hd, of _ "rev p"]) 
+      auto
+
+lemma graph_abs_edges_of_distinct_path_clsd_hd:
+  assumes  "distinct p" "length p \<ge> 2"
+  shows "graph_invar (set (edges_of_path (p @ [hd p])))"
+  by (simp add: assms(1,2) dblton_graph_edges_of_distinct_path_clsd_hd
+      finite_dbl_finite_verts)
+
+lemma graph_abs_edges_of_distinct_path_clsd_last:
+  assumes  "distinct p" "length p \<ge> 2"
+  shows "graph_invar (set (edges_of_path (last p # p)))"
+  by (simp add: assms(1,2) dblton_graph_edges_of_distinct_path_clsd_last
+      finite_dbl_finite_verts)
 
 lemma distinct_no_self_loop_in_edges_of_path:
 "distinct p \<Longrightarrow> \<nexists> x. {x} \<in> set (edges_of_path p)"
@@ -1095,6 +1258,13 @@ next
       by (meson walk_betw_cons)
   qed
 qed
+
+lemma walk_betw_remove_verts:
+  "\<lbrakk>walk_betw G u p v; set p\<inter> X = {}; length p \<ge> 2\<rbrakk> \<Longrightarrow> walk_betw (G \<setminus> X) u p v"
+  by(rule walk_betw_strengthen)
+    (auto intro!: in_remove_verticesI 
+      intro: path_ball_edges[OF walk_between_nonempty_pathD(1)]
+      dest: v_in_edge_in_path_gen)
 
 lemma in_edges_of_path':
   "\<lbrakk> v \<in> set p; length p \<ge> 2\<rbrakk> \<Longrightarrow> v \<in> Vs (set (edges_of_path p))"
@@ -1296,6 +1466,14 @@ lemma edges_of_path_snoc_3:
   apply(subst edges_of_path_append_3)
   by auto
 
+lemma edges_of_path_index_append:
+ "length p \<ge> 2 \<Longrightarrow> edges_of_path (x#p) ! Suc i = edges_of_path p ! i"
+  by(cases p rule: list_cases4) auto
+
+lemma edges_of_path_index_append_tl:
+ "length p \<ge> 2 \<Longrightarrow> edges_of_path (x#p) ! Suc (Suc i) = edges_of_path (tl p) ! i"
+  by(cases p rule: list_cases4) auto
+
 lemma walk_betw_imp_epath:
   assumes "dblton_graph G" 
   shows "walk_betw G u p v \<Longrightarrow> epath G u (edges_of_path p) v" 
@@ -1328,6 +1506,28 @@ next
   thus ?case 
     by(auto intro: exI[of _ "[u, v]"] simp add: edges_are_walks)
 qed simp
+
+lemma last_edge_is:
+  "length p \<ge> 2 \<Longrightarrow> last (edges_of_path p) = {last (butlast p), last p}"
+proof(cases p rule: rev_cases, goal_cases)
+  case (2 ys y)
+  then show ?thesis
+    by(cases ys rule: rev_cases)
+      (auto simp add: butlast_append edges_of_path_snoc_2)
+qed auto
+
+lemma last_edge_in_edges:
+  "length p \<ge> 2 \<Longrightarrow> {last (butlast p), last p} \<in> set (edges_of_path p)"
+proof(cases p rule: rev_cases, goal_cases)
+  case (2 ys y)
+  then show ?thesis
+    by(cases ys rule: rev_cases)
+      (auto simp add: butlast_append edges_of_path_snoc_2)
+qed auto
+
+lemma edges_of_path_image:
+  "edges_of_path (map f p) = map (image f) (edges_of_path p)"
+  by(induction p rule: edges_of_path.induct) auto
 
 subsection \<open>Reachability\<close>
 
@@ -1523,6 +1723,16 @@ lemma reachability_split:
 lemma edges_reachable:
   "{v, w} \<in> G \<Longrightarrow> reachable G v w"
   by (auto intro: edges_are_walks reachableI)
+
+lemma empty_Neighbourhood_path_contained:
+  assumes "p\<noteq> []"
+  shows "\<lbrakk>path G p; hd p \<in> X; Neighbourhood G X = {}\<rbrakk> \<Longrightarrow> set p \<subseteq> X"
+proof(induction rule: list_nempty_induct[OF assms])
+  case (2 x y xs)
+  then show ?case 
+    using path_2[of G x y xs] in_NeighbourhoodI[of x y G X]
+    by auto
+qed auto
 
 subsection \<open>Paths and Degrees\<close>
 

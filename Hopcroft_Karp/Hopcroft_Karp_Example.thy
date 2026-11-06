@@ -48,21 +48,19 @@ global_interpretation hopcroft_karp: Hopcroft_Karp_Loop
     and lookup = lookup and adjmap_inv = M.invar
     and G = G and vertex_list = vertex_list
     and empty_matching = Leaf and augment = mate_augment
-    and matching_invar = "mate_invar (ugraph_abs_rbt G)" and matching_abstract = mate_matching
-    and phase = "hopcroft_karp_phase (adjacency_edges G vertex_list) vertex_list"
-  for G vertex_list
+    and matching_invar = "mate_invar nil (ugraph_abs_rbt G)" and matching_abstract = "mate_matching nil"
+    and phase = "hopcroft_karp_phase nil (adjacency_edges G vertex_list) vertex_list"
+  for nil G vertex_list
   defines hopcroft_karp_impl = hopcroft_karp.Hopcroft_Karp_Loop_impl
     and hopcroft_karp_initial_state = hopcroft_karp.initial_state
     and hopcroft_karp_run_impl = hopcroft_karp.Hopcroft_Karp_Loop_run_impl
-  apply unfold_locales
-  by (simp_all add: ugraph_abs_rbt_def[symmetric] hopcroft_karp_axiom_rbt_def[symmetric]
-                    matching augment phase)
+  by unfold_locales
 
 subsection \<open>Correctness of the executable algorithm\<close>
 
 context
-  fixes G vertex_list
-  assumes "hopcroft_karp_axiom_rbt G vertex_list"
+  fixes nil :: "'v::linorder" and G :: "(('v \<times> ('v \<times> color) tree) \<times> color) tree" and vertex_list
+  assumes "hopcroft_karp_axiom_rbt G vertex_list" and nil_fresh: "nil \<notin> Vs (ugraph_abs_rbt G)"
 begin
 
 interpretation hopcroft_karp_proofs: Hopcroft_Karp_Loop_thms
@@ -71,11 +69,12 @@ interpretation hopcroft_karp_proofs: Hopcroft_Karp_Loop_thms
     and lookup = lookup and adjmap_inv = M.invar
     and G = G and vertex_list = vertex_list
     and empty_matching = Leaf and augment = mate_augment
-    and matching_invar = "mate_invar (ugraph_abs_rbt G)" and matching_abstract = mate_matching
-    and phase = "hopcroft_karp_phase (adjacency_edges G vertex_list) vertex_list"
-  by unfold_locales
-     (simp_all add: ugraph_abs_rbt_def[symmetric] hopcroft_karp_axiom_rbt_def[symmetric]
-                    matching augment phase \<open>hopcroft_karp_axiom_rbt G vertex_list\<close>)
+    and matching_invar = "mate_invar nil (ugraph_abs_rbt G)" and matching_abstract = "mate_matching nil"
+    and phase = "hopcroft_karp_phase nil (adjacency_edges G vertex_list) vertex_list"
+  apply unfold_locales
+  unfolding ugraph_abs_rbt_def[symmetric] hopcroft_karp_axiom_rbt_def[symmetric]
+  by (assumption | rule Hopcroft_Karp_Subprocedures.matching Hopcroft_Karp_Subprocedures.augment
+                        phase nil_fresh \<open>hopcroft_karp_axiom_rbt G vertex_list\<close>)+
 
 lemmas hopcroft_karp_correct_1 =
   hopcroft_karp_proofs.Hopcroft_Karp_Loop_correct_1[
@@ -99,8 +98,8 @@ definition "demo_G = G.from_list demo_edges"
 definition "demo_vs = [0, 1, 2, 3, 4, 5::nat]"
 
 value "adjacency_edges demo_G demo_vs"
-value "hopcroft_karp_phase (adjacency_edges demo_G demo_vs) demo_vs Leaf"
-value "Tree2.inorder (current_matching (hopcroft_karp_run_impl demo_G demo_vs))"
+value "hopcroft_karp_phase 6 (adjacency_edges demo_G demo_vs) demo_vs Leaf"
+value "Tree2.inorder (current_matching (hopcroft_karp_run_impl 6 demo_G demo_vs))"
 
 lemma demo_abs: "G.digraph_abs demo_G = set demo_edges"
   by (simp add: demo_G_def)
@@ -110,14 +109,20 @@ lemma demo_bipartite: "bipartite (ugraph_abs_rbt demo_G) {0, 1, 2} {3, 4, 5}"
                  insert_commute)
 
 lemma demo_axiom: "hopcroft_karp_axiom_rbt demo_G demo_vs"
-  using demo_bipartite
-  by (auto simp: hopcroft_karp_input_rbt.Hopcroft_Karp_axiom_def demo_abs demo_G_def demo_vs_def
-                 demo_edges_def G.from_list_correct(2,3,5) dVs_eq)
+proof-
+  have "G.graph_inv demo_G" "G.finite_graph demo_G" "G.finite_vsets demo_G"
+    by (simp_all add: demo_G_def G.from_list_correct(2,3,5))
+  thus ?thesis
+    using demo_bipartite
+    unfolding hopcroft_karp_input_rbt.Hopcroft_Karp_axiom_def
+    by (auto simp: demo_abs demo_vs_def demo_edges_def dVs_eq)
+qed
 
 lemma demo_max:
   "max_card_matching (ugraph_abs_rbt demo_G)
-     (mate_matching (current_matching (hopcroft_karp_run_impl demo_G demo_vs)))"
+     (mate_matching 6 (current_matching (hopcroft_karp_run_impl 6 demo_G demo_vs)))"
   by (rule hopcroft_karp_correct_1[OF demo_axiom])
+     (auto simp: hopcroft_karp_input_rbt.ugraph_abs_def demo_abs demo_edges_def Vs_def)
 
 export_code hopcroft_karp_run_impl in SML module_name Hopcroft_Karp
 

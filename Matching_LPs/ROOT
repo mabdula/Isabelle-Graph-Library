@@ -16,6 +16,7 @@ theories
   Matching_LP
   Bipartite_Matching_LP
   Bipartite_Vertex_Weighted_Matching_LP
+  Edmonds_Matching_LP
   Matrix_Invertable
   Faces
   Integer_Polyhedron

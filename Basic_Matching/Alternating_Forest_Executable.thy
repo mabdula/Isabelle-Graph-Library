@@ -3,7 +3,11 @@
 *)
 
 theory Alternating_Forest_Executable
-  imports  Graph_Algorithms_Dev.Parent_Map  Alternating_Forest_Spec
+  imports
+    Graph_Algorithms_Dev.Parent_Map
+    Alternating_Forest_Spec
+    Data_Structures.Fixed_Univ_Map_Specs
+    Data_Structures.Fixed_Univ_Set_Specs
 begin
 
 provenance human
@@ -15,40 +19,58 @@ subsection \<open>Implementation in Locale\<close>
 datatype ('roots, 'evens, 'odds, 'parents, 'origin) alt_forest =
   Forest (roots: 'roots) (evens: 'evens) (odds: 'odds) (parents: 'parents) (origins: 'origin)
 
+text \<open>The parents and the origins of the vertices are total maps on a fixed universe
+      @{term K} of vertices, the sets of vertices are subsets of @{term K}. A vertex without
+      parent (or origin) is mapped to the sentinel @{term nil}, which is not in @{term K}. The
+      partial maps @{term parent_lookup} and @{term origin_lookup} are views used in the proofs
+      only.\<close>
+
 locale forest_manipulation_spec = 
-parent_map: Map parent_empty parent_upd parent_delete parent_lookup parent_invar +
-origin_map: Map origin_empty origin_upd origin_delete origin_lookup origin_invar +
-vset: Set vset_empty vset_insert vset_delete vset_isin vset_to_set vset_invar
-for parent_empty and parent_upd::"'v\<Rightarrow>'v\<Rightarrow>'parent\<Rightarrow>'parent"
-and  parent_delete parent_lookup parent_invar
-and origin_empty and origin_upd::"'v\<Rightarrow>'v\<Rightarrow>'origin\<Rightarrow>'origin" 
-and origin_delete origin_lookup origin_invar
-and vset_empty and vset_insert::"'v \<Rightarrow> 'vset \<Rightarrow> 'vset"
-and  vset_delete vset_isin vset_to_set vset_invar +
+parent_map: fixed_univ_map K parent_invar parent_upd parent_get +
+origin_map: fixed_univ_map K origin_invar origin_upd origin_get +
+vset: fixed_univ_set K vset_invar vset_to_set vset_empty vset_insert vset_delete vset_isin
+for K::"'v set" and parent_invar and parent_upd::"'parent\<Rightarrow>'v\<Rightarrow>'v\<Rightarrow>'parent"
+and parent_get
+and origin_invar and origin_upd::"'origin\<Rightarrow>'v\<Rightarrow>'v\<Rightarrow>'origin" 
+and origin_get
+and vset_invar and vset_to_set::"'vset \<Rightarrow> 'v set" and vset_empty
+and vset_insert::"'v \<Rightarrow> 'vset \<Rightarrow> 'vset" and vset_delete vset_isin +
 fixes  vset_iterate::"('origin \<Rightarrow> 'v \<Rightarrow> 'origin)
              \<Rightarrow> 'origin \<Rightarrow> 'vset \<Rightarrow> 'origin"
+and parent_empty::'parent and origin_empty::'origin and nil::'v
 begin
+
+definition "parent_lookup P x = (if parent_get P x = nil then None else Some (parent_get P x))"
+
+definition "origin_lookup Q x = (if origin_get Q x = nil then None else Some (origin_get Q x))"
 
 definition 
   "empty_forest roots = (Forest roots roots vset_empty parent_empty 
-     (vset_iterate (\<lambda> m r. origin_upd r r m) origin_empty roots))" for roots
+     (vset_iterate (\<lambda> m r. origin_upd m r r) origin_empty roots))" for roots
 
 definition "extend_forest_even_unclassified (F::('vset, 'vset, 'vset, 'parent, 'origin) alt_forest) x y z= 
 (Forest (roots F)
         (vset_insert z (evens F))
         (vset_insert y (odds F))
-        (parent_upd z y (parent_upd y x (parents F))))
-        (let r = the (origin_lookup (origins F) x)
-             in origin_upd z r (origin_upd y r (origins F)))"
+        (parent_upd (parent_upd (parents F) y x) z y))
+        (let r = origin_get (origins F) x
+             in origin_upd (origin_upd (origins F) y r) z r)"
 
 
-definition  "get_path F = (\<lambda> x. follow_impl (parent_lookup (parents F)) x)"
+text \<open>Paths are read off by following the parents until @{term nil} is reached.\<close>
+
+partial_function (tailrec) get_path_loop where
+  "get_path_loop P v acc =
+     (let u = parent_get P v in
+        if u = nil then v # acc else get_path_loop P u (v # acc))"
+
+definition  "get_path F = (\<lambda> x. rev (get_path_loop (parents F) x Nil))"
 
 definition "abstract_forest F = {{x, y} | x y . parent_lookup (parents F) x = Some y}"
 
 
 lemmas [code] = empty_forest_def extend_forest_even_unclassified_def
-  get_path_def
+  get_path_def get_path_loop.simps
 
 end
 
@@ -56,31 +78,50 @@ subsection \<open>Locale for Proofs\<close>
 
 locale forest_manipulation =  
   forest_manipulation_spec +
-  assumes vseta:
+  assumes nil: "nil \<notin> K"
+  and empties: "parent_invar parent_empty" "parent_get parent_empty = (\<lambda> _. nil)"
+               "origin_invar origin_empty" "origin_get origin_empty = (\<lambda> _. nil)"
+  and vseta:
     "\<And> V f init. vset_invar V \<Longrightarrow> 
           \<exists> vs. vset_to_set V = set vs \<and> distinct vs \<and>
             vset_iterate f init V = foldl f init vs"
 begin
 
 lemmas vset =
- vset.invar_empty
- vset.set_empty
- vset.invar_insert
- vset.set_insert
- vset.set_isin
+ vset.fixed_univ_set_empty(1)
+ vset.fixed_univ_set_empty(2)
+ vset.fixed_univ_set_insert(1)
+ vset.fixed_univ_set_insert(2)
+ vset.fixed_univ_set_isin
  vseta
 
+lemma parent_lookup_empty: "parent_lookup parent_empty = Map.empty"
+  and origin_lookup_empty: "origin_lookup origin_empty = Map.empty"
+  by (auto simp add: parent_lookup_def origin_lookup_def empties)
+
+lemma parent_lookup_upd:
+  "\<lbrakk>parent_invar P; k \<in> K; v \<noteq> nil\<rbrakk> \<Longrightarrow>
+   parent_lookup (parent_upd P k v) = (parent_lookup P)(k \<mapsto> v)"
+  and origin_lookup_upd:
+  "\<lbrakk>origin_invar Q; k \<in> K; v \<noteq> nil\<rbrakk> \<Longrightarrow>
+   origin_lookup (origin_upd Q k v) = (origin_lookup Q)(k \<mapsto> v)"
+  by (auto simp add: parent_lookup_def origin_lookup_def parent_map.fixed_univ_map_upd
+                     origin_map.fixed_univ_map_upd)
+
+lemma origin_lookup_Some: "origin_lookup Q x = Some r \<Longrightarrow> origin_get Q x = r"
+  by (auto simp add: origin_lookup_def split: if_splits)
+
 lemmas parent =
- parent_map.invar_empty
- parent_map.map_empty
- parent_map.invar_update
- parent_map.map_update
+ empties(1)
+ parent_lookup_empty
+ parent_map.fixed_univ_map_upd_invar
+ parent_lookup_upd
 
 lemmas origin = 
- origin_map.invar_empty
- origin_map.map_empty
- origin_map.invar_update
- origin_map.map_update
+ empties(3)
+ origin_lookup_empty
+ origin_map.fixed_univ_map_upd_invar
+ origin_lookup_upd
 
 subsection \<open>The Invariants\<close>
 
@@ -99,13 +140,13 @@ definition "invar_basic \<M>=
            finite (vset_to_set (odds F)) \<and>
            vset_to_set (roots F) \<subseteq> vset_to_set (evens F) \<and>
            vset_to_set (roots F) \<inter> Vs \<M> = {} \<and>
-         card (vset_to_set (odds F)) < card (vset_to_set (evens F)) \<and>
+         card (vset_to_set (odds F)) + card (vset_to_set (roots F)) = card (vset_to_set (evens F)) \<and>
          dom (parent_lookup (parents F)) = dom (origin_lookup (origins F)) - vset_to_set (roots F) \<and>
          dom (parent_lookup (parents F)) \<subseteq> Vs (abstract_forest F) \<and>
          origin_lookup (origins F) ` ( vset_to_set (roots F) \<union> Vs (abstract_forest F)) =
          Some ` (vset_to_set (roots F)) \<and>
          Vs (abstract_forest F) - Vs \<M> \<subseteq> vset_to_set (roots F) \<and>
-         finite (abstract_forest F))" 
+         finite (abstract_forest F) \<and> Vs \<M> \<subseteq> K)" 
 
 lemma invar_basicE:
   "invar_basic \<M> F \<Longrightarrow>
@@ -117,13 +158,13 @@ lemma invar_basicE:
            finite (vset_to_set (evens F)); finite (vset_to_set (odds F));
            vset_to_set (roots F) \<subseteq> vset_to_set (evens F);
            vset_to_set (roots F) \<inter> Vs \<M> = {};
-         card (vset_to_set (odds F)) < card (vset_to_set (evens F));
+         card (vset_to_set (odds F)) + card (vset_to_set (roots F)) = card (vset_to_set (evens F));
          dom (parent_lookup (parents F)) = dom (origin_lookup (origins F)) - vset_to_set (roots F);
          dom (parent_lookup (parents F)) \<subseteq> Vs (abstract_forest F);
          origin_lookup (origins F) ` ( vset_to_set (roots F) \<union> Vs (abstract_forest F)) =
          Some ` (vset_to_set (roots F));
          Vs (abstract_forest F) - Vs \<M>  \<subseteq> vset_to_set (roots F);
-         finite (abstract_forest F)\<rbrakk> 
+         finite (abstract_forest F); Vs \<M> \<subseteq> K\<rbrakk> 
      \<Longrightarrow> P)
 \<Longrightarrow> P"
   and invar_basicI:
@@ -135,13 +176,13 @@ lemma invar_basicE:
            finite (vset_to_set (evens F)); finite (vset_to_set (odds F));
            vset_to_set (roots F) \<subseteq> vset_to_set (evens F);
            vset_to_set (roots F) \<inter> Vs \<M> = {};
-         card (vset_to_set (odds F)) < card (vset_to_set (evens F));
+         card (vset_to_set (odds F)) + card (vset_to_set (roots F)) = card (vset_to_set (evens F));
          dom (parent_lookup (parents F)) = dom (origin_lookup (origins F)) - vset_to_set (roots F);
          dom (parent_lookup (parents F)) \<subseteq> Vs (abstract_forest F);
          origin_lookup (origins F) ` ( vset_to_set (roots F) \<union> Vs (abstract_forest F)) =
          Some ` (vset_to_set (roots F));
          Vs (abstract_forest F) - Vs \<M>  \<subseteq> vset_to_set (roots F);
-         finite (abstract_forest F)\<rbrakk> 
+         finite (abstract_forest F); Vs \<M> \<subseteq> K\<rbrakk> 
      \<Longrightarrow> invar_basic \<M> F"
   and invar_basicD:
   "invar_basic \<M> F \<Longrightarrow>  vset_invar (roots F)"
@@ -156,7 +197,7 @@ lemma invar_basicE:
   "invar_basic \<M> F \<Longrightarrow>  finite (vset_to_set (odds F))"
   "invar_basic \<M> F \<Longrightarrow>  vset_to_set (roots F) \<subseteq> vset_to_set (evens F)"
   "invar_basic \<M> F \<Longrightarrow>  vset_to_set (roots F) \<inter> Vs \<M> = {}"
-  "invar_basic \<M> F \<Longrightarrow> card (vset_to_set (odds F)) < card (vset_to_set (evens F))"
+  "invar_basic \<M> F \<Longrightarrow> card (vset_to_set (odds F)) + card (vset_to_set (roots F)) = card (vset_to_set (evens F))"
   "invar_basic \<M> F \<Longrightarrow> 
   dom (parent_lookup (parents F)) = dom (origin_lookup (origins F)) - vset_to_set (roots F)"
   "invar_basic \<M> F \<Longrightarrow> dom (parent_lookup (parents F)) \<subseteq> Vs (abstract_forest F)"
@@ -164,6 +205,7 @@ lemma invar_basicE:
          Some ` (vset_to_set (roots F))"
   "invar_basic \<M> F \<Longrightarrow>Vs (abstract_forest F) - Vs \<M>  \<subseteq> vset_to_set (roots F)"
   "invar_basic \<M> F \<Longrightarrow>finite (abstract_forest F)"
+  "invar_basic \<M> F \<Longrightarrow> Vs \<M> \<subseteq> K"
   by(force simp add: invar_basic_def)+
 (*similar to blossom*)
 definition "invar_matching_both_or_none \<M> F =
@@ -324,6 +366,23 @@ proof-
 qed
 
 
+definition "invar_odd_is_parent F =
+             (\<forall>  u \<in> vset_to_set (odds F). (\<exists> v. parent_lookup (parents F) v = Some u))"
+
+lemma invar_odd_is_parentE:
+  "invar_odd_is_parent F \<Longrightarrow>
+  ((\<And> u . u \<in> vset_to_set (odds F) \<Longrightarrow> \<exists> v. parent_lookup (parents F) v = Some u)
+     \<Longrightarrow> P)
+   \<Longrightarrow> P"
+and invar_odd_is_parentI:
+  "(\<And> u . u \<in> vset_to_set (odds F) \<Longrightarrow> \<exists> v. parent_lookup (parents F) v = Some u)
+   \<Longrightarrow> invar_odd_is_parent F"
+and invar_odd_is_parentD:
+  "\<lbrakk>invar_odd_is_parent F; u \<in> vset_to_set (odds F)\<rbrakk>
+      \<Longrightarrow> \<exists> v. parent_lookup (parents F) v = Some u"
+    by(auto simp add: invar_odd_is_parent_def insert_commute)
+
+
 definition "forest_invar \<M> F = 
    (invar_basic \<M> F \<and> 
     invar_matching_both_or_none \<M> F \<and>
@@ -331,18 +390,18 @@ definition "forest_invar \<M> F =
     invar_parent_wf F \<and>
     invar_even_to_parent_matching \<M> F \<and>
     invar_odd_to_parent_non_matching \<M> F \<and>
-    invar_roots F)"
+    invar_roots F \<and> invar_odd_is_parent F)"
 
 lemma forest_invarE:
   "forest_invar \<M> F \<Longrightarrow>
   (\<lbrakk>invar_basic \<M> F; invar_matching_both_or_none \<M> F; invar_forest_even_and_odd F;
     invar_parent_wf F; invar_even_to_parent_matching \<M> F; invar_roots F;
-    invar_odd_to_parent_non_matching \<M> F\<rbrakk> \<Longrightarrow> P)
+    invar_odd_to_parent_non_matching \<M> F; invar_odd_is_parent F\<rbrakk> \<Longrightarrow> P)
    \<Longrightarrow> P"
 and forest_invarI:
   "\<lbrakk>invar_basic \<M> F; invar_matching_both_or_none \<M> F; invar_forest_even_and_odd F;
     invar_parent_wf F; invar_even_to_parent_matching \<M> F; invar_roots F;
-    invar_odd_to_parent_non_matching \<M> F\<rbrakk> \<Longrightarrow> forest_invar \<M> F"
+    invar_odd_to_parent_non_matching \<M> F; invar_odd_is_parent F\<rbrakk> \<Longrightarrow> forest_invar \<M> F"
 and forest_invarD:
   "forest_invar \<M> F \<Longrightarrow> invar_basic \<M> F"
   "forest_invar \<M> F \<Longrightarrow> invar_matching_both_or_none \<M> F"
@@ -351,7 +410,37 @@ and forest_invarD:
   "forest_invar \<M> F \<Longrightarrow> invar_even_to_parent_matching \<M> F"
   "forest_invar \<M> F \<Longrightarrow> invar_roots F"
   "forest_invar \<M> F \<Longrightarrow> invar_odd_to_parent_non_matching \<M> F"
+  "forest_invar \<M> F \<Longrightarrow> invar_odd_is_parent F"
   by(auto simp add: forest_invar_def)
+
+lemma odds_have_child:
+  assumes "forest_invar M F" "u \<in> vset_to_set (odds F)"
+  obtains v where "v \<in> vset_to_set (evens F)"
+    "{u, v} \<in> abstract_forest F" "{u, v} \<in> M"
+proof -
+  obtain v where parent: "parent_lookup (parents F) v = Some u"
+    using forest_invarD(8)[OF assms(1)] assms(2) invar_odd_is_parentD by blast
+  hence edge: "{v, u} \<in> abstract_forest F"
+    by (auto simp: abstract_forest_def)
+  have even: "v \<in> vset_to_set (evens F)"
+    using invar_forest_even_and_oddD[OF forest_invarD(3)[OF assms(1)] edge] assms(2) by simp
+  have "{v, u} \<in> M"
+    using invar_even_to_parent_matchingD[OF forest_invarD(5)[OF assms(1)] even] parent by simp
+  with edge even show thesis
+    by (auto intro: that simp: insert_commute)
+qed
+
+lemma abstract_forest_dblton_graph:
+  "forest_invar \<M> F \<Longrightarrow> dblton_graph (abstract_forest F)"
+proof(rule dblton_graphI, goal_cases)
+  case (1 e)
+  then obtain u v where uv: "e = {u, v}" "parent_lookup (parents F) u = Some v"
+    by(auto simp add: abstract_forest_def)
+  moreover hence "u \<noteq> v" 
+    using forest_invarD[OF 1(1)]
+    by(auto dest!: invar_parent_wfD parent_specD Parent_Map.wf_no_loop)
+  ultimately show ?case  by blast
+qed
 
 definition "forest_extension_precond F M x y z =
       (forest_invar M F \<and> x \<in> vset_to_set (evens F) \<and>
@@ -404,8 +493,6 @@ proof-
   note assms = assms extension_precond(1)
   note invars_old = forest_invarD[OF assms(2)]
   note invar_basic_old = invar_basicD[OF invars_old(1)]
-  note new_parent_lookup = parent(4)[OF parent(3), OF invar_basic_old(4),
-      simplified parent(4)[OF invar_basic_old(4)], of z y y x]
   have neither_even_not_odd_no_parent:
     "x \<notin> vset_to_set (evens F) \<union> vset_to_set (odds F) \<Longrightarrow>
        \<nexists> y. parent_lookup (parents F) x = Some y \<or> parent_lookup (parents F) y = Some x" for x
@@ -421,6 +508,22 @@ proof-
   qed
   have x_in_F: "x \<in> vset_to_set (roots F) \<union> Vs (abstract_forest F)"
     using extension_precond(2) invar_basic_old(6) by auto
+  have xyzK: "x \<in> K" "y \<in> K" "z \<in> K"
+    using vset.fixed_univ_set_universe[OF invar_basic_old(2)] extension_precond(2)
+          invar_basic_old(18) edges_are_Vs[OF extension_precond(5)]
+          edges_are_Vs_2[OF extension_precond(5)]
+    by auto
+  have xy_not_nil: "x \<noteq> nil" "y \<noteq> nil"
+    using xyzK nil by auto
+  have new_parent_lookup:
+    "parent_lookup (parent_upd (parent_upd (parents F) y x) z y) =
+     (parent_lookup (parents F))(y \<mapsto> x, z \<mapsto> y)"
+    by (simp add: parent(3,4) invar_basic_old(4) xyzK xy_not_nil)
+  have "origin_lookup (origins F) x \<in> Some ` vset_to_set (roots F)"
+    using x_in_F invar_basic_old(15) by blast
+  hence x_origin: "origin_lookup (origins F) x = Some (origin_get (origins F) x)"
+    "origin_get (origins F) x \<noteq> nil"
+    by (auto simp add: origin_lookup_def split: if_splits)
   show new_abstract_is: 
     "abstract_forest (extend_forest_even_unclassified F x y z) = 
      abstract_forest F \<union> {{x, y}, {y, z}}"
@@ -431,10 +534,10 @@ proof-
         if_split[of "\<lambda> x. x = Some _"  " _ = z"]) 
   show extension_evens: "vset_to_set (evens (extend_forest_even_unclassified F x y z)) =
                              insert z (vset_to_set (evens F))"
-    by(simp add: extend_forest_even_unclassified_def invar_basic_old(2) vset(4))
+    by(simp add: extend_forest_even_unclassified_def invar_basic_old(2) vset(4) xyzK)
   show extension_odds: "vset_to_set (odds (extend_forest_even_unclassified F x y z)) =
                              insert y (vset_to_set (odds F))"
-    by (simp add: extend_forest_even_unclassified_def invar_basic_old(3) vset(4))
+    by (simp add: extend_forest_even_unclassified_def invar_basic_old(3) vset(4) xyzK)
   show extension_roots: "roots (extend_forest_even_unclassified F x y z) = roots F"
     by(auto simp add: extend_forest_even_unclassified_def)
   show parent_lookup_is: "parent_lookup (parents (extend_forest_even_unclassified F x y z))
@@ -443,8 +546,8 @@ proof-
   show origins_lookup_is: "origin_lookup (origins (extend_forest_even_unclassified F x y z))
                             = (origin_lookup (origins F))(y \<mapsto> the (origin_lookup (origins F) x),
                                                           z \<mapsto>  the (origin_lookup (origins F) x))"
-    using invar_basic_old(5)
-    by(auto simp add: extend_forest_even_unclassified_def origin(3,4) Let_def)
+    using invar_basic_old(5) xyzK x_origin
+    by(simp add: extend_forest_even_unclassified_def origin(3,4) Let_def)
   have y_and_z_no_roots: "y \<notin> vset_to_set (roots F)" "z \<notin> vset_to_set (roots F)"
     using extension_precond(3,4) invar_basic_old(10) by auto
   have invar_basic_new: "invar_basic \<M> (extend_forest_even_unclassified F x y z)"
@@ -455,26 +558,26 @@ proof-
   next
     case 2
     then show ?case 
-      by (simp add: invar_basic_old(2) vset(3) extend_forest_even_unclassified_def)
+      by (simp add: invar_basic_old(2) vset(3) extend_forest_even_unclassified_def xyzK)
   next
     case 3
     then show ?case 
-      by (simp add: invar_basic_old(3) vset(3) extend_forest_even_unclassified_def)
+      by (simp add: invar_basic_old(3) vset(3) extend_forest_even_unclassified_def xyzK)
   next
     case 4
     then show ?case 
-      by(simp add: invar_basic_old(4) parent(3) extend_forest_even_unclassified_def)
+      by(simp add: invar_basic_old(4) parent(3) extend_forest_even_unclassified_def xyzK)
   next
     case 5
     then show ?case 
-      by(simp add: invar_basic_old(5) origin(3)  Let_def extend_forest_even_unclassified_def)
+      by(simp add: invar_basic_old(5) origin(3)  Let_def extend_forest_even_unclassified_def xyzK)
   next
     case 6
     then show ?case 
       unfolding  new_abstract_is
       using invar_basic_old(2,3,6) extension_precond(2)
       by(auto simp add: parent(3,4)  invar_basic_old(4) extend_forest_even_unclassified_def
-          vset(4) vs_insert)
+          vset(4) vs_insert xyzK)
   next
     case 7
     then show ?case 
@@ -498,7 +601,7 @@ proof-
     case 11
     then show ?case 
       using invar_basic_old(2,3,11)
-      by(auto simp add: extend_forest_even_unclassified_def  vset(4))
+      by(auto simp add: extend_forest_even_unclassified_def  vset(4) xyzK)
   next
     case 12
     then show ?case 
@@ -560,6 +663,10 @@ proof-
     case 17
     show ?case 
       by (simp add: invar_basic_old(17) new_abstract_is)
+  next
+    case 18
+    show ?case 
+      by (simp add: invar_basic_old(18))
   qed
   have invar_matching_both_or_none_new:
     "invar_matching_both_or_none \<M> (extend_forest_even_unclassified F x y z)"
@@ -850,11 +957,32 @@ proof-
     qed
   qed
 
+  have invar_odd_is_parent_new:
+    "invar_odd_is_parent (extend_forest_even_unclassified F x y z)"
+  proof (rule invar_odd_is_parentI)
+    fix u
+    assume u: "u \<in> vset_to_set (odds (extend_forest_even_unclassified F x y z))"
+    show "\<exists>v. parent_lookup (parents (extend_forest_even_unclassified F x y z)) v = Some u"
+    proof (cases "u = y")
+      case True
+      thus ?thesis
+        by (intro exI[of _ z]) (simp only: parent_lookup_is fun_upd_same True)
+    next
+      case False
+      then obtain v where v: "parent_lookup (parents F) v = Some u"
+        using u invars_old(8) extension_odds invar_odd_is_parentD by blast
+      have "v \<noteq> y" "v \<noteq> z"
+        using v neither_even_not_odd_no_parent extension_precond(3) by auto
+      with v show ?thesis
+        by (intro exI[of _ v]) (simp add: parent_lookup_is)
+    qed
+  qed
+
   show "forest_invar \<M> (extend_forest_even_unclassified F x y z)"
     by(auto intro!: forest_invarI 
         invar_basic_new invar_matching_both_or_none_new invar_forest_even_and_odd_new 
         invar_parent_wf_new invar_even_to_parent_matching_new invar_roots_new
-        invar_odd_to_parent_non_matching_new)
+        invar_odd_to_parent_non_matching_new invar_odd_is_parent_new)
 qed
 
 subsection \<open>Properties of the Result\<close>
@@ -979,7 +1107,7 @@ lemma simple_invariant_consequences:
     "vset_invar (roots F)"
     "vset_to_set (roots F) \<subseteq> vset_to_set (evens F)"
     "vset_to_set (roots F) \<inter> Vs M = {}"
-    "card (vset_to_set (odds F)) < card (vset_to_set (evens F))"
+    "card (vset_to_set (odds F)) + card (vset_to_set (roots F)) = card (vset_to_set (evens F))"
   using  invar_basicD[OF forest_invarD(1)[OF assms]]
   by simp_all
 
@@ -1000,12 +1128,15 @@ lemmas ordinary_extension_properties =
   extension_odds extension_evens 
   extension_roots
 
+lemma empty_forest_roots: "roots (empty_forest R) = R"
+  by (simp add: empty_forest_def)
+
 lemma empty_forest_correctess:
   "evens (empty_forest R) = R"
   "odds (empty_forest R) = vset_empty"
   "abstract_forest (empty_forest R) = {}"
   "\<lbrakk>matching M ; vset_invar R; vset_to_set R \<inter> Vs M = {}; 
-    finite (vset_to_set R) ; vset_to_set R \<noteq> {}\<rbrakk>
+    finite (vset_to_set R); Vs M \<subseteq> K\<rbrakk>
    \<Longrightarrow> forest_invar M (empty_forest R)"
 proof(goal_cases)
   case 1
@@ -1022,28 +1153,40 @@ next
 next
   case 4
   note four = this
-  have orig_inv_foldr: "origin_invar (foldr (\<lambda>x. origin_upd x x) ys origin_empty)"
+  obtain vs where vs: "vset_to_set R = set vs" "distinct vs"
+    "vset_iterate (\<lambda>m r. origin_upd m r r) origin_empty R =
+     foldl (\<lambda>m r. origin_upd m r r) origin_empty vs"
+    using vset(6)[OF four(2)] by blast
+  have vsK: "set (rev vs) \<subseteq> K"
+    using vs(1) vset.fixed_univ_set_universe[OF four(2)] by auto
+  have orig_inv_foldr: "set ys \<subseteq> K \<Longrightarrow>
+                        origin_invar (foldr (\<lambda>x m. origin_upd m x x) ys origin_empty)"
     for ys
-    by(induction ys) (auto simp add: origin(1,2,3))
-  have orig_inv: "origin_invar (foldl (\<lambda>m r. origin_upd r r m) origin_empty xs)" for xs 
-    using orig_inv_foldr by(simp add: foldl_conv_foldr)
-  have orig_lookup: "origin_lookup (foldl (\<lambda>m r. origin_upd r r m) origin_empty xs)
-                       = (\<lambda> x. if x \<in> set xs then Some x else None)" for xs 
-  proof-
-    define ys where "ys = rev xs"
-    show ?thesis
-      unfolding foldl_conv_foldr ys_def[symmetric] set_rev[of xs, simplified ys_def[symmetric], symmetric]
-      by(induction ys) 
-        (auto simp add: origin(1,2,3,4)  orig_inv_foldr intro!: ext)
-  qed
+    by(induction ys) (auto simp add: origin(1,3))
+  have orig_lookup_foldr: "set ys \<subseteq> K \<Longrightarrow>
+     origin_lookup (foldr (\<lambda>x m. origin_upd m x x) ys origin_empty)
+       = (\<lambda> x. if x \<in> set ys then Some x else None)" for ys
+  proof(induction ys)
+    case (Cons a ys)
+    hence a: "a \<in> K" "a \<noteq> nil" "set ys \<subseteq> K"
+      using nil by auto
+    show ?case
+      using Cons(1)[OF a(3)] a
+      by (auto simp add: origin_lookup_upd[OF orig_inv_foldr] intro!: ext)
+  qed (simp add: origin(2))
+  have orig_inv: "origin_invar (foldl (\<lambda>m r. origin_upd m r r) origin_empty vs)"
+    using orig_inv_foldr[OF vsK] by(simp add: foldl_conv_foldr)
+  have orig_lookup: "origin_lookup (foldl (\<lambda>m r. origin_upd m r r) origin_empty vs)
+                       = (\<lambda> x. if x \<in> vset_to_set R then Some x else None)"
+    using orig_lookup_foldr[OF vsK] by(simp add: foldl_conv_foldr vs(1))
   show ?case 
   proof(rule forest_invarI, goal_cases)
     case 1
     then show ?case 
-      using four vset(6)[of R "\<lambda>m r. origin_upd r r m" origin_empty]
+      using four
       by (auto intro!: invar_basicI 
           simp add: abstract_forest_def parent(1,2) vset(1,2) empty_forest_def
-          card_gt_0_iff orig_inv orig_lookup )
+          card_gt_0_iff orig_inv orig_lookup vs(3))
   next
     case 2
     then show ?case 
@@ -1072,17 +1215,37 @@ next
       by(auto simp add: parent_def parent_spec_def)
     note follow_psimps = parent_empty.follow_psimps[folded follow_def]
     show ?case 
-      using four(2) vset(6)[of R "\<lambda>m r. origin_upd r r m" origin_empty]
       by(auto intro!: invar_rootsI
           simp add: empty_forest_def abstract_forest_def parent(2)
-          orig_lookup follow_psimps)
+          orig_lookup follow_psimps vs(3))
   next
     case 7
     then show ?case 
       by(auto intro!: invar_odd_to_parent_non_matchingI
           simp add: parent(2) empty_forest_def vset(2))
+  next
+    case 8
+    then show ?case
+      by (auto simp: invar_odd_is_parent_def empty_forest_def vset(2))
   qed
 qed
+
+lemma get_path_loop_is_follow_impl_loop:
+  assumes "parent_spec_i.follow_dom (parent_lookup P) v"
+  shows "get_path_loop P v acc = follow_impl_loop (parent_lookup P) v acc"
+  using assms
+proof(induction arbitrary: acc rule: parent_spec_i.follow.pinduct)
+  case (1 v)
+  show ?case
+    by (subst get_path_loop.simps, subst parent_spec_i.follow_impl_loop.simps)
+       (auto simp add: parent_lookup_def Let_def intro: 1(2))
+qed
+
+lemma get_path_is_follow_impl:
+  "parent_spec_i.follow_dom (parent_lookup (parents F)) v \<Longrightarrow>
+   get_path F v = follow_impl (parent_lookup (parents F)) v"
+  by (simp add: get_path_def follow_impl_def parent_spec.follow_impl_def follow_impl_loop_def
+                get_path_loop_is_follow_impl_loop)
 
 lemma get_path_correct:
   assumes"forest_invar M F" "v \<in> vset_to_set (evens F)" "p = get_path  F v"
@@ -1094,7 +1257,8 @@ proof-
   note follow_impl_is_follow =
     parents_here.follow_impl_is_follow[folded follow_def follow_impl_def]
   have p_def: "p = follow (parent_lookup (parents F)) v"
-    by(simp add: assms(3) get_path_def follow_impl_is_follow)
+    using parents_here.follow_dom[folded follow_def]
+    by(simp add: assms(3) get_path_is_follow_impl follow_impl_is_follow)
   note follow_alternating_paths_facts = follow_alternating_paths(1,3)[OF assms(1) p_def assms(2)]
   thus "rev_alt_path M p" 
     by simp
@@ -1121,18 +1285,64 @@ proof-
     by (simp add: p_def follow_def parents_here.follow_distinct)
 qed
 
+lemma \<^marker>\<open>provenance ai_human\<close> get_path_prefices:
+  assumes "forest_invar M F" "p1 @ x # p2 = get_path F v" "p1' @ x # p2' = get_path F v'"
+  shows "p2 = p2'"
+proof-
+  interpret parents_here: parent "parent_lookup (parents F)"
+    using assms(1) follow_dom_invar_parent_wf(1) forest_invarD(4) by auto
+  have paths: "get_path F u = parent_spec.follow (parent_lookup (parents F)) u" for u
+    using parents_here.follow_dom[folded follow_def]
+    by (simp add: get_path_is_follow_impl follow_impl_def parents_here.follow_impl_is_follow)
+  have "parent_spec.follow (parent_lookup (parents F)) v = p1 @ x # p2"
+    "parent_spec.follow (parent_lookup (parents F)) v' = p1' @ x # p2'"
+    using assms(2,3) by (simp_all add: paths)
+  then show ?thesis
+    by (rule parents_here.from_tree)
+qed
+
 end
                               
 context
   forest_manipulation
 begin
 
-interpretation  satisfied_simple:
-  alternating_forest_spec evens odds local.get_path local.abstract_forest forest_invar roots 
-                          vset_invar vset_to_set
-  using complex_invariant_consequences(1,2) 
-  by(intro alternating_forest_spec.intro simple_invariant_consequences)
-    (auto simp add: get_path_correct(1,2,3,4,5))
+interpretation satisfied_simple:
+  alternating_forest_spec evens odds local.get_path local.abstract_forest forest_invar roots
+    vset_invar vset_to_set
+proof (intro alternating_forest_spec.intro, goal_cases)
+  case (1 F M) then show ?case by (rule simple_invariant_consequences(1))
+next
+  case (2 F M) then show ?case by (rule simple_invariant_consequences(2))
+next
+  case (3 F M) then show ?case using simple_invariant_consequences(3)[OF 3] by blast
+next
+  case (4 F M) then show ?case using simple_invariant_consequences(3,4,9)[OF 4] by blast
+next
+  case (5 F M) then show ?case using simple_invariant_consequences(4,9)[OF 5] by blast
+next
+  case (6 F M) then show ?case by (rule simple_invariant_consequences(5))
+next
+  case (7 F M) then show ?case by (rule simple_invariant_consequences(6))
+next
+  case (8 F M) then show ?case by (rule simple_invariant_consequences(8))
+next
+  case (9 F M) then show ?case by (rule simple_invariant_consequences(9))
+next
+  case (10 F M) then show ?case by (rule simple_invariant_consequences(10))
+next
+  case (11 F M v p) then show ?case using get_path_correct(1,3,4,5)[OF 11] by blast
+next
+  case (12 F M) then show ?case using simple_invariant_consequences(11)[OF 12] by simp
+next
+  case (13 F M u v) then show ?case using complex_invariant_consequences(1)[OF 13] by blast
+next
+  case (14 F M u v) then show ?case by (rule complex_invariant_consequences(2))
+next
+  case 15 then show ?case by (rule get_path_prefices)
+next
+  case (16 M F) then show ?case by (rule abstract_forest_dblton_graph)
+qed
 
 lemma satisfied_simple_extension_precond_same:
   "satisfied_simple.forest_extension_precond F M x y z = forest_extension_precond F M x y z"
@@ -1141,17 +1351,17 @@ lemma satisfied_simple_extension_precond_same:
 interpretation satisfied: alternating_forest_ordinary_extension_spec
   vset_invar vset_to_set 
   evens odds "get_path "
-  "abstract_forest" forest_invar  roots vset_empty
+  "abstract_forest" forest_invar  roots
   "extend_forest_even_unclassified"
-  "empty_forest"
+  "empty_forest" K vset_empty
   by(intro alternating_forest_ordinary_extension_spec.intro
       satisfied_simple.alternating_forest_spec_axioms
       alternating_forest_ordinary_extension_spec_axioms.intro)
-    (simp_all add: satisfied_simple_extension_precond_same extension_main_preservation 
-      extension_abstract_is extension_evens extension_odds extension_roots 
-      empty_forest_correctess)
+    (simp_all add: satisfied_simple_extension_precond_same extension_main_preservation
+      extension_abstract_is extension_evens empty_forest_correctess empty_forest_roots)
 
 lemmas satisified = satisfied.alternating_forest_ordinary_extension_spec_axioms
 
 end
 end
+

@@ -12,47 +12,6 @@ datatype 'a match_blossom_res =
    Path "'a list" 
 | Blossom (stem_vs: "'a list") (cycle_vs: "'a list")
 
-lemma match_blossom_distinct_tl:
-  assumes "match_blossom M stem cyc"
-  shows "distinct (tl cyc)"
-proof-
-  obtain \<^marker>\<open>provenance ai\<close> a b cs where cyc: "cyc = a # b # cs"
-    using odd_cycleD(1)[OF match_blossomD(3)[OF assms]]
-    by (cases cyc; cases "tl cyc"; auto)
-  have "distinct (butlast cyc)" "hd cyc = last cyc"
-    using match_blossomD[OF assms] odd_cycleD
-    unfolding distinct_append[symmetric] 
-    by auto
-  then have "distinct (tl (butlast cyc))" "hd cyc \<notin> set (tl (butlast cyc))"
-    using \<^marker>\<open>provenance ai\<close> distinct_tl
-    by \<^marker>\<open>provenance ai\<close> (auto simp: cyc)
-  then have "distinct ((tl (butlast cyc)) @ [last cyc])"
-    using \<open>hd cyc = last cyc\<close>
-    by auto
-  moreover have "(tl (butlast cyc)) @ [last cyc] = tl cyc" if "length cyc \<ge> 3" for cyc::"'a list"
-    using that
-  proof(induction cyc)
-    case Nil
-    then show ?case
-      by auto
-  next
-    case (Cons a' cyc')
-    then show ?case 
-      by auto
-  qed
-  moreover have "length cyc \<ge> 3"
-    using odd_cycleD(1)[OF match_blossomD(3)[OF assms]]
-    by auto
-  ultimately show ?thesis
-    by auto
-qed
-
-lemma cycle_set_tl_eq_butlast:
-  assumes "match_blossom M stem cyc"
-  shows "set (tl cyc) = set (butlast cyc)"
-  using \<^marker>\<open>provenance ai\<close> match_blossomD(3)[OF assms]
-  by \<^marker>\<open>provenance ai\<close> (auto simp: set_butlast_tl[symmetric] odd_cycle_nempty odd_cycleD(3))
-
 text\<open>This is a naive function to ascend the given blossom. It takes time quadratic in the size of
      the blossom.\<close>
 
@@ -977,24 +936,6 @@ next
     unfolding matching_augmenting_path_def
     by simp
 qed
-
-lemma odd_cycle_length_edges_ge_3:
-  assumes "odd_cycle p"
-  shows "length (edges_of_path p) \<ge> 3"
-  using \<^marker>\<open>provenance ai\<close> odd_cycleD[OF assms] odd_cycle_even_verts[OF assms]
-  by \<^marker>\<open>provenance ai\<close> (simp add: edges_of_path_length; presburger)
-
-lemma odd_cycle_length_verts_ge_4:
-  assumes "odd_cycle p"
-  shows "length p \<ge> 4"
-  using \<^marker>\<open>provenance ai\<close> odd_cycle_length_edges_ge_3[OF assms] odd_cycle_even_verts[OF assms]
-  by \<^marker>\<open>provenance ai\<close> (auto simp: edges_of_path_length elim: evenE)
-
-lemma odd_cycle_set_butlast_tl:
-  assumes "odd_cycle C"
-  shows "set (butlast C) = set (tl C)"
-  using odd_cycleD[OF assms] odd_cycle_nempty[OF assms]
-  by (simp add: set_butlast_tl)
 
 locale match = graph_abs G for G+ 
   fixes M

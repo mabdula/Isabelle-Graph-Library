@@ -15,7 +15,7 @@ section \<open>Spanning Trees\<close>
 
 text \<open>We prove that in an undirected graph, the property of having no cycles forms a matroid
 (the graphic/cycle matroid), with the carrier set being the set of edges of the graph and the
-independence function being the function has_no_cycle.\<close>
+independence function being the function has\_no\_cycle.\<close>
 
 text \<open>Matroid properties\<close>
 

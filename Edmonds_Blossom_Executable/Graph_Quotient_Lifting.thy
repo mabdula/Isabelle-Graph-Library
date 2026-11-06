@@ -4,6 +4,8 @@ begin
 
 provenance human
 
+hide_fact Pair_Graph.neighbourhood_def
+
 text \<open>The functions that lift an augmenting path of a quotient graph to the graph. They are the
   functions of the same names of the quotient locale, made executable: the choice of a cycle
   vertex adjacent to a given vertex takes the first such vertex of the cycle list (adjacency is a
@@ -67,6 +69,11 @@ next
     by auto
 qed
 
+lemma pref_suf_non_splitter_last_induction:
+  "\<lbrakk>u' \<noteq> u; u \<in> set p\<rbrakk>
+     \<Longrightarrow> pref_suf p' u (p @ [u']) = (fst (pref_suf p' u p), snd (pref_suf p' u p) @ [u'])"
+  by(induction p arbitrary: p') auto
+
 lemma pref_suf_works:
   assumes "v \<in> set l"
   shows "l = fst (pref_suf [] v l) @ v # snd (pref_suf [] v l)"
@@ -125,32 +132,16 @@ definition refine ::
 lemmas \<^marker>\<open>provenance ai_human\<close> [code] = choose_con_vert_def last_edge_matched_def stem2vert_path_def matched_to_cycle_def
   replace_cycle_def refine_def
 
+lemma last_not_u_refine:
+  assumes "u' \<noteq> u" "distinct (p @ [u'])"
+  shows "last (refine adj mate u C (p @ [u'])) = u' \<or>
+         hd (refine adj mate u C (p @ [u'])) = u'"
+  using assms
+  by (auto simp: refine_def pref_suf_non_splitter_last_induction replace_cycle_def Let_def)
+
 lemma last_edges_of_path_snoc2: "last (edges_of_path (ys @ [a, b])) = {a, b}"
-proof-
-  have "\<exists>es. edges_of_path (ys @ [a, b]) = es @ [{a, b}]"
-  proof(induction ys)
-    case Nil
-    then show ?case
-      by simp
-  next
-    case (Cons x ys)
-    then obtain es where es: "edges_of_path (ys @ [a, b]) = es @ [{a, b}]"
-      by blast
-    show ?case
-    proof(cases ys)
-      case Nil
-      then show ?thesis
-        by simp
-    next
-      case (Cons y ys')
-      then show ?thesis
-        using es
-        by (intro exI[of _ "{x, y} # es"]) simp
-    qed
-  qed
-  thus ?thesis
-    by auto
-qed
+  using edges_of_path_snoc[of "ys @ [a]" b, symmetric]
+  by simp
 
 locale \<^marker>\<open>provenance ai_human\<close> quot_lift = quot E s u for E :: "'a set set" and s u +
   fixes adj :: "'a \<Rightarrow> 'a \<Rightarrow> bool" and mate :: "'a \<Rightarrow> 'a option" and M :: "'a set set"
@@ -371,13 +362,13 @@ proof-
   have *: "\<exists>w. {hd p2, w} \<in> E \<and> w \<notin> s"
     using quot_aug_path path_adj_verts_edge edge_in_quot_in_graph_2''
     by (fastforce intro!: edge_in_quotG_2'_doubleton[where M = E] simp: neq_Nil_conv)
-  then obtain w where "w \<in> neighbourhood E (hd p2)" "w \<notin> s"
-    by (auto simp: neighbourhood_def insert_commute)
+  then obtain w where "w \<in> Undirected_Set_Graphs.neighbourhood E (hd p2)" "w \<notin> s"
+    by (auto simp: Undirected_Set_Graphs.neighbourhood_def insert_commute)
   moreover hence "w \<in> set C"
     using edges_are_Vs quot insert_absorb
     by auto 
   ultimately have "\<exists>x \<in> set C. {hd p2, x} \<in> E"
-    by (auto simp: neighbourhood_def insert_commute)
+    by (auto simp: Undirected_Set_Graphs.neighbourhood_def insert_commute)
   thus ?thesis
     using choose_con_vert_props
     by blast
@@ -394,13 +385,13 @@ proof-
   have *: "\<exists>w. {last p1, w} \<in> E \<and> w \<notin> s"
     using \<^marker>\<open>provenance ai\<close> quot_aug_path path_adj_verts_edge edge_in_quot_in_graph_2''
     by \<^marker>\<open>provenance ai\<close> (fastforce intro!: edge_in_quotG_2'_doubleton[where M = E] simp: neq_Nil_conv_2 insert_commute)
-  then obtain w where "w \<in> neighbourhood E (last p1)" "w \<notin> s"
-    by (auto simp: neighbourhood_def insert_commute)
+  then obtain w where "w \<in> Undirected_Set_Graphs.neighbourhood E (last p1)" "w \<notin> s"
+    by (auto simp: Undirected_Set_Graphs.neighbourhood_def insert_commute)
   moreover hence "w \<in> set C"
     using edges_are_Vs quot insert_absorb
     by auto 
   ultimately have "\<exists>x \<in> set C. {last p1, x} \<in> E"
-    by (auto simp: neighbourhood_def insert_commute)
+    by (auto simp: Undirected_Set_Graphs.neighbourhood_def insert_commute)
   thus ?thesis
     using choose_con_vert_props
     by blast
@@ -526,20 +517,6 @@ lemma alt_list_quotG_then_alt_list_2:
 
 end
 
-lemma odd_cycle_rev:
-  assumes "odd_cycle C"
-  shows "odd_cycle (rev C)"
-  using assms
-  by (auto split: if_splits simp: hd_rev last_rev Suc_le_length_iff numeral_3_eq_3 odd_cycle_def)
-
-lemma odd_cycle_rev_alt_list:
-  assumes "odd_cycle C" "alt_path M C"
-  shows "alt_path M (rev C)"
-  using odd_cycleD(1)[OF assms(1)]
-                 
-        even_alt_path_rev[OF odd_cycle_even_verts[OF assms(1)] _ assms(2)]
-  by (simp add: even_alt_path_rev assms(2))
-
 text\<open>showing that given an augmenting path, "replace cycle" produces an augmeting path.\<close>
 
 context quot_lift
@@ -647,42 +624,10 @@ proof-
   qed
 qed
 
-lemma empty_rev_imp: "C \<noteq> [] \<Longrightarrow> rev C \<noteq> []"
-  by simp
-
-lemma stem2vert_path_append_1:
-  "last (edges_of_path (find_pfx ((=) (choose_con_vert adj C a2')) C)) \<in> M 
-   \<Longrightarrow> \<exists>Ctail. C = (stem2vert_path adj mate C a2') @ Ctail"
-  unfolding stem2vert_path_def'
-  by (auto split: if_splits intro: find_pfx_append_2)
-
-lemma stem2vert_path_append_2:
-  assumes "(choose_con_vert adj C a2') = last C" and "odd_cycle C"
-  shows "\<exists>Ctail. C = (stem2vert_path adj mate C a2') @ Ctail"
-proof(cases "last (edges_of_path (find_pfx ((=) (choose_con_vert adj C a2')) C)) \<in> M")
-  case True
-  then show ?thesis
-    by(intro stem2vert_path_append_1)
-next
-  have "choose_con_vert adj C a2' = hd C \<Longrightarrow> 
-                    (find_pfx ((=) (choose_con_vert adj C a2')) C) = [hd C]"
-    using odd_cycle_nempty[OF \<open>odd_cycle C\<close>]
-    by (auto simp: neq_Nil_conv)
-  moreover have "find_pfx ((=) (last C)) (rev C) = [last C]" if "C \<noteq> []"
-    using empty_rev_imp[OF that, unfolded neq_Nil_conv]
-    by auto
-  moreover case False
-  ultimately show ?thesis
-    using assms(1)
-    by (cases "C = []")
-        (unfold stem2vert_path_def' Let_def,
-         auto split: if_splits simp: neq_Nil_conv odd_cycleD(3)[OF \<open>odd_cycle C\<close>, symmetric])
-qed
-
 lemma find_pfx_sing: "find_pfx Q l = [x] \<Longrightarrow> x = hd l"
   by(cases "l"; auto split: if_splits)
 
-lemma find_pfx_hd: "l \<noteq> [] \<Longrightarrow> Q (hd l) \<Longrightarrow> find_pfx Q l = [hd l]"
+lemma find_pfx_hd: "\<lbrakk>l \<noteq> []; Q (hd l)\<rbrakk> \<Longrightarrow> find_pfx Q l = [hd l]"
   by (cases l) simp_all
 
 lemma \<^marker>\<open>provenance ai_human\<close> stem2vert_path_eq_pfx:
@@ -1079,8 +1024,7 @@ proof-
       case F2: False
       have choose_vert_works: "chv \<in> set C"
         unfolding chv_def
-        using choose_vert_works_1[OF cycle(3) _ _ _ _ quot(1)] quot_aug_path  p2_nempty
-        by blast
+        by (rule choose_vert_works_3(1)[OF cycle(3) quot_aug_path(2,3) p2_nempty(1) quot(1)])
       moreover have "chv \<noteq> hd C"
         using odd_cycleD(3)[OF cycle(1)] F2
         by auto
@@ -1487,7 +1431,7 @@ proof-
         using quot_aug_path tl_path_is_path
         by fastforce
       then have "path E p2"
-        by(intro path_is_quot_path'[OF path_p2] p2_subset_s)
+        by(intro path_is_quot_path[OF path_p2] p2_subset_s)
       ultimately show ?thesis
       proof(intro path_append)
         show "path E (find_pfx ((=) chv) C)"
@@ -1530,7 +1474,7 @@ proof-
       proof(rule path_append, goal_cases)
         case 1
         show ?case
-          using path_pref[OF quot_aug_path(2)] path_is_quot_path'[OF _ p1_subset_s] quot
+          using path_pref[OF quot_aug_path(2)] path_is_quot_path[OF _ p1_subset_s] quot
           by blast
       next
         case 2
@@ -1957,74 +1901,6 @@ qed
 context quot_lift
 begin
 
-lemma stem2vert_path_pref_or_suc:
-  assumes "odd_cycle C" "alt_path M C" "w \<noteq> last C" "w \<in> set C" "w = (choose_con_vert adj C v)"
-  shows "(\<exists>pref. pref @ (rev (stem2vert_path adj mate C v)) = tl C) \<or> (\<exists>suf. ((stem2vert_path adj mate C v)) @ suf = butlast C)"
-  unfolding stem2vert_path_def'
-  proof((simp add: Let_def split: if_splits; intro conjI impI), goal_cases)
-    case 1
-    show ?case
-      using odd_cycleD(3)[OF assms(1)] find_pfx_butlast[where Q = "((=) w)", OF assms(3,4)] assms(5)
-      by blast
-  next
-    case 2
-    have i: "w \<noteq> last (rev C)"
-      using odd_cycle_nempty[OF assms(1)] odd_cycleD(3)[OF assms(1)] assms(3)
-      by (simp add: last_rev)
-    moreover have ii: "w \<in> set (rev C)"
-      using assms(4)
-      by auto
-    show ?case
-    proof \<^marker>\<open>provenance ai\<close>-
-      obtain suf where sf: "find_pfx ((=) w) (rev C) @ suf = butlast (rev C)"
-        using find_pfx_butlast[where Q = "((=) w)", OF i ii]
-        by blast
-      have "rev (find_pfx ((=) w) (rev C) @ suf) = rev (butlast (rev C))"
-        using sf
-        by simp
-      hence "rev suf @ rev (find_pfx ((=) w) (rev C)) = tl C"
-        by (simp add: butlast_rev)
-      thus ?thesis
-        using assms(5)
-        by (intro disjI1 exI[of _ "rev suf"]) simp
-    qed
-  qed
-
-lemma stem2vert_path_distinct_neq_lastC:
-  assumes "odd_cycle C" "alt_path M C" "w \<noteq> last C" "w \<in> set C" "w = choose_con_vert adj C v" "distinct (tl C)"
-  shows "distinct (stem2vert_path adj mate C v)"
-  using \<^marker>\<open>provenance ai\<close> stem2vert_path_pref_or_suc[OF assms(1-5)] assms(6)
-  using \<^marker>\<open>provenance ai\<close> distinct_tl_then_butlast[OF assms(6) odd_cycleD(3)[OF assms(1)] odd_cycle_nempty[OF assms(1)]]
-  by \<^marker>\<open>provenance ai\<close> (auto simp: distinct_append distinct_rev dest!: arg_cong[where f = distinct])
-
-lemma stem2vert_path_distinct:
-  assumes "odd_cycle C" "alt_path M C" "w \<in> set C" "w = choose_con_vert adj C v" "distinct (tl C)"
-  shows "distinct (stem2vert_path adj mate C v)"
-proof(cases "w = last C")
-  case True
-  then show ?thesis
-  proof \<^marker>\<open>provenance ai\<close>-
-    have nem: "C \<noteq> []"
-      using odd_cycle_nempty[OF assms(1)] .
-    have ch: "choose_con_vert adj C v = last C"
-      using True assms(4)
-      by simp
-    have "stem2vert_path adj mate C v = find_pfx ((=) (choose_con_vert adj C v)) C"
-      using stem2vert_path_eq_pfx[OF nem] ch
-      by simp
-    moreover have "find_pfx ((=) (choose_con_vert adj C v)) C = [hd C]"
-      using find_pfx_hd[OF nem] ch hd_last_cycle
-      by simp
-    ultimately show ?thesis
-      by simp
-  qed
-next
-  case False
-  then show ?thesis
-    using stem2vert_path_distinct_neq_lastC[OF assms(1,2) False assms(3-5)]
-    by auto
-qed
-
 lemma distinct_find_pfx_cycle:
   assumes "odd_cycle Cs" "w \<in> set Cs" "distinct (tl Cs)"
   shows "distinct (find_pfx ((=) w) Cs)"
@@ -2047,6 +1923,12 @@ next
   thus ?thesis
     by (auto simp: distinct_append)
 qed
+
+lemma stem2vert_path_distinct:
+  assumes "odd_cycle C" "alt_path M C" "w \<in> set C" "w = choose_con_vert adj C v" "distinct (tl C)"
+  shows "distinct (stem2vert_path adj mate C v)"
+  using assms(1,3,4,5) odd_cycle_rev[OF assms(1)] tl_distinct_rev[OF odd_cycleD(3)[OF assms(1)] assms(5)]
+  by (auto simp: stem2vert_path_def' Let_def intro: distinct_find_pfx_cycle)
 
 lemma distinct_replace_cycle:
   assumes cycle: "odd_cycle C" "alt_path M C" "distinct (tl C)" "path E C" and
@@ -2752,34 +2634,97 @@ theorem refine_works:
     matching: "matching M" "M \<subseteq> E" and
     quot: "s = (Vs E) - set C"
   shows "graph_augmenting_path E M (refine adj mate u C p')"
+  using match_blossomD[OF blossomD(2)[OF cycle]]
+    match_blossom_alt_cycle[OF blossomD(2)[OF cycle]]
+    match_blossom_distinct_tl[OF blossomD(2)[OF cycle]]
+    path_suff[OF blossomD(1)[OF cycle]]
+  by (intro refine[OF _ _ _ _ assms(2-)]) auto
+
+end
+
+context quot
+begin
+
+theorem max_card_matching_equiv_blossom_contraction:
+  assumes match_blossom: "blossom E M stem C"
+    and graph_matching: "graph_matching E M"
+    and quot: "s = (Vs E) - set C" "u \<notin>  Vs E"
+  shows "max_card_matching (quotG E) (quotG M) \<longleftrightarrow> max_card_matching E M"
 proof-
-
-  have *: "tl C = butlast (tl C) @ [last C]"
-    using odd_cycleD[OF match_blossomD(3)[OF blossomD(2)[OF cycle]]]
-    by (fastforce simp add: eval_nat_numeral Suc_le_length_iff dest!:)
-
-  have butlast_nempty_conv: "butlast xs = x # xs' \<longleftrightarrow> (\<exists>x'. xs = x # xs' @ [x'])" for x xs xs'
-    by(cases xs) (auto simp add: snoc_eq_iff_butlast')
-
-  have "distinct (tl (butlast C))"
-    using match_blossomD[OF blossomD(2)[OF cycle]] match_blossom_alt_cycle[OF blossomD(2)[OF cycle]]
-    by (auto simp add: \<open>alt_path M C\<close> distinct_tl dest!: blossomD odd_cycleD)
-  moreover have "hd C \<notin> set (tl (butlast C))"
-    using match_blossomD[OF blossomD(2)[OF cycle]]
-    by(cases "(butlast C)") (auto simp add: butlast_nempty_conv)
-  ultimately have "distinct (tl C)"
-    using odd_cycleD(3)[OF match_blossomD(3)[OF blossomD(2)[OF cycle]]]
-    by (subst *; simp add: butlast_tl)
-  moreover have "path E C"
-    using cycle path_suff'
+  have matching: "finite M " "matching M" "M \<subseteq> E"
+    using graph_matching
+    by (auto simp add: finite_E finite_subset)
+  define mate where
+    "mate v = (if v \<in> Vs M then Some (THE w. {v, w} \<in> M) else None)" for v
+  have mate_M: "mate v = Some w \<longleftrightarrow> {v, w} \<in> M" for v w
+  proof (cases "v \<in> Vs M")
+    case True
+    then obtain e where e: "e \<in> M" "v \<in> e"
+      by (auto simp: Vs_def)
+    have "e \<in> E"
+      using e(1) matching(3) by auto
+    then obtain a b where shape: "e = {a, b}"
+      using dblton_E by auto
+    then obtain x where edge: "{v, x} \<in> M"
+      using e by (auto simp: insert_commute)
+    have chosen: "(THE w. {v, w} \<in> M) = x"
+      by (rule the_match'[OF matching(2) edge])
+    show ?thesis
+      using edge doubleton_in_matching(1)[OF matching(2)]
+      by (auto simp: mate_def True chosen)
+  next
+    case False
+    then show ?thesis by (auto simp: mate_def Vs_def)
+  qed
+  interpret L: quot_lift E s u "\<lambda>v w. {v, w} \<in> E" mate M C
+    by unfold_locales
+       (auto simp: mate_M matching(3) quot
+         intro: odd_cycleD(3)[OF match_blossomD(3)[OF blossomD(2)[OF match_blossom]]])
+  show ?thesis
+proof(rule, goal_cases)
+  case 1
+  note one = this
+  show ?case
+  proof(rule ccontr, goal_cases)
+    case 1
+    then obtain p where p: "graph_augmenting_path E M p"
+      using Berge[OF matching dblton_E finite_Vs] graph_matching
+      by(auto simp add: max_card_matching_def)
+    then obtain p' where "graph_augmenting_path (quotG E) (quotG M) p'"
+      using aug_path_works_in_contraction[OF assms(1) p matching(2,3,1) quot]
+      by auto
+    moreover have "graph_matching (quotG E) (quotG M)"
+      using max_card_matchingDs(1,2) one by blast
+    ultimately have "\<not> max_card_matching (quotG E) (quotG M)"
+      using  Berge[of "quotG M" "quotG E", OF finite_quot] graph_invar_quotG matching(1) leD
+      by(auto simp add: max_card_matching_def)
+    thus False
+      using one
+      by simp
+  qed
+next
+  case 2
+  note two = this
+  have graph_match: "graph_matching (quotG E) (quotG M)"
+    using  graph_matching matching_quotM[of M stem C]  match_blossom quot(1)
+            quot_graph_subset[of M E]
     by auto
-  ultimately show ?thesis
-    using match_blossomD[OF blossomD(2)[OF cycle]] match_blossom_alt_cycle[OF blossomD(2)[OF cycle]]
-    by (intro refine[OF _ _ _ _ assms(2-)]; auto)
+  show ?case
+  proof(rule ccontr, goal_cases)
+    case 1
+    then obtain p where p: "graph_augmenting_path (quotG E) (quotG M) p"
+      using  Berge[of "quotG M" "quotG E", OF finite_quot] graph_invar_quotG matching(1) graph_match
+      by (auto simp add: linorder_not_le max_card_matching_def)
+    note augpath_M = L.refine_works[OF match_blossom p matching(2,3) quot(1)]
+    hence "\<not> max_card_matching E M"
+      using Berge[OF matching dblton_E finite_Vs] graph_matching
+      by(auto simp add: max_card_matching_def)
+    then show ?case
+      using two by auto
+  qed
+qed
 qed
 
 end
 
 end
-
-
