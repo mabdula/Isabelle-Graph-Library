@@ -229,7 +229,7 @@ lemma the_vertex_inj:
 
 lemma the_vertex_image_inj:
   "\<lbrakk>\<nexists> i. new_vertex i \<in> x; \<nexists> i. new_vertex i \<in> y; the_vertex ` x = the_vertex ` y\<rbrakk> \<Longrightarrow> x = y"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume hx_asm: "\<nexists> i. new_vertex i \<in> x"
     and hy_asm: "\<nexists> i. new_vertex i \<in> y"
     and himg_asm: "the_vertex ` x = the_vertex ` y"

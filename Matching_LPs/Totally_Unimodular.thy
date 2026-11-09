@@ -44,7 +44,7 @@ proof -
     {   fix x
       assume asm: " A *\<^sub>v x \<le> b" "0\<^sub>v n \<le> x " "x \<in> carrier_vec n"
       then have " \<forall> i < n. x $ i \<ge> 0\<^sub>v n $ i" 
-        proof (intro allI impI)
+        proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
           fix i
           assume i: "i < n"
           from asm(2) have "dim_vec (0\<^sub>v n) = dim_vec x" and "\<forall>i<dim_vec (0\<^sub>v n). 0\<^sub>v n $ i \<le> x $ i"
@@ -57,9 +57,9 @@ proof -
         using asm(2) unfolding zero_vec_def using index_vec[of _ n "(\<lambda>i. 0)"] 
         by simp
       then have "\<forall> i < n. unit_vec n i \<bullet> x \<ge> 0 "
-        using asm(3) by (simp add: scalar_prod_left_unit)
+        using asm(3) by \<^marker>\<open>provenance ai\<close> (simp add: scalar_prod_left_unit)
       then have "\<forall> i < n. - unit_vec n i \<bullet> x \<le> 0" 
-      proof (intro allI impI)
+      proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
         fix i :: nat
         assume "i < n"
         then have h: "unit_vec n i \<bullet> x \<ge> 0"
@@ -106,7 +106,7 @@ proof -
     then have "\<forall> i < n. x $ i \<ge> 0" 
       by (simp add: asm(2))
     then show "0\<^sub>v n \<le> x"
-      using asm(2) unfolding less_eq_vec_def by (auto simp: index_zero_vec)
+      using asm(2) unfolding less_eq_vec_def by \<^marker>\<open>provenance ai\<close> (auto simp: index_zero_vec)
   qed
   then show ?thesis unfolding pos_polyhedron_def polyhedron_def by auto
 qed
@@ -118,7 +118,7 @@ proof -
   have 1:"pick I (card {a \<in> I. a < k}) = (LEAST a. a \<in> I \<and> k \<le> a)"
     using pick_card by blast
   have 2:"pick I (card {a \<in> I. a < k}) \<in> I" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "{i. i < k \<and> i \<in> I} = {a \<in> I. a < k}"
       by auto
     then consider (fin) "card {a \<in> I. a < k} < card I" | (inf) "infinite I"
@@ -149,7 +149,7 @@ proof -
       have "card {a\<in>I. a < pick I (card {i. i < k \<and> i \<in> I})} = card {i. i < k \<and> i \<in> I}"
         using \<open>card {i. i < k \<and> i \<in> I} < card I\<close> card_pick by blast
       then show False 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "I \<subseteq> {i. i < k}"
           using asm by fastforce
         then have "{i. i < k \<and> i \<in> I} = I"
@@ -175,7 +175,7 @@ proof(cases "infinite J")
     using True pick_mono_le 
     using lessI pick_mono by presburger
   have "pick J (Suc j) \<in> J - {pick J j}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "pick J (Suc j) \<in> J"
       using True pick_in_set_inf by blast
     moreover have "pick J (Suc j) \<noteq> pick J j"
@@ -199,7 +199,7 @@ proof(cases "infinite J")
         card {a\<in>(J - {pick J j}). a < pick J (Suc j)} + card {pick J j}"
     by force
   then have "card {a\<in>(J - {pick J j}). a < pick J (Suc j)} + 1 = card {a\<in>J. a < pick J (Suc j)}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have card_union: "card ({a \<in> (J - {pick J j}). a < pick J (Suc j)} \<union> {pick J j}) =
           card {a \<in> (J - {pick J j}). a < pick J (Suc j)} + card {pick J j}"
       by force
@@ -217,7 +217,7 @@ proof(cases "infinite J")
   then have "pick (J - {pick J j}) ((Suc j) - 1) = pick J (Suc j)" 
     using 1 by presburger
   then show ?thesis 
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
 next
   case False
   have "Suc j < card J" 
@@ -225,7 +225,7 @@ next
   have 3:"pick J (Suc j) > pick J j" 
     using \<open>Suc j < card J\<close> pick_mono_le by blast
   have "pick J (Suc j) \<in> J - {pick J j}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "pick J (Suc j) \<in> J" 
       using pick_in_set[OF assms] by blast
     moreover have "pick J (Suc j) \<noteq> pick J j" 
@@ -249,7 +249,7 @@ next
         card {a\<in>(J - {pick J j}). a < pick J (Suc j)} + card {pick J j}"
     by force
   then have "card {a\<in>(J - {pick J j}). a < pick J (Suc j)} + 1 = card {a\<in>J. a < pick J (Suc j)}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have card_union: "card ({a \<in> (J - {pick J j}). a < pick J (Suc j)} \<union> {pick J j}) =
           card {a \<in> (J - {pick J j}). a < pick J (Suc j)} + card {pick J j}"
       by force
@@ -267,7 +267,7 @@ next
   then have "pick (J - {pick J j}) ((Suc j) - 1) = pick J (Suc j)"
     using 1 by presburger
   then show ?thesis 
-    by (simp add: diff_Suc_1)
+    by \<^marker>\<open>provenance ai\<close> (simp add: diff_Suc_1)
 qed
 
 lemma pick_same_if_less:
@@ -283,7 +283,7 @@ proof -
     using pick_mono
     using assms(2) assms(1) by blast    
   then have "pick J k \<in> J - {pick J j}" using pick_in_set[OF assms(1)]
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have j_in: "pick J j \<in> J" using pick_in_set[OF assms(1)] .
     have k_in: "pick J k \<in> J" using pick_in_set[OF 1] .
     have "pick J k \<noteq> pick J j" using \<open>pick J k < pick J j\<close> by simp
@@ -310,7 +310,7 @@ proof -
   have "pick J k > pick J j" 
     using assms(1) assms(2) pick_mono by blast
   have "pick J k \<in> J - {pick J j}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "pick J k \<in> J" using assms(1) pick_in_set by blast
     moreover have "pick J k \<noteq> pick J j" using \<open>pick J j < pick J k\<close> by simp
     ultimately show ?thesis by blast
@@ -330,7 +330,7 @@ proof -
         card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
     by force
   then have 4: "card {a\<in>(J - {pick J j}). a < pick J k} + 1 = card {a\<in>J. a < pick J k}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have card_union: "card ({a\<in>(J - {pick J j}). a < pick J k} \<union> {pick J j}) =
           card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
       by force
@@ -355,7 +355,7 @@ proof -
     using DL_Missing_Sublist.pick.simps(2) by blast
   have "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
               (LEAST a. a \<in> J \<and> pick J k < a)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have pred_eq: "(\<lambda>a. a \<in> J - {pick J j} \<and> pick J k < a) = (\<lambda>a. a \<in> J \<and> pick J k < a)"
     proof (rule ext, rule iffI)
       fix a
@@ -374,7 +374,7 @@ proof -
       using 3 pred_eq by simp
   qed
   then show "pick (J - {pick J j}) k = pick J (Suc k)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "Suc (k - 1) = k"
       using 4 5 \<open>card {a \<in> J. a < pick J k} = k\<close> by linarith
     hence "pick (J - {pick J j}) k = pick (J - {pick J j}) (Suc (k - 1))"
@@ -408,7 +408,7 @@ proof -
   then have "?j < card {i. i < Suc k \<and> i \<in> I}" 
     by (simp add: psubset_card_mono)
   then have "?j \<le> i" 
-  proof - 
+  proof \<^marker>\<open>provenance ai\<close> - 
     have "{a \<in> I. a < k} = {i. i < k \<and> i \<in> I}"
       by auto
     with assms(2) show ?thesis by simp
@@ -419,17 +419,17 @@ proof -
     have "pick I (Suc i) = pick (I - {pick I i}) i" 
       using pick_suc_diff_set[OF assms(1)] by auto
     have "pick I i = k"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "i = card {a \<in> I. a < k}" using True by simp
       then show ?thesis using 1 by simp
     qed
     with \<open>pick I (Suc i) = pick (I - {pick I i}) i\<close>
-    show ?thesis by simp
+    show ?thesis by \<^marker>\<open>provenance ai\<close> simp
   next
     case False
     then show ?thesis 
       using pick_is_Suc_if_one_removed[of i I ?j] False 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have i_lt: "i < card I \<or> infinite I"
         using assms(1) Suc_lessD by blast
       have j_lt_i: "?j < i"
@@ -484,7 +484,7 @@ proof(cases "k \<in> I")
     have "Suc ?i < card I - card {i. i < Suc k \<and> i \<in> I} + 1" 
       by (simp add: 8)
     then have "Suc ?i < card I - card {i. i < k \<and> i \<in> I}" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have prev: "Suc ?i < card I - card {i. i < Suc k \<and> i \<in> I} + 1"
         by (simp add: 8)
       have subSuck: "{i. i < Suc k \<and> i \<in> I} \<subseteq> I" by auto
@@ -521,7 +521,7 @@ proof(cases "k \<in> I")
       using 7 by presburger
   qed
   have 3: "card {i. i < k \<and> i \<in> I - {i. i < k \<and> i \<in> I}} \<le> i - card {i. i < Suc k \<and> i \<in> I}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have e: "{i. i < k \<and> i \<in> I - {i. i < k \<and> i \<in> I}} = {}"
       by blast
     then show ?thesis
@@ -532,7 +532,7 @@ proof(cases "k \<in> I")
     using pick_is_Suc_if_one_removed'[OF 1 3 2] 
     by blast
   have "card {i. i < Suc k \<and> i \<in> I} = card ({i. i < k \<and> i \<in> I} \<union> {k})" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "{a \<in> I. a < k} = {i. i < k \<and> i \<in> I}"
       by auto
     hence eq: "{i. i < k \<and> i \<in> I} \<union> {k} = {i. i < Suc k \<and> i \<in> I}"
@@ -604,7 +604,7 @@ next
   have "mono ?f" 
     by (simp add: diff_le_mono mono_def)
   have "\<exists>x\<in>I. \<forall>y\<in>I. x \<le> y" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from False obtain x0 where "x0 \<in> I" by blast
     define m where "m = (LEAST x. x \<in> I)"
     have m_in: "m \<in> I" unfolding m_def using LeastI[of "\<lambda>x. x \<in> I" x0] \<open>x0 \<in> I\<close> by blast
@@ -649,7 +649,7 @@ next
       using \<open>i < card I \<or> infinite I\<close> diff_less_mono pick_in_set by presburger
     have 6:"(LEAST a. a\<in>((\<lambda>i. i - k) ` I) \<and> a > pick I i - k) = 
         (LEAST a. a\<in>((\<lambda>i. i - k) ` ( {x. x \<in> I \<and> x > pick I i})))"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have feq: "(\<lambda>a. a \<in> (\<lambda>i. i - k) ` I \<and> a > pick I i - k) =
                  (\<lambda>a. a \<in> (\<lambda>i. i - k) ` {x \<in> I. x > pick I i})"
       proof (intro ext iffI)
@@ -675,7 +675,7 @@ next
     proof(cases "{x. x \<in> I \<and> x > pick I i} = {}")
       case True
       then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "pick I i < pick I (Suc i)"
           using Suc.prems lessI pick_mono_inf pick_mono_le by presburger
         moreover have "pick I (Suc i) \<in> I"
@@ -689,7 +689,7 @@ next
       case False
       have 2: "\<exists>x\<in>{x. x \<in> I \<and> x > pick I i}. \<forall>y\<in>{x. x \<in> I \<and> x > pick I i}. x \<le> y" 
         using  Collect_mem_eq False empty_Collect_eq exists_least_iff le_simps(2) not_less_eq
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from False obtain x0 where x0: "x0 \<in> {x. x \<in> I \<and> x > pick I i}"
           by blast
         define m where "m = (LEAST x. x \<in> I \<and> x > pick I i)"
@@ -746,7 +746,7 @@ proof -
     have "i < card I" 
       using assms(1) False by auto
     have "card (I - {i. i < k \<and> i \<in> I}) = card I - card {i. i < k \<and> i \<in> I}" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have subset1: "{i. i < k \<and> i \<in> I} \<subseteq> I" by blast
       have subset2: "{i. i < k \<and> i \<in> I} \<subseteq> {0..<k}" by auto
       have fin: "finite {i. i < k \<and> i \<in> I}"
@@ -781,7 +781,7 @@ next
   proof(cases "b + n \<in> I")
     case True
     have "n \<in> (\<lambda>i. i - b) ` (I - {0..<b})" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "b + n \<notin> {0..<b}"
         by simp
       with True have mem: "b + n \<in> I - {0..<b}"
@@ -857,7 +857,7 @@ proof
   then have 16:"card {i. i < nr1 + nr2  \<and> i \<in> I} = 
         card {i. i < nr1 \<and> i \<in> I} + card {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I}"
     using 1 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have fin_all: "finite {i. i < nr1 + nr2 \<and> i \<in> I}"
       by simp
     have fin1: "finite {i. i < nr1 \<and> i \<in> I}"
@@ -892,7 +892,7 @@ proof
     using dim_submatrix(2) assms(2) by blast
   then show 21:"dim_col (submatrix (A @\<^sub>r B) I J) =
     dim_col (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have Acarr: "submatrix A I J \<in> carrier_mat (dim_row (submatrix A I J)) (card {j. j < n \<and> j \<in> J})"
       using 20 by (intro carrier_matI) auto
     have Bcarr: "submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J \<in>
@@ -908,7 +908,7 @@ proof
   assume asmi: "i < dim_row (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
   assume asmj: "j < dim_col (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J)"
   have 25:"submatrix (A @\<^sub>r B) I J $$ (i, j) = (A @\<^sub>r B) $$ (pick I i, pick J j)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have i_lt: "i < card {i. i < dim_row (A @\<^sub>r B) \<and> i \<in> I}"
       using asmi unfolding 22[symmetric] dim_submatrix(1) .
     have j_lt: "j < card {j. j < dim_col (A @\<^sub>r B) \<and> j \<in> J}"
@@ -922,7 +922,7 @@ proof
     case True
     have 24:"(submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i, j) = 
           (submatrix A I J) $$ (i, j)" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       let ?SA = "submatrix A I J"
       let ?SB = "submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J"
       have SA_carr: "?SA \<in> carrier_mat (dim_row ?SA) (dim_col ?SA)"
@@ -943,7 +943,7 @@ proof
         using L R row_eq by simp
     qed
     have 26:"(submatrix A I J) $$ (i, j) = A $$ (pick I i, pick J j)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have j_less: "j < dim_col (submatrix A I J)"
         using asmj 21 19 20 by simp
       have i_card: "i < card {k. k < dim_row A \<and> k \<in> I}"
@@ -957,7 +957,7 @@ proof
       using True dim_submatrix(1) pick_le assms(1) 
       by (simp add: \<open>dim_row (submatrix A I J) = card {i. i < nr1 \<and> i \<in> I}\<close>)
     have "dim_col (A @\<^sub>r B) = dim_col A" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dim_col A = n"
         using carrier_matD(2)[OF A] .
       then show "dim_col (A @\<^sub>r B) = dim_col A"
@@ -969,7 +969,7 @@ proof
       using pick_le by blast
     then have "(A @\<^sub>r B) $$ (pick I i, pick J j) = A $$ (pick I i, pick J j)"
       using index_row(1) append_rows_nth(1)[OF A B 2]
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dimA_row: "dim_row A = nr1"
         using carrier_matD(1)[OF A] by blast
       have dimA_col: "dim_col A = n"
@@ -1000,12 +1000,12 @@ proof
                carrier_mat (card {i. i \<ge> nr1 \<and> i < nr1 + nr2 \<and> i \<in> I}) (card {j. j < n \<and> j \<in> J})"
       using 23 27 by blast
     have 5:"i < card {i. i < nr1 \<and> i \<in> I} + card {i. nr1 \<le> i \<and> i < nr1 + nr2 \<and> i \<in> I}"
-      using asmi 17 18 27 by simp
+      using asmi 17 18 27 by \<^marker>\<open>provenance ai\<close> simp
     have 6:"card {i. i < nr1 \<and> i \<in> I} \<le> i"  
       using False 18 by linarith
     have 30:"(submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i, j) =
           (submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) $$ (i - card {i. i < nr1 \<and> i \<in> I}, j)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       let ?SA = "submatrix A I J"
       let ?SB = "submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J"
       let ?c = "card {i. i < nr1 \<and> i \<in> I}"
@@ -1033,7 +1033,7 @@ proof
     have 32:"(submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) 
               $$ (i - card {i. i < nr1 \<and> i \<in> I}, j) = 
           B $$ (pick ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) (i - card {i. i < nr1 \<and> i \<in> I}), pick J j)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dimB_row: "dim_row B = nr2"
         using carrier_matD(1)[OF assms(2)] .
       have dimB_col: "dim_col B = n"
@@ -1061,7 +1061,7 @@ proof
     have "i \<ge> card {i. i < nr1 \<and> i \<in> I}" 
       using "6" by fastforce
     then have "pick I i \<ge> pick I (card {i. i < nr1 \<and> i \<in> I})" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       show "pick I i \<ge> pick I (card {i. i < nr1 \<and> i \<in> I})"
       proof (cases "card {i. i < nr1 \<and> i \<in> I} = i")
         case True
@@ -1098,9 +1098,9 @@ proof
     next
       case False
       have subset_I: "{i. i < nr1 \<and> i \<in> I} \<subseteq> I"
-        by auto
+        by \<^marker>\<open>provenance ai\<close> auto
       have "card {i. i < nr1 \<and> i \<in> I} < card I"
-      proof (rule ccontr)
+      proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
         assume "\<not> card {i. i < nr1 \<and> i \<in> I} < card I"
         then have le: "card I \<le> card {i. i < nr1 \<and> i \<in> I}"
           by linarith
@@ -1138,9 +1138,9 @@ proof
       using pick_le by blast
     then have 9:"(A @\<^sub>r B) $$ (pick I i, pick J j) =  B $$ (pick I i - nr1, pick J j)"
       using append_rows_nth(2)[OF A B 7 8]
-      using SNF_Missing_Lemmas.append_rows_nth[OF A B 8] "7" carrier_matD(1)[OF A] not_le by simp
+      using SNF_Missing_Lemmas.append_rows_nth[OF A B 8] "7" carrier_matD(1)[OF A] not_le by \<^marker>\<open>provenance ai\<close> simp
     have "i < card I \<or> infinite I" 
-proof (cases "finite I")
+proof \<^marker>\<open>provenance ai\<close> (cases "finite I")
   case True
   have eq: "dim_row (submatrix A I J @\<^sub>r submatrix B ((\<lambda>i. i - nr1) ` (I - {0..<nr1})) J) =
              card ({0..<nr1 + nr2} \<inter> I)"
@@ -1170,7 +1170,7 @@ lemma submatrix_inter_rows':
   shows "submatrix A I J = submatrix A (I \<inter> {0..<dim_row A}) J"
 proof
   show 1:"dim_row (submatrix A I J) = dim_row (submatrix A (I \<inter> {0..<dim_row A}) J)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have eq_set: "{i. i < dim_row A \<and> i \<in> I} = {i. i < dim_row A \<and> i \<in> I \<inter> {0..<dim_row A}}"
     by auto
   have "dim_row (submatrix A I J) = card {i. i < dim_row A \<and> i \<in> I}"
@@ -1182,13 +1182,13 @@ proof
   finally show ?thesis .
   qed
   show "dim_col (submatrix A I J) = dim_col (submatrix A (I \<inter> {0..<dim_row A}) J)" 
-    by (simp add: dim_submatrix(2))
+    by \<^marker>\<open>provenance ai\<close> (simp add: dim_submatrix(2))
   fix i j
   assume asmi: "i < dim_row (submatrix A (I \<inter> {0..<dim_row A}) J)" 
   assume asmj: "j < dim_col (submatrix A (I \<inter> {0..<dim_row A}) J)" 
   have 3:"submatrix A I J $$ (i, j) = A $$ (pick I i, pick J j)"
     using submatrix_index
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have i': "i < dim_row (submatrix A I J)"
       using asmi 1 by simp
     have eq_col: "dim_col (submatrix A I J) = card {j. j < dim_col A \<and> j \<in> J}"
@@ -1207,14 +1207,14 @@ proof
   have 2:"{a. a < dim_row A \<and> a \<in> I} = (I \<inter> {0..<dim_row A})" 
     by fastforce
   have "i < dim_row (submatrix A I J)"
-      using 1 asmi by simp
+      using 1 asmi by \<^marker>\<open>provenance ai\<close> simp
     then have "i < card {a. a < dim_row A \<and> a \<in> I}"
-      using dim_submatrix(1)[of A I J] by simp
+      using dim_submatrix(1)[of A I J] by \<^marker>\<open>provenance ai\<close> simp
   then have "pick (I  \<inter> {0..<dim_row A}) i= pick I i"
     using pick_reduce_set[of i "dim_row A" I] 2
     by presburger
   then show " submatrix A I J $$ (i, j) = submatrix A (I \<inter> {0..<dim_row A}) J $$ (i, j)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume pick_eq: "pick (I \<inter> {0..<dim_row A}) i = pick I i"
     have ci: "i < card {a. a < dim_row A \<and> a \<in> I \<inter> {0..<dim_row A}}"
       using asmi dim_submatrix(1)[of A "I \<inter> {0..<dim_row A}" J] by simp
@@ -1256,7 +1256,7 @@ proof
     by (meson carrier_append_rows carrier_matD(2) carrier_matI mat_of_rows_carrier(1))
   then have 10:"dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j) =
       dim_col B - 1" using mat_delete_dim(2) 
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   have 11:"dim_col (submatrix A I (J - {pick J j})) = 
            card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
     using dim_submatrix(2)[of A I "J - {pick J j}"] 
@@ -1278,7 +1278,7 @@ proof
     by force
   then show 14:"dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j) =
              dim_col (submatrix A I (J - {pick J j}))" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j) = dim_col B - 1"
       using 10 by simp
     also have "\<dots> = card {i. i < dim_col A \<and> i \<in> J} - 1"
@@ -1297,7 +1297,7 @@ proof
   have asmk': "k < dim_col (mat_delete (B @\<^sub>r mat_of_rows (dim_col B) [b]) (dim_row B) j)" 
     using 14 asmk by presburger
   have k_less_card:"k < card J \<or> infinite J" 
-  proof (cases "infinite J")
+  proof \<^marker>\<open>provenance ai\<close> (cases "infinite J")
     case True
     then show ?thesis by simp
   next
@@ -1314,7 +1314,7 @@ proof
     finally show ?thesis by simp
   qed
   have 15: "(B @\<^sub>r mat_of_rows (dim_col B) [b]) \<in> carrier_mat (dim_row B + 1) (dim_col B)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have b_mat: "mat_of_rows (dim_col B) [b] \<in> carrier_mat 1 (dim_col B)"
       using mat_of_rows_carrier(1)[of "dim_col B" "[b]"] by simp
     have B_mat: "B \<in> carrier_mat (dim_row B) (dim_col B)"
@@ -1333,7 +1333,7 @@ proof
     have 1:"j < Suc (dim_col B - 1)" 
       using assms(4) by linarith 
     have 2: "i < dim_row B" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dim_row B = card {k. k < dim_row A \<and> k \<in> I}"
         by (simp add: assms(3) dim_submatrix(1))
       also have "\<dots> = dim_row (submatrix A I (J - {pick J j}))"
@@ -1344,7 +1344,7 @@ proof
     have 3: "k < dim_col B - 1" 
       using 14 10 asmk by presburger
     have 4:"B @\<^sub>r mat_of_rows (dim_col B) [b] \<in> carrier_mat (Suc (dim_row B)) (Suc (dim_col B - 1))"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dim_col B \<noteq> 0"
         using False by simp
       hence "Suc (dim_col B - 1) = dim_col B"
@@ -1364,7 +1364,7 @@ proof
       using 16 by presburger
     have "(B @\<^sub>r mat_of_rows (dim_col B) [b]) $$ (i, insert_index j k) = 
         B $$ (i, insert_index j k)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have Bcarr: "B \<in> carrier_mat (dim_row B) (dim_col B)"
         by (rule carrier_matI) simp_all
       have Ccarr: "mat_of_rows (dim_col B) [b] \<in> carrier_mat 1 (dim_col B)"
@@ -1391,7 +1391,7 @@ proof
                   B $$ (i, insert_index j k)"
       using 16 18 by presburger
     obtain i' where i':"row A i' = row (submatrix A I UNIV) i \<and> i' < dim_row A \<and> i' = pick I i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have eq1: "dim_row (submatrix A I (J - {pick J j})) = card {k. k < dim_row A \<and> k \<in> I}"
         using dim_submatrix(1) by blast
       have eq2: "dim_row (submatrix A I UNIV) = card {k. k < dim_row A \<and> k \<in> I}"
@@ -1409,7 +1409,7 @@ proof
         using wit by (rule that)
     qed
     have 19:"insert_index j k < dim_col B" 
-    proof (cases "k < j")
+    proof \<^marker>\<open>provenance ai\<close> (cases "k < j")
       case True
       then have "insert_index j k = k"
         by (simp add: insert_index_def)
@@ -1433,7 +1433,7 @@ proof
                                          k1 < dim_col A \<and> 
                                          k1 = pick J (insert_index j k)" 
       using asmk  pick_le col_submatrix_UNIV 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have lt_card: "insert_index j k < card {i. i < dim_col A \<and> i \<in> J}"
           using 19 12 by force
         have col_eq: "col (submatrix A UNIV J) (insert_index j k) = col A (pick J (insert_index j k))"
@@ -1448,7 +1448,7 @@ proof
                                     k2 < dim_col A \<and> 
                                     k2 = pick (J - {pick J j}) k"
       using asmk dim_submatrix(2) pick_le col_submatrix_UNIV 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dimIJ: "dim_col (submatrix A I (J - {pick J j})) =
                    card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
         using dim_submatrix(2) by blast
@@ -1471,7 +1471,7 @@ proof
       using assms(3) submatrix_split2 by blast
     have "B $$ (i, insert_index j k) = A $$ (pick I i, pick J (insert_index j k))"
       apply(simp only: assms(3))
-      proof (rule submatrix_index)
+      proof \<^marker>\<open>provenance ai\<close> (rule submatrix_index)
         show "i < card {k. k < dim_row A \<and> k \<in> I}"
           using asmi by (simp add: dim_submatrix(1))
         show "insert_index j k < card {k. k < dim_col A \<and> k \<in> J}"
@@ -1480,7 +1480,7 @@ proof
     then have 29:"B $$ (i, insert_index j k) = A $$ (i', k1)" 
       using i' k1 by blast
     have 30:"submatrix A I (J - {pick J j}) $$ (i, k) = A $$ (i', k2)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have ic: "i < card {i. i < dim_row A \<and> i \<in> I}"
         using asmi by (simp add: dim_submatrix(1))
       have kc: "k < card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
@@ -1498,7 +1498,7 @@ proof
         unfolding insert_index_def 
         using True by simp
       have "pick J k \<in> J - {pick J j}" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have j_bound: "j < card J \<or> infinite J"
         proof (cases "infinite J")
           case True
@@ -1529,9 +1529,9 @@ proof
       then have 21:"pick (J - {pick J j}) (card {a\<in>(J - {pick J j}). a < pick J k}) = pick J k" 
         using pick_card_in_set by presburger
       have 20: "card {a\<in>J. a < pick J k} = k" 
-        using card_pick k_less_card by blast
+        using card_pick k_less_card by \<^marker>\<open>provenance ai\<close> blast
       have "pick J k < pick J j" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "j < card J \<or> infinite J"
         proof (cases "infinite J")
           case True
@@ -1563,9 +1563,9 @@ proof
         have "j < dim_col B - 1"
           using "3" True by blast
         then have suc_j: "Suc j < dim_col B"
-          by linarith
+          by \<^marker>\<open>provenance ai\<close> linarith
         have pre: "Suc j < card J \<or> infinite J"
-        proof (cases "finite J")
+        proof \<^marker>\<open>provenance ai\<close> (cases "finite J")
           case True
           have subset: "{i. i < dim_col A \<and> i \<in> J} \<subseteq> J"
             using "9" by blast
@@ -1585,7 +1585,7 @@ proof
         then show ?thesis
           using \<open>pick J (insert_index j k) = pick J (Suc k)\<close>
                 \<open>pick J (Suc k) = pick J (Suc j)\<close> True
-          by simp
+          by \<^marker>\<open>provenance ai\<close> simp
       next
         case False
         have "k > j" using `\<not> k < j` False 
@@ -1593,7 +1593,7 @@ proof
         then have "pick J k > pick J j" 
           using k_less_card  pick_mono_inf pick_mono_le by presburger 
         then have "pick J k \<in> J - {pick J j}" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
   have "pick J k \<in> J"
     using pick_in_set[OF k_less_card] by blast
   moreover have "pick J k \<noteq> pick J j"
@@ -1604,7 +1604,7 @@ qed
           using pick_card_in_set 
           by presburger
         have 22:"{a\<in>(J - {pick J j}). a < pick J k} \<union> {pick J j} = {a\<in>J. a < pick J k}"
-          proof (rule subset_antisym)
+          proof \<^marker>\<open>provenance ai\<close> (rule subset_antisym)
             show "{a \<in> J - {pick J j}. a < pick J k} \<union> {pick J j} \<subseteq> {a \<in> J. a < pick J k}"
             proof (rule subsetI)
               fix x
@@ -1656,7 +1656,7 @@ qed
               card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
           by force
         then have 24:"card {a\<in>(J - {pick J j}). a < pick J k} + 1 = card {a\<in>J. a < pick J k}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have card_union: "card ({a \<in> (J - {pick J j}). a < pick J k} \<union> {pick J j}) =
                 card {a \<in> (J - {pick J j}). a < pick J k} + card {pick J j}"
             by force
@@ -1678,7 +1678,7 @@ qed
           using DL_Missing_Sublist.pick.simps(2) by blast
         have "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
               (LEAST a. a \<in> J \<and> pick J k < a)" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have pred_eq: "(\<lambda>a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) =
                            (\<lambda>a. a \<in> J \<and> pick J k < a)"
             proof (rule ext, rule iffI)
@@ -1702,7 +1702,7 @@ qed
               using arg_cong[where f = Least, OF pred_eq] by simp
           qed
         then have "pick (J - {pick J j}) k = pick J (Suc k)" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have hk: "k = Suc (k - 1)"
             using 24 26 by arith
           have "pick (J - {pick J j}) k = pick (J - {pick J j}) (Suc (k - 1))"
@@ -1736,7 +1736,7 @@ lemma mat_delete_is_submatrix:
   shows "mat_delete B i j =  submatrix A (I - {pick I i})  (J - {pick J j})"
 proof
   have 14:"dim_col (mat_delete B i j) = dim_col B - 1" 
-    using mat_delete_dim(2) by simp
+    using mat_delete_dim(2) by \<^marker>\<open>provenance ai\<close> simp
   have 15:"dim_col (submatrix A (I - {pick I i}) (J - {pick J j})) = 
         card {i. i < dim_col A \<and> i \<in> (J - {pick J j})}"
     using dim_submatrix(2) by blast
@@ -1758,7 +1758,7 @@ proof
   show 21: "dim_col (mat_delete B i j) =  dim_col (submatrix A (I - {pick I i})  (J - {pick J j}))" 
     using 13 14 15 10 by presburger
   have 19:"dim_row (mat_delete B i j) = dim_row B - 1"
-    by (simp add: mat_delete_dim(1))
+    by \<^marker>\<open>provenance ai\<close> (simp add: mat_delete_dim(1))
   have 20:"dim_row (submatrix A (I - {pick I i}) (J - {pick J j})) = 
         card {k. k < dim_row A \<and> k \<in> (I - {pick I i})}" 
     using dim_submatrix(1) by blast
@@ -1788,7 +1788,7 @@ proof
   have asmk': "k < dim_col (mat_delete B i j)" 
     using 21 asmk by presburger
   have k_less_card: "k < card J \<or> infinite J" 
-  proof (cases "infinite J")
+  proof \<^marker>\<open>provenance ai\<close> (cases "infinite J")
     case True
     then show ?thesis by simp
   next
@@ -1803,7 +1803,7 @@ proof
     with card_le show ?thesis by simp
   qed
   have t_less_card: "t < card I \<or> infinite I"
-  proof (cases "infinite I")
+  proof \<^marker>\<open>provenance ai\<close> (cases "infinite I")
     case True
     then show ?thesis by simp
   next
@@ -1834,7 +1834,7 @@ proof
     have 3: "k < dim_col B - 1" 
       using 14 asmk' by presburger
     have 4:"B \<in> carrier_mat (Suc (dim_row B - 1)) (Suc (dim_col B - 1))" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dim_row_lt: "t < dim_row B - 1"
         using 19 asmi' by simp
       have dim_row_pos: "0 < dim_row B"
@@ -1860,12 +1860,12 @@ proof
       using mat_delete_index'[OF 4 2 1 5 3] by presburger
     have 23: "insert_index j k < dim_col B" 
       using "3" carrier_matD(2)[OF "4"]
-      by (simp add: insert_index_def, arith)
+      by \<^marker>\<open>provenance ai\<close> (simp add: insert_index_def, arith)
     obtain k1 where k1: "col A k1 = col (submatrix A UNIV J) (insert_index j k) \<and> 
                          k1 < dim_col A \<and>
                          k1 = pick J (insert_index j k)" 
       using asmk pick_le col_submatrix_UNIV 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have card_lt: "insert_index j k < card {i. i < dim_col A \<and> i \<in> J}"
     using 23 10 by simp
   have col_eq: "col (submatrix A UNIV J) (insert_index j k) = col A (pick J (insert_index j k))"
@@ -1882,7 +1882,7 @@ qed
                          k2 < dim_col A \<and> 
                          k2 = pick (J - {pick J j}) k"
       using asmk dim_submatrix(2) pick_le col_submatrix_UNIV 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have kd: "dim_col (submatrix A (I - {pick I i}) (J - {pick J j}))
               = card {a. a < dim_col A \<and> a \<in> (J - {pick J j})}"
         using dim_submatrix(2) by blast
@@ -1901,7 +1901,7 @@ qed
         using that by blast
     qed
     have 24:"insert_index i t < dim_row B" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dimB: "dim_row B = Suc (dim_row B - 1)"
         using 4 by (rule carrier_matD(1))
       have le1: "insert_index i t \<le> Suc t"
@@ -1915,7 +1915,7 @@ qed
                          t1 < dim_row A \<and> 
                          t1 = pick I (insert_index i t)" 
       using asmi pick_le row_submatrix_UNIV 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have card_bound: "insert_index i t < card {k. k < dim_row A \<and> k \<in> I}"
       proof -
         have "card {k. k < dim_row A \<and> k \<in> I} = dim_row B"
@@ -1942,7 +1942,7 @@ qed
                          t2 < dim_row A \<and> 
                          t2 = pick (I - {pick I i}) t"
       using asmi dim_submatrix(1) pick_le row_submatrix_UNIV 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have tbound: "t < card {a. a < dim_row A \<and> a \<in> (I - {pick I i})}" 
         using asmi by (simp add: dim_submatrix(1))
       have "row (submatrix A (I - {pick I i}) UNIV) t = row A (pick (I - {pick I i}) t)"
@@ -1961,7 +1961,7 @@ qed
       using assms(2) submatrix_split2 by blast
     have 25:"B $$ (insert_index i t, insert_index j k) = 
           A $$ (pick I (insert_index i t), pick J (insert_index j k))"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
   have i_dim: "insert_index i t < dim_row (submatrix A I J)"
     using 24 assms(2) by simp
   have i_card: "insert_index i t < card {ia. ia < dim_row A \<and> ia \<in> I}"
@@ -1980,7 +1980,7 @@ qed
     have "B $$ (insert_index i t, insert_index j k) = A $$ (t1, k1)" 
       using 25 k1 t1 by blast
     have 47: "submatrix A (I - {pick I i}) (J - {pick J j}) $$ (t, k) = A $$ (t2, k2)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have t_card: "t < card {a. a < dim_row A \<and> a \<in> (I - {pick I i})}"
         using asmi by (simp add: dim_submatrix(1))
       have k_card: "k < card {b. b < dim_col A \<and> b \<in> (J - {pick J j})}"
@@ -2002,7 +2002,7 @@ qed
         unfolding insert_index_def 
         using True by simp
       have "pick J k \<in> J - {pick J j}"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have j_bound: "j < card J \<or> infinite J"
         proof (cases "finite J")
           case True
@@ -2028,9 +2028,9 @@ qed
         using pick_card_in_set 
         by presburger
       have 26: "card {a\<in>J. a < pick J k} = k" 
-        using card_pick k_less_card by blast
+        using card_pick k_less_card by \<^marker>\<open>provenance ai\<close> blast
       have "pick J k < pick J j" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "j < card J \<or> infinite J"
         proof (cases "infinite J")
           case True
@@ -2062,9 +2062,9 @@ qed
         have "j < dim_col B - 1"
           using "3" True by blast
         then have j_lt: "Suc j < dim_col B"
-          by presburger
+          by \<^marker>\<open>provenance ai\<close> presburger
         have "Suc j < card J \<or> infinite J"
-        proof(cases "infinite J")
+        proof \<^marker>\<open>provenance ai\<close>(cases "infinite J")
           case True
           then show ?thesis by simp
         next
@@ -2075,13 +2075,13 @@ qed
           then show ?thesis using 10 j_lt by simp
         qed
         then have eq1: "pick J (Suc j) = pick (J - {pick J j}) j"
-          using pick_suc_diff_set by blast
+          using pick_suc_diff_set by \<^marker>\<open>provenance ai\<close> blast
         have "pick J (insert_index j k) = pick J (Suc j)"
-          using \<open>pick J (insert_index j k) = pick J (Suc k)\<close> \<open>pick J (Suc k) = pick J (Suc j)\<close> by simp
+          using \<open>pick J (insert_index j k) = pick J (Suc k)\<close> \<open>pick J (Suc k) = pick J (Suc j)\<close> by \<^marker>\<open>provenance ai\<close> simp
         also have "\<dots> = pick (J - {pick J j}) j"
-          using eq1 by simp
+          using eq1 by \<^marker>\<open>provenance ai\<close> simp
         also have "\<dots> = pick (J - {pick J j}) k"
-          using True by simp
+          using True by \<^marker>\<open>provenance ai\<close> simp
         finally show ?thesis .
       next
         case False
@@ -2090,7 +2090,7 @@ qed
         then have 30: "pick J k > pick J j"
           using k_less_card pick_mono_inf pick_mono_le by presburger
         have "pick J k \<in> J - {pick J j}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "pick J k \<in> J"
             using pick_in_set[OF k_less_card] by blast
           moreover have "pick J k \<noteq> pick J j"
@@ -2112,7 +2112,7 @@ qed
               card {a\<in>(J - {pick J j}). a < pick J k} + card {pick J j}"
           by force
         then have 31:"card {a\<in>(J - {pick J j}). a < pick J k} + 1 = card {a\<in>J. a < pick J k}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have fin1: "finite {a \<in> (J - {pick J j}). a < pick J k}"
           proof (rule finite_subset[of _ "{0..<pick J k}"])
             show "{a \<in> (J - {pick J j}). a < pick J k} \<subseteq> {0..<pick J k}" by auto
@@ -2139,7 +2139,7 @@ qed
           using DL_Missing_Sublist.pick.simps(2) by blast
         have "(LEAST a. a \<in> (J - {pick J j}) \<and> pick (J - {pick J j}) (k - 1) < a) = 
               (LEAST a. a \<in> J \<and> pick J k < a)" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have pred_eq: "\<And>a. (a \<in> J - {pick J j} \<and> pick (J - {pick J j}) (k - 1) < a) =
                       (a \<in> J \<and> pick J k < a)"
           proof -
@@ -2163,7 +2163,7 @@ qed
                 (LEAST a. a \<in> J \<and> pick J k < a)"
           .
         have "pick (J - {pick J j}) k = pick J (Suc k)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have k_pos: "0 < k"
             using \<open>k > j\<close> by linarith
           have Suc_eq: "Suc (k - 1) = k"
@@ -2191,7 +2191,7 @@ qed
         unfolding insert_index_def 
         using True by simp
       have i_bound: "i < card I \<or> infinite I"
-      proof (cases "infinite I")
+      proof \<^marker>\<open>provenance ai\<close> (cases "infinite I")
         case True
         then show ?thesis by blast
       next
@@ -2204,7 +2204,7 @@ qed
         then show ?thesis by blast
       qed
       have "pick I t \<in> I"
-      proof (cases "infinite I")
+      proof \<^marker>\<open>provenance ai\<close> (cases "infinite I")
         case True
         then show ?thesis using pick_in_set_inf by blast
       next
@@ -2213,15 +2213,15 @@ qed
         then show ?thesis using pick_in_set_le by blast
       qed
       moreover have "pick I t < pick I i"
-        using pick_mono True i_bound by blast
+        using pick_mono True i_bound by \<^marker>\<open>provenance ai\<close> blast
       ultimately have "pick I t \<in> I - {pick I i}"
-        by (auto simp: DiffI less_imp_neq)
+        by \<^marker>\<open>provenance ai\<close> (auto simp: DiffI less_imp_neq)
       then have 35: "pick (I - {pick I i}) (card {a\<in>(I - {pick I i}). a < pick I t}) = pick I t" 
         using pick_card_in_set by presburger
       have 9:"card {a\<in>I. a < pick I t} = t" 
-        using card_pick t_less_card by blast
+        using card_pick t_less_card by \<^marker>\<open>provenance ai\<close> blast
       have "pick I t < pick I i" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have i_bound: "i < card I \<or> infinite I"
         proof (rule ccontr)
           assume "\<not> (i < card I \<or> infinite I)"
@@ -2251,9 +2251,9 @@ qed
         have "i < dim_row B - 1" 
           using "5" True by blast
         then have suc_i_lt: "Suc i < dim_row B"
-          by presburger
+          by \<^marker>\<open>provenance ai\<close> presburger
         have "Suc i < card I \<or> infinite I"
-        proof (cases "infinite I")
+        proof \<^marker>\<open>provenance ai\<close> (cases "infinite I")
           case True
           then show ?thesis by simp
         next
@@ -2265,10 +2265,10 @@ qed
           then show ?thesis by blast
         qed
         then have "pick I (Suc i) = pick (I - {pick I i}) i"
-          using pick_suc_diff_set by blast
+          using pick_suc_diff_set by \<^marker>\<open>provenance ai\<close> blast
         then show ?thesis
           unfolding insert_index_def
-          using True by simp
+          using True by \<^marker>\<open>provenance ai\<close> simp
       next
         case False
         have "t > i" using `\<not> t < i` False 
@@ -2276,7 +2276,7 @@ qed
         then have 39: "pick I t > pick I i"
           using pick_mono_inf pick_mono_le t_less_card by presburger
         have "pick I t \<in> I - {pick I i}" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "pick I t \<in> I"
             using pick_in_set[OF t_less_card] .
           moreover have "pick I t \<noteq> pick I i"
@@ -2288,7 +2288,7 @@ qed
           using pick_card_in_set 
           by presburger
         have 36:"{a\<in>(I - {pick I i}). a < pick I t} \<union> {pick I i} = {a\<in>I. a < pick I t}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have i_less_card: "i < card I \<or> infinite I"
           proof (cases "finite I")
             case True
@@ -2339,7 +2339,7 @@ qed
               card {a\<in>(I - {pick I i}). a < pick I t} + card {pick I i}"
           by force
         then have 40: "card {a\<in>(I - {pick I i}). a < pick I t} + 1 = card {a\<in>I. a < pick I t}"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have fin1: "finite {a \<in> (I - {pick I i}). a < pick I t}"
             proof -
               have "{a \<in> (I - {pick I i}). a < pick I t} \<subseteq> {0..<pick I t}"
@@ -2368,7 +2368,7 @@ qed
           using DL_Missing_Sublist.pick.simps(2) by blast
         have "(LEAST a. a \<in> (I - {pick I i}) \<and> pick (I - {pick I i}) (t - 1) < a) = 
               (LEAST a. a \<in> I \<and> pick I t < a)" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "(\<lambda>a. a \<in> I - {pick I i} \<and> pick (I - {pick I i}) (t - 1) < a) =
                 (\<lambda>a. a \<in> I \<and> pick I t < a)"
           proof (rule ext)
@@ -2387,7 +2387,7 @@ qed
             by (rule arg_cong)
         qed
         then have "pick (I - {pick I i}) t = pick I (Suc t)" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have pt_eq: "(\<lambda>a. a \<in> (I - {pick I i}) \<and> pick I t < a) = (\<lambda>a. a \<in> I \<and> pick I t < a)"
             proof (rule ext)
               fix a
@@ -2458,14 +2458,14 @@ proof
   assume asmj: "j < dim_col (mat_of_rows (card ({0..<n} \<inter> J)) 
                  [vec_of_list (nths (list_of_vec b) J)])"
   have "i = 0" 
-    using asmi mat_of_rows_carrier(2) by simp
+    using asmi mat_of_rows_carrier(2) by \<^marker>\<open>provenance ai\<close> simp
   have "j < (card ({0..<n} \<inter> J))" 
     using 4 2 5 asmj by presburger
   have "row (submatrix (mat_of_rows n [b]) {0} J) 0 = col (submatrix (mat_of_rows n [b]) {0} J)\<^sup>T 0" 
     by (simp add: 6)
   have 8: "mat_of_rows (card ({0..<n} \<inter> J)) [vec_of_list (nths (list_of_vec b) J)] $$ (i, j) =
        vec_of_list (nths (list_of_vec b) J) $ j"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
     have "i < length [vec_of_list (nths (list_of_vec b) J)]"
       using \<open>i = 0\<close> by simp
     from mat_of_rows_index[OF this \<open>j < card ({0..<n} \<inter> J)\<close>]
@@ -2477,7 +2477,7 @@ proof -
   have 10: "vec_of_list (nths (list_of_vec b) J) $ j = b $ (pick J j)" 
   proof -
     have f1: "card ({0..<n} \<inter> J) = card {na. na < n \<and> na \<in> J}"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "card ({0..<n} \<inter> J) = card {j. j < dim_col (mat_of_rows n [b]) \<and> j \<in> J}"
         using 4 by simp
       also have "... = card {na. na < n \<and> na \<in> J}"
@@ -2487,13 +2487,13 @@ proof -
     have f2: "j < card ({0..<n} \<inter> J)"
       using \<open>j < card ({0..<n} \<inter> J)\<close> by fastforce
     have "dim_vec b = n"
-      using assms by (rule carrier_vecD)
+      using assms by \<^marker>\<open>provenance ai\<close> (rule carrier_vecD)
     then show ?thesis
       using f2 f1 by (simp add: list_of_vec_index nth_nths)
   qed
   have 9: "submatrix (mat_of_rows n [b]) {0} J $$ (i, j) = 
         (mat_of_rows n [b]) $$ (pick {0} i, pick J j)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have card_row: "card {i. i < dim_row (mat_of_rows n [b]) \<and> i \<in> {0}} = 1"
       using 1 6 by linarith
     have i_lt: "i < card {i. i < dim_row (mat_of_rows n [b]) \<and> i \<in> {0}}"
@@ -2504,7 +2504,7 @@ proof -
       using submatrix_index[OF i_lt j_lt] .
   qed
   have "(mat_of_rows n [b]) $$ (pick {0} i, pick J j) = b $ (pick J j)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have pick0: "pick {0} i = 0"
     proof -
       have "0 < card {0::nat} \<or> infinite {0::nat}"
@@ -2533,7 +2533,7 @@ lemma only_one_nonzero_is_sum:
   assumes "a \<in> S"
   assumes "\<forall> x \<in> S. x \<noteq> a \<longrightarrow> f x = 0"
   shows "sum f S = f a" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "sum f S = f a + sum f (S - {a})"
     using sum.remove[OF assms(1) assms(2)] by simp
   also have "sum f (S - {a}) = 0"
@@ -2556,7 +2556,7 @@ lemma row_apend_last_row:
   assumes "b \<in> carrier_vec nc" 
   assumes "B = A @\<^sub>r mat_of_rows nc [b]"
   shows "row B nr = b" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have C: "mat_of_rows nc [b] \<in> carrier_mat 1 nc"
     by (rule carrier_matI) simp_all
   show ?thesis
@@ -2592,7 +2592,7 @@ proof rule
       have 24: "row ?A' nr = unit_vec n i" 
         using append_rows_nth(2)[OF A 1] mat_of_rows_row by simp 
       have 2: "B \<in> carrier_mat (dim_row B) (dim_row B)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have eq: "dim_col B = dim_row B" using False by auto
         show "B \<in> carrier_mat (dim_row B) (dim_row B)"
           by (intro carrier_matI) (simp_all add: eq)
@@ -2607,7 +2607,7 @@ proof rule
         have 15: "dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) = nr + 1"
           by (meson "1" assms(1) carrier_append_rows carrier_matD(1))
         have 16: "{ia. ia < dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia \<in> I} \<noteq> {}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "nr \<in> {ia. ia < dim_row (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia \<in> I}"
             using "15" True by simp
           then show ?thesis by blast
@@ -2630,7 +2630,7 @@ proof rule
           using submatrix_inter_rows'[of "mat_of_rows n [unit_vec n i]" "?f ` (I - {0..<nr})" J] 3
           by simp
         have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have subset1: "?f ` (I - {0..<nr}) \<inter> {0..<1} \<subseteq> {0}"
           proof
             fix x
@@ -2653,7 +2653,7 @@ proof rule
         qed
         have 19: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J =
               submatrix (mat_of_rows n [unit_vec n i]) {0} J" 
-          by (simp only: 17 18)
+          by \<^marker>\<open>provenance ai\<close> (simp only: 17 18)
         have 20: "B = submatrix A I J @\<^sub>r submatrix (mat_of_rows n [unit_vec n i]) {0} J" 
           by (simp add: 10 19)
         have 21: "B = submatrix A I J @\<^sub>r mat_of_rows (card ({0..<n} \<inter> J)) 
@@ -2662,7 +2662,7 @@ proof rule
         have "row (submatrix A I J @\<^sub>r
               mat_of_rows (card ({0..<n} \<inter> J)) [vec_of_list (nths (list_of_vec (unit_vec n i)) J)]) 
               (dim_row (submatrix A I J)) = vec_of_list (nths (list_of_vec (unit_vec n i)) J)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have dim_col_sub: "dim_col (submatrix A I J) = card ({0..<n} \<inter> J)"
           proof -
             have "dim_col (submatrix A I J) = card {j. j < dim_col A \<and> j \<in> J}"
@@ -2708,7 +2708,7 @@ proof rule
           by force
         then have 6:"\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = (unit_vec n i) $ (pick J j)" 
           using 5 
-        proof (intro allI impI)
+        proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
           fix j
           assume j: "j < dim_col B"
           have row_eq: "row B (dim_row B - 1) =
@@ -2734,7 +2734,7 @@ proof rule
             fix k
             assume asm: "k < dim_col B" "pick J k \<noteq> i"
             have "pick J k < n" 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have row_dim: "row B (dim_row B - 1) \<in> carrier_vec (dim_col B)"
                 using row_carrier \<open>dim_row B - 1 < dim_row B\<close> by blast
               have dim_eq1: "dim_vec (row B (dim_row B - 1)) = dim_col B"
@@ -2764,7 +2764,7 @@ proof rule
               using "6" asm(1) by auto
           qed
           have 23: "\<forall> j < dim_col B. pick J j = i \<longrightarrow>  B $$ (dim_row B - 1,j) = 1"
-            proof (intro allI impI)
+            proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
               fix j
               assume j_lt: "j < dim_col B"
               assume pj: "pick J j = i"
@@ -2803,16 +2803,16 @@ proof rule
                         (card {ia. ia<dim_col (A @\<^sub>r mat_of_rows n [unit_vec n i]) \<and> ia\<in>J})" 
                     using I_J dim_submatrix(2) by blast
                   then have 26: "dim_col B = (card {ia. ia<n \<and> ia\<in>J})" 
-                    using carrier_matD(2)[OF carrier_append_rows[OF A 1]] by simp
+                    using carrier_matD(2)[OF carrier_append_rows[OF A 1]] by \<^marker>\<open>provenance ai\<close> simp
                   then have "j < card J" 
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                     have subset: "{ia. ia < n \<and> ia \<in> J} \<subseteq> J" by blast
                     have "finite J" using False by simp
                     then have "card {ia. ia < n \<and> ia \<in> J} \<le> card J" using subset card_mono by blast
                     then show ?thesis using "26" j by linarith
                   qed
                   show ?thesis
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                     have subset_J: "{ia. ia < n \<and> ia \<in> J} \<subseteq> J" by blast
                   have fin_J: "finite J" using False by simp
                   have card_le: "card {ia. ia < n \<and> ia \<in> J} \<le> card J"
@@ -2843,7 +2843,7 @@ proof rule
                         B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
                         B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               using only_one_nonzero_is_sum[of "{0..<dim_col B}" j]
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have fin: "finite {0..<dim_col B}"
                 by simp
               have j_mem: "j \<in> {0..<dim_col B}"
@@ -2856,16 +2856,16 @@ proof rule
             qed
             then have "(\<Sum>j<dim_col B. B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
                        B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
-              by (simp only: atLeast0LessThan)
+              by \<^marker>\<open>provenance ai\<close> (simp only: atLeast0LessThan)
             then have 27: "det B =  B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j"
-              using "4" \<open>dim_row B = dim_col B\<close> by simp
+              using "4" \<open>dim_row B = dim_col B\<close> by \<^marker>\<open>provenance ai\<close> simp
             then have 28: "det B = cofactor B (dim_row B - 1) j" 
               using \<open>B $$ (dim_row B - 1, j) = 1\<close> l_one by presburger
             have 8: "cofactor B (dim_row B - 1) j = 
                 (-1)^((dim_row B - 1)+j) * det (mat_delete B (dim_row B - 1) j)" 
               by (meson Determinant.cofactor_def)
             have 9:"mat_delete B (dim_row B - 1) j = submatrix A I (J - {pick J j})"
-              proof -
+              proof \<^marker>\<open>provenance ai\<close> -
               define B0 where "B0 = submatrix A I J"
               define bvec :: "'a vec" where "bvec = vec_of_list (nths (list_of_vec (unit_vec n i)) J)"
               have dimcolB0: "dim_col B0 = card ({0..<n} \<inter> J)"
@@ -2919,7 +2919,7 @@ proof rule
             then  have "det (mat_delete B (dim_row B - 1) j) \<in> {-1, 0, 1}" 
               using "9" by presburger 
             then have "cofactor B (dim_row B - 1) j \<in> {-1, 0, 1}" using 8 9 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
               have neg_one_pow: "\<And>k. (-1::'a) ^ k = 1 \<or> (-1::'a) ^ k = -1"
               proof -
                 fix k
@@ -2974,7 +2974,7 @@ proof -
             using False by fastforce
           then have "\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = 0" 
             using 6
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
   { fix j
     assume j: "j < dim_col B"
     have dim_row_eq: "dim_vec (row B (dim_row B - 1)) = dim_col B"
@@ -3011,18 +3011,18 @@ qed
         have 29: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J =
               submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})\<inter>{0..<1}) J"
           using submatrix_inter_rows' 3 
-          by (simp add: submatrix_inter_rows'[of "mat_of_rows n [unit_vec n i]" "(\<lambda>i. i - nr) ` (I - {0..<nr})" J] 3)
+          by \<^marker>\<open>provenance ai\<close> (simp add: submatrix_inter_rows'[of "mat_of_rows n [unit_vec n i]" "(\<lambda>i. i - nr) ` (I - {0..<nr})" J] 3)
         have 28: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {}" 
           apply safe 
           apply simp+
           using False by auto
         have 30: "submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J = 
             submatrix (mat_of_rows n [unit_vec n i]) {} J" 
-          by (simp only: 29 28)
+          by \<^marker>\<open>provenance ai\<close> (simp only: 29 28)
         then have 11: "submatrix (mat_of_rows n [unit_vec n i]) {} J  = 
               0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [unit_vec n i]) (?f ` (I - {0..<nr})) J))"
           using empty_set_submatrix_iz_zero_mat 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
           have dim_eq: "\<And>A K. dim_col (submatrix A {} J) = dim_col (submatrix A K J)"
             by (simp add: dim_submatrix(2))
           show ?thesis
@@ -3031,7 +3031,7 @@ qed
         qed
         have "B = submatrix A I J" 
           apply rule
-            apply (simp add: "10" "30" "11" append_rows_def index_mat_four_block(1) index_zero_mat(1))
+            apply \<^marker>\<open>provenance ai\<close> (simp add: "10" "30" "11" append_rows_def index_mat_four_block(1) index_zero_mat(1))
            apply (simp add: "10" 30 append_rows_def index_mat_four_block dim_submatrix(1))
           proof -  have dimA: "dim_col A = n"
     using carrier_matD(2)[OF A] .
@@ -3116,7 +3116,7 @@ proof rule
       have 25: "row ?A' nr = (- (unit_vec n i) :: 'a vec)" 
         using append_rows_nth(2)[OF A 1] mat_of_rows_row by simp 
       have 2: "B \<in> carrier_mat (dim_row B) (dim_row B)" 
-        proof (rule carrier_matI)
+        proof \<^marker>\<open>provenance ai\<close> (rule carrier_matI)
           show "dim_row B = dim_row B" by (rule refl)
           show "dim_col B = dim_row B" using False by auto
         qed
@@ -3131,7 +3131,7 @@ proof rule
           using "1" assms(1) carrier_matD(1) by blast          
         have 16: "{ia. ia < 
                       dim_row (A @\<^sub>r mat_of_rows n [- (unit_vec n i) :: 'a vec]) \<and> ia \<in> I} \<noteq> {}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "nr < dim_row (A @\<^sub>r mat_of_rows n [- (unit_vec n i) :: 'a vec])"
             using "15" by simp
           then show ?thesis
@@ -3156,7 +3156,7 @@ proof rule
               submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) 
                         (?f ` (I - {0..<nr}) \<inter> {0..<1}) J"
           using submatrix_inter_rows' 3 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J =
                   submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec])
                             ((?f ` (I - {0..<nr})) \<inter> {0..<dim_row (mat_of_rows n [- (unit_vec n i) :: 'a vec])}) J"
@@ -3166,11 +3166,11 @@ proof rule
         have 17: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {0}" 
           apply safe 
             apply simp+
-           apply (rule image_eqI[where x=nr]; simp add: True)
+           apply \<^marker>\<open>provenance ai\<close> (rule image_eqI[where x=nr]; simp add: True)
           by simp
         have 19: "submatrix (mat_of_rows n [- (unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J =
           submatrix (mat_of_rows n [(- (unit_vec n i) :: 'a vec)]) {0} J" 
-          using 17 18 by simp
+          using 17 18 by \<^marker>\<open>provenance ai\<close> simp
         have 20: "B = submatrix A I J @\<^sub>r 
                       submatrix (mat_of_rows n [(- (unit_vec n i) :: 'a vec)]) {0} J" 
           by (simp add: 10 19)
@@ -3185,7 +3185,7 @@ proof rule
                    [vec_of_list (nths (list_of_vec (- (unit_vec n i) :: 'a vec)) J)]) 
                   (dim_row (submatrix A I J)) = 
                   vec_of_list (nths (list_of_vec ((- (unit_vec n i) :: 'a vec))) J)"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have dcA: "dim_col A = n"
               using A carrier_matD(2) by blast
             have dc_sub: "dim_col (submatrix A I J) = card {j. j < dim_col A \<and> j \<in> J}"
@@ -3223,7 +3223,7 @@ proof rule
         then have 6:"\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = 
                     (- (unit_vec n i) :: 'a vec) $ (pick J j)" 
           using 5 
-          proof (intro allI impI)
+          proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
             fix j
             assume j: "j < dim_col B"
             have dimrow: "dim_row B - 1 < dim_row B"
@@ -3265,7 +3265,7 @@ proof rule
             assume asm: "k < dim_col B" "pick J k \<noteq> i"
             have "pick J k < n" using 12 
                 "5" Collect_cong 22 asm(1)  pick_le row_carrier vec_carrier_vec 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have dim_n: "dim_vec (- (unit_vec n i) :: 'a vec) = n"
     using 12 carrier_vecD by blast
   have row_eq: "row B (dim_row B - 1) =
@@ -3345,7 +3345,7 @@ qed
                     using I_J dim_submatrix(2)
                     by blast
                   then have 26: "dim_col B = (card {ia. ia<n \<and> ia\<in>J})" 
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                     assume dim_col_eq: "dim_col B =
                       card {ia. ia < dim_col (A @\<^sub>r mat_of_rows n [(- unit_vec n i) :: 'a vec]) \<and> ia \<in> J}"
                     have dim: "dim_col (A @\<^sub>r mat_of_rows n [(- unit_vec n i) :: 'a vec]) = n"
@@ -3354,7 +3354,7 @@ qed
                     then show "dim_col B = (card {ia. ia<n \<and> ia\<in>J})"
                       using dim_col_eq by presburger
                   qed                  then have "j < card J" 
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                     have "finite J" using False by simp
                     moreover have "{ia. ia < n \<and> ia \<in> J} \<subseteq> J" by auto
                     ultimately have "card {ia. ia < n \<and> ia \<in> J} \<le> card J"
@@ -3364,13 +3364,13 @@ qed
                   qed
                   then have j_lt_card: "j < card J" .
                   have finite_J: "finite J"
-                    using False by simp
+                    using False by \<^marker>\<open>provenance ai\<close> simp
                   have subset_J: "{ia. ia < n \<and> ia \<in> J} \<subseteq> J"
-                    by blast
+                    by \<^marker>\<open>provenance ai\<close> blast
                   have k_lt_dim: "k < dim_col B"
                     using asm(1) .
                   have k_lt_card: "k < card J"
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                     have "k < card {ia. ia < n \<and> ia \<in> J}"
                       using k_lt_dim 26 by simp
                     also have "\<dots> \<le> card J"
@@ -3378,11 +3378,11 @@ qed
                     finally show ?thesis .
                   qed
                   have "k \<noteq> j"
-                    using asm(2) by simp
+                    using asm(2) by \<^marker>\<open>provenance ai\<close> simp
                   then consider (k_lt_j) "k < j" | (j_lt_k) "j < k"
-                    by linarith
+                    by \<^marker>\<open>provenance ai\<close> linarith
                   then show ?thesis
-                  proof cases
+                  proof \<^marker>\<open>provenance ai\<close> cases
                     case k_lt_j
                     then have "pick J k < pick J j"
                       using j_lt_card pick_mono by blast
@@ -3415,14 +3415,14 @@ qed
                         B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
               using only_one_nonzero_is_sum[of "{0..<dim_col B}" j
                      "\<lambda>x. B $$ (dim_row B - 1, x) * cofactor B (dim_row B - 1) x"] j
-              by auto
+              by \<^marker>\<open>provenance ai\<close> auto
             then have "(\<Sum>j<dim_col B. B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j) =
               B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j" 
-              by (simp add: atLeast0LessThan)
+              by \<^marker>\<open>provenance ai\<close> (simp add: atLeast0LessThan)
             then have 28: "det B =  B $$ (dim_row B - 1,j) * cofactor B (dim_row B - 1) j"
-              using "4" \<open>dim_row B = dim_col B\<close> by simp
+              using "4" \<open>dim_row B = dim_col B\<close> by \<^marker>\<open>provenance ai\<close> simp
             then have 29: "det B = - cofactor B (dim_row B - 1) j" 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "det B = (- 1) * cofactor B (dim_row B - 1) j"
                 using "28" \<open>B $$ (dim_row B - 1, j) = - 1\<close> by simp
               then show ?thesis
@@ -3435,7 +3435,7 @@ qed
               by simp
             then have "vec_of_list (nths (list_of_vec (- unit_vec n i)) J) \<in> 
                        carrier_vec (dim_col (submatrix A I J))"
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have uv: "(- unit_vec n i :: 'a vec) \<in> carrier_vec n"
                 by simp
               have dimv: "dim_vec (- unit_vec n i :: 'a vec) = n"
@@ -3459,7 +3459,7 @@ qed
                 by (simp add: nths_list_pick_vec_same card_eq uv dimv dim_submatrix(2)[of A I J] dimA)
             qed
             have 9: "mat_delete B (dim_row B - 1) j = submatrix A I (J - {pick J j})"
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have dimA_col: "dim_col A = n"
                 using assms(1) carrier_matD(2) by blast
               have dim_col_submat: "dim_col (submatrix A I J) = card {ja. ja < n \<and> ja \<in> J}"
@@ -3525,7 +3525,7 @@ qed
             then  have "det (mat_delete B (dim_row B - 1) j) \<in> {-1, 0, 1}" 
               using "9" by presburger 
             then have "cofactor B (dim_row B - 1) j \<in> {-1, 0, 1}" 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               assume d_mem: "det (mat_delete B (dim_row B - 1) j) \<in> {- 1, 0, 1}"
               have pow_cases: "(-1::'a) ^ m = 1 \<or> (-1::'a) ^ m = -1" for m
               proof (induct m)
@@ -3579,7 +3579,7 @@ qed
           then have "\<forall> j < dim_col B. B $$ (dim_row B - 1,j) = 0" 
             using 6 "5" Collect_cong 22  carrier_vecD index_row(2)  index_zero_vec(1) 
               pick_le vec_carrier 
-            proof (intro allI impI)
+            proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
               fix j
               assume asmj: "j < dim_col B"
               have huz: "((- unit_vec n i) :: 'a vec) = 0\<^sub>v n"
@@ -3629,7 +3629,7 @@ qed
           by fast
         have 31: "submatrix (mat_of_rows n [(- unit_vec n i):: 'a vec]) (?f ` (I - {0..<nr})) J =
             submatrix (mat_of_rows n [(- unit_vec n i):: 'a vec]) (?f ` (I - {0..<nr})\<inter>{0..<1}) J"
-          by (rule submatrix_inter_rows'[of "mat_of_rows n [(- unit_vec n i):: 'a vec]"
+          by \<^marker>\<open>provenance ai\<close> (rule submatrix_inter_rows'[of "mat_of_rows n [(- unit_vec n i):: 'a vec]"
                  "?f ` (I - {0..<nr})" J, unfolded 3])
         have 30: "?f ` (I - {0..<nr}) \<inter> {0..<1} = {}" 
           apply safe 
@@ -3637,10 +3637,10 @@ qed
           using False by auto
         have 32: "submatrix (mat_of_rows n [(- unit_vec n i):: 'a vec]) (?f ` (I - {0..<nr})) J = 
             submatrix (mat_of_rows n [- unit_vec n i]) {} J" 
-          using 31 unfolding 30 by simp
+          using 31 unfolding 30 by \<^marker>\<open>provenance ai\<close> simp
         then have 11: "submatrix (mat_of_rows n [- unit_vec n i]) {} J = 
           0\<^sub>m 0 (dim_col (submatrix (mat_of_rows n [- unit_vec n i]) (?f ` (I - {0..<nr})) J))"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have c1: "dim_col (submatrix (mat_of_rows n [- unit_vec n i]) {} J) =
                   card {k. k < dim_col (mat_of_rows n [- unit_vec n i]) \<and> k \<in> J}"
               using dim_submatrix(2)[of "mat_of_rows n [- unit_vec n i]" "{}" J] by simp
@@ -3658,7 +3658,7 @@ qed
               by (rule trans)
           qed
         have "B = submatrix A I J" 
-        proof
+        proof \<^marker>\<open>provenance ai\<close>
           let ?M = "submatrix (mat_of_rows n [(- unit_vec n i) :: 'a vec]) (?f ` (I - {0..<nr})) J"
           have M_col: "dim_col ?M = dim_col (submatrix A I J)"
           proof -
@@ -3745,7 +3745,7 @@ proof
     using One_nat_def Suc_eq_plus1 append_rows_def assms(2) carrier_matD(1)
         index_mat_four_block(2) index_zero_mat(2) le_add_diff_inverse2 list.size(3) 
         list.size(4) mat_of_rows_carrier(2)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have X: "submatrix A {0..<nr - 1} UNIV \<in> carrier_mat (nr - 1) n"
       using submatrix_minus_last_row_carr[OF A] .
     have Y: "mat_of_rows n [Matrix.row A (nr - 1)] \<in> carrier_mat 1 n"
@@ -3760,10 +3760,10 @@ proof
   qed
   then show 5: "dim_row A = dim_row (submatrix A {0..<nr - 1} UNIV @\<^sub>r 
                          mat_of_rows n [Matrix.row A (nr - 1)])"
-    using 6 carrier_matD(1)[OF assms(1)] by simp
+    using 6 carrier_matD(1)[OF assms(1)] by \<^marker>\<open>provenance ai\<close> simp
   show 4: "dim_col A = dim_col (submatrix A {0..<nr - 1} UNIV @\<^sub>r
                     mat_of_rows n [Matrix.row A (nr - 1)])" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have 1: "submatrix A {0..<nr - 1} UNIV \<in> carrier_mat (nr - 1) n"
       using submatrix_minus_last_row_carr[OF A] by blast
     have 2: "mat_of_rows n [Matrix.row A (nr - 1)] \<in> carrier_mat 1 n"
@@ -3793,7 +3793,7 @@ proof
       by (meson Missing_Matrix.append_rows_nth(1) True assms(1) mat_of_rows_carrier(1) 
           submatrix_minus_last_row_carr)
     have 2: "row (submatrix A {0..<nr - 1} UNIV) i = row A (pick  {0..<nr - 1} i)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have dim_eq1: "dim_row (submatrix A {0..<nr - 1} UNIV) =
                        card {i. i < dim_row A \<and> i \<in> {0..<nr - 1}}"
           using dim_submatrix(1) by blast
@@ -3823,7 +3823,7 @@ proof
     then have "row A i = row (submatrix A {0..<nr - 1} UNIV) i" 
       using 2 by presburger
     then show ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have i_lt: "i < dim_row A" using 5 asmi by simp
       have j_lt: "j < dim_col A" using 4 asmj by simp
       have "A $$ (i, j) = row A i $ j"
@@ -3841,7 +3841,7 @@ proof
     have "i = nr - 1" 
       using False 6 asmi by linarith
     then show ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have i_eq: "i = nr - 1"
         using False 6 asmi by linarith
       have C_carr: "submatrix A {0..<nr - 1} UNIV \<in> carrier_mat (nr - 1) n"
@@ -3883,7 +3883,7 @@ proof
   show 4: "dim_row (A @\<^sub>r B @\<^sub>r C) = dim_row ((A @\<^sub>r B) @\<^sub>r C)" 
     by (simp add: append_rows_def)
   show 3: "dim_col (A @\<^sub>r B @\<^sub>r C) = dim_col ((A @\<^sub>r B) @\<^sub>r C)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have BC: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n"
       using carrier_append_rows[OF B C] .
     have left: "dim_col (A @\<^sub>r (B @\<^sub>r C)) = n"
@@ -3907,7 +3907,7 @@ proof
     proof(cases "i < nr1")
       case True
       have 2: "row (A @\<^sub>r B @\<^sub>r C) i = row A i" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have BC: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n"
             using assms(2) assms(3) carrier_append_rows by blast
           show ?thesis
@@ -3917,21 +3917,21 @@ proof
       have "row (A @\<^sub>r B) i = row A i" 
         using Missing_Matrix.append_rows_nth(1) True assms(1-2) by blast
       then have row_eq: "row (A @\<^sub>r B @\<^sub>r C) i = row ((A @\<^sub>r B) @\<^sub>r C) i"
-          using 1 2 by simp
+          using 1 2 by \<^marker>\<open>provenance ai\<close> simp
         have i1: "i < dim_row (A @\<^sub>r B @\<^sub>r C)"
-          using asmi 4 by simp
+          using asmi 4 by \<^marker>\<open>provenance ai\<close> simp
         have i2: "i < dim_row ((A @\<^sub>r B) @\<^sub>r C)"
-          using asmi by simp
+          using asmi by \<^marker>\<open>provenance ai\<close> simp
         have "row (A @\<^sub>r B @\<^sub>r C) i $ j = row ((A @\<^sub>r B) @\<^sub>r C) i $ j"
-          using row_eq by simp
+          using row_eq by \<^marker>\<open>provenance ai\<close> simp
         then show ?thesis
-          using 3 i1 i2 asmi asmj index_row(1) by simp
+          using 3 i1 i2 asmi asmj index_row(1) by \<^marker>\<open>provenance ai\<close> simp
     next
       case False
       have 5: "row (A @\<^sub>r B) i = row B (i - nr1)" 
         by (meson B False True assms(1) gram_schmidt.append_rows_index_same' not_le)
       have "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have BC: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n"
           using assms(2) assms(3) by blast
         have lt: "i < nr1 + (nr2 + nr3)"
@@ -3942,7 +3942,7 @@ proof
       qed
       then have row_eq: "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" .
         show ?thesis
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have i_ge: "nr1 \<le> i"
             using False by linarith
           have i_lt_sum: "i < nr1 + nr2"
@@ -3976,7 +3976,7 @@ proof
     have 6: "B @\<^sub>r C \<in> carrier_mat (nr2 + nr3) n" 
       using assms(2) assms(3) by blast
     have "i < nr1 + nr2 + nr3" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have AB: "A @\<^sub>r B \<in> carrier_mat (nr1 + nr2) n"
         using A B carrier_append_rows by blast
       have "(A @\<^sub>r B) @\<^sub>r C \<in> carrier_mat (nr1 + nr2 + nr3) n"
@@ -3987,7 +3987,7 @@ proof
         using asmi by linarith
     qed
     have 7: "row (A @\<^sub>r B @\<^sub>r C) i = row (B @\<^sub>r C) (i - nr1)" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
     have assoc: "i < nr1 + (nr2 + nr3)"
       using \<open>i < nr1 + nr2 + nr3\<close> by (simp only: add.assoc)
     show ?thesis
@@ -3996,7 +3996,7 @@ proof
     have 1:"i - nr1 \<ge> nr2" 
       using False by linarith
     have 8: "row (B @\<^sub>r C) (i - nr1) = row C (i - (nr1+nr2))" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "i - nr1 < nr2 + nr3"
         using \<open>nr1 \<le> i\<close> \<open>i < nr1 + nr2 + nr3\<close> by linarith
       have "row (B @\<^sub>r C) (i - nr1) = row C (i - nr1 - nr2)"
@@ -4009,7 +4009,7 @@ proof
       using append_rows_nth(2)[of "A @\<^sub>r B" "nr1+nr2" n C nr3 i] 
       by (meson False \<open>i < nr1 + nr2 + nr3\<close> assms carrier_append_rows leI)
     then show ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume row_eq0: "row ((A @\<^sub>r B) @\<^sub>r C) i = row C (i - (nr1+nr2))"
       have row_eq: "row (A @\<^sub>r B @\<^sub>r C) i = row ((A @\<^sub>r B) @\<^sub>r C) i"
         using 7 8 row_eq0 by simp
@@ -4035,7 +4035,7 @@ lemma append_mat_empty:
   shows "A @\<^sub>r B = A" 
 proof
   show 2: "dim_row (A @\<^sub>r B) = dim_row A" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have carr: "A @\<^sub>r B \<in> carrier_mat (nr + 0) n"
       using carrier_append_rows[OF A B] .
     from carrier_matD(1)[OF carr] have "dim_row (A @\<^sub>r B) = nr + 0" .
@@ -4053,17 +4053,17 @@ proof
     have "row (A @\<^sub>r B) i = row A i" 
       using Missing_Matrix.append_rows_nth(1) True assms(1) assms(2) by blast
     then have eqr: "row (A @\<^sub>r B) i $ j = row A i $ j"
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     have i_row: "i < dim_row (A @\<^sub>r B)"
-      using 2 asmi by simp
+      using 2 asmi by \<^marker>\<open>provenance ai\<close> simp
     have j_col: "j < dim_col (A @\<^sub>r B)"
-      using 1 asmj by simp
+      using 1 asmj by \<^marker>\<open>provenance ai\<close> simp
     have eq1: "row (A @\<^sub>r B) i $ j = (A @\<^sub>r B) $$ (i, j)"
-      by (rule index_row(1)[OF i_row j_col])
+      by \<^marker>\<open>provenance ai\<close> (rule index_row(1)[OF i_row j_col])
     have eq2: "row A i $ j = A $$ (i, j)"
-      by (rule index_row(1)[OF asmi asmj])
+      by \<^marker>\<open>provenance ai\<close> (rule index_row(1)[OF asmi asmj])
     from eq1 eqr eq2 show ?thesis
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
   next
     case False
     then show ?thesis 
@@ -4089,7 +4089,7 @@ next
   case (Suc nr2)
   have 1: "B = (submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [row B (nr2)])" 
     using append_last_row_submatrix_is_mat 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have B_carr: "B \<in> carrier_mat (Suc nr2) n"
         using Suc(2) by blast
       have "B = (submatrix B {0..<Suc nr2 - 1} UNIV) @\<^sub>r (mat_of_rows n [row B (Suc nr2 - 1)])"
@@ -4099,13 +4099,13 @@ next
     qed
   have 2: "submatrix B {0..<nr2} UNIV \<in> carrier_mat nr2 n" 
     using submatrix_minus_last_row_carr[OF Suc(2)]
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   have 3: "\<forall> i < nr2. \<exists> j. row (submatrix B {0..<nr2} UNIV) i = unit_vec n j"
   proof safe
     fix i
     assume asmi: "i < nr2"
     obtain k where k: "row (submatrix B {0..<nr2} UNIV) i = row B k \<and> k < dim_row B" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have carrB: "mat_of_rows n [Matrix.row B nr2] \<in> carrier_mat 1 n"
         by force
       have step1: "Matrix.row ((submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [Matrix.row B nr2])) i =
@@ -4122,7 +4122,7 @@ next
         using that[OF conjI[OF row_eq less]] .
     qed
     then have "\<exists>j. row B k = unit_vec n j" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "k < dim_row B"
           using k by blast
         hence "k < Suc nr2"
@@ -4136,7 +4136,7 @@ next
   have "tot_unimodular (A @\<^sub>r (submatrix B {0..<nr2} UNIV))" 
     using Suc.hyps 3 2 by presburger
   have 4: "A @\<^sub>r B = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)])" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have C: "mat_of_rows n [row B nr2] \<in> carrier_mat 1 n"
     using mat_of_rows_carrier(1)[of n "[row B nr2]"] by auto
   have "A @\<^sub>r B = A @\<^sub>r ((submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [row B nr2]))"
@@ -4150,7 +4150,7 @@ qed
   then have "(A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)]) = 
              (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [unit_vec n j])" 
     by presburger
-  then show ?case proof -
+  then show ?case proof \<^marker>\<open>provenance ai\<close> -
   have 5: "A @\<^sub>r B = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [unit_vec n j])"
     using 4 j by simp
   have 6: "A @\<^sub>r (submatrix B {0..<nr2} UNIV) \<in> carrier_mat (nr1 + nr2) n"
@@ -4180,15 +4180,15 @@ next
   have 1: "B = (submatrix B {0..<nr2} UNIV) @\<^sub>r (mat_of_rows n [row B (nr2)])" 
     using append_last_row_submatrix_is_mat 
     using append_last_row_submatrix_is_mat[OF Suc(2) zero_less_Suc]
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   have 2: "submatrix B {0..<nr2} UNIV \<in> carrier_mat nr2 n" 
-    using submatrix_minus_last_row_carr[OF Suc(2)] by (simp only: diff_Suc_1)
+    using submatrix_minus_last_row_carr[OF Suc(2)] by \<^marker>\<open>provenance ai\<close> (simp only: diff_Suc_1)
   have 3: "\<forall> i < nr2. \<exists> j. row (submatrix B {0..<nr2} UNIV) i = - unit_vec n j"
   proof safe
     fix i
     assume asmi: "i < nr2"
     obtain k where k: "row (submatrix B {0..<nr2} UNIV) i = row B k \<and> k < dim_row B" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have carrM: "mat_of_rows n [row B nr2] \<in> carrier_mat 1 n"
         using mat_of_rows_carrier(1)[of n "[row B nr2]"] by auto
       have row_eq: "row (submatrix B {0..<nr2} UNIV) i = row B i"
@@ -4208,7 +4208,7 @@ next
         using that[of i] row_eq i_less by blast
     qed
     then have "\<exists>j. row B k = - unit_vec n j" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "k < dim_row B" using k by blast
       moreover have "dim_row B = Suc nr2" using carrier_matD(1)[OF Suc(2)] by blast
       ultimately have "k < Suc nr2" by simp
@@ -4220,7 +4220,7 @@ next
   have 5: "tot_unimodular (A @\<^sub>r (submatrix B {0..<nr2} UNIV))" 
     using Suc.hyps 3 2 by presburger
   have 4: "A @\<^sub>r B = (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [row B (nr2)])" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have m_carr: "mat_of_rows n [row B nr2] \<in> carrier_mat 1 n"
       using mat_of_rows_carrier(1)[of n "[row B nr2]"] by auto
     have "A @\<^sub>r B = A @\<^sub>r (submatrix B {0..<nr2} UNIV @\<^sub>r mat_of_rows n [row B nr2])"
@@ -4235,7 +4235,7 @@ next
             (A @\<^sub>r (submatrix B {0..<nr2} UNIV)) @\<^sub>r (mat_of_rows n [- unit_vec n j])" 
     by presburger
   then show ?case 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     obtain j' where jq: "row B nr2 = - unit_vec n j'"
       using Suc(3) by blast
     have carr: "A @\<^sub>r submatrix B {0..<nr2} UNIV \<in> carrier_mat (nr1 + nr2) n"
@@ -4300,7 +4300,7 @@ proof -
       using 1 2 by force
     then have 4: "det (submatrix A {i} {j}) = (submatrix A {i} {j}) $$ (0,0)"
       using determinant_one_element 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have carr: "submatrix A {i} {j} \<in> carrier_mat 1 1"
         using 3 mat_carrier by simp
       then show ?thesis
@@ -4309,7 +4309,7 @@ proof -
     have 5: "(submatrix A {i} {j}) $$ (0,0) =  A $$ (pick {i} 0, pick {j} 0)" 
       by (simp add: 3)
     have "pick {i} 0 = i" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "0 < card {i} \<or> infinite {i}"
         by simp
       then have "pick {i} 0 \<in> {i}"
@@ -4318,7 +4318,7 @@ proof -
         by simp
     qed
     have "pick {j} 0 = j" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "0 < card {j} \<or> infinite {j}" by simp
       hence "pick {j} 0 \<in> {j}" using pick_in_set by blast
       thus "pick {j} 0 = j" by simp
@@ -4371,7 +4371,7 @@ proof rule+
       have 5: "\<forall>x \<in> (polyhedron ?fullA ?fullb). \<forall> i < n. x $ i \<ge> 0" 
         using pos_polyh_is_polyh
         unfolding pos_polyhedron_def polyhedron_def 
-      proof (intro ballI)
+      proof \<^marker>\<open>provenance ai\<close> (intro ballI)
         fix x assume x: "x \<in> {x \<in> carrier_vec n. (A @\<^sub>r - 1\<^sub>m n) *\<^sub>v x \<le> b @\<^sub>v 0\<^sub>v n}"
         have xc: "x \<in> carrier_vec n" using x by simp
         have "{x \<in> carrier_vec n. A *\<^sub>v x \<le> b \<and> 0\<^sub>v n \<le> x} =
@@ -4398,7 +4398,7 @@ proof rule+
                                            (C, d) = sub_system ?fullA ?fullb I}"
           using min_face_min_subsyst[OF 1 2] 
           using \<open>min_face (local.polyhedron (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n)) F\<close> 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have set_eq:
               "{dim_vec d| C d I. F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
                                   (C, d) = sub_system ?fullA ?fullb I} =
@@ -4425,7 +4425,7 @@ proof rule+
         have "det A' \<noteq> 0" 
           using bounded_min_faces_det_non_zero[OF 1 2 False 6 asm] A'b' by blast
         have 7:" \<exists> I J. submatrix ?fullA I J = A'" using A'b'(1)
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "A' = fst (A', b')" by simp
           also have "\<dots> = fst (sub_system (A @\<^sub>r - 1\<^sub>m n) (b @\<^sub>v 0\<^sub>v n) I')" using A'b'(1) by simp
           also have "\<dots> = submatrix (A @\<^sub>r - 1\<^sub>m n) I' UNIV" by (rule sub_system_fst)
@@ -4439,7 +4439,7 @@ proof rule+
         then have "det A' = -1 \<or> det A' = 1"
           using \<open>Determinant.det A' \<noteq> 0\<close> by blast
         then have "abs (det A') = 1"
-          by auto
+          by \<^marker>\<open>provenance ai\<close> auto
         then have "\<exists> x \<in> F. 1 \<cdot>\<^sub>v x \<in>  \<int>\<^sub>v"
           using \<open>\<exists>x\<in>F. \<bar>Determinant.det A'\<bar> \<cdot>\<^sub>v x \<in> \<int>\<^sub>v\<close> by presburger
         then show "\<exists> x \<in> F. x \<in>  \<int>\<^sub>v"

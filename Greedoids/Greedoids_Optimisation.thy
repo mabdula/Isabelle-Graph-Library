@@ -212,7 +212,7 @@ proof-
          else case acc of None \<Rightarrow> Some e | Some d \<Rightarrow> if elements_costs c d < elements_costs c e then Some e else Some d)"
   have none_no_solution:"foldr ?iteration xs None = None \<Longrightarrow> \<not> ( \<exists> x \<in> set xs. x \<notin> X \<and> orcl x X)"
     for xs
-    proof(induction xs)
+    proof \<^marker>\<open>provenance ai\<close>(induction xs)
       case Nil
       then show ?case by simp
     next
@@ -654,7 +654,7 @@ proof-
       hence "set (local.greedoid_greedy es c []) \<subseteq> E"
         using ss_assum by(auto simp add: set_system_def)
       moreover have "rev (local.greedoid_greedy es c []) ! k \<in> set (local.greedoid_greedy es c  [])" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "k < length (rev (local.greedoid_greedy es c []))"
           using one by (simp add: length_rev)
         hence "rev (local.greedoid_greedy es c []) ! k \<in> set (rev (local.greedoid_greedy es c []))"
@@ -694,7 +694,7 @@ proof-
           one rev_rev_ident[of "greedoid_greedy es c []"] 
           rev_take[of "k+1" "rev (greedoid_greedy es c [])"] 
           set_take_union_nth[of k "(rev (local.greedoid_greedy es c []))"]
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         define xs where "xs = local.greedoid_greedy es c []"
         have k_less: "k < length xs"
           unfolding xs_def using one by simp
@@ -892,7 +892,7 @@ definition "A_list = (SOME l. set l = A \<and> (\<forall>i\<le>length l. set (ta
 lemma A_list_props:   assumes no_strong_exchange: "\<not> strong_exchange_property E F" 
   shows "set A_list = A" "(\<forall>i\<le>length A_list. set (take i A_list) \<in> F)" "distinct A_list"
   "(\<And> i. i\<le>length A_list \<Longrightarrow> set (take i A_list) \<in> F)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have A_list_prop: "set A_list = A \<and> (\<forall>i\<le>length A_list. set (take i A_list) \<in> F) \<and> distinct A_list"
     unfolding A_list_def
     by (rule someI_ex[OF there_is_A_list[OF no_strong_exchange]])
@@ -995,7 +995,7 @@ definition "unique P = (\<forall> x y. P x \<longrightarrow> P y \<longrightarro
 lemma injective_predicate_unique_split:
   "distinct xs \<Longrightarrow> unique P \<Longrightarrow> xs = xs11@[xx]@xs12 \<Longrightarrow> xs = xs21@[yy]@xs22
          \<Longrightarrow> P xx \<Longrightarrow> P yy \<Longrightarrow> xs11=xs21 \<and> xx = yy \<and> xs12 = xs22"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume dist: "distinct xs"
      and uniq: "unique P"
      and split1: "xs = xs11 @ [xx] @ xs12"
@@ -1073,7 +1073,7 @@ qed
 definition "last_in_list P xs y = (y \<in> set xs \<and> P y \<and> (\<nexists> xs1 xs2 z. xs = xs1@[y]@xs2 \<and> z \<in> set xs2 \<and> P z))"
 
 lemma last_in_list_unique: "unique (last_in_list P xs)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have key: "\<And>x y. x \<in> set xs \<Longrightarrow> P x \<Longrightarrow>
                (\<nexists>xs1 xs2 z. xs = xs1 @ [x] @ xs2 \<and> z \<in> set xs2 \<and> P z) \<Longrightarrow>
                y \<in> set xs \<Longrightarrow> P y \<Longrightarrow>
@@ -1172,7 +1172,7 @@ next
      es = es1 @ [x] @ es2 \<and> x \<notin> set l \<and> insert x (set l) \<in> F \<and>
      (\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x)))"
       have x_last_P: "last_in_list P es x"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
   have x_in_es: "x \<in> set es"
     using es_split(1) by auto
   have es_split4': "\<forall>y\<in>E - set l. insert y (set l) \<in> F \<longrightarrow> elements_costs costs y \<le> elements_costs costs x"
@@ -1263,7 +1263,7 @@ next
           case 1
           then obtain xs1 xs2 z where  es_split2:
             "es = xs1 @ [A_list ! length l] @ xs2" "z \<in> set xs2""z \<notin> set l"
-            by blast
+            by \<^marker>\<open>provenance ai\<close> blast
           have "xs2 = rev (take index (A_list))"
             using  injective_predicate_unique_split[OF es_prop(2) _ es_split es_split2(1),
                 of "\<lambda> x.  x = A_list ! index"]
@@ -1386,7 +1386,7 @@ proof-
         using  es1es2(1) x_in_es1 A_list_props(1) BYA_list_props(1)  EBx_list_props(1) Y_list_props(1)  es_prop 
         by (auto simp add:  es_def)
       then obtain as bs where "EBx_list @ Y_list = as@[cand]@bs"
-        by (auto simp only: in_set_conv_decomp append_Cons append.left_neutral)
+        by \<^marker>\<open>provenance ai\<close> (auto simp only: in_set_conv_decomp append_Cons append.left_neutral)
       hence es_split4: "es = as@[cand]@bs@[x]@BYA_list @ rev A_list" 
         unfolding es_def by simp
       have "as = es1" 

@@ -18,7 +18,7 @@ hide_const Finite_Cartesian_Product.vec Finite_Cartesian_Product.vec.vec_nth
 lemma gt_exp_minus_One_ln_gt_minus_One:
   fixes x :: real
   shows "exp(-1) < x \<Longrightarrow> -1 < ln x"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "exp (- 1) < x"
   hence "ln (exp (- 1)) < ln x"
     using exp_gt_zero[of "- 1"] by (rule ln_strict_mono)
@@ -451,16 +451,16 @@ proof (cases "j \<in> Vs (ranking (weighted_linorder_from_keys L v g Y) (G \<set
   next
     case False
     then have "1 - exp (- 1) \<le> v i'' * (1 - g (Y i'')) / v i"
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     with weights_pos[OF \<open>i \<in> L\<close>] have "v i * (1 - exp (- 1)) \<le> v i'' * (1 - g (Y i''))"
-      by (auto simp: field_simps)
+      by \<^marker>\<open>provenance ai\<close> (auto simp: field_simps)
     also note *
     finally have "v i * (1 - exp (- 1)) \<le> v i' * (1 - g (Y i'))" .
     hence "v i \<le> v i' * (1 - g (Y i')) / (1 - exp (- 1))"
-      using exp_less_one_iff[of "- 1"] by (auto simp: field_simps)
+      using exp_less_one_iff[of "- 1"] by \<^marker>\<open>provenance ai\<close> (auto simp: field_simps)
     with False * j_matched j_matched' index_j \<open>j \<in> R\<close> \<open>i \<in> L\<close> show ?thesis
       unfolding y\<^sub>c_def ropvw_dual_sol_def
-      by (auto simp: Let_def the_i' the_i'' field_simps exp_less_one_iff dest!: weights_pos)
+      by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def the_i' the_i'' field_simps exp_less_one_iff dest!: weights_pos)
   qed
 next
   case False
@@ -1378,7 +1378,7 @@ proof -
                 by (auto intro: dominance)
 
               with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "ropvw_dual_sol (Y(i:=y)) (ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>) $ Vs_enum i = v i * g y / F"
-              proof -
+              proof \<^marker>\<open>provenance ai\<close> -
                 let ?M = "ranking (weighted_linorder_from_keys L v g (Y(i:=y))) G \<pi>"
                 have "Vs_enum i < card L"
                   using \<open>i \<in> L\<close> by (simp add: Vs_enum_L L_enum_less_card)

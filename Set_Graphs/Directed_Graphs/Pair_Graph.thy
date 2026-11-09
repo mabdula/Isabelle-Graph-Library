@@ -45,7 +45,7 @@ lemma dVs_union_distr[simp]: "dVs (G \<union> H) = dVs G \<union> dVs H"
   unfolding dVs_def by blast
 
 lemma dVs_union_big_distr: "dVs (\<Union>G) = \<Union>(dVs ` G)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "dVs (\<Union> G) = {v. \<exists>v1 v2. (v1, v2) \<in> \<Union> G \<and> v \<in> {v1, v2}}"
     unfolding dVs_def by blast
   also have "\<dots> = {v. \<exists>g v1 v2. g \<in> G \<and> (v1, v2) \<in> g \<and> v \<in> {v1, v2}}"

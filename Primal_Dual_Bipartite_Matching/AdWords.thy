@@ -33,7 +33,7 @@ lemma ln_one_plus_x_over_x_deriv':
   assumes "0 < x"
   shows "((\<lambda>x. ln (1 + x) / x) has_real_derivative (((1/(1+x) * (0 + 1)) * x - ln (1+x) * 1) / (x * x))) (at x)"
   using assms
-  by (intro derivative_intros) auto
+  by \<^marker>\<open>provenance ai\<close> (intro derivative_intros) auto
   
 lemmas ln_one_plus_x_over_x_deriv = ln_one_plus_x_over_x_deriv'[simplified]
 
@@ -43,7 +43,7 @@ lemma ln_1_plus_x_ge:
   shows "x / (1 + x) \<le> ln (1 + x)"
   using assms
   using ln_diff_le[of 1 "1 + x"] assms
-  by (auto simp: divide_minus_left)
+  by \<^marker>\<open>provenance ai\<close> (auto simp: divide_minus_left)
 
 lemma ln_1_plus_x_over_x_mono:
   fixes x y :: real
@@ -239,7 +239,7 @@ proof -
 qed
 
 lemma max_value_allocation_pos_value: "max_value_allocation M \<Longrightarrow> allocation_value M > 0"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "max_value_allocation M"
   then have "one_sided_matching G M R"
     unfolding max_value_allocation_def by blast
@@ -351,7 +351,7 @@ proof -
              intro: to_nat_on_from_nat_into_less simp: countable_finite to_nat_on_less_card)
 
   also from bipartite_graph \<open>M \<subseteq> G\<close> have "\<dots> = (\<Sum>i\<in>L. (\<Sum>e\<in>{e\<in>M. i \<in> e}. b e * (if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i)))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     let ?f = "\<lambda>e. b e * (let i = THE i. i \<in> L \<and> i \<in> e in if total_bid_of M i \<le> B i then 1 else B i / total_bid_of M i)"
     have "(\<Sum>e\<in>M. ?f e) = (\<Sum>i\<in>L. \<Sum>e\<in>{e \<in> M. i \<in> e}. ?f e)"
       using sum_edges_eq_sum_vs[OF \<open>M \<subseteq> G\<close>] by auto
@@ -428,7 +428,7 @@ proof (intro conjI allI impI, simp_all)
   from assms have "M \<subseteq> G" by (auto dest: one_sided_matching_subgraphD)
 
   have online: "?j \<in> R"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "R \<noteq> {}"
       using \<open>k < card R\<close> by auto
     then show "?j \<in> R"
@@ -582,7 +582,7 @@ lemma max_bid_pos: "i \<in> L \<Longrightarrow> Max {b {i, j} |j. {i, j} \<in> G
      (force intro: finite_bids elim: left_neighborE dest: bids_pos)+
 
 lemma bid_ratios_non_empty: "{b {i, j} / B i |i j. {i, j} \<in> G \<and> i \<in> L \<and> j \<in> R} \<noteq> {}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from graph_non_empty obtain e where "e \<in> G"
     by blast
   then obtain i j where "i \<in> L" "j \<in> R" "e = {i, j}"
@@ -811,9 +811,9 @@ next
   case False
 
   have "j \<in> set \<pi>"
-    using perm \<open>j \<in> R\<close> by (auto dest: permutations_of_setD)
+    using perm \<open>j \<in> R\<close> by \<^marker>\<open>provenance ai\<close> (auto dest: permutations_of_setD)
   then obtain pre suff where \<pi>_decomp: "\<pi> = pre @ j # suff"
-    by (auto dest: split_list)
+    by \<^marker>\<open>provenance ai\<close> (auto dest: split_list)
 
   with perm have set_pre: "set pre \<subseteq> R" and set_suff: "set suff \<subseteq> R"
     by (auto dest: permutations_of_setD)
@@ -1127,7 +1127,7 @@ proof (cases j rule: adwords_step_casesR[where s = s])
   let ?i' = "arg_max_on (\<lambda>i. b {i, j} * (1 - x s i)) {i. {i, j} \<in> G}"
   
   from \<open>?i' \<in> L\<close> \<open>x s ?i' < 1\<close> have "total_bid_of (allocation s) ?i' < B ?i'"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "1 / (c - 1) * (c powr (total_bid_of (allocation s) ?i' / B ?i') - 1) \<le> x s ?i'"
       using total_bid_dual_bound[OF \<open>?i' \<in> L\<close>]
       by auto
@@ -1300,14 +1300,14 @@ proof (cases "total_bid_of (allocation (adwords js)) i > B i")
        (auto intro: budget_over_budget_plus_bid_ge)
 
   also have "\<dots> \<le> (B i + Max {b {i,j} |j. {i,j} \<in> G}) * (B i / (B i + Max {b {i,j} |j. {i,j} \<in> G}))"
-  proof (intro mult_right_mono)
+  proof \<^marker>\<open>provenance ai\<close> (intro mult_right_mono)
     show "total_bid_of (allocation (adwords js)) i \<le> B i + Max {b {i,j} |j. {i,j} \<in> G}"
       using assms by (rule max_over_budget_adwords)
     show "0 \<le> B i / (B i + Max {b {i,j} |j. {i,j} \<in> G})"
       using assms(1) budgets_pos[of i] max_bid_pos[of i] by auto
   qed
   also have "\<dots> = B i"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "B i + Max {b {i,j} |j. {i,j} \<in> G} > 0"
       using assms(1) budgets_pos[of i] max_bid_pos[of i] by auto
     then show ?thesis

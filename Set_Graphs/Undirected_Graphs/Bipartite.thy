@@ -123,7 +123,7 @@ lemma bipartite_unionI:
 lemma bipartite_reduced_to_vs:
   "bipartite G X Y \<Longrightarrow> bipartite G (X \<inter> Vs G) (Y \<inter> Vs G)"
   unfolding bipartite_def
-  by (fastforce simp: Vs_def insert_commute)
+  by \<^marker>\<open>provenance ai\<close> (fastforce simp: Vs_def insert_commute)
 
 lemma bipartite_In_singletons:
   assumes "bipartite G U V"
@@ -258,13 +258,13 @@ proof -
     proof
       fix x
       assume "x \<in> Vs G - A"
-      then have "x \<in> Vs G" by blast
-      then obtain e where "e \<in> G \<and> x \<in> e" by (auto simp: Vs_def)      then obtain u  where 2:"e = {u, x} \<and> (u \<in> A \<and> x \<in> Vs G - A) \<and> u \<noteq> x" 
+      then have "x \<in> Vs G" by \<^marker>\<open>provenance ai\<close> blast
+      then obtain e where "e \<in> G \<and> x \<in> e" by \<^marker>\<open>provenance ai\<close> (auto simp: Vs_def)      then obtain u  where 2:"e = {u, x} \<and> (u \<in> A \<and> x \<in> Vs G - A) \<and> u \<noteq> x" 
         using partition \<open>x \<in> Vs G - A\<close> by fastforce
       then have "u \<in> e" 
         by blast
       then show "x \<in> neighbours_of_Vs G A"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "x \<noteq> u" using "2" by blast
         have "u \<in> A" using "2" by blast
         have "e \<in> G" using \<open>e \<in> G \<and> x \<in> e\<close> by blast
@@ -291,7 +291,7 @@ proof safe
   fix X x
   assume "X \<subseteq> A" "x \<in> neighbours_of_Vs G X" "x \<in> X"
   then show "x \<in> {}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "neighbours_of_Vs G X \<subseteq> neighbours_of_Vs G A"
       using neighbours_of_Vs_subset[OF \<open>X \<subseteq> A\<close>] .
     hence "x \<in> neighbours_of_Vs G A"
@@ -310,11 +310,11 @@ lemma part_bipartite_diff:
 proof -
   let ?A' = "(A \<inter> Vs (G - X))" 
   have 2: "graph_invar (G - X)" 
-    by (rule graph_invar_subset[OF assms(2) Diff_subset])
+    by \<^marker>\<open>provenance ai\<close> (rule graph_invar_subset[OF assms(2) Diff_subset])
   have  "A \<subseteq> Vs G" 
     using assms(1)
     unfolding partitioned_bipartite_def
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   have 3: "?A' \<subseteq> Vs (G - X)" by blast 
   have "( \<forall> e \<in> G - X. \<exists> u v.  e = {u, v} \<and> (u \<in> ?A' \<and> v \<in> Vs (G - X) - ?A'))"
   proof 
@@ -322,7 +322,7 @@ proof -
     assume "e \<in> G - X"
     then obtain u v where u'_v': "e = {u, v} \<and> u \<noteq> v \<and> (u \<in> A \<and> v \<in> Vs G - A)"
       using `partitioned_bipartite G A` unfolding partitioned_bipartite_def 
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
 
     then have "u \<in> ?A'" 
       using UnionI u'_v' \<open>e \<in> G - X\<close> by auto

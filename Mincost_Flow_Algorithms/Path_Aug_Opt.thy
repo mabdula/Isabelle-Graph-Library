@@ -82,7 +82,7 @@ fun fstvv where
   "fstvv (additional e) = fstv e"
 
 lemma fstvv_fstv: "fstvv e = fstv (to_redge e)"
-  by (cases e) simp_all
+  by \<^marker>\<open>provenance ai\<close> (cases e) simp_all
 
 fun sndvv where
   "sndvv (blue e) = sndv e"|
@@ -90,7 +90,7 @@ fun sndvv where
   "sndvv (additional e) = sndv e"
 
 lemma sndvv_sndv: "sndvv e = sndv (to_redge e)" 
-  by (cases e) simp_all
+  by \<^marker>\<open>provenance ai\<close> (cases e) simp_all
 
 text \<open>Pattern for case analysis.\<close>
 
@@ -195,7 +195,7 @@ lemma augpath_to_hpath:
   assumes "augpath f mapes" "mapes = (map to_redge es)"
   shows   "hpath es"
   using assms(2)
-proof (induction arbitrary: es rule: augpath_induct[OF assms(1)])
+proof \<^marker>\<open>provenance ai\<close> (induction arbitrary: es rule: augpath_induct[OF assms(1)])
   case (1 f x xs)
   then obtain ee where "xs = [ee]"
     by (cases xs; auto)
@@ -225,7 +225,7 @@ text \<open>Furthermore, we see some topological properties.\<close>
 lemma h_path_split1: 
   assumes "hpath (xs@ys)" "xs \<noteq> []"
   shows "hpath xs"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have aux: "\<And>As Bs. xs @ ys = As @ Bs \<Longrightarrow> As \<noteq> [] \<Longrightarrow> hpath As"
   proof (induction arbitrary: As Bs rule: hpath_induct[OF assms(1)])
     case (1 e As Bs)
@@ -381,7 +381,7 @@ lemma FBP_unique: "isFBP a b \<Longrightarrow> isFBP a c \<Longrightarrow> b = c
 proof(cases a, goal_cases)
   case (1 x1)
   thus ?case
-  proof(cases b, goal_cases)
+  proof \<^marker>\<open>provenance ai\<close>(cases b, goal_cases)
     case (1 x2)
     then show ?case by simp
   next
@@ -618,7 +618,7 @@ proof
     then obtain C' D' where C'D'_prop: "C' \<in> cycles - {C} \<union> {D}" "D' \<in> cycles - {C} \<union> {D}"
       "x \<in> C'" "y \<in> D'"using assm 
       unfolding FBPs_def
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have subset: "xy \<subseteq> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
         using FBP_in_E[OF assm] .
       hence x_in: "x \<in> \<Union> {C' |C'. C' \<in> cycles - {C} \<union> {D}}"
@@ -2847,7 +2847,7 @@ Otherwise there was a negative cycle and since this was in the residual graph
       assume assm:" \<not> 0 \<le> (\<Sum>D\<in>cycles'. sum cc (set D))"
       hence "(\<Sum>D\<in>cycles'. sum cc (set D)) < 0" by auto
       then obtain D where D_props: "D \<in> cycles'" "sum cc (set D) < 0" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "\<exists>D\<in>cycles'. sum cc (set D) < 0"
         proof (rule ccontr)
           assume "\<not> (\<exists>D\<in>cycles'. sum cc (set D) < 0)"

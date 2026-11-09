@@ -250,7 +250,7 @@ qed
 
 lemma walk_betw_Cons_first:
   "\<lbrakk>walk_betw G v p w; {u, v} \<in> G\<rbrakk> \<Longrightarrow> walk_betw G u (u#p) w"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume walk: "walk_betw G v p w" and edge: "{u, v} \<in> G"
   from walk have p_ne: "p \<noteq> []" and path_p: "path G p" and hd_p: "hd p = v" and last_p: "last p = w"
     by (auto simp: walk_betw_def)
@@ -350,7 +350,7 @@ next
   next
     case (5 p' v3)
     then show ?case
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       note u_v3 = 5(4)
       note v3_walk_full = 5(5)
       note p_eq = 5(6)
@@ -390,7 +390,7 @@ next
     then show ?case
       (*TODO: Lukas*)
       using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have singleton: "u = w \<or> u = x" "v3 = w \<or> v3 = x"
           using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
           by auto
@@ -537,7 +537,7 @@ lemma path_repl_edge:
   assumes "path G' p" "p \<noteq> []" "G' = (insert {w,x} G)" "path G puv" "hd puv = w" "last puv = x" "puv \<noteq> []"
   shows "\<exists>p'. p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have path_ins: "path (insert {w, x} G) p"
     using assms(1) assms(3) by simp
   have walk_puv: "walk_betw G w puv x"
@@ -555,7 +555,7 @@ lemma path_can_be_split:
          (\<exists>p1 p2. p1 \<noteq> [] \<and> p2 \<noteq> [] \<and> path G p1 \<and> path G p2 \<and>
                              ((last p1 = w \<and> hd p2 = x) \<or> (last p1 = x \<and> hd p2 = w)) \<and>
                              hd p1 = hd p \<and> last p2 = last p)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have pathG': "path (insert {w,x} G) p"
     using assms(1) by (simp add: assms(2))
   have walk': "walk_betw (insert {w,x} G) (hd p) p (last p)"
@@ -603,7 +603,7 @@ lemma path_can_be_split_2:
   assumes "path (insert {w,x} G) p" "w \<in> Vs G" "x \<notin> Vs G" "p \<noteq> []"
   shows "(\<exists>p'. p' \<noteq> [] \<and> path G p' \<and> hd p' = hd p \<and> last p' = last p) \<or>
          (\<exists>p'. path G p' \<and> (p' \<noteq> [] \<longrightarrow> hd p' = w) \<and> ((hd p = last (x # p') \<and> last p = x) \<or> (hd p = x \<and> last p = last (x # p'))))"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have walk: "walk_betw (insert {w,x} G) (hd p) p (last p)"
     using assms(1) assms(4) by (simp add: walk_betw_def)
   from vwalk_betw_can_be_split_2[OF walk assms(2) assms(3)]
@@ -918,11 +918,11 @@ proof(induction l arbitrary: u p v rule: less_induct)
   proof(cases "e \<in> set p'")
     case True
     then obtain p1 p2 where p1p2:"p' = p1 @[e]@p2"
-      by (fastforce dest: split_list)
+      by \<^marker>\<open>provenance ai\<close> (fastforce dest: split_list)
     have bulast_p1_subst:"butlast (e # p1) @ [last (e # p1)] = e#p1"
       by simp
     have epath_verbose:"epath G u (butlast (e # p1) @ [last (e # p1), e] @ p2) v"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "butlast (e # p1) @ [last (e # p1), e] @ p2
           = (butlast (e # p1) @ [last (e # p1)]) @ ([e] @ p2)"
         by simp
@@ -1229,9 +1229,9 @@ lemma edges_of_path_append_subset_2:
 proof(cases p)
   case (Cons a list)
   have "set (edges_of_path (rev p)) \<subseteq> set (edges_of_path (rev p' @ rev p))"
-    by (rule edges_of_path_append_subset)
+    by \<^marker>\<open>provenance ai\<close> (rule edges_of_path_append_subset)
   then show ?thesis 
-    by (simp del: rev_append add: rev_append[symmetric] edges_of_path_rev[symmetric] set_rev)
+    by \<^marker>\<open>provenance ai\<close> (simp del: rev_append add: rev_append[symmetric] edges_of_path_rev[symmetric] set_rev)
 qed auto
 
 lemma path_edges_subset:
@@ -1399,7 +1399,7 @@ proof(induction  u p v rule: induct_walk_betw)
 next
   case (path2 v v' vs b)
   hence helper: " vs = Nil \<Longrightarrow> v' = b"  
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume "vs = Nil"
     hence "walk_betw G v' [v'] b"
       using path2.hyps(2) by simp
@@ -1509,7 +1509,7 @@ next
     case True
     then show ?thesis
       using Cons
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from Cons.IH[OF True] obtain v1 v2 p1 p2
         where e_def: "e = {v1, v2}" and p'_def: "p' = p1 @ [v1, v2] @ p2"
         by blast
@@ -1527,7 +1527,7 @@ next
       using \<open>p' \<noteq> []\<close>
       by auto
     ultimately show ?thesis
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
   qed
 qed
 
@@ -1543,7 +1543,7 @@ proof-
     using in_edges_of_path_split[OF assms]
     by auto
   show ?thesis
-  proof(cases p1)
+  proof \<^marker>\<open>provenance ai\<close>(cases p1)
     case Nil
     hence "p = v1 # v2 # p2"
       using p_def by simp
@@ -1577,7 +1577,7 @@ proof-
       "p = p1 @ us \<and> us @ v # p' = v1 # v2 # p2 \<or> p @ us = p1 \<and> v # p' = us @ v1 # v2 # p2"
     using in_edges_of_path_split[OF assms(1)]
     apply(simp add: append_eq_append_conv2)
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   moreover have "v1 = v \<or> v2 = v"
     using assms(2) v1v2p1p2us
     by auto
@@ -1592,11 +1592,11 @@ proof-
     case 1
     note case1 = this
     have p_def: "p = p1 @ us"
-      using case1 by simp
+      using case1 by \<^marker>\<open>provenance ai\<close> simp
     have us_eq: "us @ v # p' = v # v2 # p2"
-      using case1 by simp
+      using case1 by \<^marker>\<open>provenance ai\<close> simp
     have us_empty: "us = []"
-    proof (rule ccontr)
+    proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
       assume "us \<noteq> []"
       then obtain u us' where u_def: "us = u # us'"
         by (cases us) auto
@@ -1608,11 +1608,11 @@ proof-
         by auto
     qed
     with us_eq have p'_eq: "p' = v2 # p2"
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     hence hd_p': "v2 = hd p'"
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     show ?thesis
-    proof (cases "v1 = v")
+    proof \<^marker>\<open>provenance ai\<close> (cases "v1 = v")
       case True
       with v1v2p1p2us(1) hd_p' show ?thesis
         by auto
@@ -1628,9 +1628,9 @@ proof-
   next
     case 2
     then have vp'_eq: "v # p' = us @ v # v2 # p2"
-      by auto
+      by \<^marker>\<open>provenance ai\<close> auto
     have us_empty: "us = []"
-    proof (cases us)
+    proof \<^marker>\<open>provenance ai\<close> (cases us)
       case Nil
       then show ?thesis by simp
     next
@@ -1643,13 +1643,13 @@ proof-
         by blast
     qed
     with vp'_eq have p'_eq: "p' = v2 # p2"
-      by auto
+      by \<^marker>\<open>provenance ai\<close> auto
     have p'_nonempty: "p' \<noteq> []"
-      using p'_eq by simp
+      using p'_eq by \<^marker>\<open>provenance ai\<close> simp
     have hd_p': "hd p' = v2"
-      using p'_eq by simp
+      using p'_eq by \<^marker>\<open>provenance ai\<close> simp
     have "v2 \<noteq> v"
-    proof
+    proof \<^marker>\<open>provenance ai\<close>
       assume v2v: "v2 = v"
       have "hd p' \<in> set p'"
         using p'_nonempty by (rule hd_in_set)
@@ -1659,11 +1659,11 @@ proof-
         by blast
     qed
     with \<open>v1 = v \<or> v2 = v\<close> have v1_eq: "v1 = v"
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
     have "e = {v, hd p'}"
-      using v1v2p1p2us(1) v1_eq hd_p' by simp
+      using v1v2p1p2us(1) v1_eq hd_p' by \<^marker>\<open>provenance ai\<close> simp
     then show ?thesis
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
   next
     case 3
     then have "v \<notin> set us"
@@ -1671,7 +1671,7 @@ proof-
       by auto
     then have "e = {last us, v}"
       using assms(4) v1v2p1p2us(1)
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have p_eq: "p = p1 @ us" and eq: "us @ v # p' = v1 # v # p2"
         using "3" by auto
       have vnus: "v \<notin> set us"
@@ -1708,7 +1708,7 @@ proof-
         using us_single v2_v v1v2p1p2us(1) by simp
     qed
     then have "e = {last p, v}"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from "3" have p_eq: "p = p1 @ us" and eq: "us @ v # p' = v1 # v # p2"
         by auto
       have "us \<noteq> []"
@@ -1729,9 +1729,9 @@ proof-
   next
     case 4
     then have "v # p' = us @ v1 # v # p2"
-      by auto
+      by \<^marker>\<open>provenance ai\<close> auto
     then have "v \<in> set p'"
-    proof (cases us)
+    proof \<^marker>\<open>provenance ai\<close> (cases us)
       case Nil
       with \<open>v # p' = us @ v1 # v # p2\<close> show ?thesis
         by auto
@@ -1741,7 +1741,7 @@ proof-
         by auto
     qed
     with assms(4) show ?thesis
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
   qed
 qed
 
@@ -1914,9 +1914,9 @@ proof-
     hence "path E p" 
       using "12" path_subset by blast
     hence "walk_betw E u p v" unfolding walk_betw_def
-      using p_prop by (auto dest: walk_between_nonempty_pathD)
+      using p_prop by \<^marker>\<open>provenance ai\<close> (auto dest: walk_between_nonempty_pathD)
     hence "reachable E u v" unfolding reachable_def
-      by (rule exI[where x=p])
+      by \<^marker>\<open>provenance ai\<close> (rule exI[where x=p])
     thus False using asm by simp
   qed
   hence "{a, b} \<in> set (edges_of_path p)" 
@@ -2147,7 +2147,7 @@ lemma mid_path_deg_ge_2:
     "distinct p"
     "finite G"
   shows "degree G v \<ge> 2"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have deg2: "degree (set (edges_of_path p)) v = 2"
     using degree_edges_of_path_ge_2[OF assms(5) assms(2) assms(3) assms(4)] .
   have subset: "set (edges_of_path p) \<subseteq> G"

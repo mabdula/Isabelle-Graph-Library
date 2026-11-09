@@ -153,7 +153,7 @@ lemma in_singleton: "\<lbrakk>s = {x}; y \<in> s\<rbrakk> \<Longrightarrow> x = 
 
 lemma reverse_pigeonhole:
   "\<lbrakk>finite X; (f ` X) \<subseteq> Y; card X < card Y\<rbrakk> \<Longrightarrow> \<exists>y \<in> Y. \<forall>x \<in> X. y \<noteq> f x"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume fin: "finite X" and sub: "f ` X \<subseteq> Y" and card_lt: "card X < card Y"
   show "\<exists>y\<in>Y. \<forall>x\<in>X. y \<noteq> f x"
   proof (rule ccontr)
@@ -214,7 +214,7 @@ lemma extract_first_x:
   subgoal for a xs
     apply(cases "P a") 
     apply fastforce
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume notPa: "\<not> P a"
     assume IH: "x \<in> set xs \<Longrightarrow> P x \<Longrightarrow>
       \<exists>y ys zs. xs = ys @ [y] @ zs \<and> P y \<and> (\<nexists>z. z \<in> set ys \<and> P z)"
@@ -259,7 +259,7 @@ lemma element_of_list_cases:
  shows P
 proof-
   obtain p1 p2 where "p = p1@[u]@p2" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from assms(1) obtain ys zs where "p = ys @ u # zs"
       by (auto dest: split_list)
     then show thesis

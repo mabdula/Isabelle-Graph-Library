@@ -12,7 +12,7 @@ provenance human
 subsection \<open>Auxiliary Lemmas\<close>
 
 lemma max_n: "(\<And> n. P n \<Longrightarrow> n \<le> bound) \<Longrightarrow> P (n::nat) \<Longrightarrow> (\<exists> nmax. P nmax \<and> (\<nexists> m. m > nmax \<and> P m))"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume bound_hyp: "\<And>n. P n \<Longrightarrow> n \<le> bound"
   assume "P n"
   let ?S = "{n. P n}"
@@ -33,7 +33,7 @@ lemma exists_list_with_first_element:
   shows "\<exists>l. set l = X \<and> (nth l 0) = x \<and> distinct l"
 proof -
   from `finite X` `x \<in> X` obtain l where "set l = X" "distinct l"
-  using finite_distinct_list by blast
+  using finite_distinct_list by \<^marker>\<open>provenance ai\<close> blast
   then have "x \<in> set l" using assms(2) by simp
   then obtain i where "i < length l" and "nth l i = x"
     by (meson in_set_conv_nth)
@@ -110,7 +110,7 @@ proof -
   then have "\<forall>y. y \<in> ?set_diff \<longrightarrow> List.member l y" using  \<open>length l > 0\<close> by simp
   then have "List.member l x" using \<open>x \<in> ?set_diff\<close> by simp
   then obtain i where "(nth l i) = x" "i < length l" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "x \<in> set l" using \<open>x \<in> set l - set k\<close> by simp
     then obtain i where "i < length l" "l ! i = x"
       using in_set_conv_nth by meson
@@ -226,7 +226,7 @@ proof -
   have "\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<in> F" by simp
   then have "\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<subseteq> E" using assms(1) unfolding set_system_def by simp
   have S_prop: "\<forall>Z. Z \<in> ?S \<longrightarrow> finite Z"
-  proof (rule allI, rule impI)
+  proof \<^marker>\<open>provenance ai\<close> (rule allI, rule impI)
     fix Z
     assume "Z \<in> ?S"
     with \<open>\<forall>Z. Z \<in> ?S \<longrightarrow> Z \<subseteq> E\<close> have "Z \<subseteq> E" by blast
@@ -384,7 +384,7 @@ proof
               then have assum3: "List.member (take (length l - 1) l) (nth l (length l - 1))" 
                 using  \<open>l \<noteq> []\<close> assum2 by simp
               have "l = (take (length l - 1) l) @ [nth l (length l - 1)]" using \<open>l \<noteq> []\<close> 
-              proof -
+              proof \<^marker>\<open>provenance ai\<close> -
                 have "Suc (length l - 1) = length l" using \<open>0 < length l\<close> by simp
                 hence "take (Suc (length l - 1)) l = l" by simp
                 moreover have "take (Suc (length l - 1)) l = take (length l - 1) l @ [l ! (length l - 1)]"
@@ -397,7 +397,7 @@ proof
             qed
             have "set (take (length l - 1) l) \<in> F" using l_prop by simp
             then have  "((set (take (length l) l)) - {nth l (length l - 1)}) \<in> F" using factone facttwo 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "set (take (length l) l) - {nth l (length l - 1)} = set (take (length l - 1) l)"
                 using factone facttwo by auto
               then show ?thesis
@@ -510,7 +510,7 @@ proof (unfold_locales)
           case True
           have "set l = X" using l_prop by auto
           then have "nth l 0 \<in> X" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
   have "l \<noteq> []" using \<open>X \<noteq> {}\<close> \<open>set l = X\<close> by auto
   then show ?thesis using \<open>set l = X\<close> by (cases l) auto
 qed
@@ -561,7 +561,7 @@ qed
             have "distinct l" using l_prop by simp
             have "distinct k" using k_prop(3) by simp
             have "X \<inter> Y \<subset> X" using \<open>X \<inter> Y \<noteq> {}\<close>
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               show "X \<inter> Y \<subset> X"
               proof (rule psubsetI)
                 show "X \<inter> Y \<subseteq> X" by (rule inf.cobounded1)
@@ -577,7 +577,7 @@ qed
             qed
             then have "(set k) \<subset> (set l)" using l_prop k_prop(1) by simp
             then have assum6: "\<exists>i. i \<le> length k \<and> set (take i l) \<subseteq> set k \<and> (nth l i) \<in> (set l) - (set k)" using subset_list_el 
-                [OF \<open>distinct l\<close> \<open>distinct k\<close> \<open>(nth l 0) = (nth k 0)\<close> \<open>l \<noteq> []\<close> \<open>set k \<subset> set l\<close> \<open>k \<noteq> []\<close>] by blast
+                [OF \<open>distinct l\<close> \<open>distinct k\<close> \<open>(nth l 0) = (nth k 0)\<close> \<open>l \<noteq> []\<close> \<open>set k \<subset> set l\<close> \<open>k \<noteq> []\<close>] by \<^marker>\<open>provenance ai\<close> blast
             then obtain i where i_prop: " i \<le> length k \<and> set (take i l) \<subseteq> set k \<and> (nth l i) \<in> (set l) - (set k)" by auto
             have "X - (X \<inter> Y) = X - Y" by auto
             then have "(set l) - (set k) = X - Y" using l_prop k_prop(1) by simp
@@ -585,7 +585,7 @@ qed
             then have "(nth l i) \<notin> Y" by simp
             have "card (set k) < card (set l)" using \<open>(set k) \<subset> (set l)\<close> by (simp add: \<open>finite X\<close> psubset_card_mono)
             then have "length k < length l" using l_prop k_prop(3)
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "distinct l" using l_prop by simp
               have "distinct k" using k_prop(3) by simp
               have l_card: "length l = card (set l)" using distinct_card[OF \<open>distinct l\<close>] by simp
@@ -677,7 +677,7 @@ proof
                 then obtain y where y_prop: "y \<in> X - Y \<and> Y \<union> {y} \<in> F" by auto
                 then have "y \<notin> Y" by simp
                 then have "card (Y \<union> {y}) = card Y + card {y}" using \<open>card Y = i\<close> 
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                   have "finite Y" using x_Y_Z_prop \<open>finite X\<close> finite_subset by blast
                   moreover have "finite {y}" by simp
                   moreover have "Y \<inter> {y} = {}" using \<open>y \<notin> Y\<close> by simp
@@ -689,7 +689,7 @@ proof
                 have 4: "Y \<subset> Y \<union> {y}" using \<open>y \<notin> Y\<close> by auto
                 then have "((Y \<union> {y}) - Y) = {y}" by auto
                 then show ?thesis
-                                   proof -
+                                   proof \<^marker>\<open>provenance ai\<close> -
                    have "y \<notin> Y" using y_prop by simp
                    have "(Y \<union> {y}) - Y = {y}" using \<open>y \<notin> Y\<close> by auto
                    then have "Y \<in> F \<and> Y \<union> {y} \<in> F \<and> Y \<union> {y} \<subseteq> X \<and> Y \<subset> Y \<union> {y} \<and>

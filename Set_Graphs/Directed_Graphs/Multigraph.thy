@@ -228,7 +228,7 @@ lemma flowpath_cases:
 "\<lbrakk>multigraph_path a2; a2 = [] \<Longrightarrow> P; \<And>e. a2 = [e] \<Longrightarrow> P;
   \<And>e es. \<lbrakk>a2 = e # es; snd e = fst (hd es); multigraph_path es\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow>
 P"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume path: "multigraph_path a2"
   assume A: "a2 = [] \<Longrightarrow> P"
   assume B: "\<And>e. a2 = [e] \<Longrightarrow> P"

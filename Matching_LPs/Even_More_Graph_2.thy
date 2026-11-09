@@ -25,7 +25,7 @@ definition set_to_list :: "'b set \<Rightarrow> 'b list"
 lemma  set_set_to_list:
   "finite s \<Longrightarrow> set (set_to_list s) = s"
   unfolding set_to_list_def
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "finite s"
   then have "\<exists>l. set l = s \<and> distinct l"
     using finite_distinct_list by blast
@@ -38,7 +38,7 @@ qed
 lemma  set_set_to_list_distinct:
   "finite s \<Longrightarrow> distinct (set_to_list s)"
   unfolding set_to_list_def
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "finite s"
   then have "\<exists>l. set l = s \<and> distinct l"
     using finite_distinct_list by blast
@@ -55,7 +55,7 @@ lemma edges_list_el_in_E:
   shows "edges_list E ! k \<in> E"
 proof -
   have "finite E" 
-  proof (rule ccontr)
+  proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
     assume "\<not> finite E"
     then have "card E = 0"
       by (rule card.infinite)
@@ -66,7 +66,7 @@ proof -
     unfolding edges_list_def using set_set_to_list 
     using \<open>finite E\<close> by blast
   have "edges_list E ! k \<in> set (edges_list E)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "distinct (edges_list E)"
     unfolding edges_list_def using set_set_to_list_distinct \<open>finite E\<close> by blast
   hence len_eq: "length (edges_list E) = card (set (edges_list E))"
@@ -99,7 +99,7 @@ lemma vert_list_el_in_VsE:
   shows "vertices_list E ! k \<in> Vs E"
 proof -
   have "finite (Vs E)" 
-proof (rule ccontr)
+proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
   assume "infinite (Vs E)"
   then have "card (Vs E) = 0"
     by (rule card.infinite)
@@ -110,7 +110,7 @@ qed
     unfolding vertices_list_def using set_set_to_list 
     using \<open>finite (Vs E)\<close> by blast
   then have "vertices_list E ! k \<in> set (vertices_list E)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume E: "set (vertices_list E) = Vs E"
   have "card (set (vertices_list E)) \<le> length (vertices_list E)"
     by (rule card_length)
@@ -139,7 +139,7 @@ lemma diff_verts:
   shows "vertices_list E ! i \<noteq> vertices_list E ! j"
 proof -
   have "finite (Vs E)" 
-    proof (rule ccontr)
+    proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
       assume "\<not> finite (Vs E)"
       then have "card (Vs E) = 0"
         by (rule card.infinite)
@@ -149,7 +149,7 @@ proof -
   have "distinct (vertices_list E)" 
     by (simp add: \<open>finite (Vs E)\<close> distinct_vert_list)
   then show ?thesis
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have set_eq: "set (vertices_list E) = Vs E"
       unfolding vertices_list_def
       using set_set_to_list[OF \<open>finite (Vs E)\<close>] by simp

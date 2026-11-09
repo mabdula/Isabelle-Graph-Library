@@ -94,7 +94,7 @@ lemma prepath_cases: "prepath a2 \<Longrightarrow>
                      (\<And>e. a2 = [e]  \<Longrightarrow> P) \<Longrightarrow>
                      (\<And> e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P) \<Longrightarrow>
                      P"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume asm: "prepath a2"
     and case_single: "\<And>e. a2 = [e] \<Longrightarrow> P"
     and case_cons: "\<And>e d es. a2 = e # d # es \<Longrightarrow> sndv e = fstv d \<Longrightarrow> prepath (d # es) \<Longrightarrow> P"
@@ -126,7 +126,7 @@ lemma prepath_split1:
 lemma prepath_split2: 
   assumes "prepath (xs@ys)"
   shows   "ys \<noteq> []  \<Longrightarrow> prepath ys"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume ne: "ys \<noteq> []"
   have imp: "prepath (xs @ ys) \<Longrightarrow> ys \<noteq> [] \<Longrightarrow> prepath ys"
   proof (induction xs arbitrary: ys)
@@ -162,7 +162,7 @@ qed
 lemma prepath_split3:
   assumes "prepath (xs@ys)" 
     shows "xs \<noteq> [] \<Longrightarrow> ys \<noteq> []  \<Longrightarrow> sndv (last xs) = fstv (hd ys)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume xs_nonempty: "xs \<noteq> []"
   assume ys_nonempty: "ys \<noteq> []"
   obtain xs' x where xs': "xs = xs' @ [x]"
@@ -355,7 +355,7 @@ lemma augpath_cases:
 (\<And>f e d es. a1 = f \<Longrightarrow> a2 = e # d # es \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = fstv d  \<Longrightarrow> 
             augpath f (d # es) \<Longrightarrow> P) \<Longrightarrow>
 P"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume p: "augpath a1 a2"
   assume single: "\<And>f e.     a1 = f \<Longrightarrow> a2 = [e] \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> P"
   assume cons: "\<And>f e d es. a1 = f \<Longrightarrow> a2 = e # d # es \<Longrightarrow> 0 < \<uu>\<^bsub>f\<^esub>e \<Longrightarrow> sndv e = fstv d  \<Longrightarrow>
@@ -399,7 +399,7 @@ next
                                "(sndv (last es)) = v" "set es \<subseteq> \<EE>"
    by blast
   hence "augpath f (e#es)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have es_ne: "es \<noteq> []"
       using es_Def(1) by (auto simp add: augpath_def prepath_def)
     have es_eq: "es = hd es # tl es"
@@ -606,7 +606,7 @@ text \<open>Residual capacities related to edges that have got nothing to do
 lemma e_not_in_p_aug: 
   "\<lbrakk>e \<notin> set es; erev e \<notin> set es\<rbrakk> \<Longrightarrow> rcap (augment_edges f \<gamma> es) e = rcap f e"
   apply(induction f \<gamma> es rule: augment_edges.induct, simp)
-  by(rule redge_pair_cases)(simp, (rule redge_pair_cases; simp)+)+
+  by \<^marker>\<open>provenance ai\<close>(rule redge_pair_cases)(simp, (rule redge_pair_cases; simp)+)+
 
 text \<open>If we augment a forward residual arc, the flow increases accordingly.\<close>
 
@@ -1220,7 +1220,7 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
       have "augment_edges f \<gamma> es d = f d"
       using e_not_in_es_flow_not_change[of es d "f" \<gamma> ] 
       using "2.prems"(2) "2.prems"(3) True e_not_in_p_aug 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have e_notin_es: "e \<notin> set es"
           using "2.prems"(3) by simp
         have Bd_notin_es: "B d \<notin> set es"
@@ -1241,7 +1241,7 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   next
     case False
     hence " augment_edges f \<gamma> (e # es) d = augment_edges f \<gamma> ( es) d"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "e \<noteq> F d"
         using "2.prems"(2) by auto
       hence "d \<noteq> oedge e"
@@ -1285,7 +1285,7 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   next
     case False
     then show ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from "2.prems" have hyps: "F d \<in> set (e # es)" "B d \<in> set (e # es)" "distinct (e # es)"
         by simp_all
       have e_ne_Fd: "e \<noteq> F d"
@@ -1403,7 +1403,7 @@ proof-
      by(auto intro: redge_pair_cases simp add:  algebra_simps)
    also have "... = (\<Sum>ea\<in>(\<E>).f ea * \<c> ea)
                        +  \<gamma> * \<cc> e " 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
       have "(\<Sum>ea\<in>\<E>. f ea * \<c> ea) =
               f (oedge e) * \<c> (oedge e) + (\<Sum>ea\<in>\<E> - {oedge e}. f ea * \<c> ea)"
         by (rule sum.remove[OF finite_E assms])
@@ -1434,7 +1434,7 @@ proof(induction f \<gamma> es rule: augment_edges.induct)
   also have "... = (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set es) + \<gamma> * \<cc> e"
     using "2.IH" "2.prems"(1) "2.prems"(2) by auto
   also have "... =  (\<Sum>e\<in>\<E>. f e * \<c> e) + \<gamma> * sum \<cc> (set (e#es))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have e_notin: "e \<notin> set es"
       using "2.prems"(2) by simp
     have "sum \<cc> (set (e # es)) = \<cc> e + sum \<cc> (set es)"

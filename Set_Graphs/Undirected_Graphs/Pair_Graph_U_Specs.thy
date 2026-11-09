@@ -177,7 +177,7 @@ proof -
   have "rep (uEdge u v) \<in> uedges G"
     using assms by (auto simp: uedges_def2)
   then consider "uEdge u v \<in> uedges G" | "uEdge v u \<in> uedges G"
-    using is_rep(2)[of u v] by auto
+    using is_rep(2)[of u v] by \<^marker>\<open>provenance ai\<close> auto
   then consider "set_of_uedge (uEdge u v) \<in> set_of_uedge ` uedges G" 
     | "set_of_uedge (uEdge v u) \<in> set_of_uedge ` uedges G"
     by cases (auto intro: imageI)
@@ -195,7 +195,7 @@ lemma rev_vwalk:
   apply simp
   apply simp
   using vwalk_append_single graph_abs_symmetric last_rev
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   fix v v' vs
   assume edge: "(v, v') \<in> digraph_abs G"
     and walk_tail: "Vwalk.vwalk (digraph_abs G) (v' # vs)"
@@ -243,7 +243,7 @@ qed
 lemma rep_elim:
   assumes "rep e = rep (uEdge u v)"
   obtains "e = uEdge u v" | "e = uEdge v u"
-proof (cases e)
+proof \<^marker>\<open>provenance ai\<close> (cases e)
   case (uEdge a b)
   with assms have rep_eq: "rep (uEdge a b) = rep (uEdge u v)"
     by simp
@@ -349,7 +349,7 @@ proof -
   moreover then consider "e\<^sub>u = uEdge x y" | "e\<^sub>u = uEdge y x"
     using is_rep by auto
   ultimately have "{u,v} = set_of_uedge (uEdge x y) \<or> {u,v} = set_of_uedge (uEdge y x)"
-    using is_rep by (cases "e\<^sub>u = uEdge x y") auto
+    using is_rep by \<^marker>\<open>provenance ai\<close> (cases "e\<^sub>u = uEdge x y") auto
   hence "{u,v} = {x,y}" 
     by (auto simp: set_of_uedge)
   then consider "u = x" "v = y" | "u = y" "v = x"
@@ -385,7 +385,7 @@ qed
 
 lemma set_edge_isin_vsetorhood_iff:
   "e \<in> set_of_uedge ` uedges G \<longleftrightarrow> (\<exists>u v. e = {u,v} \<and> v \<in>\<^sub>G (\<N>\<^sub>G G u))"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume "e \<in> set_of_uedge ` uedges G"
   then obtain u v where "e = {u,v}" and "v \<in>\<^sub>G (\<N>\<^sub>G G u)"
     by (rule set_edge_isin_vsetorhood_elim)

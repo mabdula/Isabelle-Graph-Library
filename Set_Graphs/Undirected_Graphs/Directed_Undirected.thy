@@ -148,7 +148,7 @@ lemma symmetric_digraph_by_def: "symmetric_digraph {(u, v). {u, v} \<in> G}"
   by (simp add: insert_commute symmetric_digraph_def)
 
 lemma UD_inverse_of_D: "dblton_graph G \<Longrightarrow> UD {(u, v). {u, v} \<in> G} = G"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume dblton: "dblton_graph G"
   show "UD {(u, v). {u, v} \<in> G} = G"
   proof

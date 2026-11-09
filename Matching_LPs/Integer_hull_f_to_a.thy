@@ -28,17 +28,17 @@ proof -
   have int_in_carr: "P \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n"
     using assms by auto
   have hull_carr: "convex_hull (P \<inter> \<int>\<^sub>v) \<subseteq> carrier_vec n"
-    using int_in_carr convex_hull_carrier by blast
+    using int_in_carr convex_hull_carrier by \<^marker>\<open>provenance ai\<close> blast
   have int_carr: "convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n"
-    using hull_carr by blast
+    using hull_carr by \<^marker>\<open>provenance ai\<close> blast
   have conv: "convex (convex_hull (P \<inter> \<int>\<^sub>v))"
-    using int_in_carr convex_hulls_are_convex by blast
+    using int_in_carr convex_hulls_are_convex by \<^marker>\<open>provenance ai\<close> blast
   have idem: "convex_hull (convex_hull (P \<inter> \<int>\<^sub>v)) = convex_hull (P \<inter> \<int>\<^sub>v)"
-    using conv hull_carr convex_convex_hull by blast
+    using conv hull_carr convex_convex_hull by \<^marker>\<open>provenance ai\<close> blast
   have sub_hull: "convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v)"
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   have le1: "convex_hull (convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v) \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "convex_hull (convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v)
             \<subseteq> convex_hull (convex_hull (P \<inter> \<int>\<^sub>v))"
       using sub_hull hull_carr convex_hull_mono by blast
@@ -46,7 +46,7 @@ proof -
       by (simp add: idem)
   qed
   have le2: "convex_hull (P \<inter> \<int>\<^sub>v) \<subseteq> convex_hull (convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "P \<inter> \<int>\<^sub>v \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v) \<inter> \<int>\<^sub>v"
       using int_in_carr set_in_convex_hull by blast
     then show ?thesis
@@ -54,7 +54,7 @@ proof -
   qed
   show ?thesis
     unfolding integer_hull_def
-    using le1 le2 by blast
+    using le1 le2 by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 lemma integer_hull_in_carrier:
@@ -112,17 +112,17 @@ proof(cases "infinite I")
 next
   case False
     have fin: "finite I"
-      using False by simp
+      using False by \<^marker>\<open>provenance ai\<close> simp
     have A'_fst: "A' = fst (sub_system A b I)"
-      using assms(3)[symmetric] by simp
+      using assms(3)[symmetric] by \<^marker>\<open>provenance ai\<close> simp
     have le: "dim_row A' \<le> card I"
-      using dim_row_less_card_I[of I A b] fin A'_fst by simp
+      using dim_row_less_card_I[of I A b] fin A'_fst by \<^marker>\<open>provenance ai\<close> simp
     have j1_card: "j1 < card I"
-      using assms(4) le by linarith
+      using assms(4) le by \<^marker>\<open>provenance ai\<close> linarith
     have j2_card: "j2 < card I"
-      using assms(5) le by linarith
+      using assms(5) le by \<^marker>\<open>provenance ai\<close> linarith
     have "pick I j1 \<noteq> pick I j2"
-    proof (cases j1 j2 rule: linorder_cases)
+    proof \<^marker>\<open>provenance ai\<close> (cases j1 j2 rule: linorder_cases)
       case less
       then have "pick I j1 < pick I j2"
         using pick_mono_le j2_card fin by blast
@@ -138,7 +138,7 @@ next
       then show "pick I j1 \<noteq> pick I j2" by linarith
     qed
     then show ?thesis
-      using assms(1) assms(2) by simp
+      using assms(1) assms(2) by \<^marker>\<open>provenance ai\<close> simp
 qed
 
 lemma elems_ge_min:
@@ -181,16 +181,16 @@ next
     using A P_def assms(5) b char_min_face by blast
   obtain \<alpha> \<beta> where \<alpha>_\<beta>:"support_hyp P \<alpha> \<beta> \<and> F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>}"
     using assms(5)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have face_P_F: "face P F"
       by (rule min_face_elim(1)[OF assms(5)])
     show thesis
       using that face_P_F by (blast elim!: faceE)
   qed
   have face_P_F: "face P F"
-    by (rule min_face_elim(1)[OF assms(5)])
+    by \<^marker>\<open>provenance ai\<close> (rule min_face_elim(1)[OF assms(5)])
   obtain C d where C_d: "F = polyhedron C d"  "dim_row C = dim_vec d" "dim_col C = n" 
-    using face_is_polyhedron[OF A b face_P_F[unfolded P_def]] by blast
+    using face_is_polyhedron[OF A b face_P_F[unfolded P_def]] by \<^marker>\<open>provenance ai\<close> blast
   have "\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d" 
     apply (insert assms(5) char_min_face[of A nr b F])
     by(auto simp: \<open>F = polyhedron C d\<close>  A b P_def polyhedron_def)
@@ -228,7 +228,7 @@ next
     then obtain x y where x_y:"x \<in> F \<and> y \<in> F \<and> x \<noteq> y" 
       using \<open>F \<noteq> {}\<close> by blast
     have "\<forall>x \<in> F. x  \<in> carrier_vec n" 
-    proof (intro ballI)
+    proof \<^marker>\<open>provenance ai\<close> (intro ballI)
     have F_eq: "F = {v. v \<in> carrier_vec n \<and> C *\<^sub>v v \<le> d}"
       using C_d(1) by (simp add: polyhedron_def)
     fix x
@@ -239,7 +239,7 @@ next
       by blast
   qed
     then obtain i where i:"i < n \<and> x $ i \<noteq> y $ i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have xF: "x \<in> F" and yF: "y \<in> F" and xy: "x \<noteq> y"
         using x_y by blast+
       have xc: "x \<in> carrier_vec n" and yc: "y \<in> carrier_vec n"
@@ -265,7 +265,7 @@ next
     have "\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i" 
       using \<open>\<forall>i<n. \<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i\<close> i by presburger
     then show False 
-    proof (elim exE)
+    proof \<^marker>\<open>provenance ai\<close> (elim exE)
       fix \<gamma>
       assume gamma: "\<forall>z \<in> F. z $ i = \<gamma>"
       have "x $ i = \<gamma>"
@@ -279,7 +279,7 @@ next
     qed
   qed
   then show "card F = 1" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>\<exists>!x. x \<in> F\<close> obtain x
       where x_in: "x \<in> F" and x_uniq: "\<And>y. y \<in> F \<Longrightarrow> y = x"
       by blast
@@ -323,7 +323,7 @@ next
     using A P_def assms(5) b char_min_face by blast
   obtain \<alpha> \<beta> where \<alpha>_\<beta>:"support_hyp P \<alpha> \<beta> \<and> F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>}"
     using assms(5)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have face_P_F: "face P F"
       by (rule min_face_elim(1)[OF assms(5)])
     have "\<exists>\<alpha> \<beta>. support_hyp P \<alpha> \<beta> \<and> F = P \<inter> {x |x. \<alpha> \<bullet> x = \<beta>}"
@@ -332,7 +332,7 @@ next
       using that by blast
   qed
   obtain C d where C_d: "F = polyhedron C d"  "dim_row C = dim_vec d" "dim_col C = n" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have face_F: "face P F"
         using min_face_elim(1)[OF assms(5)] .
       then have face_F': "face (polyhedron A b) F"
@@ -350,7 +350,7 @@ next
     have "\<forall> x \<in> F. - unit_vec n i  \<bullet> x \<le> - bound" 
       by (simp add: bound_scalar \<open>i < n\<close> \<alpha>_\<beta>)
     then have  "\<forall> x \<in> carrier_vec n. C *\<^sub>v x \<le> d \<longrightarrow> - unit_vec n i  \<bullet> x \<le> - bound"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have inF: "\<forall>x \<in> carrier_vec n. C *\<^sub>v x \<le> d \<longrightarrow> x \<in> F"
         unfolding C_d(1) polyhedron_def by blast
       show ?thesis
@@ -361,7 +361,7 @@ next
           [OF carrier_matI[OF C_d(2) C_d(3)] carrier_vecI[OF refl]
                uminus_carrier_vec[THEN iffD2, OF unit_vec_carrier]
                `\<exists>x\<in>carrier_vec n. C *\<^sub>v x \<le> d`]
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
     then obtain \<beta>\<^sub>i where "\<beta>\<^sub>i \<in> { - unit_vec n i  \<bullet> x | x. x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d} 
         \<and> \<beta>\<^sub>i = Maximum { - unit_vec n i  \<bullet> x | x. x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d}" 
       using has_MaximumD(1) by blast
@@ -377,7 +377,7 @@ next
     then have "\<forall> x \<in> F. (- unit_vec n i) \<bullet> x = \<beta>\<^sub>i"
       using assms(5) unfolding min_face_def using  basic_trans_rules(17) by blast
     then show "(\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume key: "\<forall>x\<in>F. - unit_vec n i \<bullet> x = \<beta>\<^sub>i"
       have "\<forall>x\<in>F. x $ i = - \<beta>\<^sub>i"
       proof (rule ballI)
@@ -409,7 +409,7 @@ next
     then obtain x y where x_y:"x \<in> F \<and> y \<in> F \<and> x \<noteq> y" 
       using \<open>F \<noteq> {}\<close> by blast
     have "\<forall>x \<in> F. x  \<in> carrier_vec n" 
-    proof (intro ballI)
+    proof \<^marker>\<open>provenance ai\<close> (intro ballI)
       fix x
       assume "x \<in> F"
       then have "x \<in> {v. v \<in> carrier_vec n \<and> C *\<^sub>v v \<le> d}"
@@ -418,7 +418,7 @@ next
         by blast
     qed
     then obtain i where i:"i < n \<and> x $ i \<noteq> y $ i"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have xc: "x \<in> carrier_vec n"
         using x_y \<open>\<forall>x \<in> F. x  \<in> carrier_vec n\<close> by blast
       have yc: "y \<in> carrier_vec n"
@@ -445,7 +445,7 @@ next
     have "\<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i" 
       using \<open>\<forall>i<n. \<exists>\<beta>\<^sub>i. \<forall>x\<in>F. x $ i = \<beta>\<^sub>i\<close> i by presburger
     then show False 
-    proof (elim exE)
+    proof \<^marker>\<open>provenance ai\<close> (elim exE)
       fix \<beta>\<^sub>i
       assume beta: "\<forall>x\<in>F. x $ i = \<beta>\<^sub>i"
       have "x $ i = \<beta>\<^sub>i"
@@ -459,7 +459,7 @@ next
     qed
   qed
   then show "card F = 1" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>\<exists>!x. x \<in> F\<close> obtain v where vF: "v \<in> F" and vuniq: "\<forall>y. y \<in> F \<longrightarrow> y = v"
       by blast
     have "F = {v}"
@@ -492,7 +492,7 @@ proof(rule ccontr)
   let ?M = "{dim_vec d | C d I'.  F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and> 
           (C, d) = sub_system A b I'}" 
   have dims_eq: "dim_row A = dim_vec b" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dim_row A = nr"
         using assms(1) by (rule carrier_matD(1))
       moreover have "dim_vec b = nr"
@@ -502,7 +502,7 @@ proof(rule ccontr)
   assume "\<not> distinct (Matrix.rows A') "
   then obtain j1 j2 where j1j2: "j1 \<noteq> j2 \<and> j1 < dim_row A' \<and> 
                                  j2 < dim_row A' \<and> row A' j1 = row A' j2" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume nd: "\<not> distinct (Matrix.rows A')"
     have len: "length (Matrix.rows A') = dim_row A'"
       by (simp add: length_rows)
@@ -526,7 +526,7 @@ proof(rule ccontr)
   qed
   obtain i1 where i1:"i1 < dim_row A \<and> i1 \<in> I \<and> row A i1 = row A' j1 \<and>
                       i1 = (pick I j1) \<and> b' $ j1 = b $ i1" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have A'_eq: "A' = fst (sub_system A b I)"
     using assms(8)[symmetric] by simp
   have b'_eq: "b' = snd (sub_system A b I)"
@@ -555,7 +555,7 @@ proof(rule ccontr)
   qed
   obtain i2 where i2: "i2 < dim_row A \<and> i2 \<in> I \<and> row A i2 = row A' j2 \<and> 
                        i2 = (pick I j2) \<and> b' $ j2 = b $ i2" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have dims_A'b': "dim_row A' = dim_vec b'"
     using dims_subsyst_same[OF dims_eq, of I]
     by (simp add: assms(8)[symmetric])
@@ -576,7 +576,7 @@ proof(rule ccontr)
     assume "b $ i1 \<noteq> b $ i2"
     then have "b' $ j1 \<noteq> b' $ j2" using i1 i2 by auto
     obtain x where "x \<in> F" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have "face P F"
         using min_face_elim(1)[OF assms(5)] by blast
       then have "F \<noteq> {}"
@@ -589,7 +589,7 @@ proof(rule ccontr)
     have "row A' j1 = row A' j2" using j1j2 
       by blast
     show False
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have j1_lt: "j1 < dim_row A'" and j2_lt: "j2 < dim_row A'"
         and rows_eq: "row A' j1 = row A' j2"
         using j1j2 by simp_all
@@ -611,9 +611,9 @@ proof(rule ccontr)
     qed
   qed
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i1})"
-    by (rule that[OF prod.collapse])
+    by \<^marker>\<open>provenance ai\<close> (rule that[OF prod.collapse])
   have "{x.  A' *\<^sub>v x = b'} = {x.  C *\<^sub>v x = d \<and> row A i1 \<bullet> x = b $ i1 }"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have dim_Ab: "dim_row A = dim_vec b"
       using carrier_matD(1)[OF A] carrier_vecD[OF b] by simp
     have i1_in: "i1 \<in> I"
@@ -630,7 +630,7 @@ proof(rule ccontr)
     have "i2 \<in> I - {i1}" 
       using \<open>i1 \<noteq> i2\<close> i2 by blast
     then obtain j where j: "j < dim_row C \<and> row A i2 = row C j \<and> b $ i2 = d $ j" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have i2_mem: "i2 \<in> I - {i1}"
           using i2 \<open>i1 \<noteq> i2\<close> by blast
         have i2_dim: "i2 < dim_vec b"
@@ -646,7 +646,7 @@ proof(rule ccontr)
           using that by blast
       qed
     then have "row A i1 = row C j \<and> b $ i1 = d $ j" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have rA2: "row A i2 = row A' j2"
           using i2 by blast
         have "row A i1 = row A' j1"
@@ -669,7 +669,7 @@ proof(rule ccontr)
           by (rule conjI)
       qed
     then have "row C j \<bullet> x = d $ j" using `d = C *\<^sub>v x`  j 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have jlt: "j < dim_row C"
           using j by blast
         have "row C j \<bullet> x = (C *\<^sub>v x) $ j"
@@ -679,7 +679,7 @@ proof(rule ccontr)
         finally show ?thesis .
       qed
     then show "row A i1 \<bullet> x = b $ i1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have "row A i1 = row A' j1" using i1 by blast
       also have "\<dots> = row A' j2" using j1j2 by simp
       also have "\<dots> = row A i2" using i2[THEN conjunct2, THEN conjunct2, THEN conjunct1] by simp
@@ -695,7 +695,7 @@ proof(rule ccontr)
   then have "{x.  A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d}"
     using \<open>{x. A' *\<^sub>v x = b'} = {x. C *\<^sub>v x = d \<and> row A i1 \<bullet> x = b $ i1}\<close> by blast
   have "dim_vec d + 1 = dim_vec b'" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have i1_I: "i1 \<in> I"
       using i1 by blast
     have i1_A: "i1 < dim_row A"
@@ -727,7 +727,7 @@ lemma subsyst_rows_carr:
   assumes "A \<in> carrier_mat nr n"
   assumes "(A', b') = sub_system A b I"
   shows "set (rows A') \<subseteq> carrier_vec n" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have A'_eq: "A' = fst (sub_system A b I)"
     by (simp add: assms(2)[symmetric])
   have dim_A: "dim_col A = n"
@@ -751,7 +751,7 @@ lemma itself_is_subsyst_set_idcs:
 lemma sum_list_of_map_eq:
   assumes "\<forall>i \<in> set L. f i = g i"
   shows "sum_list (map f L) = sum_list (map g L)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have maps_eq: "map f L = map g L"
   proof (rule map_cong)
     show "L = L" by (rule refl)
@@ -823,7 +823,7 @@ proof
     using lindpA' carrA' lindep_span by blast
   then obtain u where u:"u\<in>(set (rows A'))\<and> u \<in> span ((set (rows A')) - {u})" by auto
   then obtain j where "j < length (rows  A') \<and> rows A' ! j = u" using in_set_conv_nth 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "u \<in> set (rows A')"
       using u by blast
     then obtain k where "k < length (rows A')" "rows A' ! k = u"
@@ -832,7 +832,7 @@ proof
       using that by blast
   qed
   then have j:"j < dim_row A' \<and> row A' j = u" using nth_rows length_rows 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
     have jlen: "j < length (rows A')" and jnth: "rows A' ! j = u"
       using \<open>j < length (rows A') \<and> rows A' ! j = u\<close> by auto
     have jlt: "j < dim_row A'"
@@ -843,7 +843,7 @@ proof
       by (rule conjI)
   qed
   obtain i where i:"i < dim_row A \<and> i \<in> I \<and> row A i = row A' j \<and> i = (pick I j) \<and>  b $ i = b' $ j" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have sub_eq: "sub_system A b I = (A', b')"
     by (rule assms(8)[symmetric])
   have fstA': "fst (sub_system A b I) = A'"
@@ -864,13 +864,13 @@ proof
     by (rule that)
   qed
   obtain C d where C_d: "(C, d) = sub_system A b (I - {i})"
-    by (rule that[OF prod.collapse])
+    by \<^marker>\<open>provenance ai\<close> (rule that[OF prod.collapse])
   have 4: "{x. A' *\<^sub>v x = b'} = {x.  C *\<^sub>v x = d \<and> row A i \<bullet> x = b $ i }"
     using remove_index_sub_system_eq[of A b i I A' b' C d]  C_d assms(8) dim_sameAb i by linarith 
   have "u \<in> carrier_vec n" 
     using carrA' u by blast
   have Cd_non_empty: "{x. x \<in> carrier_vec n \<and>  C *\<^sub>v x = d \<and> row A' j \<bullet> x = b' $ j } \<noteq> {}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have facePF: "face P F"
       using assms(5) by (rule min_face_elim(1))
     have "F \<noteq> {}"
@@ -906,7 +906,7 @@ proof
     then obtain j' where "j' < length (rows C) \<and> (rows C) ! j' = u"  
       by (meson in_set_conv_nth)
     then have  j': "j' < dim_row C \<and> row C  j' = u"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume asm: "j' < length (rows C) \<and> (rows C) ! j' = u"
       have len: "j' < dim_row C"
         using asm by (simp add: length_rows)
@@ -916,7 +916,7 @@ proof
         using asm by simp
       with len show ?thesis by blast
     qed    obtain i' where i':"i' < nr \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
     have jC: "j' < dim_row C"
       using j' by blast
     have "\<exists>k. k < nr \<and> k \<in> I - {i} \<and> row A k = row C j' \<and> d $ j' = b $ k"
@@ -926,7 +926,7 @@ proof
       using that by blast
   qed
     then show ?thesis 
-    proof (intro ballI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro ballI impI)
       fix x
       assume xcarr: "(x :: 'a vec) \<in> carrier_vec n"
       assume xd: "C *\<^sub>v x = d"
@@ -959,7 +959,7 @@ proof
       using subsyst_rows_carr  C_d assms(1) by blast
     have "set (rows C) = set (rows A') - {u}" 
       using remove_index_remove_row[of A b i I A' b' C d]
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have rowAi: "row A i = row A' j"
         using i by blast
       have rowA'j: "row A' j = u"
@@ -981,7 +981,7 @@ proof
     qed
     then obtain c where "u = lincomb_list c (rows C)" 
       using  `set (rows C) \<subseteq> carrier_vec n`
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       note carr = \<open>set (rows C) \<subseteq> carrier_vec n\<close>
       have fin: "finite (set (rows C))"
         by simp
@@ -1006,7 +1006,7 @@ proof
       by force
     then show "\<forall>x \<in> carrier_vec n.  C *\<^sub>v x = d \<longrightarrow> row A i \<bullet> x = b $ i"
       using 6 i 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have eq: "row A i \<bullet> x = b $ i" if "x \<in> carrier_vec n" and "C *\<^sub>v x = d" for x
     proof -
       have "row A i \<bullet> x = row A' j \<bullet> x"
@@ -1046,7 +1046,7 @@ proof
   have A_t: "A\<^sup>T \<in> carrier_mat n n" 
     by (simp add: assms(1))
   show "lin_dep (set (cols A)) \<Longrightarrow> lin_dep (set (Matrix.rows A))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume dep_cols: "lin_dep (set (cols A))"
     show "lin_dep (set (Matrix.rows A))"
     proof (rule ccontr)
@@ -1079,7 +1079,7 @@ lemma mult_unit_vec_is_col:
   shows "A *\<^sub>v unit_vec n i = col A i" 
 proof
   show "dim_vec (A *\<^sub>v unit_vec n i) = dim_vec (col A i)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "dim_vec (A *\<^sub>v unit_vec n i) = dim_row A"
       by simp
     moreover have "dim_vec (col A i) = dim_row A"
@@ -1126,7 +1126,7 @@ proof -
     assume i_dimA:"i < dim_row A"
     assume j_dimA:"j < dim_col A"
     have i_dimAB:"i < dim_row (A @\<^sub>r B)" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dim_row A = nr1"
         using assms(1) by (rule carrier_matD(1))
       with i_dimA have "i < nr1" by simp
@@ -1134,7 +1134,7 @@ proof -
       then show "i < dim_row (A @\<^sub>r B)" by (simp add: AB_dim_row)
     qed
     have j_dimAB:"j < dim_col (A @\<^sub>r B)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "dim_col A = n"
           by (rule carrier_matD(2)[OF assms(1)])
         then show ?thesis
@@ -1153,7 +1153,7 @@ proof -
           i_dimAB \<open>i < nr1\<close> j_dimAB by force
       also have " (A @\<^sub>r B) $$ (i, j) =  A $$ (i, j)" 
         using append_rows_index_same[of A nr1 B nr2] assms(1-2) 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have row_eq: "row (A @\<^sub>r B) i = row A i"
         using Missing_Matrix.append_rows_nth(1) assms(1) assms(2) i_dimA by blast
       have "(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j"
@@ -1169,9 +1169,9 @@ proof -
     qed
   qed
   then have "distinct (cols (submatrix (A @\<^sub>r B) {0..<nr1} UNIV))"
-    using assms(3) by simp
+    using assms(3) by \<^marker>\<open>provenance ai\<close> simp
   then show ?thesis
-    by (rule distinct_cols_submatrix_UNIV)
+    by \<^marker>\<open>provenance ai\<close> (rule distinct_cols_submatrix_UNIV)
 qed
 
 lemma append_rows_eq: assumes A: "A \<in> carrier_mat nr1 nc" 
@@ -1215,7 +1215,7 @@ lemma row_in_set_rows:
   fixes A :: "'a  mat"
   assumes "i < dim_row A"
   shows "row A i \<in> set (rows A)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "i < length (rows A)"
     using assms by (simp add: length_rows)
   then have "rows A ! i \<in> set (rows A)"
@@ -1257,7 +1257,7 @@ proof -
         apply(auto simp: diff_smult_distrib_vec)
         by (meson assms(1) assms(3) minus_cancel_vec row_carrier_vec)
       then have "1 - k = 0"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           assume eq0: "(1 - k) \<cdot>\<^sub>v row A j = 0\<^sub>v n"
           have dim_j: "dim_vec (row A j) = n"
             using carrier_matD(2)[OF assms(1)] by simp
@@ -1325,7 +1325,7 @@ proof -
   then have "dim_span (set (cols A\<^sup>T)) \<le> n" 
     using dim_span_le_n  by blast
   have "rank A\<^sup>T = dim_span (set (cols A\<^sup>T))" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have set_eq: "set (cols A\<^sup>T) = set (rows A)"
       by (simp add: cols_transpose)
     have fin: "finite (set (cols A\<^sup>T))"
@@ -1377,7 +1377,7 @@ proof(cases "nr = 0")
   proof(rule ccontr)
     assume "n \<noteq> 0" 
     have "(1\<^sub>v n:: 'a vec) \<noteq> (0\<^sub>v n:: 'a vec)"
-    proof
+    proof \<^marker>\<open>provenance ai\<close>
       assume eq: "(1\<^sub>v n :: 'a vec) = (0\<^sub>v n :: 'a vec)"
       from \<open>n \<noteq> 0\<close> have n0: "0 < n" by simp
       have e1: "(1\<^sub>v n :: 'a vec) $ 0 = 1"
@@ -1458,7 +1458,7 @@ next
       proof(rule ccontr)
         assume "\<not> distinct (rows fullA)" 
         then obtain i j where "i < n \<and> j < n \<and> i \<noteq> j \<and> rows fullA ! i = rows fullA ! j" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have len_fullA: "length (rows fullA) = n"
             using carrier_matD(1)[OF sq_fullA] by (simp add: length_rows)
           have neq: "\<not> (\<forall>i<n. \<forall>j<n. i \<noteq> j \<longrightarrow> rows fullA ! i \<noteq> rows fullA ! j)"
@@ -1470,7 +1470,7 @@ next
             using that by blast
         qed
         then have i_j:"i < n \<and> j < n \<and> i \<noteq> j \<and> row fullA i = row fullA j"  
-          by (auto simp: carrier_matD(1)[OF sq_fullA] nth_rows)
+          by \<^marker>\<open>provenance ai\<close> (auto simp: carrier_matD(1)[OF sq_fullA] nth_rows)
         show False
         proof(cases "i < nr")
           case True
@@ -1565,12 +1565,12 @@ next
             then have "of_int ((i - nr) + 2) \<cdot>\<^sub>v row A 0 - of_int ((j - nr) + 2) \<cdot>\<^sub>v row A 0 = 0\<^sub>v n"
               using \<open>0 < nr\<close> assms(1) by auto
             then have smult_zero:"(of_int ((i - nr) + 2) - of_int ((j - nr) + 2)) \<cdot>\<^sub>v row A 0 = 0\<^sub>v n"
-              by (simp only: diff_smult_distrib_vec)
+              by \<^marker>\<open>provenance ai\<close> (simp only: diff_smult_distrib_vec)
             show ?thesis
             proof(cases "row A 0 = 0\<^sub>v n")
               case True
               then have "0\<^sub>v n \<in> (set (rows A))"  
-              proof -
+              proof \<^marker>\<open>provenance ai\<close> -
                 have "0 < dim_row A"
                   using \<open>0 < nr\<close> dim_rowA by simp
                 then have "row A 0 \<in> set (rows A)"
@@ -1583,7 +1583,7 @@ next
             next
               case False
               then show False 
-                proof -
+                proof \<^marker>\<open>provenance ai\<close> -
                   assume nz: "row A 0 \<noteq> 0\<^sub>v n"
                   have dimn: "dim_vec (row A 0) = n"
                     using assms(1) by auto
@@ -1669,7 +1669,7 @@ next
           by (simp add: \<open>A *\<^sub>v v = 0\<^sub>v nr\<close> x b)
       qed
       then show ?thesis 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have xv_carr: "x + v \<in> carrier_vec n"
             using x v(1) by (blast intro: add_carrier_vec)
           have xv_sol: "x + v \<in> carrier_vec n \<and> A *\<^sub>v (x + v) = b"
@@ -1706,7 +1706,7 @@ lemma bounded_min_faces_square_mat:
   shows "dim_row A' = n"
 proof -
   have "card F = 1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have ne: "polyhedron A b \<noteq> {}"
     using assms(3) assms(4) by blast
   have bnd: "(\<forall> x \<in> polyhedron A b. \<forall> i < n. x $ i \<le> bound) \<or>
@@ -1728,7 +1728,7 @@ proof -
   qed
   qed
   then have "\<exists>!x. x \<in> F" using card_eq_Suc_0_ex1 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "is_singleton F"
       using \<open>card F = 1\<close> by (simp add: is_singleton_altdef)
     then obtain xF where Fx: "F = {xF}"
@@ -1753,7 +1753,7 @@ proof -
     using A P_def assms(4) assms(6) assms(7) assms(8) assms(9) b 
     by blast
   have 2:"A' \<in> carrier_mat (dim_row A') n" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have A'_fst: "A' = fst (sub_system A b I)"
       by (simp add: assms(9)[symmetric])
     have "dim_col A' = dim_col A"
@@ -1766,7 +1766,7 @@ proof -
       by (rule carrier_matI[OF refl dimcol])
   qed
   have "b' \<in> carrier_vec (dim_row A')" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   from 1 obtain x where xcarr: "x \<in> carrier_vec n" and xeq: "A' *\<^sub>v x = b'"
     by blast
   have "A' *\<^sub>v x \<in> carrier_vec (dim_row A')"
@@ -1793,7 +1793,7 @@ proof
   have "- (v $ i) = - 1 * v $ i" 
     by simp
   then show " (- v) $ i = vec (dim_vec v) (\<lambda>i. - 1 * v $ i) $ i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have i_lt: "i < dim_vec v" using asmi by simp
     have "(- v) $ i = - (v $ i)" using i_lt by simp
     also have "\<dots> = - 1 * v $ i" by simp
@@ -1811,7 +1811,7 @@ lemma vec_carr_add_mono:
   assumes "x \<le> a"
   assumes "y \<le> b"
   shows "x + y \<le> a + b" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have dx: "dim_vec x = n" and dy: "dim_vec y = n"
     and da: "dim_vec a = n" and db: "dim_vec b = n"
     using assms(1) assms(2) assms(3) assms(4) by auto
@@ -1854,7 +1854,7 @@ proof -
     have 3:"\<forall> i < n.  x $ i \<ge> -1" 
       using \<open>x \<in> S\<close> assms(3) by blast 
     have "set\<^sub>v c \<noteq> {}" using `n > 0` 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have dim_c: "dim_vec c = n"
       using assms(5) by (rule carrier_vecD)
     have "c $ 0 \<in> set\<^sub>v c"
@@ -1865,7 +1865,7 @@ proof -
     then show ?thesis by blast
   qed
     have "Max (abs ` (vec_set c)) \<ge> 0" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have fin: "finite (abs ` set\<^sub>v c)"
         using finite_vec_set finite_imageI by blast
       have ne: "abs ` set\<^sub>v c \<noteq> {}"
@@ -1904,7 +1904,7 @@ proof -
           have "x $ i \<ge> - 1" 
             by (simp add: "3" \<open>i < n\<close>)
           then have "c $ i * x $ i \<le> - c $ i" using False 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have c_le: "c $ i \<le> 0"
               using False by linarith
             have "c $ i * x $ i \<le> c $ i * (- 1)"
@@ -1918,7 +1918,7 @@ proof -
       qed
     qed
     then have "\<forall> i < n. c $ i * x $ i \<le> Max (abs ` (vec_set c))" 
-    proof (intro allI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
       fix i
       assume i: "i < n"
       have i_dim: "i < dim_vec c"
@@ -1973,7 +1973,7 @@ proof -
         unfolding replace_col_def 
         using "1" True asmi assms(1) assms(5) by auto
       then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have dr: "dim_row A = n"
           by (rule carrier_matD(1)[OF assms(1)])
         have dv: "dim_vec b = n"
@@ -2059,7 +2059,7 @@ proof -
       have 2:"(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j" 
         by (simp add: asmi asmj)
       have "j < dim_col A" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "j < dim_vec (row (A @\<^sub>r B) i)"
             using asmj by (simp only: index_row(2))
           then show ?thesis
@@ -2075,7 +2075,7 @@ proof -
     next
       case False
       have 1:"row (A @\<^sub>r B) i = row B (i - nr1)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have dimA: "dim_row A = nr1"
           using assms(1) by (rule carrier_matD(1))
         have AB: "A @\<^sub>r B \<in> carrier_mat (nr1 + nr2) n"
@@ -2095,7 +2095,7 @@ proof -
       have 2:"(A @\<^sub>r B) $$ (i, j) = row (A @\<^sub>r B) i $ j" 
         by (simp add: asmi asmj)
       have "j < dim_col B" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "dim_col (A @\<^sub>r B) = n"
           using assms(1) assms(2) carrier_matD(2) by blast
         moreover have "dim_col B = n"
@@ -2104,7 +2104,7 @@ proof -
           using asmj by simp
       qed
       then have "B $$ (i-nr1, j) = row B (i-nr1) $ j"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have dimA: "dim_row A = nr1"
           by (rule carrier_matD(1)[OF assms(1)])
         have dimB: "dim_row B = nr2"
@@ -2123,7 +2123,7 @@ proof -
       then have "(A @\<^sub>r B) $$ (i, j) = B $$ (i - nr1, j)" 
         using 2 1 by presburger
       then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have dimA: "dim_row A = nr1" "dim_col A = n"
           using assms(1) by blast+
         have dimB: "dim_row B = nr2" "dim_col B = n"
@@ -2173,13 +2173,13 @@ proof(safe)
     case True
     have "(v @\<^sub>v w) $v i = v $ i" 
       using True 
-      using True asmi by (simp add: index_append_vec(1) index_append_vec(2) carrier_vecD[OF assms(1)])
+      using True asmi by \<^marker>\<open>provenance ai\<close> (simp add: index_append_vec(1) index_append_vec(2) carrier_vecD[OF assms(1)])
     then show ?thesis 
       using assms(3) unfolding Ints_vec_def  using True assms(1) by auto
   next
     case False
     have "(v @\<^sub>v w) $v i = w $ (i - nr1)" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dim_v: "dim_vec v = nr1"
         using assms(1) by (rule carrier_vecD)
       then show ?thesis
@@ -2202,13 +2202,13 @@ proof(safe)
     have "Matrix.mat n n (\<lambda>(i, j). if i = j then 1 else 0) $$ (i, j) = 1" 
       using True asmi by auto
     then show ?thesis  
-      by (insert True asmi asmj, simp add: Ints_1)
+      by \<^marker>\<open>provenance ai\<close> (insert True asmi asmj, simp add: Ints_1)
   next
     case False
     have "Matrix.mat n n (\<lambda>(i, j). if i = j then 1 else 0) $$ (i, j) = 0" 
       using False asmi asmj by simp
     then show ?thesis 
-      by (insert False asmi asmj, simp add: Ints_0)
+      by \<^marker>\<open>provenance ai\<close> (insert False asmi asmj, simp add: Ints_0)
   qed
 qed
 
@@ -2223,9 +2223,9 @@ proof(safe)
   show " vec_of_list (nths (list_of_vec b) I) $v i \<in> \<int>" 
   proof -
     have "vec_of_list (nths (list_of_vec b) I) $v i = (nths (list_of_vec b) I) ! i" 
-      by (simp add: vec_of_list_index)
+      by \<^marker>\<open>provenance ai\<close> (simp add: vec_of_list_index)
     obtain j where "j< length (list_of_vec b)" "(list_of_vec b) ! j = (nths (list_of_vec b) I) ! i"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have i_len: "i < length (nths (list_of_vec b) I)"
       using asmi by (simp add: Matrix.dim_vec_of_list)
     then have "nths (list_of_vec b) I ! i \<in> set (nths (list_of_vec b) I)"
@@ -2241,7 +2241,7 @@ proof(safe)
       using that by blast
   qed
     then have "(list_of_vec b) ! j \<in> \<int>" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have j_dim: "j < dim_vec b"
           using \<open>j < length (list_of_vec b)\<close>
           by (simp add: Matrix.length_list_of_vec)
@@ -2287,7 +2287,7 @@ proof -
     using assms(7-9) by blast
   then have "A' \<in> carrier_mat n n" 
     using dim_col_subsyst_mat[of A b I] carrier_matD(2)[OF A]
-    by (auto simp: assms(9)[symmetric] intro!: carrier_matI)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: assms(9)[symmetric] intro!: carrier_matI)
   then have "lin_indpt (set (rows A'))"
     using min_face_lin_indpt[OF A b 1 3] 
     using assms(7-9) by blast
@@ -2298,7 +2298,7 @@ proof -
   have "lin_indpt (set (cols A'\<^sup>T))" using `lin_indpt (set (rows A'))` by auto
   have "distinct (cols A'\<^sup>T)" using `distinct (rows A')` by auto
   have "A' \<in> carrier_mat (dim_row A') n" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have fstA': "fst (sub_system A b I) = A'"
     using assms(9)[symmetric] by simp
   have "dim_col A' = dim_col A"
@@ -2313,7 +2313,7 @@ proof -
     using lin_indpt_full_rank[of "A'\<^sup>T" "dim_row A'"]
       `lin_indpt (set (cols A'\<^sup>T))` `distinct (cols A'\<^sup>T)`  transpose_carrier_mat by blast
   then show "det A' \<noteq> 0" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume rankAT: "rank A'\<^sup>T = dim_row A'"
     have Asq: "A' \<in> carrier_mat n n"
       using \<open>A' \<in> carrier_mat (dim_row A') n\<close> \<open>dim_row A' = n\<close> by simp
@@ -2346,7 +2346,7 @@ lemma min_face_has_int:
   shows "\<exists> x \<in> F. abs(det A') \<cdot>\<^sub>v x \<in>  \<int>\<^sub>v"
 proof -
   obtain z where "z \<in> F" using assms(8)
-  by (blast dest: gram_schmidt.min_face_elim(1) face_non_empty)
+  by \<^marker>\<open>provenance ai\<close> (blast dest: gram_schmidt.min_face_elim(1) face_non_empty)
   have 1: "polyhedron A b \<noteq> {}"
     using assms(5) assms(6) by auto
   have 2: " (\<forall>x\<in>local.polyhedron A b. \<forall>i<n. x $v i \<le> bound) \<or>
@@ -2362,7 +2362,7 @@ proof -
     using assms(9-11) 
     by blast
   then have "A' \<in> carrier_mat n n" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have A'_eq: "A' = fst (sub_system A b I)"
       using arg_cong[OF assms(11), of fst] by simp
     have "dim_col A' = n"
@@ -2397,7 +2397,7 @@ proof -
       using 4 index_vec by blast
     then have "\<forall>k < n.  (\<lambda>i. \<bar>det A'\<bar> * z $v i) k =
      (\<lambda>k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A') k  " 
-    proof (intro allI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
       assume z_eq: "\<forall>k < n. z $ k = det (replace_col A' b' k) / det A'"
       fix k
       assume k_lt: "k < n"
@@ -2413,7 +2413,7 @@ proof -
     proof(cases "det A' > 0")
       case True
       have "\<bar>det A'\<bar> /det A' = 1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "\<bar>Determinant.det A'\<bar> = Determinant.det A'"
           using True by (rule abs_of_pos)
         then show ?thesis
@@ -2425,7 +2425,7 @@ proof -
       case False
       have "\<bar>det A'\<bar> /det A' = - 1" 
         using False  \<open>Determinant.det A' \<noteq> 0\<close>  
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "det A' < 0"
           using False \<open>Determinant.det A' \<noteq> 0\<close> by linarith
         hence "\<bar>det A'\<bar> = - det A'"
@@ -2436,7 +2436,7 @@ proof -
       then show ?thesis by auto
     qed
     then have "\<forall>k < n.\<bar>det A'\<bar> * det (replace_col A' b' k) / det A' \<in> \<int>" 
-    proof (intro allI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
       fix k
       assume "k < n"
       have "\<bar>det A'\<bar> * det (replace_col A' b' k) / det A'
@@ -2486,7 +2486,7 @@ proof(rule ccontr)
   then have "\<forall>x \<in> P. \<exists> y \<in> P. c \<bullet> y > c \<bullet> x" 
     by auto
   have "P \<noteq> {}" using assms(8) 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "integer_hull P \<subseteq> P"
       unfolding P_def
       using gram_schmidt.int_hull_subset[OF assms(1) b] .
@@ -2504,7 +2504,7 @@ proof(rule ccontr)
     then have "has_Maximum {c \<bullet> x | x. x \<in> carrier_vec n \<and> A *\<^sub>v x \<le> b}"
       using 
         strong_duality_theorem_primal_sat_bounded_min_max(2)[OF A b c]
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<exists> x \<in> carrier_vec n. A *\<^sub>v x \<le> b"
       proof -
         obtain x where "x \<in> P" using `P \<noteq> {}` by blast
@@ -2535,7 +2535,7 @@ proof(rule ccontr)
   have "(-y) \<bullet> c > 0" 
     using assms(4) y by auto 
   have "A *\<^sub>v (-y) \<le> 0\<^sub>v nr" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have y_carr: "y \<in> carrier_vec n" and Ay_ge: "0\<^sub>v nr \<le> A *\<^sub>v y"
       using y by auto
     have Ay_dim: "dim_vec (A *\<^sub>v y) = nr"
@@ -2586,7 +2586,7 @@ proof(rule ccontr)
       using \<open>n = 0\<close> by blast
   qed
   then have "set\<^sub>v y' \<noteq> {}" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
 
     have y'_carr: "y' \<in> carrier_vec n" using y' by simp
     have "dim_vec y' = n" using y'_carr by (rule carrier_vecD)
@@ -2609,7 +2609,7 @@ proof -
     then have "Max (abs ` (vec_set y')) = 0" 
       using \<open>\<not> 0 < Max (abs ` set\<^sub>v y')\<close> by linarith
     then have "\<forall> y' \<in> (abs ` set\<^sub>v y'). y' = 0" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume Max0: "Max (abs ` set\<^sub>v y') = 0"
       show "\<forall>y' \<in> abs ` set\<^sub>v y'. y' = 0"
       proof (intro ballI)
@@ -2628,7 +2628,7 @@ proof -
     then have "\<forall>y' \<in> set\<^sub>v y'. y' = 0" 
       by auto
     then have "y' = 0\<^sub>v n" unfolding zero_vec_def 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         show "y' = vec n (\<lambda>_. 0)"
         proof (rule eq_vecI)
           show "dim_vec y' = dim_vec (vec n (\<lambda>_. 0))"
@@ -2656,7 +2656,7 @@ proof -
   let ?c = "c"
   let ?P' = "polyhedron ?fullA ?fullb"
   have 2:"?fullA \<in> carrier_mat (nr+2*n) n" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have m1: "1\<^sub>m n \<in> carrier_mat n n" 
         by (rule one_carrier_mat)
       have m2: "- 1\<^sub>m n \<in> carrier_mat n n" 
@@ -2675,7 +2675,7 @@ proof -
       using \<open>Max (abs ` (vec_set y')) > 0\<close> 
       by (meson divide_nonneg_pos smult_nneg_npos_vec zero_less_one_class.zero_le_one)
     then have "A *\<^sub>v ?y' \<le> 0\<^sub>v nr" 
-      by (simp add: mult_mat_vec[OF A y'[THEN conjunct1]])
+      by \<^marker>\<open>provenance ai\<close> (simp add: mult_mat_vec[OF A y'[THEN conjunct1]])
     have "\<forall> i < n. row (1\<^sub>m n) i \<bullet> ?y' \<le> 1" 
     proof(safe)
       fix i
@@ -2685,7 +2685,7 @@ proof -
       have 1:"unit_vec n i \<bullet> ?y' = ?y' $ i" 
         by (meson \<open>i < n\<close> scalar_prod_left_unit smult_closed y')
       have "y' $ i \<le>  Max (abs ` set\<^sub>v y')" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
   have i_dim: "i < dim_vec y'"
     using \<open>i < n\<close> y' carrier_vecD by auto
   have mem: "y' $ i \<in> set\<^sub>v y'"
@@ -2702,7 +2702,7 @@ proof -
     using le_abs le_max by linarith
 qed
       then have "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> 1"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume le: "y' $ i \<le> Max (abs ` set\<^sub>v y')"
         have pos: "0 < Max (abs ` set\<^sub>v y')"
           using \<open>0 < Max (abs ` set\<^sub>v y')\<close> by blast
@@ -2715,7 +2715,7 @@ qed
         finally show "(1 / Max (abs ` set\<^sub>v y')) * (y' $ i) \<le> 1" .
       qed
       have "(1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i \<le> 1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "y' \<in> carrier_vec n" using y' by blast
         then have "i < dim_vec y'" using \<open>i < n\<close> by (simp add: carrier_vecD)
         then have "(1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i = 1 / Max (abs ` set\<^sub>v y') * y' $ i"
@@ -2737,7 +2737,7 @@ qed
         using \<open>i < n\<close> row_one 
         by simp 
       have 3:"- unit_vec n i \<bullet> ?y' = - ?y' $ i" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have y'_carr: "?y' \<in> carrier_vec n"
           using y' by (blast intro: smult_closed)
         have "unit_vec n i \<bullet> ?y' = ?y' $ i"
@@ -2746,7 +2746,7 @@ qed
           using uminus_scalar_prod[OF unit_vec_carrier y'_carr, symmetric] by simp
       qed
       have "- y' $ i \<le>  Max (abs ` set\<^sub>v y')" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "i < dim_vec y'"
             using \<open>i < n\<close> y' carrier_vecD by blast
           then have "y' $ i \<in> set\<^sub>v y'"
@@ -2761,7 +2761,7 @@ qed
             using abs_le_D2 by blast
         qed
       then have "(1 / Max (abs ` set\<^sub>v y')) * (- y' $ i) \<le> 1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume le: "- y' $ i \<le> Max (abs ` set\<^sub>v y')"
         have "(1 / Max (abs ` set\<^sub>v y')) * (- y' $ i) = - y' $ i / Max (abs ` set\<^sub>v y')"
           by simp
@@ -2774,7 +2774,7 @@ qed
         finally show ?thesis .
       qed
       have " - (1 / Max (abs ` set\<^sub>v y') \<cdot>\<^sub>v y') $ i \<le> 1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have y'_carr: "y' \<in> carrier_vec n" using y' by blast
         have i_dim: "i < dim_vec y'"
           using \<open>i < n\<close> y'_carr carrier_vecD by blast
@@ -2793,7 +2793,7 @@ qed
       unfolding mult_mat_vec_def 
       by (simp add: less_eq_vec_def)
     have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n)  *\<^sub>v ?y' \<le>  ( 1\<^sub>v n @\<^sub>v 1\<^sub>v n)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have y'_carr: "?y' \<in> carrier_vec n"
       proof -
         have "y' \<in> carrier_vec n" using y' by blast
@@ -2807,7 +2807,7 @@ qed
     then have "(A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n) *\<^sub>v ?y' \<le>  (0\<^sub>v nr @\<^sub>v 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using `- 1\<^sub>m n *\<^sub>v ?y' \<le> 1\<^sub>v n` 
         append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" ?y' "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have B_carr: "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n) \<in> carrier_mat (2 * n) n"
         proof -
           have "- 1\<^sub>m n \<in> carrier_mat n n"
@@ -2842,7 +2842,7 @@ qed
       using `x \<in> ?P'` unfolding polyhedron_def by auto
     then have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n)  *\<^sub>v x \<le>  ( 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using  append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" x "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have B_carr: "1\<^sub>m n @\<^sub>r - 1\<^sub>m n \<in> carrier_mat (n + n) n"
         using carrier_append_rows[OF one_carrier_mat uminus_carrier_mat[OF one_carrier_mat]] .
       have b_carr: "1\<^sub>v n @\<^sub>v 1\<^sub>v n \<in> carrier_vec (n + n)"
@@ -2872,7 +2872,7 @@ qed
       using `x \<in> ?P'` unfolding polyhedron_def by auto
     then have "(1\<^sub>m n @\<^sub>r - 1\<^sub>m n)  *\<^sub>v x \<le>  ( 1\<^sub>v n @\<^sub>v 1\<^sub>v n)" 
       using  append_rows_le[of "A" nr n "1\<^sub>m n @\<^sub>r - 1\<^sub>m n" "2*n" "0\<^sub>v nr" x "1\<^sub>v n @\<^sub>v 1\<^sub>v n"] 
-      by (fastforce simp: A \<open>x \<in> carrier_vec n\<close> carrier_append_rows mult_2 one_carrier_mat
+      by \<^marker>\<open>provenance ai\<close> (fastforce simp: A \<open>x \<in> carrier_vec n\<close> carrier_append_rows mult_2 one_carrier_mat
           uminus_carrier_mat zero_carrier_vec)
     then have " -  1\<^sub>m n *\<^sub>v x \<le> 1\<^sub>v n" 
       using  append_rows_le[of "1\<^sub>m n" n n "- 1\<^sub>m n" n "1\<^sub>v n" x "1\<^sub>v n"] 
@@ -2882,7 +2882,7 @@ qed
     then have "\<forall> i < n. - unit_vec n i \<bullet> x \<le> 1" 
       by simp
     then have "\<forall> i < n. - x $ i \<le> 1" 
-    proof (intro allI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
       fix i
       assume i: "i < n"
       have eq: "- unit_vec n i \<bullet> x = - x $ i"
@@ -2910,7 +2910,7 @@ qed
   then obtain \<beta> where beta: "\<beta> = Maximum {?c \<bullet> x | x. x \<in> carrier_vec n \<and> ?fullA *\<^sub>v x \<le> ?fullb}"
     by auto
   then have 4:"support_hyp ?P' ?c \<beta>" unfolding support_hyp_def  
-  using beta 4 c by (auto simp: polyhedron_def)
+  using beta 4 c by \<^marker>\<open>provenance ai\<close> (auto simp: polyhedron_def)
   let ?F = " ?P' \<inter> {x |x. ?c \<bullet> x = \<beta>}"
   have "face ?P' ?F" unfolding face_def using 1 4 
     by blast 
@@ -2918,7 +2918,7 @@ qed
     using 2 3 face_contains_min_face[of ?fullA "nr+2*n" ?fullb ?F] 
     by blast
   then obtain z where "z \<in> F" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "min_face ?P' F" using F_def by blast
     then have "face ?P' F" using gram_schmidt.min_face_elim(1) by blast
     then have "F \<noteq> {}" using face_non_empty by blast
@@ -2930,7 +2930,7 @@ qed
                                              F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}"
     using F_def min_face_min_subsyst[of ?fullA "(nr + 2*n)" ?fullb F]  
     using 2 3
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have F_min: "min_face ?P' F" using F_def by (rule conjunct1)
       show thesis
       proof (rule min_face_min_subsyst[of ?fullA "(nr + 2*n)" ?fullb F, OF 2 3 F_min])
@@ -2949,7 +2949,7 @@ qed
     by blast
   have 10:"dim_vec b' = Min {dim_vec d| C d I.   F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
               (C, d) = sub_system ?fullA ?fullb I}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "{dim_vec d | C d I. (C, d) = sub_system ?fullA ?fullb I \<and>
           F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d}}
       = {dim_vec d | C d I. F = {x. x \<in> carrier_vec n \<and> C *\<^sub>v x = d} \<and>
@@ -2964,7 +2964,7 @@ qed
   have "dim_row A' = n"
     using bounded_min_faces_square_mat[OF 2 3 1 9 conjunct1[OF F_def] 10 A'_b'(1) A'_b'(2)] .
   then have "A' \<in> carrier_mat n n" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume dim_row_A': "dim_row A' = n"
     have dim_col_eq: "dim_col A' = dim_col (A @\<^sub>r 1\<^sub>m n @\<^sub>r - 1\<^sub>m n)"
       using arg_cong[OF A'_b'(2), of fst] dim_col_subsyst_mat by simp
@@ -2985,7 +2985,7 @@ qed
   have "1\<^sub>m n \<in> \<int>\<^sub>m" using one_mat_int by auto
   have "- 1\<^sub>m n \<in> \<int>\<^sub>m" using one_mat_int by auto
   have "?fullA \<in> \<int>\<^sub>m" using append_int_mat_is_int
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have one_carr: "(1\<^sub>m n) \<in> carrier_mat n n"
         by (rule one_carrier_mat)
       have minus_one_carr: "(- 1\<^sub>m n) \<in> carrier_mat n n"
@@ -2998,7 +2998,7 @@ qed
         using append_int_mat_is_int[OF A inner_carr AI inner_int] .
     qed
   have "?fullb \<in> \<int>\<^sub>v" using append_int_vec_is_int one_vec_int 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have one_int: "1\<^sub>v n \<in> \<int>\<^sub>v"
         using one_vec_int by blast
       have zero_int: "0\<^sub>v nr \<in> \<int>\<^sub>v"
@@ -3032,7 +3032,7 @@ qed
       using 6 index_vec by blast
     then have "\<forall>k < n.  (\<lambda>i. \<bar>det A'\<bar> * z $v i) k =
      (\<lambda>k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A') k  " 
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     then have 8:"?z' =  vec n (\<lambda> k. \<bar>det A'\<bar> * det (replace_col A' b' k) / det A')" 
       unfolding smult_vec_def using 6
       by (auto simp: `dim_vec z = n`) 
@@ -3040,13 +3040,13 @@ qed
     proof(cases "det A' > 0")
       case True
       have "\<bar>det A'\<bar> /det A' = 1" 
-        by (simp add: abs_of_pos[OF True] \<open>Determinant.det A' \<noteq> 0\<close>)
+        by \<^marker>\<open>provenance ai\<close> (simp add: abs_of_pos[OF True] \<open>Determinant.det A' \<noteq> 0\<close>)
       then show ?thesis 
         by fastforce
     next
       case False
       have "\<bar>det A'\<bar> /det A' = - 1" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have det_neg: "Determinant.det A' < 0"
             using False \<open>Determinant.det A' \<noteq> 0\<close> by linarith
           have abs_eq: "\<bar>Determinant.det A'\<bar> = - Determinant.det A'"
@@ -3057,7 +3057,7 @@ qed
       then show ?thesis by auto
     qed
     then have "\<forall>k < n.\<bar>det A'\<bar> * det (replace_col A' b' k) / det A' \<in> \<int>" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have ratio: "\<bar>det A'\<bar> / det A' \<in> \<int>"
         by fact
       show ?thesis
@@ -3084,7 +3084,7 @@ qed
   have "(1 / Max (abs ` set\<^sub>v y')) > 0" 
     using \<open>0 < Max (abs ` set\<^sub>v y')\<close> zero_less_divide_1_iff by blast
   then have "?c \<bullet> ?y' > 0" using y' 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have y'_carr: "y' \<in> carrier_vec n"
     using y' by blast
   have y'_pos: "y' \<bullet> c > 0"
@@ -3129,7 +3129,7 @@ qed
  proof -
     have "integer_hull P = integer_hull (integer_hull P)" 
 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have subsetP: "P \<subseteq> carrier_vec n"
         unfolding P_def polyhedron_def by blast
       from integer_hull_is_integer_hull[OF subsetP]
@@ -3175,7 +3175,7 @@ qed
           smult_closed)
     have "A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> b + 0\<^sub>v nr"
       using `A *\<^sub>v v \<le> b` `A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> 0\<^sub>v nr` using vec_add_mono 
-proof (unfold less_eq_vec_def, intro conjI allI impI)
+proof \<^marker>\<open>provenance ai\<close> (unfold less_eq_vec_def, intro conjI allI impI)
       show "dim_vec (A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z')) = dim_vec (b + 0\<^sub>v nr)"
         using \<open>A *\<^sub>v v \<le> b\<close> \<open>A *\<^sub>v (of_int m \<cdot>\<^sub>v ?z') \<le> 0\<^sub>v nr\<close>
         unfolding less_eq_vec_def by simp
@@ -3198,7 +3198,7 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
         unfolding lhs_eq rhs_eq using le1 le2 by (rule add_mono)
     qed
     then have "A *\<^sub>v (v + of_int m \<cdot>\<^sub>v ?z') \<le> b" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume prem: "A *\<^sub>v v + A *\<^sub>v (of_int (int m) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z)) \<le> b + 0\<^sub>v nr"
         have eq: "A *\<^sub>v (v + of_int m \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z)) =
                    A *\<^sub>v v + A *\<^sub>v (of_int m \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z))"
@@ -3223,7 +3223,7 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
       using v \<open>\<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> carrier_vec n\<close> \<open>v \<in> carrier_vec n\<close> sum_int_is_int by blast
   qed
   have "\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> integer_hull P"
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     fix m :: nat
     have int_part: "v + of_int m \<cdot>\<^sub>v ?z' \<in> \<int>\<^sub>v"
       using \<open>\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> \<int>\<^sub>v\<close> by blast
@@ -3243,7 +3243,7 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
   have "?c \<bullet> z = \<beta>" 
     using 12 by blast
   then have "?c \<bullet> ?z' = abs (det A') * \<beta>" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "c \<bullet> (\<bar>det A'\<bar> \<cdot>\<^sub>v z) = \<bar>det A'\<bar> * (c \<bullet> z)"
       using \<open>c \<in> carrier_vec n\<close> \<open>z \<in> carrier_vec n\<close> carrier_vecD scalar_prod_smult_right
       by force
@@ -3258,12 +3258,12 @@ proof (unfold less_eq_vec_def, intro conjI allI impI)
   proof -
     have " v + of_int 1 \<cdot>\<^sub>v ?z' \<in> P" 
       using `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P` 
-      by (insert `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P`[THEN spec, of 1], simp add: int_ops(2) scalar_vec_one)
+      by \<^marker>\<open>provenance ai\<close> (insert `\<forall> m::nat. v + of_int m \<cdot>\<^sub>v ?z' \<in> P`[THEN spec, of 1], simp add: int_ops(2) scalar_vec_one)
     then show ?thesis 
-      using of_int_hom.hom_one scalar_vec_one by simp
+      using of_int_hom.hom_one scalar_vec_one by \<^marker>\<open>provenance ai\<close> simp
   qed
   then have "v + ?z' \<in> integer_hull P" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "v + of_int (int (1::nat)) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> integer_hull P"
       using \<open>\<forall>x. v + of_int (int x) \<cdot>\<^sub>v (\<bar>det A'\<bar> \<cdot>\<^sub>v z) \<in> integer_hull P\<close> by blast
     then show "v + \<bar>det A'\<bar> \<cdot>\<^sub>v z \<in> integer_hull P"
@@ -3300,7 +3300,7 @@ lemma int_support_hyp_then_int_polyhedron:
 proof(cases "P = {}")
   case True
   then show ?thesis 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "integer_hull P \<subseteq> P"
       using A b int_hull_subset unfolding P_def by blast
     with True show ?thesis by simp
@@ -3320,7 +3320,7 @@ next
     then have "convex_hull (P \<inter> \<int>\<^sub>v) = {}" unfolding integer_hull_def  
       by argo
     then have "P \<inter> \<int>\<^sub>v = {}" using set_in_convex_hull 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "P \<subseteq> carrier_vec n" unfolding P_def polyhedron_def by auto
       hence "P \<inter> \<int>\<^sub>v \<subseteq> carrier_vec n" by auto
       hence "P \<inter> \<int>\<^sub>v \<subseteq> convex_hull (P \<inter> \<int>\<^sub>v)" using set_in_convex_hull by blast
@@ -3331,7 +3331,7 @@ next
       assume "\<not> 0 < nr"
       then have "nr = 0" by auto
       then have "\<forall> x. A *\<^sub>v x \<le> b" 
-      proof (intro allI)
+      proof \<^marker>\<open>provenance ai\<close> (intro allI)
         fix x
         have dimA: "dim_row A = nr" using A carrier_matD(1) by blast
         have dimb: "dim_vec b = nr" using b carrier_vecD by blast
@@ -3363,7 +3363,7 @@ next
   proof(rule ccontr)
     assume"P \<noteq> integer_hull P"
     then obtain y where y: "y \<in> P - integer_hull P" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have subset: "integer_hull P \<subseteq> P"
         using A P_def b int_hull_subset by blast
       have "\<not> P \<subseteq> integer_hull P"
@@ -3400,7 +3400,7 @@ next
     then have "?\<alpha> \<bullet> y \<le> ?\<alpha> \<bullet> x" 
       using \<open>has_Maximum {row C j \<bullet> x |x. x \<in> P}\<close> has_MaximumD(2) y by fastforce
     have "x \<in> integer_hull P" unfolding integer_hull_def 
-    proof (rule ccontr)
+    proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
       assume "x \<notin> convex_hull (P \<inter> \<int>\<^sub>v)"
       then have "x \<notin> integer_hull P"
         unfolding integer_hull_def by blast
@@ -3414,18 +3414,18 @@ next
     have "?\<alpha> \<bullet> x \<le> d $ j" 
     proof -
       have "x \<in> polyhedron C d" using C_d `x \<in> integer_hull P` by auto
-      then have Cx: "x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d" unfolding polyhedron_def by auto
+      then have Cx: "x \<in> carrier_vec n \<and> C *\<^sub>v x \<le> d" unfolding polyhedron_def by \<^marker>\<open>provenance ai\<close> auto
       have j_dim: "j < dim_row C"
-        using \<open>j < nr' \<and> d $ j < row C j \<bullet> y\<close> C_d carrier_matD(1) by auto
+        using \<open>j < nr' \<and> d $ j < row C j \<bullet> y\<close> C_d carrier_matD(1) by \<^marker>\<open>provenance ai\<close> auto
       have j_dim': "j < dim_vec (C *\<^sub>v x)"
-        using j_dim by (simp add: dim_mult_mat_vec)
+        using j_dim by \<^marker>\<open>provenance ai\<close> (simp add: dim_mult_mat_vec)
       have le_comp: "\<forall>i < dim_vec (C *\<^sub>v x). (C *\<^sub>v x) $ i \<le> d $ i"
-        using Cx C_d by (auto simp: less_eq_vec_def dim_mult_mat_vec)
+        using Cx C_d by \<^marker>\<open>provenance ai\<close> (auto simp: less_eq_vec_def dim_mult_mat_vec)
       have "(C *\<^sub>v x) $ j \<le> d $ j"
-        using le_comp j_dim' by blast
+        using le_comp j_dim' by \<^marker>\<open>provenance ai\<close> blast
       moreover have "(C *\<^sub>v x) $ j = row C j \<bullet> x"
-        using j_dim index_mult_mat_vec by blast
-      ultimately show ?thesis by simp
+        using j_dim index_mult_mat_vec by \<^marker>\<open>provenance ai\<close> blast
+      ultimately show ?thesis by \<^marker>\<open>provenance ai\<close> simp
     qed
     then have "?\<alpha> \<bullet> y \<le> d $ j" 
       using \<open>row C j \<bullet> y \<le> row C j \<bullet> x\<close> by linarith
@@ -3459,7 +3459,7 @@ proof
   qed
   show  "P = integer_hull P \<Longrightarrow> \<forall>F. min_face P F \<longrightarrow> (\<exists>x\<in>F. x \<in> \<int>\<^sub>v)" 
     using carr_P
-    by (insert carr_P P_int_then_face_int[of P] min_face_elim(1), auto)
+    by \<^marker>\<open>provenance ai\<close> (insert carr_P P_int_then_face_int[of P] min_face_elim(1), auto)
 qed
 
 lemma face_iff_int_polyh:
@@ -3483,7 +3483,7 @@ proof
       using assms(5) by fastforce
   qed
   show  "P = integer_hull P \<Longrightarrow> \<forall>F. face P F \<longrightarrow> (\<exists>x\<in>F. x \<in> \<int>\<^sub>v)" 
-    using carr_P P_int_then_face_int by blast
+    using carr_P P_int_then_face_int by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 end

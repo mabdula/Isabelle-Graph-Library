@@ -77,7 +77,7 @@ proof-
   let ?indep_cards = "{card Y | Y. indep_in X Y}"
   from assms(1) indep_in_ex have "?indep_cards \<noteq> {}" by simp
   from assms(1) carrier_finite finite_Pow_iff finite_imageI have "finite ?indep_cards"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<forall>n \<in> ?indep_cards. n \<le> card carrier"
     proof
       fix n
@@ -97,7 +97,7 @@ proof-
     fix n
     have upper_rank_eq_iff: "(n = upper_rank_of X) \<longleftrightarrow> 
       (\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have max_eq: "(Max ?basis_cards = n) \<longleftrightarrow> (n \<in> ?basis_cards \<and> (\<forall>a \<in> ?basis_cards. a \<le> n))"
         using Max_eq_iff[OF `finite ?basis_cards` `?basis_cards \<noteq> {}`] by auto
       show ?thesis
@@ -137,7 +137,7 @@ proof-
 
     have rank_eq_iff: "(n = rank X) \<longleftrightarrow> 
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
-    proof
+    proof \<^marker>\<open>provenance ai\<close>
       assume "n = rank X"
       then have n_eq: "n = Max ?indep_cards"
         by (simp add: rank_def)
@@ -196,7 +196,7 @@ proof-
           using assms basis_inI by blast
         then obtain x where "x \<in> (X - Y)" "indep_in X (insert x Y)" by blast
         then have "card (insert x Y) > card Y"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           from \<open>x \<in> (X - Y)\<close> have "x \<notin> Y" by blast
           from indep_in_subset_carrier[OF \<open>indep_in X Y\<close>] have "Y \<subseteq> X" .
           with assms have "Y \<subseteq> carrier" by blast
@@ -289,7 +289,7 @@ proof (standard, goal_cases LTR RTL)
       with `B1 \<subseteq> X` `B2 \<subseteq> X` have "\<exists>x \<in> B2 - B1. indep_in X (insert x B1)"
         by (simp add: in_mono indep_in_def)
       with ex_B1_B2 show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from ex_B1_B2 have basis_B1: "basis_in X B1" by blast
         from ex_X have "X \<subseteq> carrier" by blast
         from \<open>\<exists>x \<in> B2 - B1. indep_in X (insert x B1)\<close>
@@ -307,7 +307,7 @@ proof (standard, goal_cases LTR RTL)
       with `B1 \<subseteq> X` `B2 \<subseteq> X` have "\<exists>x \<in> B1 - B2. indep_in X (insert x B2)"
         by (simp add: in_mono indep_in_def)
       with ex_B1_B2 show ?thesis
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from ex_B1_B2 have basis_B2: "basis_in X B2" by blast
         from ex_X have "X \<subseteq> carrier" by blast
         from \<open>\<exists>x \<in> B1 - B2. indep_in X (insert x B2)\<close>
@@ -338,7 +338,7 @@ next
       by blast
     with `X \<union> Y \<subseteq> carrier` `card X > card Y` have
       "\<not> basis_in (X \<union> Y) X \<or> \<not> basis_in (X \<union> Y) Y"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "card X \<noteq> card Y" using `card X > card Y` by simp
       with `X \<union> Y \<subseteq> carrier` 1 show ?thesis by blast
     qed
@@ -358,7 +358,7 @@ next
 
       from `X \<union> Y \<subseteq> carrier` `basis_in (X \<union> Y) B` `basis_in (X \<union> Y) Y` `card Y < card B` RTL        
       show ?case
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from RTL `X \<union> Y \<subseteq> carrier` `basis_in (X \<union> Y) B` `basis_in (X \<union> Y) Y`
         have "card B = card Y" by blast
         with `card Y < card B` show False by simp
@@ -431,7 +431,7 @@ proof-
 
   have 1: "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
     unfolding rank_quotient_def
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
       {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
     proof (rule set_eqI)
@@ -495,7 +495,7 @@ proof-
     using M3_equiv_M3'' by auto
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n))"
-    proof (rule iffI)
+    proof \<^marker>\<open>provenance ai\<close> (rule iffI)
       assume LHS: "\<forall>X \<subseteq> carrier. \<forall>B1 B2. basis_in X B1 \<longrightarrow> basis_in X B2 \<longrightarrow> card B1 = card B2"
       show "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
       proof (intro allI impI)
@@ -537,7 +537,7 @@ proof-
     qed
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B})"
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     assume LTR: "\<forall>X \<subseteq> carrier. (\<exists>n. \<forall>n'. n' \<in> {card B | B. basis_in X B} \<longrightarrow> n' = n)"
     show "\<forall>X \<subseteq> carrier. Min {card B | B. basis_in X B} = Max {card B | B. basis_in X B}"
     proof (rule allI, rule impI)
@@ -577,7 +577,7 @@ proof-
   also have "...
     \<longleftrightarrow> (\<forall>X \<subseteq> carrier. 
     Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1)"
-  proof (rule iffI)
+  proof \<^marker>\<open>provenance ai\<close> (rule iffI)
     assume eq_assm: "\<forall>X \<subseteq> carrier. int (Min {card B | B. basis_in X B}) = int (Max {card B | B. basis_in X B})"
     show "\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1"
     proof (rule allI, rule impI)
@@ -618,7 +618,7 @@ proof-
     \<longleftrightarrow> (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) | 
     X. X \<subseteq> carrier} = 1)"
     using rq_fracs_finite rq_fracs_nonempty rq_fracs_leq_1
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     show "(\<forall>X \<subseteq> carrier. Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) = 1) =
       (Min {Frac (int (Min {card B | B. basis_in X B})) (int (Max {card B | B. basis_in X B})) |
       X. X \<subseteq> carrier} = 1)"
@@ -666,7 +666,7 @@ proof-
     using lower_rank_of_def upper_rank_of_def by auto
   also have "...
     \<longleftrightarrow> (Min {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} = 1)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have set_eq: "{Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier} =
                 {Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier}"
   proof (rule subset_antisym)
@@ -761,7 +761,7 @@ proof-
     then obtain x where "x \<in> C'" "x \<notin> J" by blast
 
     from \<open>set l = (J - K)\<close> assms(8) have "l ! i \<in> J"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
   from assms(4) assms(8) have "i < t" by simp
   with assms(6) have "i < length l" by simp
   then have "l ! i \<in> set l" by (rule nth_mem)
@@ -868,7 +868,7 @@ next
 
         from K_seq_i have "K_seq K J l i \<inter> (J - K) = set (take i l)" by auto
         moreover have "l ! i \<notin> set (take i l)" using assms(4) assms(5) assms(6)
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have length_l: "length l = card (J - K)"
             using assms(4) assms(6) by simp
           have set_l: "set l = J - K"
@@ -995,7 +995,7 @@ proof-
 (* We establish an order on the elements by using a list *)
     from `finite (J - K)` 
     have "\<exists>l. set l = (J - K) \<and> length l = ?t"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
   from finite_distinct_list[OF \<open>finite (J - K)\<close>]
   obtain xs where xs_set: "set xs = J - K" and xs_distinct: "distinct xs" by blast
   from distinct_card[OF xs_distinct] have "card (set xs) = length xs" .
@@ -1050,7 +1050,7 @@ qed
 
       from \<open>set l = (J - K) \<and> length l = ?t\<close> \<open>j < ?t\<close>
       have "l ! j \<in> J"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>set l = (J - K) \<and> length l = ?t\<close> have set_l: "set l = J - K" and len_l: "length l = ?t" by auto
         from \<open>j < ?t\<close> len_l have "j < length l" by simp
         then have "l ! j \<in> set l" by (rule nth_mem)
@@ -1122,7 +1122,7 @@ qed
       by auto
 
     from \<open>finite K\<close> have "card K = card (K - J) + card (K \<inter> J)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have union_eq: "K - J \<union> K \<inter> J = K" by blast
       have disj: "(K - J) \<inter> (K \<inter> J) = {}" by blast
       have fin1: "finite (K - J)" using \<open>finite K\<close> by simp
@@ -1140,7 +1140,7 @@ qed
       by (simp add: Int_commute \<open>finite J\<close> card_Diff_subset_Int right_diff_distrib')
     also have "... = p * card J - (p - 1) * card (K \<inter> J)"
       using \<open>p * card J \<ge> p * card (K \<inter> J)\<close>
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have distrib: "(p - 1) * card (K \<inter> J) = p * card (K \<inter> J) - card (K \<inter> J)"
         by (simp add: left_diff_distrib')
       have le1: "card (K \<inter> J) \<le> p * card (K \<inter> J)"
@@ -1158,7 +1158,7 @@ qed
 
   from Min_in[OF \<open>finite ?fracs\<close> \<open>?fracs \<noteq> {}\<close>]
   have "\<exists>F \<subseteq> carrier. Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "Min ?fracs \<in> ?fracs"
       using Min_in[OF \<open>finite ?fracs\<close> \<open>?fracs \<noteq> {}\<close>] .
     then obtain F where "F \<subseteq> carrier"
@@ -1189,7 +1189,7 @@ qed
   from \<open>Frac (int (lower_rank_of F)) (int (upper_rank_of F)) = Min ?fracs\<close>
     \<open>card J = Min ?basis_cards\<close> \<open>card K = Max ?basis_cards\<close> lower_rank_of_def upper_rank_of_def
   have "Min ?fracs = Frac (int (card J)) (int (card K))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have lower_eq: "lower_rank_of F = card J"
       using \<open>card J = Min ?basis_cards\<close> unfolding lower_rank_of_def by simp
     have upper_eq: "upper_rank_of F = card K"
@@ -1200,7 +1200,7 @@ qed
     then show ?thesis by simp
   qed
   moreover have "rank_quotient = Min ?fracs"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have rw1: "\<And>X. X \<subseteq> carrier \<Longrightarrow>
       Frac (int (lower_rank_of X)) (int (rank X)) = Frac (int (lower_rank_of X)) (int (upper_rank_of X))"
       using upper_rank_equiv_rank by simp
@@ -1286,7 +1286,7 @@ begin
 
 lemma card_eq_basis:
   "basis X \<Longrightarrow> indep Y \<Longrightarrow> card X = card Y \<Longrightarrow> basis Y"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "basis X" and "indep Y" and "card X = card Y"
 
   from basis_subset_carrier[OF \<open>basis X\<close>] have X_carrier: "X \<subseteq> carrier" .
@@ -1348,7 +1348,7 @@ proof-
   from ex have "?int_set_P \<noteq> {}" by blast
   from 1 2 have "finite ?int_set" by auto
   then have "finite ?int_set_P" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "?int_set_P \<subseteq> ?int_set" by blast
       with \<open>finite ?int_set\<close> show ?thesis using finite_subset by blast
     qed
@@ -1379,13 +1379,13 @@ proof-
         from `x \<in> E - B` have "x \<notin> B" by blast
         from `B \<in> S` assms `x \<notin> B` card_insert_disjoint finite_subset
         have "card (insert x B) = Suc (card B)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           from assms(3) \<open>B \<in> S\<close> have "B \<subseteq> E" by blast
           with assms(1) have "finite B" by (blast intro: finite_subset)
           from card_insert_disjoint[OF this \<open>x \<notin> B\<close>] show ?thesis .
         qed
         show "\<not>(insert x B) \<subseteq> B'"
-        proof (rule notI)
+        proof \<^marker>\<open>provenance ai\<close> (rule notI)
           assume "insert x B \<subseteq> B'"
           from assms(3) `B' \<in> S` have "B' \<subseteq> E" by blast
           with assms(1) have "finite B'" using finite_subset by blast
@@ -1411,7 +1411,7 @@ proof-
       then obtain B' where B': "B' \<in> S \<and> B \<subseteq> B'" by blast
 
       from `\<not>B \<in> S` B' have "\<exists>x. ((insert x B) \<subseteq> B')"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from B' have B'_in_S: "B' \<in> S" by blast
         from B' have B_sub_B': "B \<subseteq> B'" by blast
         from `\<not>B \<in> S` B'_in_S have "B \<noteq> B'" by blast
@@ -1438,7 +1438,7 @@ lemma all_cards_equal_member_iff_alt:
   assumes "finite E" "\<forall>A1 A2. A1 \<in> S \<longrightarrow> A2 \<in> S \<longrightarrow> card A1 = card A2" "\<forall>A. A \<in> S \<longrightarrow> A \<subseteq> E"
   shows "B \<in> S \<longleftrightarrow> 
     ((B \<subseteq> E \<and> (\<exists>B' \<in> S. B \<subseteq> B')) \<and> (\<forall>x \<in> E - B. (\<not>(insert x B) \<subseteq> E) \<or> (\<forall> B'. (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B'))))"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have iff1: "B \<in> S \<longleftrightarrow>
     ((\<exists>B' \<in> S. B \<subseteq> B') \<and> (\<forall>x B'. (x \<in> E - B) \<longrightarrow> (B' \<in> S) \<longrightarrow> (\<not>(insert x B) \<subseteq> B')))"
     using all_cards_equal_member_iff[OF assms] by blast
@@ -1500,7 +1500,7 @@ proof-
 
   from 1 card_Un_disjoint[OF finite_1 finite_2 2] 
   have "card B2 = card (B1 \<inter> B2) + card (((B2 - B1) - Y) \<union> (Y - B1))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "B2 = (B1 \<inter> B2) \<union> ((B2 - B1) - Y \<union> (Y - B1))"
       using 1 by auto
     then show ?thesis
@@ -1520,9 +1520,9 @@ proof-
   have "card (B1 - B2) \<ge> card (X - B2)" using assms by (simp add: Diff_mono card_mono)
   also have "... \<ge> card ((X - Y) - B2)" using assms 
     by (meson Diff_mono Diff_subset card_mono dual_order.trans equalityD1 finite_Diff2)
-  have "(X - Y) \<inter> B2 = {}" using assms(5) by blast
-  then have "X - Y - B2 = X - Y" by (rule Diff_triv)
-  with \<open>card (X - Y - B2) \<le> card (B1 - B2)\<close> have "card (B1 - B2) \<ge> card (X - Y)" by simp
+  have "(X - Y) \<inter> B2 = {}" using assms(5) by \<^marker>\<open>provenance ai\<close> blast
+  then have "X - Y - B2 = X - Y" by \<^marker>\<open>provenance ai\<close> (rule Diff_triv)
+  with \<open>card (X - Y - B2) \<le> card (B1 - B2)\<close> have "card (B1 - B2) \<ge> card (X - Y)" by \<^marker>\<open>provenance ai\<close> simp
   have "card (B1 - B2) \<ge> card (X - Y)"
     using \<open>card (X - Y) \<le> card (B1 - B2)\<close> by blast
 
@@ -1582,7 +1582,7 @@ proof-
       have "card B1 = card B2" by blast
       with `x \<in> B1 - B2` have card_less: "card (B1 - {x}) < card B2"
         using card_Diff1_less[OF indep_system.basis_finite[OF indep_sys basis_B1] DiffD1[OF \<open>x \<in> B1 - B2\<close>]]
-        by simp
+        by \<^marker>\<open>provenance ai\<close> simp
 
       from indep_p indep_B1_x indep_B2 matroid.augment card_less
       have "\<exists>y\<in>B2 - (B1 - {x}). indep (insert y (B1 - {x}))" by blast
@@ -1592,7 +1592,7 @@ proof-
       then obtain y where y_p: "y \<in> B2 - B1 \<and> indep (insert y (B1 - {x}))" by blast
 
       from y_p `x \<in> B1 - B2` have "card (insert y (B1 - {x})) = card B1"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from `x \<in> B1 - B2` have x_in_B1: "x \<in> B1" by blast
         from y_p have "y \<in> B2 - B1" by blast
         then have y_notin: "y \<notin> B1 - {x}" by blast
@@ -1610,7 +1610,7 @@ proof-
       qed
 
       with basis_B1 y_p indep_p have "indep_system.basis E indep (insert y (B1 - {x}))"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have mat: "matroid E indep" using indep_p by blast
           have indep_y: "indep (insert y (B1 - {x}))" using y_p by blast
           from \<open>card (insert y (B1 - {x})) = card B1\<close>
@@ -1648,7 +1648,7 @@ proof-
         (\<forall>B1' B2'. B1' \<in> \<B> \<longrightarrow> B2' \<in> \<B> \<longrightarrow> card B1' > card B2' \<longrightarrow> card(B1 \<inter> B2) \<ge> card(B1' \<inter> B2'))" by blast
       then have card_greater: "card B1 > card B2" by blast
       then have "\<exists>x. x \<in> B1 - B2"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from ex_B1_B2 assms(2) have "B1 \<subseteq> E" by blast
         from ex_B1_B2 assms(2) have "B2 \<subseteq> E" by blast
         from assms(1) \<open>B2 \<subseteq> E\<close> have "finite B2" using finite_subset by blast
@@ -1666,7 +1666,7 @@ proof-
 
       from card_greater have card_insert_greater: 
         "card (insert y (B1 - {x})) > card B2"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "B1 \<subseteq> E" using ex_B1_B2 assms(2) by blast
         with assms(1) have "finite B1" using finite_subset by blast
 
@@ -1696,7 +1696,7 @@ proof-
       qed
 
       from ex_y have card_inter_greater: "card ((insert y (B1 - {x})) \<inter> B2) > card (B1 \<inter> B2)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "B1 \<in> \<B>" using ex_B1_B2 by blast
           then have "B1 \<subseteq> E" using assms(2) by auto
           have finB1: "finite B1"
@@ -1777,13 +1777,13 @@ proof-
         proof (rule ccontr, goal_cases False)
           case False
           have "B1 \<in> \<B>"
-            using ex_B1_B2 by blast
+            using ex_B1_B2 by \<^marker>\<open>provenance ai\<close> blast
           then have "B1 \<subseteq> E"
-            using all_subset_E by blast
+            using all_subset_E by \<^marker>\<open>provenance ai\<close> blast
           then have "finite B1"
-            using assms(1) finite_subset by blast
+            using assms(1) finite_subset by \<^marker>\<open>provenance ai\<close> blast
           have "finite B2"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "B2 \<in> \<B>" using ex_B1_B2 by blast
             hence "B2 \<subseteq> E" using all_subset_E by blast
             thus "finite B2" using assms(1) finite_subset by blast
@@ -1804,28 +1804,28 @@ proof-
           then have 4: "card (Y - B1) + card ((B2 - B1) - Y) \<ge> card (X - Y)" by simp
 
           from `finite B1` `finite B2` ex_B1_B2 card_less_sym_Diff card_X_Y 
-          have X_sub_B1: "X \<subseteq> B1" using ex_B1_B2 by blast
-          have Y_sub_B2: "Y \<subseteq> B2" using ex_B1_B2 by blast
-          have "finite X" using \<open>finite B1\<close> X_sub_B1 finite_subset by blast
-          have "finite Y" using \<open>finite B2\<close> Y_sub_B2 finite_subset by blast
-          have finite_int: "finite (X \<inter> Y)" using \<open>finite X\<close> by blast
-          have finite_XY: "finite (X - Y)" using \<open>finite X\<close> by blast
-          have finite_YX: "finite (Y - X)" using \<open>finite Y\<close> by blast
-          have X_eq: "X = (X \<inter> Y) \<union> (X - Y)" by blast
-          have Y_eq: "Y = (X \<inter> Y) \<union> (Y - X)" by blast
-          have disj_X: "(X \<inter> Y) \<inter> (X - Y) = {}" by blast
-          have disj_Y: "(X \<inter> Y) \<inter> (Y - X) = {}" by blast
+          have X_sub_B1: "X \<subseteq> B1" using ex_B1_B2 by \<^marker>\<open>provenance ai\<close> blast
+          have Y_sub_B2: "Y \<subseteq> B2" using ex_B1_B2 by \<^marker>\<open>provenance ai\<close> blast
+          have "finite X" using \<open>finite B1\<close> X_sub_B1 finite_subset by \<^marker>\<open>provenance ai\<close> blast
+          have "finite Y" using \<open>finite B2\<close> Y_sub_B2 finite_subset by \<^marker>\<open>provenance ai\<close> blast
+          have finite_int: "finite (X \<inter> Y)" using \<open>finite X\<close> by \<^marker>\<open>provenance ai\<close> blast
+          have finite_XY: "finite (X - Y)" using \<open>finite X\<close> by \<^marker>\<open>provenance ai\<close> blast
+          have finite_YX: "finite (Y - X)" using \<open>finite Y\<close> by \<^marker>\<open>provenance ai\<close> blast
+          have X_eq: "X = (X \<inter> Y) \<union> (X - Y)" by \<^marker>\<open>provenance ai\<close> blast
+          have Y_eq: "Y = (X \<inter> Y) \<union> (Y - X)" by \<^marker>\<open>provenance ai\<close> blast
+          have disj_X: "(X \<inter> Y) \<inter> (X - Y) = {}" by \<^marker>\<open>provenance ai\<close> blast
+          have disj_Y: "(X \<inter> Y) \<inter> (Y - X) = {}" by \<^marker>\<open>provenance ai\<close> blast
           have card_X_eq: "card X = card (X \<inter> Y) + card (X - Y)"
-            using X_eq card_Un_disjoint[OF finite_int finite_XY disj_X] by simp
+            using X_eq card_Un_disjoint[OF finite_int finite_XY disj_X] by \<^marker>\<open>provenance ai\<close> simp
           have card_Y_eq: "card Y = card (X \<inter> Y) + card (Y - X)"
-            using Y_eq card_Un_disjoint[OF finite_int finite_YX disj_Y] by simp
+            using Y_eq card_Un_disjoint[OF finite_int finite_YX disj_Y] by \<^marker>\<open>provenance ai\<close> simp
           have 5: "card (X - Y) > card (Y - X)"
-            using card_X_eq card_Y_eq card_X_Y by linarith
+            using card_X_eq card_Y_eq card_X_Y by \<^marker>\<open>provenance ai\<close> linarith
 
 
           from `finite B1` `finite B2` ex_B1_B2 card_mono Diff_mono 
           have 6: "card (Y - X) \<ge> card (Y - B1)"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             from ex_B1_B2 have "X \<subseteq> B1" by blast
             then have subset: "Y - B1 \<subseteq> Y - X" by blast
             from ex_B1_B2 have "Y \<subseteq> B2" by blast
@@ -1838,7 +1838,7 @@ proof-
 
           from 4 7 have "card ((B2 - B1) - Y) > 0" by linarith
           then have "\<exists>y. y \<in> (B2 - B1) - Y"
-            by (auto simp: card_gt_0_iff ex_in_conv)
+            by \<^marker>\<open>provenance ai\<close> (auto simp: card_gt_0_iff ex_in_conv)
           then obtain y where ex_y: "y \<in> (B2 - B1) - Y" by blast
           with ex_B1_B2 have y_in: "y \<in> (B2 - B1)" by blast
 
@@ -1847,7 +1847,7 @@ proof-
           then obtain x where ex_x: "x \<in> B1 - B2 \<and> insert x (B2 - {y}) \<in> \<B>" by blast
 
           from ex_x have card_inter_greater: "card (B1 \<inter> (insert x (B2 - {y}))) > card (B1 \<inter> B2)"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             from ex_x have x_in: "x \<in> B1" and x_notin: "x \<notin> B2" by auto
             from y_in have y_notin: "y \<notin> B1" by auto
             have "B1 \<inter> insert x (B2 - {y}) = insert x (B1 \<inter> (B2 - {y}))"
@@ -1863,7 +1863,7 @@ proof-
           qed
 
           with ex_B1_B2 show ?case
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             from ex_B1_B2 have B1_in: "B1 \<in> \<B>" by blast
             from ex_x have B2'_in: "insert x (B2 - {y}) \<in> \<B>" by blast
             from ex_B1_B2 have X_sub_B1: "X \<subseteq> B1" by blast
@@ -1930,19 +1930,19 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "0 = card X" "X \<subseteq> E"
-    from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by (rule finite_subset)
-    with \<open>0 = card X\<close> have "X = {}" by (simp add: card_eq_0_iff)
-    with assms(2) show "r X \<le> card X" by simp
+    from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by \<^marker>\<open>provenance ai\<close> (rule finite_subset)
+    with \<open>0 = card X\<close> have "X = {}" by \<^marker>\<open>provenance ai\<close> (simp add: card_eq_0_iff)
+    with assms(2) show "r X \<le> card X" by \<^marker>\<open>provenance ai\<close> simp
   qed
 next
   case (Suc n)
   show ?case
   proof ((rule impI)+)
     assume "Suc n = card X" "X \<subseteq> E"
-    then have "card X = Suc n" by simp
+    then have "card X = Suc n" by \<^marker>\<open>provenance ai\<close> simp
     then obtain b B where "X = insert b B" "b \<notin> B" "card B = n"
-      using card_Suc_eq[THEN iffD1, of X n] by blast
-    then have "\<exists>X' y. y \<notin> X' \<and> X = (insert y X')" by blast
+      using card_Suc_eq[THEN iffD1, of X n] by \<^marker>\<open>provenance ai\<close> blast
+    then have "\<exists>X' y. y \<notin> X' \<and> X = (insert y X')" by \<^marker>\<open>provenance ai\<close> blast
     then obtain X' y where "y \<notin> X'" "X = (insert y X')" by blast
 
     from \<open>X \<subseteq> E\<close> \<open>X = (insert y X')\<close> have "X' \<subseteq> E" by blast
@@ -1966,10 +1966,10 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "card X = card Y - 0" "X \<subseteq> Y" "P Y"
-    then have card_eq: "card X = card Y" by simp
-    from assms(1) assms(3) have "finite Y" using finite_subset by blast
+    then have card_eq: "card X = card Y" by \<^marker>\<open>provenance ai\<close> simp
+    from assms(1) assms(3) have "finite Y" using finite_subset by \<^marker>\<open>provenance ai\<close> blast
     from card_subset_eq[OF this \<open>X \<subseteq> Y\<close> card_eq] have "X = Y" .
-    with \<open>P Y\<close> show "P X" by simp
+    with \<open>P Y\<close> show "P X" by \<^marker>\<open>provenance ai\<close> simp
   qed
 next
   case (Suc n)
@@ -1978,7 +1978,7 @@ next
     assume "Suc n \<le> card Y" "card X = card Y - Suc n" "X \<subseteq> Y" "P Y"
 
     have "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "finite Y" using assms(1) assms(3) finite_subset by blast
       have "finite X" using \<open>X \<subseteq> Y\<close> \<open>finite Y\<close> finite_subset by blast
       have "card X < card Y"
@@ -1999,7 +1999,7 @@ next
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>X \<subseteq> Y\<close> assms(3) have "X \<subseteq> E" by auto
         from this assms(1) have "finite X" by (rule finite_subset)
         from \<open>X' = insert x X\<close> \<open>x \<notin> X\<close> \<open>finite X\<close> have "card X' = card X + 1"
@@ -2037,7 +2037,7 @@ proof (induction n arbitrary: A rule: less_induct)
     proof ((rule impI)+)
       assume "n = card A" "A \<subseteq> X - Y"
       with Zero show "r (Y \<union> A) = r Y"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "card A = 0" using \<open>n = card A\<close> Zero by simp
         have "A \<subseteq> E" using \<open>A \<subseteq> X - Y\<close> assms(2) by blast
         then have "finite A" using assms(1) finite_subset by blast
@@ -2054,7 +2054,7 @@ proof (induction n arbitrary: A rule: less_induct)
       proof (cases "n = 1")
         case True
         with \<open>n = card A\<close> assms(4) show ?thesis
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           from True \<open>n = card A\<close> have "card A = 1" by simp
           then obtain a where "A = {a}" by (rule card_1_singletonE)
           with \<open>A \<subseteq> X - Y\<close> have "a \<in> X - Y" by blast
@@ -2065,7 +2065,7 @@ proof (induction n arbitrary: A rule: less_induct)
         case False
         with Pos have "n \<ge> 2" by auto
         with \<open>n = card A\<close> have "\<exists>x y. x \<in> A \<and> y \<in> A \<and> x \<noteq> y"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have A_subset_E: "A \<subseteq> E"
             using \<open>A \<subseteq> X - Y\<close> assms(2) by blast
           have finite_A: "finite A"
@@ -2096,7 +2096,7 @@ proof (induction n arbitrary: A rule: less_induct)
         from \<open>n - 1 < n\<close> \<open>n - 1 = card (A - {x})\<close> \<open>(A - {x}) \<subseteq> X - Y\<close> less.IH
         have "r (Y \<union> (A - {x})) = r Y" by blast
         then have r_A_sub_y: "r ((Y \<union> (A - {x, y})) \<union> {y}) = r Y"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "(Y \<union> (A - {x, y})) \<union> {y} = Y \<union> (A - {x})"
             using \<open>x \<noteq> y\<close> \<open>y \<in> A\<close> by blast
           then show ?thesis using \<open>r (Y \<union> (A - {x})) = r Y\<close> by simp
@@ -2107,7 +2107,7 @@ proof (induction n arbitrary: A rule: less_induct)
         from \<open>n - 1 < n\<close> \<open>n - 1 = card (A - {y})\<close> \<open>(A - {y}) \<subseteq> X - Y\<close> less.IH
         have "r (Y \<union> (A - {y})) = r Y" by blast
         then have r_A_sub_x: "r ((Y \<union> (A - {x, y})) \<union> {x}) = r Y"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "(Y \<union> (A - {x, y})) \<union> {x} = Y \<union> (A - {y})"
             using \<open>x \<in> A\<close> \<open>x \<noteq> y\<close> by blast
           with \<open>r (Y \<union> (A - {y})) = r Y\<close> show ?thesis by simp
@@ -2130,7 +2130,7 @@ proof (induction n arbitrary: A rule: less_induct)
         from assms(5) \<open>Y \<union> (A - {x, y}) \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> 1 2
         have "r ((Y \<union> (A - {x, y})) \<union> {x, y}) = r (Y \<union> (A - {x, y}))" by blast
         then have "r (Y \<union> A) = r (Y \<union> (A - {x, y}))"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           assume rank_eq: "r ((Y \<union> (A - {x, y})) \<union> {x, y}) = r (Y \<union> (A - {x, y}))"
           have set_eq: "Y \<union> (A - {x, y}) \<union> {x, y} = Y \<union> A"
             using \<open>x \<in> A\<close> \<open>y \<in> A\<close> by blast
@@ -2151,10 +2151,10 @@ proof (induction n arbitrary: X)
   show ?case
   proof ((rule impI)+)
     assume "card X = card Y - 0" "X \<subseteq> Y"
-      have "card X = card Y" using \<open>card X = card Y - 0\<close> by simp
-      moreover have "finite Y" using assms(1) assms(2) finite_subset by blast
-      ultimately have "X = Y" using \<open>X \<subseteq> Y\<close> card_subset_eq by blast
-      then show "r X \<le> r Y" by simp
+      have "card X = card Y" using \<open>card X = card Y - 0\<close> by \<^marker>\<open>provenance ai\<close> simp
+      moreover have "finite Y" using assms(1) assms(2) finite_subset by \<^marker>\<open>provenance ai\<close> blast
+      ultimately have "X = Y" using \<open>X \<subseteq> Y\<close> card_subset_eq by \<^marker>\<open>provenance ai\<close> blast
+      then show "r X \<le> r Y" by \<^marker>\<open>provenance ai\<close> simp
   qed
 next
   case (Suc n)
@@ -2162,7 +2162,7 @@ next
   proof ((rule impI)+)
     assume "Suc n \<le> card Y" "card X = card Y - Suc n" "X \<subseteq> Y"
     have "\<exists>X' x. x \<notin> X \<and> X' = (insert x X) \<and> X' \<subseteq> Y"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "finite Y" using assms(1) assms(2) finite_subset by blast
       have "Suc n + (card Y - Suc n) = card Y"
         using \<open>Suc n \<le> card Y\<close> by (rule le_add_diff_inverse)
@@ -2182,7 +2182,7 @@ next
     then obtain X' x where "x \<notin> X" "X' = (insert x X)" "X' \<subseteq> Y" by blast
     with \<open>card X = card Y - Suc n\<close>
     have "card X' = card Y - n"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "X \<subseteq> E" using \<open>X \<subseteq> Y\<close> assms(2) by blast
       have "finite X" using assms(1) \<open>X \<subseteq> E\<close> finite_subset by blast
       have card_X'_eq: "card X' = card X + 1"
@@ -2198,7 +2198,7 @@ next
 
     from \<open>X' = (insert x X)\<close> assms(3)
     have "r X \<le> r X'"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>X' = (insert x X)\<close> \<open>X' \<subseteq> Y\<close> assms(2) have "X \<subseteq> E" by blast
       from \<open>X' = (insert x X)\<close> \<open>X' \<subseteq> Y\<close> assms(2) have "x \<in> E" by blast
       from assms(3) \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> have "r X \<le> r (X \<union> {x})" by blast
@@ -2219,7 +2219,7 @@ lemma matroid_imp_rank_axioms1:
     (\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. X \<subseteq> Y \<longrightarrow> r X \<le> r Y) \<and>
     (\<forall>X \<subseteq> E. \<forall>Y \<subseteq> E. r (X \<union> Y) + r (X \<inter> Y) \<le> r X + r Y))"
   using assms matroid.rank_of_le matroid.rank_of_mono matroid.rank_of_Un_Int_le 
-proof-
+proof \<^marker>\<open>provenance ai\<close>-
   from assms(2) obtain indep where
     indep_matroid: "matroid E indep" and
     r_eq: "\<forall>X \<subseteq> E. r X = matroid.rank_of indep X"
@@ -2300,7 +2300,7 @@ proof-
         by (meson R3 add_le_imp_le_diff empty_subsetI insert_subset)
       also have "... \<le> r X + r {y}" by auto
       also have "... \<le> r X + 1"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "{y} \<subseteq> E" using \<open>y \<in> E\<close> by simp
           then have "r {y} \<le> card {y}" using R1 by blast
           also have "card {y} = 1" by simp
@@ -2330,7 +2330,7 @@ proof-
       from False have int_sets: "(X \<union> {x}) \<inter> (X \<union> {y}) = X" by auto
 
       have "r X \<le> r (X \<union> {x, y})" using R2 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close>
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "X \<union> {x, y} \<subseteq> E" using \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> by blast
         moreover have "X \<subseteq> X \<union> {x, y}" by blast
         ultimately show ?thesis using R2 \<open>X \<subseteq> E\<close> by blast
@@ -2338,7 +2338,7 @@ proof-
 
       have "r X + r (X \<union> {x, y}) \<le> r (X \<union> {x}) + r (X \<union> {y})"
         using R3 \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> \<open>y \<in> E\<close> un_sets int_sets
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>X \<subseteq> E\<close> \<open>x \<in> E\<close> have x_subset: "X \<union> {x} \<subseteq> E" by simp
         from \<open>X \<subseteq> E\<close> \<open>y \<in> E\<close> have y_subset: "X \<union> {y} \<subseteq> E" by simp
         from R3 x_subset y_subset
@@ -2389,7 +2389,7 @@ proof-
     from \<open>Y \<subseteq> E\<close> \<open>Y = insert y X\<close> have "y \<in> E" by blast
 
     have "card X + 1 = card Y" using \<open>Y = insert y X\<close>
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>X \<subseteq> E\<close> assms(1) have "finite X" by (rule finite_subset)
       from this \<open>y \<notin> X\<close> have "card (insert y X) = Suc (card X)" by (rule card_insert_disjoint)
       then show "card X + 1 = card Y" using \<open>Y = insert y X\<close> by simp
@@ -2406,7 +2406,7 @@ proof-
 
   from prop_preserved_subset_induct[OF assms(1) this]
   have indep_subset: "\<forall>X Y. X \<subseteq> Y \<longrightarrow> ?indep Y \<longrightarrow> ?indep X"
-  proof (intro allI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
     fix X Y
     assume F: "\<And>Y n X. Y \<subseteq> E \<Longrightarrow> n \<le> card Y \<longrightarrow> card X = card Y - n \<longrightarrow> X \<subseteq> Y \<longrightarrow> ?indep Y \<longrightarrow> ?indep X"
     assume "X \<subseteq> Y" and indep_Y: "?indep Y"
@@ -2434,7 +2434,7 @@ proof-
         by blast
       with rank_leq_card \<open>?indep X\<close> \<open>?indep Y\<close>
       have "\<forall>x \<in> X - Y. r (insert x Y) < card (insert x Y)"
-        proof (intro ballI)
+        proof \<^marker>\<open>provenance ai\<close> (intro ballI)
   fix x
   assume "x \<in> X - Y"
   then have "x \<in> X" by blast
@@ -2447,7 +2447,7 @@ proof-
   from le neq show "r (insert x Y) < card (insert x Y)" by simp
 qed
       then have "\<forall>x \<in> X - Y. r (insert x Y) < card Y + 1"
-        proof (intro ballI)
+        proof \<^marker>\<open>provenance ai\<close> (intro ballI)
           fix x
           assume "x \<in> X - Y"
 
@@ -2466,7 +2466,7 @@ qed
         by force
 
       have "\<forall>x \<in> X - Y. r (insert x Y) \<ge> card Y"
-      proof (rule ballI)
+      proof \<^marker>\<open>provenance ai\<close> (rule ballI)
         fix x
         assume "x \<in> X - Y"
         from \<open>x \<in> X - Y\<close> \<open>?indep X\<close> have "x \<in> E" by blast
@@ -2490,7 +2490,7 @@ qed
         let ?n = "card Y - card X"
         have "?n \<le> card Y" by auto
         have "card X = card Y - ?n" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "finite Y" using assms(1) \<open>Y \<subseteq> E\<close> by (rule rev_finite_subset)
           from card_mono[OF this \<open>X \<subseteq> Y\<close>] have le: "card X \<le> card Y" .
           show ?thesis by (rule diff_diff_cancel[OF le, symmetric])
@@ -2506,7 +2506,7 @@ qed
       from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> rank_Y_un_x_eq_Y R3',
           of "card (X - Y)" "X - Y"]
       have "r Y = r (Y \<union> (X - Y))"
-        by simp
+        by \<^marker>\<open>provenance ai\<close> simp
       also have "... = r (X \<union> Y)" by (simp add: Un_commute)
       also have "... \<ge> r X" using subset_rank_leq \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> by auto
       finally have "r Y \<ge> r X" .
@@ -2549,7 +2549,7 @@ qed
 
     from Y_basis_in have "\<forall>x \<in> X - Y. \<not>(?indep (insert x Y))"
       using indep_system.basis_in_def[OF indep_sys_props] indep_system.basis_def[OF indep_sys_props]
-    proof (rule_tac ballI)
+    proof \<^marker>\<open>provenance ai\<close> (rule_tac ballI)
       fix x
       assume "x \<in> X - Y"
       then have "x \<in> X" by blast
@@ -2572,7 +2572,7 @@ qed
     have "\<forall>x \<in> X - Y. (r (insert x Y) \<noteq> card (insert x Y))"
       by blast
     have "\<forall>x \<in> X - Y. (r (insert x Y) < card (insert x Y))"
-    proof (rule ballI)
+    proof \<^marker>\<open>provenance ai\<close> (rule ballI)
       fix x
       assume x_mem: "x \<in> X - Y"
       have "insert x Y \<subseteq> X" using x_mem \<open>Y \<subseteq> X\<close> by blast
@@ -2583,7 +2583,7 @@ qed
       from le neq show "r (insert x Y) < card (insert x Y)" by (simp add: order_less_le)
     qed
     then have "\<forall>x \<in> X - Y. (r (insert x Y) < card Y + 1)"
-      using \<open>Y \<subseteq> E\<close> assms(1) finite_subset by fastforce
+      using \<open>Y \<subseteq> E\<close> assms(1) finite_subset by \<^marker>\<open>provenance ai\<close> fastforce
     then have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> card Y)" by force
     with \<open>r Y = card Y\<close>
     have "\<forall>x \<in> X - Y. (r (Y \<union> {x}) \<le> r Y)" by auto
@@ -2593,7 +2593,7 @@ qed
 
     from rank_axioms2_imp_rank_eq_subsets[OF assms(1) \<open>X \<subseteq> E\<close> \<open>Y \<subseteq> E\<close> this R3']
     have "r (Y \<union> X) = r Y"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume fact2: "\<And>n A. n = card A \<longrightarrow> A \<subseteq> X - Y \<longrightarrow> r (Y \<union> A) = r Y"
       have "r (Y \<union> (X - Y)) = r Y"
         using fact2[of "card (X - Y)" "X - Y"] by simp
@@ -2609,7 +2609,7 @@ qed
     have "matroid.rank_of ?indep X = Min {card B | B. indep_system.basis_in ?indep X B}"
       using matroid.rank_of_def[OF matroid_props] by auto
     also have "... = card Y"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "matroid.rank_of (\<lambda>X. X \<subseteq> E \<and> r X = card X) X = card Y"
         using matroid.rank_of_eq_card_basis_in[OF matroid_props \<open>X \<subseteq> E\<close> Y_basis_in] .
       from calculation[symmetric] this show ?thesis by (rule trans)
@@ -2709,7 +2709,7 @@ begin
 lemma rank_of_eq_basis_subset:
   assumes "Y \<subseteq> carrier" "X \<subseteq> Y" "basis_in X B" "rank_of X = rank_of Y"
   shows "basis_in Y B"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have X_carrier: "X \<subseteq> carrier" using assms(1) assms(2) by blast
   have B_subset_X: "B \<subseteq> X" using basis_in_subset_carrier[OF X_carrier assms(3)] .
   have B_subset_Y: "B \<subseteq> Y" using B_subset_X assms(2) by blast
@@ -2725,7 +2725,7 @@ qed
 lemma rank_of_circuit:
   assumes "circuit X"
   shows "rank_of X = card X - 1"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have X_carrier: "X \<subseteq> carrier" using assms unfolding circuit_def by blast
   have X_dep: "\<not> indep X" using assms unfolding circuit_def by blast
   have X_minus: "\<And>x. x \<in> X \<Longrightarrow> indep (X - {x})"
@@ -2798,7 +2798,7 @@ next
     subgoal using assms(1) .
     subgoal by blast
     subgoal using indep_ex by blast
-    subgoal by blast
+    subgoal by \<^marker>\<open>provenance ai\<close> blast
     done
 
   have "\<forall>C. C \<in> \<C> = indep_system.circuit E ?indep C"
@@ -2912,7 +2912,7 @@ proof (rule ballI, rule ballI, rule ballI, rule ballI)
   have "indep (C1 - {f})" by blast
   with matroid.indep_iff_rank_of[OF assms(1) \<open>(C1 - {f}) \<subseteq> E\<close>] \<open>f \<in> C1 - C2\<close>
   have C1_minus_f_rank: "matroid.rank_of indep (C1 - {f}) = card C1 - 1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "matroid.rank_of indep (C1 - {f}) = card (C1 - {f})"
       using \<open>indep (C1 - {f})\<close> matroid.indep_iff_rank_of[OF assms(1) \<open>(C1 - {f}) \<subseteq> E\<close>] by blast
     moreover have "f \<in> C1" using \<open>f \<in> C1 - C2\<close> by (rule DiffD1)
@@ -2924,7 +2924,7 @@ proof (rule ballI, rule ballI, rule ballI, rule ballI)
   have "indep (C2 - {e})" by blast
   with matroid.indep_iff_rank_of[OF assms(1) \<open>(C2 - {e}) \<subseteq> E\<close>] \<open>e \<in> C1 \<inter> C2\<close>
   have C2_minus_e_rank: "matroid.rank_of indep (C2 - {e}) = card C2 - 1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>e \<in> C1 \<inter> C2\<close> have "e \<in> C2" by (rule IntD2)
     then have "card (C2 - {e}) = card C2 - 1" by (rule card_Diff_singleton)
     with matroid.indep_iff_rank_of[OF assms(1) \<open>(C2 - {e}) \<subseteq> E\<close>] \<open>indep (C2 - {e})\<close>
@@ -3038,7 +3038,7 @@ proof (rule allI, rule impI, rule ballI, rule ccontr)
   assume "indep X" "e \<in> E"
   assume "\<not> card ?circuits \<le> 1"
   have "\<exists>C1 C2. C1 \<in> ?circuits \<and> C2 \<in> ?circuits \<and> C1 \<noteq> C2"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from indep_system.indep_subset_carrier[OF assms(1) \<open>indep X\<close>] have "X \<subseteq> E" .
     with \<open>e \<in> E\<close> have subset_E: "X \<union> {e} \<subseteq> E" by blast
     from indep_system.carrier_finite[OF assms(1)] subset_E have "finite (X \<union> {e})"
@@ -3153,7 +3153,7 @@ lemma dual_indep_system:
   using assms indep_system.carrier_finite apply blast
   apply simp
   subgoal
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from indep_system.basis_ex[OF assms] obtain B where basis_B: "indep_system.basis E indep B" by blast
     have "{} \<subseteq> E" by (rule empty_subsetI)
     moreover have "{} \<inter> B = {}" by (rule inf_bot_left)
@@ -3198,8 +3198,8 @@ proof (rule iffI, erule HOL.contrapos_pp)
       by (simp add: dual_def) 
   next
     case False
-    from False have "\<not> (dual E indep) B'" by (simp add: dual_def)
-    with indep_system.basis_def[OF dual_indep_sys] show ?thesis by auto
+    from False have "\<not> (dual E indep) B'" by \<^marker>\<open>provenance ai\<close> (simp add: dual_def)
+    with indep_system.basis_def[OF dual_indep_sys] show ?thesis by \<^marker>\<open>provenance ai\<close> auto
   qed
 next
   assume complement: "(\<exists>B. indep_system.basis E indep B \<and> B' = E - B)"
@@ -3220,7 +3220,7 @@ next
     proof (cases "B'' \<inter> B' = {}")
       case True
       have "B'' = B"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have B''_subset_E: "B'' \<subseteq> E"
           using indep_system.basis_subset_carrier[OF assms(1) \<open>indep_system.basis E indep B''\<close>] .
         have "B'' \<inter> (E - B) = {}"
@@ -3261,10 +3261,10 @@ proof
   fix X
   have "(dual E (dual E indep)) X = 
     (X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> (X \<inter> B' = {})))"
-    unfolding dual_def by blast
+    unfolding dual_def by \<^marker>\<open>provenance ai\<close> blast
   also have "... =
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> (X \<inter> (E - B) = {})))"
-  proof (intro iffI)
+  proof \<^marker>\<open>provenance ai\<close> (intro iffI)
     assume "X \<subseteq> E \<and> (\<exists>B'. indep_system.basis E (dual E indep) B' \<and> X \<inter> B' = {})"
     then obtain B' where "X \<subseteq> E" and B'_basis: "indep_system.basis E (dual E indep) B'"
       and B'_disj: "X \<inter> B' = {}" by blast
@@ -3293,7 +3293,7 @@ proof
     (X \<subseteq> E \<and> (\<exists>B. indep_system.basis E indep B \<and> X \<subseteq> B))"
     by auto
   also have "... = indep X" using indep_system.indep_iff_subset_basis[OF assms]
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from assms have cont: "\<And>Y. indep Y \<Longrightarrow> Y \<subseteq> E"
       by (auto simp: indep_system_def)
     show ?thesis
@@ -3355,7 +3355,7 @@ proof (rule allI, rule impI)
   have "E - X \<subseteq> E" by auto
 
   from matroid.rank_of_def[OF assms(1)] have "matroid.rank_of indep {} = 0"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "indep_system E indep" using assms(1) by (rule matroid.axioms(1))
     then have "indep {}" by (rule indep_system.indep_empty)
     then have "matroid.rank_of indep {} = card {}"
@@ -3388,7 +3388,7 @@ proof-
   from matroid.rank_of_def[OF assms(2)] have "matroid.rank_of indep {} = 0"
     using indep_system.indep_empty[OF matroid.axioms(1)[OF assms(2)]]
           matroid.indep_iff_rank_of[OF assms(2) empty_subsetI]
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
 
   have q_well_def: "\<forall>X \<subseteq> E. card X + matroid.rank_of indep (E - X) \<ge> matroid.rank_of indep E"
     using dual_rank_well_def[OF assms(2)] by blast
@@ -3421,10 +3421,10 @@ proof-
       "matroid.rank_of indep (E - X) + matroid.rank_of indep ((E - Y) \<inter> (Y - X)) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
       by (simp add: \<open>E - Y \<union> (Y - X) = E - X\<close>)
-    moreover have "(E - Y) \<inter> (Y - X) = {}" by blast
+    moreover have "(E - Y) \<inter> (Y - X) = {}" by \<^marker>\<open>provenance ai\<close> blast
     ultimately have "matroid.rank_of indep (E - X) + matroid.rank_of indep ({}) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     with \<open>matroid.rank_of indep {} = 0\<close> have
       "matroid.rank_of indep (E - X) \<le>
       matroid.rank_of indep (E - Y) + matroid.rank_of indep (Y - X)"
@@ -3440,7 +3440,7 @@ proof-
     with \<open>X \<subseteq> Y\<close> have
       "matroid.rank_of indep (E - X) - matroid.rank_of indep (E - Y) \<le> 
       card Y - card X"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "finite X" using rev_finite_subset[OF assms(1) \<open>X \<subseteq> E\<close>] .
       have "card (Y - X) = card Y - card X"
         using card_Diff_subset[OF \<open>finite X\<close> \<open>X \<subseteq> Y\<close>] .
@@ -3450,7 +3450,7 @@ proof-
     qed
     then have
       "card X + matroid.rank_of indep (E - X) \<le> card Y + matroid.rank_of indep (E - Y)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have finite_Y: "finite Y" by (rule finite_subset[OF \<open>Y \<subseteq> E\<close> assms(1)])
       have card_le: "card X \<le> card Y" by (rule card_mono[OF finite_Y \<open>X \<subseteq> Y\<close>])
       show ?thesis
@@ -3504,7 +3504,7 @@ proof-
     also have "... = card X + card Y +
       matroid.rank_of indep (E - (X \<union> Y)) + matroid.rank_of indep (E - (X \<inter> Y))
       - matroid.rank_of indep E - matroid.rank_of indep E"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from assms(1) \<open>X \<subseteq> E\<close> have "finite X" by (rule rev_finite_subset)
       from assms(1) \<open>Y \<subseteq> E\<close> have "finite Y" by (rule rev_finite_subset)
       from card_Un_Int[OF \<open>finite X\<close> \<open>finite Y\<close>] show ?thesis by simp
@@ -3577,7 +3577,7 @@ proof-
     have "E - X \<subseteq> E" by blast
 
     have "(?q X = card X) \<longleftrightarrow> (matroid.rank_of indep (E - X) = matroid.rank_of indep E)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have le: "matroid.rank_of indep E \<le> card X + matroid.rank_of indep (E - X)"
         using dual_rank_well_def[OF assms(2)] \<open>X \<subseteq> E\<close> by blast
     show "(?q X = card X) \<longleftrightarrow> (matroid.rank_of indep (E - X) = matroid.rank_of indep E)"
@@ -3634,7 +3634,7 @@ proof-
       next
         case False
         then show ?thesis
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have not_indep': "\<not> (indep_system.indep_in indep' X) Y"
           proof (rule notI)
             assume "(indep_system.indep_in indep' X) Y"
@@ -3671,7 +3671,7 @@ proof-
     indep_system.lower_rank_of (dual E indep) X"
     using indep_system.lower_rank_of_def
       matroid.axioms(1)[OF \<open>matroid E indep'\<close>] matroid.axioms(1)[OF \<open>matroid E (dual E indep)\<close>]
-    proof (intro allI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
       fix X
       assume "X \<subseteq> E"
 
@@ -3738,7 +3738,7 @@ qed
 lemma matroid_iff_dual_matroid:
   assumes "indep_system E indep"
   shows "matroid E indep \<longleftrightarrow> matroid E (dual E indep)"
-proof (rule iffI)
+proof \<^marker>\<open>provenance ai\<close> (rule iffI)
   assume "matroid E indep"
   have fin: "finite E" using indep_system.carrier_finite[OF assms] .
   from matroid_dual_rank_expr[OF fin \<open>matroid E indep\<close>]
@@ -3767,7 +3767,7 @@ proof-
 
   from \<open>l2 = x # xs\<close> have "length l2 \<ge> 1" by auto
   from \<open>l2 = drop (length l1 - length l2) l1\<close> have "length l2 \<le> length l1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "length l2 = length (drop (length l1 - length l2) l1)"
       using \<open>l2 = drop (length l1 - length l2) l1\<close> by (rule arg_cong)
     also have "... = length l1 - (length l1 - length l2)"
@@ -3784,10 +3784,10 @@ proof-
 
   have "length l1 - length (tl l2) = (length l1 - length l2) + 1"
     using \<open>length l2 \<le> length l1\<close> \<open>length l2 \<ge> 1\<close>
-    by (simp add: length_tl; linarith)
+    by \<^marker>\<open>provenance ai\<close> (simp add: length_tl; linarith)
   moreover have "set (take (?j + 1) l1) = insert (hd (drop (?j) l1)) (set (take (?j) l1))"
     using take_hd_drop \<open>?j < length l1\<close>
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have take_eq: "take (?j) l1 @ [hd (drop (?j) l1)] = take (Suc (?j)) l1"
       using take_hd_drop[OF \<open>?j < length l1\<close>] .
     have "set (take (Suc (?j)) l1) = set (take (?j) l1 @ [hd (drop (?j) l1)])"
@@ -3884,7 +3884,7 @@ which proves the cost inequality for the greedy solution *)
 lemma set_take_Suc_diff:
   assumes "set l = S" "length l = card S" "j < length l" 
   shows "{l ! j} = set (take (Suc j) l) - set (take j l)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "distinct l" using assms(1) assms(2) card_distinct by force
   have take_eq: "take (Suc j) l = take j l @ [l ! j]"
     using take_Suc_conv_app_nth[OF assms(3)] .
@@ -3942,7 +3942,7 @@ proof-
 
   from take_Suc_conv_app_nth[OF assms(5)]
   have set_take_diff_expr: "set (take j l) - set (take (j - 1) l) = {l ! (j - 1)}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have j_eq: "Suc (j - 1) = j" using assms(4) by simp
     from set_take_Suc_diff[OF assms(1) assms(2) assms(5)]
     have "{l ! (j - 1)} = set (take (Suc (j - 1)) l) - set (take (j - 1) l)" .
@@ -3951,7 +3951,7 @@ proof-
 
   have card_diff_expr: "(card (A \<inter> set (take j l)) - card (A \<inter> set (take (j - 1) l))) =
     card (A \<inter> (set (take j l) - set (take (j - 1) l)))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have subset_take: "set (take (j - 1) l) \<subseteq> set (take j l)"
     proof (rule set_take_subset_set_take)
       show "j - 1 \<le> j" by simp
@@ -3989,7 +3989,7 @@ proof-
       by force
     then have "sum c (A \<inter> set (take j l) - A \<inter> set (take (j - 1) l)) = 0"
       unfolding \<open>A \<inter> set (take j l) - A \<inter> set (take (j - 1) l) = {}\<close>
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     moreover have "rat_of_nat (card (A \<inter> set (take j l)) - (card (A \<inter> set (take (j - 1) l)))) = 0"
       using set_take_diff_expr False card_diff_expr by auto
     ultimately show ?thesis by auto
@@ -4012,7 +4012,7 @@ proof-
     "\<forall>j < n. G \<inter> (set (take (Suc j) l) - set (take j l)) \<subseteq> {l ! j}" by blast
   then have 1:
     "\<forall>j \<in> {1..n}. G \<inter> (set (take j l) - set (take (j - 1) l)) \<subseteq> {l ! (j - 1)}"
-proof (intro ballI)
+proof \<^marker>\<open>provenance ai\<close> (intro ballI)
   fix j :: nat
   assume "j \<in> {1..n}"
   then have j_ge: "1 \<le> j" and j_le: "j \<le> n" by simp_all
@@ -4075,7 +4075,7 @@ lemma sum_split_last:
   assumes "n \<ge> 1"
   shows "(\<Sum>j=1..(n - 1). g j) + g (n::nat) = (\<Sum>j=1..n. g j)"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms have n_eq: "n = Suc (n - 1)" by presburger
   have set_eq: "{1..Suc (n - 1)} = insert (Suc (n - 1)) {1..(n - 1)}" by auto
   have notin: "Suc (n - 1) \<notin> {1..(n - 1)}" by auto
@@ -4127,7 +4127,7 @@ proof-
     also have "... =
     (\<Sum>j = 1..n. g j * (c (j - 1) - c j)) + g (Suc n) * c (Suc n - 1)"
       using Suc
-      proof (cases "n = 0")
+      proof \<^marker>\<open>provenance ai\<close> (cases "n = 0")
         case True
         then show ?thesis by simp
       next
@@ -4146,7 +4146,7 @@ proof-
   have "(\<Sum>j \<in> {1..n}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1))) =
     (\<Sum>j \<in> {1..n - 1}. (g j) * (if j < n then c (j - 1) - c j else c (j - 1)))
     + (g n) * (if n < n then c (n - 1) - c n else c (n - 1))"
-proof (cases "n = 0")
+proof \<^marker>\<open>provenance ai\<close> (cases "n = 0")
   case True
   then show ?thesis using assms(3) by simp
 next
@@ -4184,7 +4184,7 @@ proof-
   have "finite ?fracs" using `finite carrier` by auto
 
   have 1: "rank_quotient = Min {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have set_eq: "{Frac (int (lower_rank_of X)) (int (rank X)) | X. X \<subseteq> carrier} =
                   {Frac (int (lower_rank_of X)) (int (upper_rank_of X)) | X. X \<subseteq> carrier}"
     proof (intro equalityI subsetI)
@@ -4211,7 +4211,7 @@ proof-
   moreover have "\<forall>X \<subseteq> carrier. int (upper_rank_of X) \<ge> 0"
     by simp
   ultimately have 2: "\<forall>X \<subseteq> carrier. Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<ge> 0"
-  proof (intro allI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
     fix X
     assume X_subset: "X \<subseteq> carrier"
     show "Frac (int (lower_rank_of X)) (int (upper_rank_of X)) \<ge> 0"
@@ -4255,7 +4255,7 @@ lemma rank_geq_card_indep_in:
   shows "rank X \<ge> card Y"
 proof-
   from indep_in_def have "finite {card Y | Y. indep_in X Y}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<forall>n \<in> {card Y | Y. indep_in X Y}. n \<le> card carrier"
     proof
       fix n
@@ -4305,7 +4305,7 @@ proof-
       using \<open>rank_quotient \<le> Fract (int (lower_rank_of X)) (int (rank X))\<close>
       by (simp add: Fract_of_int_quotient)
     then show ?thesis
-    proof (cases "rank X = 0")
+    proof \<^marker>\<open>provenance ai\<close> (cases "rank X = 0")
       case True
       then show ?thesis by simp
     next
@@ -4360,16 +4360,16 @@ proof-
 
   from \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close>
   have "card B1 \<le> card B2" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "lower_rank_of X \<le> upper_rank_of X" using lower_rank_le_upper_rank[OF X(1)] .
     also have "upper_rank_of X = rank X" using upper_rank_equiv_rank[OF X(1)] .
     finally show "card B1 \<le> card B2"
       using \<open>card B1 = lower_rank_of X\<close> \<open>card B2 = rank X\<close> by simp
   qed
   have "Frac (int (card B1)) (int (card B2)) = rank_quotient"
-    using X(2) B1(2) B2(2) by simp
+    using X(2) B1(2) B2(2) by \<^marker>\<open>provenance ai\<close> simp
   with X(1) B1(1) B2(1) \<open>card B1 \<le> card B2\<close>
-  show ?thesis by blast
+  show ?thesis by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 lemma rank_quotient_greater_0:
@@ -4388,7 +4388,7 @@ proof (rule ccontr, goal_cases)
   have "rank_quotient = Fract (int (card B1)) (int (card B2))" by simp
 
   with rank_quotient_leq_1 have "card B1 \<le> card B2" (* unclean, TODO change *)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close> rank_quotient_leq_1
     have le1: "Fract (int (card B1)) (int (card B2)) \<le> 1" by simp
     show "card B1 \<le> card B2"
@@ -4424,7 +4424,7 @@ proof (rule ccontr, goal_cases)
 
   with \<open>rank_quotient = Fract (int (card B1)) (int (card B2))\<close>  \<open>rank_quotient = 0\<close>
   have "card B1 = 0"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have B2_pos: "card B2 > 0" using \<open>card B1 < card B2\<close> by simp
     then have B2_nonzero: "of_int (int (card B2)) \<noteq> (0::rat)" by simp
     have "Fract (int (card B1)) (int (card B2)) = 0"
@@ -4448,7 +4448,7 @@ proof (rule ccontr, goal_cases)
   then have "\<forall>x \<in> F. \<not>indep {x}" using indep_in_def by blast
 
   from \<open>card B2 > 0\<close> have "\<exists>x. x \<in> B2"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>card B2 > 0\<close> have "B2 \<noteq> {}" by auto
     then show "\<exists>x. x \<in> B2" by blast
   qed
@@ -4472,7 +4472,7 @@ end
 lemma bound_tight_set_aux:
   "F \<subseteq> carrier' \<Longrightarrow> B1 \<subseteq> F \<Longrightarrow>
     B1 \<subseteq> X \<Longrightarrow> X \<subseteq> carrier' - (F - B1) \<Longrightarrow> (\<exists>Y. X = Y \<union> B1 \<and> Y \<subseteq> carrier' - F)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "F \<subseteq> carrier'" and "B1 \<subseteq> F" and "B1 \<subseteq> X" and "X \<subseteq> carrier' - (F - B1)"
   have "X = (X - B1) \<union> B1"
     using \<open>B1 \<subseteq> X\<close> by blast
@@ -4505,7 +4505,7 @@ proof (rule ccontr, goal_cases)
 
   with \<open>length (filter (\<lambda>y. c y = 1) xs) = k\<close> append_take_drop_id[of k xs] filter_append
   have "length (filter (\<lambda>y. c y = 1) (drop k xs)) \<ge> 1"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have filter_eq: "filter (\<lambda>y. c y = 1) xs =
     filter (\<lambda>y. c y = 1) (take k xs) @ filter (\<lambda>y. c y = 1) (drop k xs)"
   proof -
@@ -4522,7 +4522,7 @@ proof -
 qed
 
   then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) \<ge> 1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>distinct xs\<close> have "distinct (drop k xs)" by (rule distinct_drop)
     then have "distinct (filter (\<lambda>y. c y = 1) (drop k xs))" by (rule distinct_filter)
     then have "card (set (filter (\<lambda>y. c y = 1) (drop k xs))) =
@@ -4535,7 +4535,7 @@ qed
   with drop_eq_nths[of k xs] set_nths[of xs]
   have "card ({x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1}) \<ge> 1" by simp
   then have "\<exists>j. j \<ge> k \<and> j < length xs \<and> c (xs ! j) = 1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "{x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1} \<noteq> {}"
     proof
       assume "{x \<in> {xs ! i |i. i < length xs \<and> i \<in> {i. k \<le> i}}. c x = 1} = {}"
@@ -4591,7 +4591,7 @@ qed
 
 lemma sorted_aux3:
   "\<lbrakk>distinct xs; xs = ys @ zs; \<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)\<rbrakk> \<Longrightarrow> ys = filter P xs"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume dist: "distinct xs"
   assume decomp: "xs = ys @ zs"
   assume mem_iff: "\<And>x. x \<in> set xs \<Longrightarrow> (x \<in> set ys \<longleftrightarrow> P x)"
@@ -4631,7 +4631,7 @@ lemma member_filter: "(x \<in> Set.filter P A) = (x \<in> A \<and> P x)"
 
 lemma sorted_aux4:
   "\<lbrakk>distinct xs; xs = (filter P xs) @ ys\<rbrakk> \<Longrightarrow> ys = (filter (\<lambda>x. \<not> P x) xs)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume dist: "distinct xs" and split: "xs = filter P xs @ ys"
 
   from dist split have "distinct (filter P xs @ ys)" by simp
@@ -4679,7 +4679,7 @@ lemma sorted_aux5:
 proof-
   from sorted_aux1[OF assms] sorted_aux2[OF assms] assms(3)
   have "\<forall>i < length xs. i < k \<longleftrightarrow> c (xs ! i) = 1"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     show "\<forall>i < length xs. i < k \<longleftrightarrow> c (xs ! i) = 1"
     proof (rule allI, rule impI)
       fix i
@@ -4706,7 +4706,7 @@ proof-
       by (simp add: in_set_conv_nth)
 
     show "(x \<in> set (take k xs) \<longleftrightarrow> c x = 1)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       obtain i where i_len: "i < length xs" and xs_i: "xs ! i = x"
         using \<open>\<exists>i<length xs. xs ! i = x\<close> by blast
       have iff_i: "(i < k) = (c (xs ! i) = 1)"
@@ -4773,7 +4773,7 @@ proof (induction n arbitrary: A)
   case 0
   from 0 basis_in_iff_rank_of[OF assms]
   have "basis_in X A"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from 0 have indepXA: "indep_in X A" by blast
     from indep_in_subset_carrier[OF indepXA] have A_subset: "A \<subseteq> X" .
     from indep_in_iff_rank_of[OF assms A_subset] indepXA
@@ -4788,7 +4788,7 @@ proof (induction n arbitrary: A)
 next
   case (Suc n)
   from Suc have "\<exists>A'. indep_in X A' \<and> card A' = rank_of X - n"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from Suc.prems(1) have card_A: "card A = rank_of X - Suc n" by simp
     from Suc.prems(2) have le_Suc: "Suc n \<le> rank_of X" by simp
     from Suc.prems(3) have indep_A: "indep_in X A" by simp
@@ -4838,7 +4838,7 @@ next
 
   from this(2) Suc(2) augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close>]
   have "\<exists>x \<in> A' - A. indep_in X (insert x A)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "card A' = Suc (card A)"
       using Suc.prems(1) Suc.prems(2) \<open>card A' = rank_of X - n\<close> by linarith
     from augment_aux_indep_in[OF assms \<open>indep_in X A'\<close> \<open>indep_in X A\<close> this]
@@ -4847,7 +4847,7 @@ next
   then obtain x where "x \<in> A' - A" "indep_in X (insert x A)" by blast
 
   with Suc.prems(1) have "card (insert x A) = rank_of X - n"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "indep A" using indep_in_indep[OF Suc.prems(3)] .
     have "finite A" using indep_finite[OF \<open>indep A\<close>] .
     from \<open>x \<in> A' - A\<close> have "x \<notin> A" by blast
@@ -4882,7 +4882,7 @@ proof-
   from matroid.axioms(1) assms(2) have "indep_system E indep" by blast 
 
   from \<open>x \<in> B2 - B1\<close> \<open>indep_system.basis E indep B2\<close> have "x \<in> E - B1"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(4)]
       have "B2 \<subseteq> E" .
       with \<open>x \<in> B2 - B1\<close> show "x \<in> E - B1" by blast
@@ -4908,7 +4908,7 @@ proof-
     using assms(5) by blast
 
   from assms(3) assms(5) \<open>y \<in> C - B2\<close> have "(insert x (B1 - {y})) \<subseteq> E"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>x \<in> E - B1\<close> have "x \<in> E" by (rule DiffD1)
     from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(3)]
     have "B1 \<subseteq> E" .
@@ -4942,7 +4942,7 @@ proof-
 
   have "card B1 = card (insert x (B1 - {y}))"
     using \<open>x \<in> B2 - B1\<close> \<open>y \<in> C - B2\<close>
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from indep_system.basis_subset_carrier[OF \<open>indep_system E indep\<close> assms(3)]
     have B1_subset: "B1 \<subseteq> E" .
     from B1_subset assms(1) have "finite B1" using finite_subset by blast

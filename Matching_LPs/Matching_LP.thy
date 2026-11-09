@@ -179,11 +179,11 @@ proof -
     using A c x yA x0
     by (auto intro!: sum_mono mult_right_mono simp: less_eq_vec_def)
   also have "\<dots> = y \<bullet> (A *\<^sub>v x)"
-  using x y A by (simp add: transpose_vec_mult_scalar)
+  using x y A by \<^marker>\<open>provenance ai\<close> (simp add: transpose_vec_mult_scalar)
   also have "\<dots> \<le> y \<bullet> b" 
     unfolding scalar_prod_def using A b Axb y0
     by (auto intro!: sum_mono mult_left_mono simp: less_eq_vec_def)
-  also have "\<dots> = b \<bullet> y" using y b by (rule comm_scalar_prod)
+  also have "\<dots> = b \<bullet> y" using y b by \<^marker>\<open>provenance ai\<close> (rule comm_scalar_prod)
   finally show ?thesis . 
 qed
 (*TODO fix type*)
@@ -199,7 +199,7 @@ lemma general_complementary_slackness:
   shows "c \<bullet> x = b \<bullet> y" 
 proof-
   have a1:"b\<bullet>y - (A *\<^sub>v x) \<bullet>y = 0" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have Ax: "A *\<^sub>v x \<in> carrier_vec nr"
     using mult_mat_vec_carrier[OF A x] .
   have "(b - A *\<^sub>v x) \<bullet> y = b \<bullet> y - (A *\<^sub>v x) \<bullet> y"
@@ -210,7 +210,7 @@ qed
   hence a2:"b\<bullet>y  =  (A *\<^sub>v x) \<bullet>y" by auto
   have "c\<bullet>x - (A\<^sup>T *\<^sub>v y)\<bullet>x = 0"
     using slack_dual
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have AT: "A\<^sup>T \<in> carrier_mat nc nr"
       using A by simp
     have ATy: "A\<^sup>T *\<^sub>v y \<in> carrier_vec nc"
@@ -221,7 +221,7 @@ qed
   qed
   hence a3:  "c\<bullet>x = (A\<^sup>T *\<^sub>v y)\<bullet>x " by simp
   moreover have "... = (A *\<^sub>v x) \<bullet>y"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "(A\<^sup>T *\<^sub>v y) \<bullet> x = y \<bullet> (A *\<^sub>v x)"
       using A x y by (simp add: transpose_vec_mult_scalar)
     also have "\<dots> = (A *\<^sub>v x) \<bullet> y"
@@ -296,7 +296,7 @@ named_theorems matching_lp_theorems
 lemma bij_Vs_enum_inv[matching_lp_theorems]: "bij_betw Vs_enum_inv {0..< card V} V"
 proof-
   have "\<lbrakk>x < card V; y < card V; Vs_enum_inv x = Vs_enum_inv y\<rbrakk> \<Longrightarrow> x = y" for x y
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume x_less: "x < card V" and y_less: "y < card V"
       and eq: "Vs_enum_inv x = Vs_enum_inv y"
     have surj: "Vs_enum ` V = {0..<card V}"
@@ -330,7 +330,7 @@ proof-
     finally show "x = y" .
   qed
   moreover have "xa < card V \<Longrightarrow> Vs_enum_inv xa \<in> V" for xa
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
   assume xa: "xa < card V"
   then have "xa \<in> {0..<card V}"
     by simp
@@ -345,7 +345,7 @@ proof-
 qed
 
   moreover have "x \<in> V \<Longrightarrow> x \<in> Vs_enum_inv ` {0..<card V}" for x
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume x: "x \<in> V"
     from bij_Vs_enum x have "Vs_enum x \<in> {0..<card V}"
       by (rule bij_betw_apply)
@@ -361,7 +361,7 @@ qed
 lemma bij_G_enum_inv[matching_lp_theorems]: "bij_betw G_enum_inv {0..< card G} G"
 proof-
   have "\<lbrakk>x < card G; y < card G; G_enum_inv x = G_enum_inv y\<rbrakk> \<Longrightarrow> x = y" for x y
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume x_less: "x < card G" and y_less: "y < card G"
       and eq: "G_enum_inv x = G_enum_inv y"
     have im: "{0..<card G} = G_enum ` G"
@@ -376,7 +376,7 @@ proof-
     thus "x = y" using ex ey by simp
   qed
   moreover have "xa < card G \<Longrightarrow> G_enum_inv xa \<in> G" for xa
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume xa_less: "xa < card G"
     have im: "{0..<card G} = G_enum ` G"
       using bij_G_enum by (simp add: bij_betw_def)
@@ -387,7 +387,7 @@ proof-
       using G_enum_G_enum_inv by fastforce
   qed
   moreover have "x \<in> G \<Longrightarrow> x \<in> G_enum_inv ` {0..<card G}" for x
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume x_in_G: "x \<in> G"
     have "G_enum x \<in> G_enum ` G"
       using x_in_G by (rule imageI)
@@ -495,7 +495,7 @@ proof(rule ccontr)
 qed
 
 lemma  Vs_enum_less_card[matching_lp_theorems]: "v \<in> V \<Longrightarrow> Vs_enum v < card V"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "v \<in> V"
   hence "Vs_enum v \<in> Vs_enum ` V"
     by blast
@@ -516,7 +516,7 @@ lemma
     and Vs_enum_inv[simp,matching_lp_theorems]: "i < n \<Longrightarrow> Vs_enum (Vs_enum_inv i) = i"
     and Vs_enum_inv_in_G[simp,matching_lp_theorems]: "i < n \<Longrightarrow> (Vs_enum_inv i) \<in> V"
   using G_in_V V_inv_enum apply blast
-  apply (simp add: n_def)
+  apply \<^marker>\<open>provenance ai\<close> (simp add: n_def)
   using Fun.bij_betwE[OF bij_Vs_enum_inv]
   by (fastforce simp add: n_def)
 
@@ -534,7 +534,7 @@ lemma dual_sol_i_is[matching_lp_theorems]: "i < n \<Longrightarrow> dual_sol y $
 
 lemma G_enum_inv_same_args_same[matching_lp_theorems]:
   "\<lbrakk>i < m; j < m; G_enum_inv i = G_enum_inv j\<rbrakk> \<Longrightarrow> i = j"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume i: "i < m" and j: "j < m" and eq: "G_enum_inv i = G_enum_inv j"
   from eq have "G_enum (G_enum_inv i) = G_enum (G_enum_inv j)"
     by simp
@@ -556,7 +556,7 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
     by blast
   ultimately have gt_1: "1 < card ?indices" 
     using Suc_lessI   card_gt_0_iff 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have ne: "?indices \<noteq> {}" and neq: "card ?indices \<noteq> Suc 0"
       using \<open>?indices \<noteq> {} \<and> (card ?indices) \<noteq> Suc 0\<close> by auto
     have "0 < card ?indices"
@@ -565,7 +565,7 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
       by linarith
   qed
   then obtain ei1 where ei1: "ei1 \<in> ?indices"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "?indices \<noteq> {}"
       using gt_1 \<open>finite ?indices\<close> by (auto simp add: card_gt_0_iff)
     then show thesis
@@ -574,7 +574,7 @@ proof (intro conjI allI impI, simp_all, rule ccontr, simp add: not_le)
   with gt_1 have "0 < card (?indices - {ei1})"
     by auto
   then obtain ei2 where ei2: "ei2 \<in> ?indices" "ei1 \<noteq> ei2"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>0 < card (?indices - {ei1})\<close> have "?indices - {ei1} \<noteq> {}"
       by (simp add: card_gt_0_iff)
     then obtain e where "e \<in> ?indices - {ei1}"

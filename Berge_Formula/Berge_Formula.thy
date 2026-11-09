@@ -34,7 +34,7 @@ proof -
     have "card (Vs (?comp_out C)) =  sum (\<lambda> e. card e) (?comp_out C)"
       using \<open>finite (Vs M)\<close> \<open>matching M\<close> matching_card_is_sum by fastforce
     also have "\<dots> =  sum (\<lambda> e. 2) (?comp_out C)" 
-    proof (rule sum.cong[OF refl])
+    proof \<^marker>\<open>provenance ai\<close> (rule sum.cong[OF refl])
       fix e
       assume "e \<in> ?comp_out C"
       hence "e \<in> M" by simp
@@ -65,7 +65,7 @@ proof -
   have "finite ?QX" 
     by (simp add: assms(1) diff_components_finite)
   have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX.  C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1))) \<inter> ((Vs (?comp_out C2))) = {}"
-  proof (intro ballI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI impI)
     fix C1 C2
     assume C1_in: "C1 \<in> ?QX" and C2_in: "C2 \<in> ?QX" and neq: "C1 \<noteq> C2"
     have disj: "C1 \<inter> C2 = {}"
@@ -122,7 +122,7 @@ proof -
     sum (\<lambda> C. card (Vs (?comp_out C) \<inter> X)) ?QX"
     using union_card_is_sum[of "?QX" ?f] 1 `finite ?QX` by presburger
   then  have "sum (\<lambda> C. card ((Vs (?comp_out C)) \<inter> X)) ?QX \<le> card X"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume eq: "card (\<Union>C \<in> ?QX. Vs (?comp_out C) \<inter> X) =
       sum (\<lambda> C. card (Vs (?comp_out C) \<inter> X)) ?QX"
     have finVsG: "finite (Vs G)"
@@ -135,7 +135,7 @@ proof -
   then have 8:"sum (\<lambda> C. card (?comp_out C)) ?QX \<le> card X" 
     using 3 by auto
   then have 10: "\<forall> C \<in> ?QX. finite (?comp_out C)"
-  proof (intro ballI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI)
     fix C
     assume "C \<in> ?QX"
     have fin_M: "finite M"
@@ -164,14 +164,14 @@ proof -
       by blast
     have 5:"?comp_out_non \<inter> ?comp_out_empty = {}" 
       by blast
-    have 7:"sum (\<lambda> C. card (?comp_out C)) ?comp_out_empty = 0"      by (rule sum.neutral, safe, erule ssubst, simp)
+    have 7:"sum (\<lambda> C. card (?comp_out C)) ?comp_out_empty = 0"      by \<^marker>\<open>provenance ai\<close> (rule sum.neutral, safe, erule ssubst, simp)
     then have "sum (\<lambda> C. card (?comp_out C)) ?QX =
                sum (\<lambda> C. card (?comp_out C)) (?comp_out_non \<union> ?comp_out_empty)" 
       using 6 by auto
     have "sum (\<lambda> C. card (?comp_out C)) (?comp_out_non \<union> ?comp_out_empty) = 
           sum (\<lambda> C. card (?comp_out C)) (?comp_out_non) + 
           sum (\<lambda> C. card (?comp_out C)) (?comp_out_empty)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have sub_non: "?comp_out_non \<subseteq> ?QX" by blast
   have fin_non: "finite ?comp_out_non"
     using finite_subset[OF sub_non \<open>finite ?QX\<close>] .
@@ -189,7 +189,7 @@ qed
       by (simp add: 10 card_gt_0_iff Suc_leI)  
     then have "sum (\<lambda> C. card (?comp_out C)) ?comp_out_non \<ge> card ?comp_out_non"
       using sum_mono 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "card ?comp_out_non = sum (\<lambda>_. 1 :: nat) ?comp_out_non"
         by (rule card_eq_sum)
       also have "\<dots> \<le> sum (\<lambda>C. card (?comp_out C)) ?comp_out_non"
@@ -200,7 +200,7 @@ qed
     then have 12: "card X \<ge> card ?comp_out_non" 
       using 9 order_trans by blast
     have "card ?QX = card ?comp_out_empty + card ?comp_out_non"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have sub_non: "?comp_out_non \<subseteq> ?QX" by blast
         have fin_non: "finite ?comp_out_non"
           using finite_subset[OF sub_non \<open>finite ?QX\<close>] .
@@ -235,7 +235,7 @@ qed
       fix e x y
       assume assms_edge: "e \<in> M" "x \<in> e" "x \<notin> C" "y \<in> e" "y \<in> C" 
       then have "e \<inter> X = {}" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have e_in_G: "e \<in> G"
           using assms_edge(1) \<open>M \<subseteq> G\<close> by blast
         have x_neq_y: "x \<noteq> y"
@@ -267,7 +267,7 @@ qed
         using \<open>M \<subseteq> G\<close> \<open>e \<in> M\<close> 
         by (simp add: graph_diffI subsetD)
       then have "x \<in> C"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have inv: "graph_invar (G \<setminus> X)"
           by (rule graph_invar_remove_vertices[OF assms(1)])
         have "x \<in> connected_component (G \<setminus> X) y"
@@ -282,13 +282,13 @@ qed
     proof(rule ccontr)
       assume "\<not> (\<exists>v\<in>C. v \<notin> Vs M)" 
       then have "\<forall>v \<in> C. v \<in> Vs M" by blast
-      then have C_eq_VsM_inter_C: "Vs M \<inter> C = C" by auto
+      then have C_eq_VsM_inter_C: "Vs M \<inter> C = C" by \<^marker>\<open>provenance ai\<close> auto
       have sum_eq: "card (Vs M \<inter> C) = sum (\<lambda> e. card (e \<inter> C)) M"
-        using matching_int_card_is_sum[of M M C] `matching M` \<open>finite (Vs M)\<close> by blast
+        using matching_int_card_is_sum[of M M C] `matching M` \<open>finite (Vs M)\<close> by \<^marker>\<open>provenance ai\<close> blast
       then have card_C_eq_sum: "card C = sum (\<lambda> e. card (e \<inter> C)) M"
-        using C_eq_VsM_inter_C by simp
+        using C_eq_VsM_inter_C by \<^marker>\<open>provenance ai\<close> simp
       have "even (card C)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "2 dvd sum (\<lambda> e. card (e \<inter> C)) M"
         proof (rule dvd_sum)
           fix e
@@ -319,7 +319,7 @@ qed
   have "\<forall>C \<in> ?comp_out_empty.  (?not_in_M C) \<subseteq> C"
     by blast
   then have 15:"\<forall>C \<in> ?comp_out_empty. finite (?not_in_M C)"
-  proof (intro ballI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI)
     fix C
     assume subset_hyp: "\<forall>C \<in> ?comp_out_empty. ?not_in_M C \<subseteq> C"
     assume C_in: "C \<in> ?comp_out_empty"
@@ -337,7 +337,7 @@ qed
       by (rule finite_subset)
   qed
   then have "\<forall>C \<in> ?comp_out_empty. card (?not_in_M C) \<ge> 1"
-  proof (intro ballI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI)
     fix C assume "C \<in> ?comp_out_empty"
     with 14 15 have "finite (?not_in_M C)" "?not_in_M C \<noteq> {}" by blast+
     then have "0 < card (?not_in_M C)"
@@ -346,7 +346,7 @@ qed
       by simp
   qed
   then have 20:"sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty \<ge> card ?comp_out_empty"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "card ?comp_out_empty = sum (\<lambda>_. 1 :: nat) ?comp_out_empty"
       by (rule card_eq_sum)
     also have "\<dots> \<le> sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty"
@@ -360,7 +360,7 @@ qed
     using 15 by blast
   have "\<forall> C1 \<in> ?comp_out_empty. \<forall> C2 \<in> ?comp_out_empty. C1 \<noteq> C2 \<longrightarrow> 
         ?not_in_M C1 \<inter> ?not_in_M C2 = {}"
-  proof (intro ballI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI impI)
     fix C1 C2
     assume C1_in: "C1 \<in> ?comp_out_empty"
     assume C2_in: "C2 \<in> ?comp_out_empty"
@@ -385,7 +385,7 @@ qed
   have 19:"(\<Union>C \<in> ?comp_out_empty. (?not_in_M C)) = (?not_in_M (\<Union>C \<in> ?comp_out_empty. C))"
     by (safe;blast+)
   have "(\<Union>C \<in> ?comp_out_empty. C) \<subseteq> Vs G" 
-proof (rule SUP_least)
+proof \<^marker>\<open>provenance ai\<close> (rule SUP_least)
     fix C
     assume "C \<in> ?comp_out_empty"
     then have "C \<in> ?QX" by blast
@@ -400,11 +400,11 @@ proof (rule SUP_least)
   then have 22:"card (?not_in_M (\<Union>C \<in> ?comp_out_empty. C)) \<le> card (?not_in_M (Vs G))"
     using 17 card_mono by blast
   have 21:"card (?not_in_M (Vs G)) = card (Vs G - Vs M)" 
-    by (simp add: set_diff_eq) 
+    by \<^marker>\<open>provenance ai\<close> (simp add: set_diff_eq) 
   have "card (Vs G - Vs M) = card (Vs G) - card (Vs M)" 
     by (meson Vs_subset \<open>M \<subseteq> G\<close> \<open>finite (Vs M)\<close> card_Diff_subset)
   then have "card ?comp_out_empty + card (Vs M) \<le> card (Vs G)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume anon: "card (Vs G - Vs M) = card (Vs G) - card (Vs M)"
     have h1: "card ?comp_out_empty \<le> sum (\<lambda> C. card (?not_in_M C)) ?comp_out_empty"
       using "20" by linarith
@@ -423,7 +423,7 @@ proof (rule SUP_least)
     using 23 by linarith
   then show " 2 * (card M) + card (odd_comps_in_diff G X) - card X \<le> card (Vs G)"
    using matching_vertices_double_size[OF graph_invar_subset[OF assms(1) \<open>M \<subseteq> G\<close>] \<open>matching M\<close>]
-   by linarith
+   by \<^marker>\<open>provenance ai\<close> linarith
 qed
 
 lemma vertices_sum_in_components:
@@ -437,11 +437,11 @@ lemma diff_odd_comps_card:
   shows "card (odd_comps_in_diff G X) \<le> card (Vs G - X)"
 proof -
   have "(\<Union>C \<in> (odd_comps_in_diff G X). C) \<subseteq> (Vs G - X)" 
-    by (rule vertices_sum_in_components)
+    by \<^marker>\<open>provenance ai\<close> (rule vertices_sum_in_components)
   then have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) \<le> card (Vs G - X)" 
     by (simp add: assms card_mono)
   moreover have "card (\<Union>C \<in> (odd_comps_in_diff G X). C) = (\<Sum>C \<in> (odd_comps_in_diff G X). card C)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     let ?I = "odd_comps_in_diff G X"
     have fin_I: "finite ?I"
       by (rule diff_components_finite[OF assms])
@@ -455,14 +455,14 @@ proof -
     then show ?thesis by simp
   qed
   moreover have "\<forall>C \<in> (odd_comps_in_diff G X). card C \<ge> 1"
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     fix C assume hC: "C \<in> odd_comps_in_diff G X"
     have "odd (card C)" using hC by (rule diff_odd_compoenent_has_odd_card)
     hence "0 < card C" by (rule odd_pos)
     thus "1 \<le> card C" by linarith
   qed
   moreover have "(\<Sum>C \<in> (odd_comps_in_diff G X). card C) \<ge> card (odd_comps_in_diff G X)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have hge: "\<forall>C \<in> (odd_comps_in_diff G X). card C \<ge> 1"
       using calculation by simp
     have "card (odd_comps_in_diff G X) = (\<Sum>C \<in> (odd_comps_in_diff G X). 1)"
@@ -501,7 +501,7 @@ next
   proof(cases "card (odd_comps_in_diff G X) - card X \<le> 0")
     case True
     then have "\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) - card Y \<le> 0" 
-      using assms(3) by simp
+      using assms(3) by \<^marker>\<open>provenance ai\<close> simp
     then have "\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) \<le> card Y" 
       by auto
     then have "tutte_condition G" 
@@ -556,7 +556,7 @@ next
       using `Vs ?H = Vs G \<union> A`
       by (simp add: assms(1) assms(4))
     have 1: "graph_invar ?H"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dblton_graph ?H"
         unfolding dblton_graph_def
       proof
@@ -576,7 +576,7 @@ next
       then show ?thesis using `finite (Vs ?H)` by simp
     qed
     have "?k \<le> card (Vs G)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "?k \<le> card (odd_comps_in_diff G X)"
         by (rule diff_le_self)
       also have "... \<le> card (Vs G - X)"
@@ -609,7 +609,7 @@ next
         then obtain v where "v \<in> Vs G" 
           by fastforce
         have "A \<noteq> {}"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "0 < card A"
             using assms(5) False by simp
           then show ?thesis
@@ -642,7 +642,7 @@ next
             then have "{a, x} \<in> ?H" 
               by blast
             then show ?thesis
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "a \<in> connected_component ?H v"
                 by (rule vertices_edges_in_same_component[OF \<open>{v, a} \<in> ?H\<close>])
               then show ?thesis
@@ -676,7 +676,7 @@ next
           fix C
           assume asmC:"C \<in> connected_components ?H"
           obtain c where "c \<in> C"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             assume pre: "\<And>c. c \<in> C \<Longrightarrow> thesis"
             obtain w where "w \<in> Vs ?H" and w_eq: "C = connected_component ?H w"
               using connected_comp_has_vert[OF asmC] by blast
@@ -686,10 +686,10 @@ next
               by (rule pre)
           qed
           then have "c \<in> Vs ?H"
-            using asmC connected_comp_verts_in_verts by meson
+            using asmC connected_comp_verts_in_verts by \<^marker>\<open>provenance ai\<close> meson
           then have hcH: "c \<in> Vs ?H" .
           from `c \<in> C` hcH asmC 7 have "C = Vs ?H"
-            by (rule connected_components_eq)
+            by \<^marker>\<open>provenance ai\<close> (rule connected_components_eq)
           then show "C \<in> {Vs ?H}"
             by blast
         qed
@@ -697,7 +697,7 @@ next
           using 7 by blast
       qed
       have 13:"odd_comps_in_diff ?H {} = {}"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from odd_comps_in_diff_are_components[of ?H "{}"]
         have "odd_comps_in_diff ?H {} = {C. \<exists>v\<in>Vs ?H - {}. connected_component (?H \<setminus> {}) v = C \<and> odd (card C)}"
           by simp
@@ -729,7 +729,7 @@ next
         then have "card (odd_comps_in_diff ?H Y) > card (Vs G)" 
           using Y_subs by linarith 
         then show False
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have h: "card (odd_comps_in_diff ?H Y) > card (Vs G)"
             using Y_subs \<open>card (Vs G) \<le> card Y\<close> by linarith
           have vsH_diff: "Vs ?H - Y = A - Y"
@@ -786,7 +786,7 @@ next
             have "{x, a} \<inter> Y = {}" 
               using a asmx by blast
             then show ?thesis
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have hcap: "{x, a} \<inter> Y = {}" 
                 using a asmx by blast
               have "{x, a} \<in> (?H \<setminus> Y)"
@@ -805,7 +805,7 @@ next
             then have "{x, y} \<in> ?H \<setminus> Y" 
               using  asmx y  by (simp add: graph_diffI)
             then show ?thesis
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have hxy: "{y, x} \<in> (?H \<setminus> Y)"
                 using \<open>{x, y} \<in> (?H \<setminus> Y)\<close> by (simp add: insert_commute)
               have hay: "{a, y} \<in> (?H \<setminus> Y)"
@@ -838,7 +838,7 @@ next
           qed
           then show "{connected_component (?H \<setminus> Y) a} \<subseteq> 
                 connected_components (?H \<setminus> Y)"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "connected_component (?H \<setminus> Y) a 
                     \<in> connected_components (?H \<setminus> Y)"
               by (rule Connected_Components.connected_component_in_components[OF 10])
@@ -880,7 +880,7 @@ next
         next
           case False
           then show ?thesis
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have h_card_gt: "card Y < card (odd_comps_in_diff ?H Y)"
               using Y_subs by blast
             have h_zero: "card (odd_comps_in_diff ?H Y) = 0"
@@ -903,13 +903,13 @@ next
       then have "card (odd_comps_in_diff G (Y \<inter> Vs G)) > card Y" 
         using Y_subs 15 by auto
       have "Y = (Y \<inter> Vs G) \<union> A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have hY_H: "Y \<subseteq> Vs ?H" using Y_subs by blast
         have hY_GA: "Y \<subseteq> Vs G \<union> A" using hY_H 5 by blast
         with \<open>A \<subseteq> Y\<close> show ?thesis by blast
       qed
       then have "card Y = card (Y \<inter> Vs G) + card A"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have disj: "(Y \<inter> Vs G) \<inter> A = {}"
           using assms(6) by blast
         have fin_inter: "finite (Y \<inter> Vs G)"
@@ -959,7 +959,7 @@ next
   proof(cases "card (odd_comps_in_diff G X) \<le> card X")
     case True
     then have 1:"\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G Y) \<le> card Y"
-    proof (intro allI impI)
+    proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
       fix Y
       assume "Y \<subseteq> Vs G"
       have hmax: "int (card (odd_comps_in_diff G X)) - int (card X) \<ge>
@@ -989,7 +989,7 @@ next
       by(auto elim!: perfect_matchingE 
            simp add: matching_vertices_double_size[symmetric]) 
     then have "card (Vs M) \<ge> card (Vs G)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have vs_eq: "Vs M' = Vs G"
           using M' by (auto elim: perfect_matchingE)
         show ?thesis
@@ -998,7 +998,7 @@ next
     have "Vs M \<subseteq> Vs G" 
       by (simp add: Vs_subset assms(2))
     then have "Vs M =  Vs G"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have fin_G: "finite (Vs G)"
         using assms(1) graph_invar_finite_Vs by blast
       have card_le: "card (Vs M) \<le> card (Vs G)"
@@ -1011,7 +1011,7 @@ next
     then have "perfect_matching G M" 
       by (simp add: assms(1-2) perfect_matchingI)
     have 2:"2 * card M = card (Vs G)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have hM_sub: "M \<subseteq> G"
         using assms(2) by simp
       have hM_match: "matching M"
@@ -1030,7 +1030,7 @@ next
         using h_vs \<open>Vs M = Vs G\<close> by simp
     qed
     have 3: "\<forall>x \<in> Vs G. card {x} \<ge> card (odd_comps_in_diff G {x})"
-    proof (rule ballI)
+    proof \<^marker>\<open>provenance ai\<close> (rule ballI)
       fix x assume hx: "x \<in> Vs G"
       have hsub: "{x} \<subseteq> Vs G"
         using hx by simp
@@ -1042,7 +1042,7 @@ next
       qed
     qed
    have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))"
-   proof (rule ballI)
+   proof \<^marker>\<open>provenance ai\<close> (rule ballI)
      fix x
      assume hx: "x \<in> Vs G"
      have hx_sub: "{x} \<subseteq> Vs G"
@@ -1057,7 +1057,7 @@ next
        by simp
    qed
     have "\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
-    proof
+    proof \<^marker>\<open>provenance ai\<close>
       fix x assume hx: "x \<in> Vs G"
       have hle: "card (odd_comps_in_diff G {x}) \<le> 1"
         using 3 hx by simp
@@ -1076,9 +1076,9 @@ next
     qed
 
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
-      by (force simp: barrier_def insert_not_empty)
+      by \<^marker>\<open>provenance ai\<close> (force simp: barrier_def insert_not_empty)
     then have "\<exists> X \<subseteq> Vs G. barrier G X"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume all_barrier: "\<forall>x \<in> (Vs G). barrier G {x}"
       have "\<exists>e. e \<in> G"
         using \<open>G \<noteq> {}\<close> by (simp add: ex_in_conv)
@@ -1119,7 +1119,7 @@ next
           have "x \<in> Vs {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}" 
             using False x by blast
           then obtain x' y' where " x' \<in> Vs G \<and> y' \<in> A \<and> x \<in> {x', y'}" 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
             have "x \<in> \<Union> {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}"
               using \<open>x \<in> Vs {{x, y} |x y. x \<in> Vs G \<and> y \<in> A}\<close>
               by (simp add: Vs_def)
@@ -1154,7 +1154,7 @@ next
       by (simp add: assms(1) assms(6))
     have graph_invar_H:"graph_invar ?H" 
       using `finite (Vs ?H)` assms(1) assms(8)
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "dblton_graph ?H"
         unfolding dblton_graph_def
       proof (intro ballI)
@@ -1181,7 +1181,7 @@ next
         using \<open>finite (Vs ?H)\<close> by simp
     qed
     obtain Mh where Mh:"perfect_matching ?H Mh" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have hnat: "\<forall>Y \<subseteq> Vs G. card (odd_comps_in_diff G X) - card X \<ge>
                   card (odd_comps_in_diff G Y) - card Y"
       proof (intro allI impI)
@@ -1221,7 +1221,7 @@ next
     have "matching Mh" 
       using Mh perfect_matchingE by blast
     have 6: "Vs Mh = Vs ?H" 
-      using perfect_matchingD(3)[OF Mh] by simp
+      using perfect_matchingD(3)[OF Mh] by \<^marker>\<open>provenance ai\<close> simp
     then  have "\<forall>a \<in> Vs ?H. \<exists>! e \<in> Mh. a \<in> e"
       using \<open>matching Mh\<close> unfolding matching_def2 by argo
     then have "\<forall>a \<in> A.  \<exists>! e \<in> Mh. a \<in> e" 
@@ -1260,14 +1260,14 @@ next
         then obtain x y where "e = {x, y} \<and> x \<in> Vs G \<and> y \<in> A"
           by blast
         then have "(e \<inter> A) = {y}" 
-          using assms(8) by (auto simp: disjoint_iff)
+          using assms(8) by \<^marker>\<open>provenance ai\<close> (auto simp: disjoint_iff)
         then show False 
           using `card (e \<inter> A) = 2` by auto
       qed
       have "card e = 2" 
         using `graph_invar ?H` `e \<in> ?H` by (meson card_edge)
       then show "card (e \<inter> A) = 1"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "0 < card e"
           using `card e = 2` by simp
         then have fin_e: "finite e"
@@ -1291,7 +1291,7 @@ next
     have 9:"{e. e \<in> Mh \<and> e \<inter> A = {}} \<inter> {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = {}"
       by blast
     have "finite Mh"    
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "finite (Vs Mh)"
           using 6 graph_invar_finite_Vs[OF \<open>graph_invar ?H\<close>] by simp
         then have "finite (\<Union> Mh)"          by (simp add: Vs_def)
@@ -1299,7 +1299,7 @@ next
           by (rule finite_UnionD)
       qed
     then have "card {e. e \<in> Mh \<and> e \<inter> A = {}} + card {e. e \<in> Mh \<and> e \<inter> A \<noteq> {}} = card Mh "  
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume fin_Mh: "finite Mh"
         have sub0: "{e. e \<in> Mh \<and> e \<inter> A = {}} \<subseteq> Mh"
           by blast
@@ -1342,7 +1342,7 @@ next
     then have "graph_matching G (Mh \<setminus> A)" 
       by (simp add: \<open>matching (Mh \<setminus> A)\<close>)
     then have "card M \<ge> card Mh - card A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume match_diff: "graph_matching G (Mh \<setminus> A)"
         have "card (Mh \<setminus> A) \<le> card M"
           using assms(5) match_diff by blast
@@ -1352,7 +1352,7 @@ next
     then have "card M + card M \<ge> card Mh + card Mh - card A - card A" 
       by auto
     then have "2* card M + card A\<ge> 2*card Mh - card A" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume H: "card Mh + card Mh - card A - card A \<le> card M + card M"
       have "card Mh + card Mh \<le> card M + card M + card A + card A"
         using H by (simp add: le_diff_conv)
@@ -1362,7 +1362,7 @@ next
         by (simp add: le_diff_conv)
     qed
     then have "2* card M + ?k \<ge> 2*card Mh - card A" 
-      by (simp only: assms(7))
+      by \<^marker>\<open>provenance ai\<close> (simp only: assms(7))
     also have "2*card Mh - card A = card (Vs Mh) - card A" 
       using Mh dblton_graph_subset matching_vertices_double_size graph_invar_H
       by(force elim!: perfect_matchingE simp add: matching_vertices_double_size[symmetric])
@@ -1423,7 +1423,7 @@ proof -
     then obtain x where  "x \<in> Vs G \<and> f x = a" 
       by blast
     then show False 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have hnot: "\<forall>y \<in> Vs G. f y \<notin> Vs G"
         using add_vertices_axioms[unfolded add_vertices_def] by simp
       from a have a_A': "a \<in> A'" and a_G: "a \<in> Vs G"
@@ -1437,7 +1437,7 @@ proof -
     qed
   qed
   have "card (odd_comps_in_diff G X)  \<le> card (Vs G)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "card (odd_comps_in_diff G X) \<le> card (Vs G - X)"
       by (rule diff_odd_comps_card[OF graph])
     also have "\<dots> \<le> card (Vs G)"
@@ -1451,7 +1451,7 @@ proof -
   have "finite A'" 
     using A' graph by blast
   then obtain A where "A \<subseteq> A' \<and> (card (odd_comps_in_diff G X) - card X = card A)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<exists>B. B \<subseteq> A' \<and> card (odd_comps_in_diff G X) - card X = card B"
     proof (rule obtain_subset_with_card_n[OF 4])
       fix T
@@ -1464,7 +1464,7 @@ proof -
       using that by blast
   qed
   then show " 2 * (card M) + card (odd_comps_in_diff G X) - card X \<ge> card (Vs G)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume A_props: "A \<subseteq> A' \<and> card (odd_comps_in_diff G X) - card X = card A"
     have A_sub: "A \<subseteq> A'"
       using A_props by simp

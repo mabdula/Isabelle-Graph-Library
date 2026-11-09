@@ -590,7 +590,7 @@ lemma match_blossom_path_rev_stem:
     subgoal using path_suff[OF path] .
     subgoal using rev_path_is_path[OF path_pref[OF path]] .
     subgoal premises prems
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have stem_nempty: "stem \<noteq> []"
         using prems by auto
       have C_nempty: "C \<noteq> []"

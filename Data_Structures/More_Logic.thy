@@ -88,7 +88,7 @@ lemma option_caseE:
   "\<lbrakk>P (case arg of None \<Rightarrow> a | Some x \<Rightarrow> b x);
    \<lbrakk>arg = None; P a\<rbrakk> \<Longrightarrow> Q; \<And> x. \<lbrakk>arg = Some x; P (b x)\<rbrakk> \<Longrightarrow> Q\<rbrakk>
    \<Longrightarrow> Q"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume P: "P (case arg of None \<Rightarrow> a | Some x \<Rightarrow> b x)"
   assume none: "\<lbrakk>arg = None; P a\<rbrakk> \<Longrightarrow> Q"
   assume some: "\<And>x. \<lbrakk>arg = Some x; P (b x)\<rbrakk> \<Longrightarrow> Q"
@@ -118,7 +118,7 @@ lemma option_none_simp:
   by (auto split: option.split)
 
 lemma fst_snd_are_same: "prod.swap e = e \<Longrightarrow> fst e = snd e"  for e
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume assm: "prod.swap e = e"
   have "snd e = snd (prod.swap e)"
     using assm by simp
@@ -184,7 +184,7 @@ lemma ex3E: "\<lbrakk>\<exists> x y z.  P x y z; \<And>x y z. P x y z \<Longrigh
   by auto
 
 lemma prod_elim: "\<lbrakk>P p; \<And> a b. \<lbrakk>p = (a,b); P p\<rbrakk> \<Longrightarrow> Q\<rbrakk> \<Longrightarrow> Q"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "P p"
   assume rule: "\<And>a b. \<lbrakk>p = (a, b); P p\<rbrakk> \<Longrightarrow> Q"
   have "p = (fst p, snd p)" by simp
@@ -340,7 +340,7 @@ lemma if_PQ:"if P then False else if Q then False else True \<Longrightarrow> \<
   by argo
 
 lemma if_PQ_E: "\<lbrakk>if P then False else if Q then False else True; \<not> P \<and> \<not> Q \<Longrightarrow> R\<rbrakk> \<Longrightarrow> R"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume h1: "if P then False else if Q then False else True"
   assume h2: "\<not> P \<and> \<not> Q \<Longrightarrow> R"
   have notP: "\<not> P"

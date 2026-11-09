@@ -31,7 +31,7 @@ lemma enat_sum_distr:"finite X \<Longrightarrow> sum (\<lambda> x. enat (f x)) X
 lemma nat_cases_up_to_3:
   "\<lbrakk>n = 0 \<Longrightarrow> P; n = Suc 0 \<Longrightarrow> P; n = Suc (Suc 0) \<Longrightarrow> P; 
    \<And> nn. n = Suc (Suc (Suc nn)) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume h0: "n = 0 \<Longrightarrow> P"
   assume h1: "n = Suc 0 \<Longrightarrow> P"
   assume h2: "n = Suc (Suc 0) \<Longrightarrow> P"

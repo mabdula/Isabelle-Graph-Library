@@ -58,13 +58,13 @@ next
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = an_edge (ab, b) ; y = an_edge (aa, ba) ; z = an_edge (ab, bb) \<rbrakk> \<Longrightarrow> b \<le> bb"
     for aa ab ba b bb
-    by (auto split: if_split_asm simp: order_refl intro: order_trans)
+    by \<^marker>\<open>provenance ai\<close> (auto split: if_split_asm simp: order_refl intro: order_trans)
   have b: "\<lbrakk> if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False ;
        x = an_edge (a, b) ;
        y = an_edge (aa, ba) ; z = an_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
     for a aa ab b ba bb
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume h1: "if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False"
     and h2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
     and "x = an_edge (a, b)" and "y = an_edge (aa, ba)" and "z = an_edge (ab, bb)"
@@ -94,7 +94,7 @@ qed
        x = another_edge (ab, b) ;
        y = another_edge (aa, ba) ; z = another_edge (ab, bb)\<rbrakk> \<Longrightarrow> b \<le> bb"
     for aa ab b ba bb
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume p1: "if ab \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then b \<le> ba else False"
       and p2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
       and "x = another_edge (ab, b)" and "y = another_edge (aa, ba)" and "z = another_edge (ab, bb)"
@@ -123,7 +123,7 @@ qed
        x = another_edge (a, b) ;
        y = another_edge (aa, ba) ; z = another_edge (ab, bb) ; a \<noteq> ab \<rbrakk> \<Longrightarrow> a \<le> ab"
     for a aa ab b ba bb
-    by (auto split: if_splits intro: order_trans)
+    by \<^marker>\<open>provenance ai\<close> (auto split: if_splits intro: order_trans)
   from 3 show ?case    
     by(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
       (auto split: if_split simp add: less_le_not_le intro: a b c d) 
@@ -138,7 +138,7 @@ next
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = an_edge (a, b) ;y = an_edge (aa, ba)\<rbrakk> \<Longrightarrow> b = ba"
     for a aa b ba
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume h1: "if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False"
       and h2: "if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False"
       and "x = an_edge (a, b)"
@@ -185,7 +185,7 @@ next
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba) \<rbrakk> \<Longrightarrow> b = ba"
     for a aa b ba
-    by (auto split: if_split_asm simp: order_antisym_conv)
+    by \<^marker>\<open>provenance ai\<close> (auto split: if_split_asm simp: order_antisym_conv)
   have d: "\<lbrakk>if a \<le> aa \<and> \<not> aa \<le> a then True else if a = aa then b \<le> ba else False ;
        if aa \<le> a \<and> \<not> a \<le> aa then True else if aa = a then ba \<le> b else False ;
        x = another_edge (a, b) ; y = another_edge (aa, ba)\<rbrakk> \<Longrightarrow> a = aa"

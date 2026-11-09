@@ -251,7 +251,7 @@ text \<open>
 \<close>
 lemma induced_subgraph_dVs_subset_iff:
   "induced_subgraph H G \<Longrightarrow> induced_subgraph H' G \<Longrightarrow> dVs H \<subset> dVs H' \<longleftrightarrow> H \<subset> H'"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume HG_ind: "induced_subgraph H G"
   assume H'G_ind: "induced_subgraph H' G"
   have HG: "H = G \<downharpoonright> dVs H"

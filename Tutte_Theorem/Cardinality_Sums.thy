@@ -16,7 +16,7 @@ lemma matching_int_card_is_sum:
   shows "card ((Vs C) \<inter> X) = sum (\<lambda> e. card (e \<inter> X)) C" 
 proof -
   have "finite M" using assms(1)
-    unfolding Vs_def by (rule finite_UnionD)
+    unfolding Vs_def by \<^marker>\<open>provenance ai\<close> (rule finite_UnionD)
   then have "finite C"  
     using assms(3) finite_subset by auto
   show ?thesis using `finite C` assms(3)
@@ -28,7 +28,7 @@ proof -
       then have "finite (Vs F)" 
       by (meson Vs_subset assms(1) finite_subset insert.prems insert_subset)
     have "finite (Vs {x})"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "{x} \<subseteq> M"
         using insert.prems by auto
       hence "Vs {x} \<subseteq> Vs M"
@@ -41,7 +41,7 @@ proof -
     then have card_sum_hyp: "card (Vs F \<inter> X) = (\<Sum>e\<in>F. card (e \<inter> X))" 
       using insert.hyps(3) insert.prems by blast
     then have "\<forall>y \<in> F. x \<inter> y = {}"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have matching_prop: "\<forall>e1\<in>insert x F. \<forall>e2\<in>insert x F. e1 \<noteq> e2 \<longrightarrow> e1 \<inter> e2 = {}"
         using `matching (insert x F)` unfolding matching_def by simp
       show ?thesis
@@ -106,7 +106,7 @@ next
   then have "card ((\<Union> (f ` F)) \<union> f x) =  card (\<Union> (f ` F)) + card (f x)" 
     by (meson card_Un_disjoint finite_UN_I insert.hyps(1) insert.prems(1) insertCI)
   then have "card (\<Union> (f ` (insert x F))) = card (\<Union> (f ` F)) + card (f x)"    
-    by (simp add: Un_commute)
+    by \<^marker>\<open>provenance ai\<close> (simp add: Un_commute)
   then show ?case 
     by (simp add: card_hyps insert.hyps(1) insert.hyps(2))
 qed
@@ -152,7 +152,7 @@ next
     using UnionI insert.hyps(2) insert.prems(2) by auto
   then have " \<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" 
     using insert.prems(3)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have ex_neq: "\<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" if "a \<in> F" for a
     proof -
       from that have "a \<in> insert x F" by simp
@@ -164,14 +164,14 @@ next
     show ?thesis using ex_neq by blast
   qed
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-{b}. b1 \<in> a" 
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   have "finite (B - {b})" 
     using insert.prems(1) by blast
   then  have "card F \<le> card (B - {b})" using insert.prems(2)
     using  \<open>\<forall>a\<in>F. \<exists>b1\<in>B - {b}. b1 \<in> a\<close> insert.hyps(3) 
     by auto
  then have "card F \<le> card B - 1" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "b \<in> B"
       using \<open>b \<in> B \<and> b \<in> x\<close> by simp
     then have "card (B - {b}) = card B - 1"
@@ -206,7 +206,7 @@ next
     using UnionI insert.hyps(2) insert.prems(2) by auto
   then have " \<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" 
     using insert.prems(3)
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   then have " \<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<notin> x" 
     using insert.hyps(2) insert.prems(2) by fastforce 
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-x. b1 \<in> a" 
@@ -222,7 +222,7 @@ next
   moreover have "\<exists>!b1. b1 \<in> C\<union>{b} \<and> b1 \<in> x" 
     using \<open>b \<in> B \<and> b \<in> x\<close> calculation(1) by blast
   ultimately show ?case
-    using `\<forall>a\<in>F. b \<notin> a` by (intro exI[of _ "C \<union> {b}"]) auto
+    using `\<forall>a\<in>F. b \<notin> a` by \<^marker>\<open>provenance ai\<close> (intro exI[of _ "C \<union> {b}"]) auto
 qed
 
 
@@ -243,7 +243,7 @@ next
     using UnionI insert.hyps(2) insert.prems(2) by auto
   then have "\<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b" 
     using insert.prems(3)
-    proof (intro ballI)
+    proof \<^marker>\<open>provenance ai\<close> (intro ballI)
       fix a assume aF: "a \<in> F"
       then have aIns: "a \<in> insert x F" by simp
       have "\<exists>c\<in>B. c \<in> a"
@@ -255,7 +255,7 @@ next
         using cB ca by blast
     qed
   then have "\<forall>a\<in>F. \<exists>b1\<in>B-{b}. b1 \<in> a" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume hyp: "\<forall>a\<in>F. \<exists>b1\<in>B. b1 \<in> a \<and> b1 \<noteq> b"
     have "\<exists>b1\<in>B - {b}. b1 \<in> a" if "a \<in> F" for a
     proof -
@@ -272,7 +272,7 @@ next
   have "\<exists>C\<subseteq>(B - {b}). \<forall>a\<in>F. \<exists>b\<in>C. b \<in> a  \<and> card F = card C"
     using \<open>\<forall>a\<in>F. \<exists>b1\<in>B - {b}. b1 \<in> a\<close> \<open>finite (B - {b})\<close> insert.hyps(3) insert.prems(2) by auto
   then  obtain C where "C \<subseteq> (B - {b}) \<and> (\<forall>a\<in>F. \<exists>b\<in>C. b \<in> a) \<and> card F = card C"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>\<exists>C\<subseteq>(B - {b}). \<forall>a\<in>F. \<exists>b\<in>C. b \<in> a \<and> card F = card C\<close>
     obtain C' where C'_sub: "C' \<subseteq> B - {b}"
       and C'_cov: "\<forall>a\<in>F. \<exists>b'\<in>C'. b' \<in> a \<and> card F = card C'"
@@ -301,7 +301,7 @@ next
   moreover have  "\<forall>a\<in>insert x F. \<exists>b\<in> (C \<union> {b}). b \<in> a" 
     using \<open>b \<in> B \<and> b \<in> x\<close> calculation(1) by blast
   ultimately show ?case 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     obtain b0 where b0B: "b0 \<in> B" and b0x: "b0 \<in> x"
       using insert.prems(3) by blast
     show ?thesis

@@ -751,7 +751,7 @@ proof
   then obtain p where "matching_augmenting_path M p" "path G p" "distinct p"
     by blast
   then obtain M' where "M' \<subseteq> G" "matching M'" "card M < card M'"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have mtch: "matching (M \<oplus> set (edges_of_path p))"
         by (rule Berge_2(1)[OF \<open>matching_augmenting_path M p\<close> matching(3) \<open>path G p\<close>
                                \<open>distinct p\<close> matching(1) matching(2)])
@@ -800,29 +800,29 @@ lemma laterally_transfer_aug_path':
 proof-
   from graph_augmenting_path
   have M_in_G: "M \<subseteq> G" and match_M: "matching M"
-    using matching'(1) by auto
+    using matching'(1) by \<^marker>\<open>provenance ai\<close> auto
   have berge_M:
     "(\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p) =
        (\<exists>N\<subseteq>G. matching N \<and> card M < card N)"
-    by (rule Berge[OF matching'(2) match_M M_in_G graph])
+    by \<^marker>\<open>provenance ai\<close> (rule Berge[OF matching'(2) match_M M_in_G graph])
   have "\<exists>p. matching_augmenting_path M p \<and> path G p \<and> distinct p"
-    using graph_augmenting_path by blast
+    using graph_augmenting_path by \<^marker>\<open>provenance ai\<close> blast
   with berge_M have "\<exists>N\<subseteq>G. matching N \<and> card M < card N"
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   then obtain N where N_def: "N \<subseteq> G" "matching N" "card M < card N"
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   hence "card M' < card N" using assms(1) by linarith
   have M'_sub: "M' \<subseteq> G" and M'_match: "matching M'"
-    using matching(1) by auto
+    using matching(1) by \<^marker>\<open>provenance ai\<close> auto
   have card_M'_N: "card M' < card N"
-    using assms(1) N_def(3) by simp
+    using assms(1) N_def(3) by \<^marker>\<open>provenance ai\<close> simp
   have bigger: "\<exists>N'\<subseteq>G. matching N' \<and> card M' < card N'"
-    using N_def(1,2) card_M'_N by blast
+    using N_def(1,2) card_M'_N by \<^marker>\<open>provenance ai\<close> blast
   have "\<exists>q. matching_augmenting_path M' q \<and> path G q \<and> distinct q"
     using Berge[OF matching(2) M'_match M'_sub graph] bigger
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   then obtain q where "graph_augmenting_path G M' q"
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   then show ?thesis using that by simp
 qed
 
@@ -835,7 +835,7 @@ lemma laterally_transfer_aug_path:
 proof-
   from assms(1) have card': "card M' = card M" by simp
   show ?thesis
-  proof (intro iffI)
+  proof \<^marker>\<open>provenance ai\<close> (intro iffI)
     assume "\<exists>p. graph_augmenting_path G M p"
     then obtain p where p: "graph_augmenting_path G M p"
       by blast

@@ -14,7 +14,7 @@ lemma invertible_right_inverse1:
   fixes A :: "'a::{semiring_1, comm_ring_1} mat"
   assumes "A \<in> carrier_mat n n"
   shows "invertible_mat A \<longleftrightarrow> (\<exists>B \<in> carrier_mat n n. A * B = 1\<^sub>m n)"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume inv: "invertible_mat A"
   obtain B where B: "B \<in> carrier_mat n n" "inverts_mat A B" "inverts_mat B A"
     using obtain_inverse_matrix[OF assms inv] by blast
@@ -80,7 +80,7 @@ proof -
   with xe show ?thesis
     using \<open>\<And>xa. \<lbrakk>A *\<^sub>v xa = b; xa \<in> carrier_vec n\<rbrakk> \<Longrightarrow> 
           xa = Matrix.vec n (\<lambda>k. Determinant.det (replace_col A b k) / Determinant.det A)\<close> assms(3) 
-  proof (intro iffI)
+  proof \<^marker>\<open>provenance ai\<close> (intro iffI)
     assume "A *\<^sub>v x = b"
     then show "x = vec n (\<lambda>k. det (replace_col A b k) / det A)"
       using assms(3)

@@ -35,7 +35,7 @@ proof-
     using assms(1) by simp
 
   have "edges_of_vwalk (rev (w # l)) = (edges_of_vwalk (rev l)) @ [(v, w)]"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have l_ne: "l \<noteq> []"
       using assms(1) by simp
     have rev_l_ne: "rev l \<noteq> []"
@@ -113,7 +113,7 @@ proof-
 
   have "edges_of_vwalk (rev l) = (edges_of_vwalk (rev l_tl)) @ [(u, v)]"
     using assms(1) assms(2)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have l_tl_ne: "l_tl \<noteq> []" using assms(2) by simp
     hence rev_l_tl_ne: "rev l_tl \<noteq> []" by simp
     have hd_l_tl: "hd l_tl = u" using assms(2) by simp
@@ -908,7 +908,7 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
           using \<open>Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_aux_state))\<close> graph_symmetric
           by (blast intro: vwalk_rev)
@@ -916,7 +916,7 @@ proof (intro invar_props_intros, goal_cases)
           by (simp add: rev_rev_ident)
       qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have stack_eq: "stack dfs_aux_state = hd (stack dfs_aux_state) # u # l_tl_tl"
     using stack_expr local.Cons by simp
   have "Vwalk.vwalk (Graph.digraph_abs G) (hd (stack dfs_aux_state) # u # l_tl_tl)"
@@ -1074,7 +1074,7 @@ proof (intro invar_props_intros, goal_cases)
       have "t_set (seen (dfs_aux_state)) = {?v}"
       using \<open>invar_seen_stack_finished dfs_aux_state\<close>
       unfolding invar_seen_stack_finished_def
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>invar_seen_stack_finished dfs_aux_state\<close>
           have "set (stack dfs_aux_state) \<subseteq> t_set (seen (dfs_aux_state))"
           unfolding invar_seen_stack_finished_def by blast
@@ -1163,7 +1163,7 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have sym_pairs: "\<forall>(x, y) \<in> (Graph.digraph_abs G). (y, x) \<in> (Graph.digraph_abs G)"
         using graph_symmetric by fast
       have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
@@ -1172,7 +1172,7 @@ proof (intro invar_props_intros, goal_cases)
         by simp
     qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have stack_eq: "stack dfs_aux_state = ?v # u # l_tl_tl"
         using stack_expr local.Cons by simp
       then have vwalk_cons: "Vwalk.vwalk (Graph.digraph_abs G) (?v # u # l_tl_tl)"
@@ -1398,7 +1398,7 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     with vwalk_rev graph_symmetric
       have "Vwalk.vwalk (Graph.digraph_abs G) (stack dfs_aux_state)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have sym: "\<forall>(x, y) \<in> Graph.digraph_abs G. (y, x) \<in> Graph.digraph_abs G"
         using graph_symmetric by auto
       have "Vwalk.vwalk (Graph.digraph_abs G) (rev (rev (stack dfs_aux_state)))"
@@ -1408,7 +1408,7 @@ proof (intro invar_props_intros, goal_cases)
         by (simp add: rev_rev_ident)
     qed
     have "(?v, u) \<in> (Graph.digraph_abs G)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have stack_split: "stack dfs_aux_state = ?v # u # tl (tl (stack dfs_aux_state))"
         using \<open>stack dfs_aux_state = [?v, u] @ tl (tl (stack dfs_aux_state))\<close> by simp
       have "Vwalk.vwalk (Graph.digraph_abs G) (?v # u # tl (tl (stack dfs_aux_state)))"
@@ -1560,7 +1560,7 @@ proof (intro invar_props_intros, goal_cases)
       using \<open>invar_1 dfs_aux_state\<close> \<open>invar_seen_stack_finished dfs_aux_state\<close>
       by (force elim!: invar_props_elims)
     with Nil have "x = ?v"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have stack_ne: "stack dfs_aux_state \<noteq> []"
         using \<open>x \<in> set (stack (dfs_aux_state))\<close> by auto
       have hd_tl: "hd (stack dfs_aux_state) # tl (stack dfs_aux_state) = stack dfs_aux_state"
@@ -1599,7 +1599,7 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
 
     then have "\<exists>xs p_x_v. (rev (stack dfs_aux_state) = xs @ p_x_v \<and> p_x_v \<noteq> [] \<and> hd p_x_v = x)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>x \<in> set (stack (dfs_aux_state))\<close>
       have "x \<in> set (rev (stack dfs_aux_state))"
         by (simp add: set_rev)
@@ -1616,7 +1616,7 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: invar_props_elims)
     moreover have "last p_x_v = ?v"
       using \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>p_x_v \<noteq> []\<close> last_rev
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "last p_x_v = last (rev (stack dfs_aux_state))"
         using \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>p_x_v \<noteq> []\<close>
         by (simp add: last_append)
@@ -1639,7 +1639,7 @@ proof (intro invar_props_intros, goal_cases)
       by (simp add: \<open>p_x_v \<noteq> []\<close> edges_of_vwalk_append_3)
     with awalk_vwalk_id \<open>hd p_x_v = x\<close>
       have "awalk_verts x ((edges_of_vwalk p_x_v) @ [(?v, x)]) = p_x_v @ [x]"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "hd (p_x_v @ [x]) = hd p_x_v"
           using \<open>p_x_v \<noteq> []\<close> by (simp add: hd_append2)
         also have "\<dots> = x"
@@ -1660,7 +1660,7 @@ proof (intro invar_props_intros, goal_cases)
       by force
     with \<open>hd p_x_v = x\<close>
       have "distinct (tl p_x_v @ [x])"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have p_eq: "p_x_v = x # tl p_x_v"
       proof (cases p_x_v)
         case Nil
@@ -1682,7 +1682,7 @@ proof (intro invar_props_intros, goal_cases)
 
     from \<open>hd p_x_v = x\<close> \<open>last p_x_v = ?v\<close> \<open>x \<noteq> ?v\<close> \<open>p_x_v \<noteq> []\<close>
       have "length p_x_v \<ge> 2"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<not> length p_x_v \<le> 1"
       proof
         assume "length p_x_v \<le> 1"
@@ -1698,7 +1698,7 @@ proof (intro invar_props_intros, goal_cases)
       by (force elim!: call_cond_elims)
     then have "\<exists>ys. rev (stack dfs_aux_state) = ys @ [a, ?v]"
       using Cons rev_append
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have stack_split: "stack dfs_aux_state = hd (stack dfs_aux_state) # a # list"
         using Cons \<open>DFS_Aux_ret_1_conds dfs_aux_state\<close>
         by (force elim!: call_cond_elims)
@@ -1709,7 +1709,7 @@ proof (intro invar_props_intros, goal_cases)
 
     with \<open>rev (stack dfs_aux_state) = xs @ p_x_v\<close> \<open>length p_x_v \<ge> 2\<close>
       have "\<exists>ys. p_x_v = ys @ [a, ?v]"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain ys0 where ys0_def: "rev (stack dfs_aux_state) = ys0 @ [a, ?v]"
           using \<open>\<exists>ys. rev (stack dfs_aux_state) = ys @ [a, ?v]\<close> by blast
         have eq: "xs @ p_x_v = ys0 @ [a, ?v]"
@@ -1894,7 +1894,7 @@ proof (intro invar_props_intros, goal_cases)
     have stack_expr: "(stack (DFS_Aux_upd1 dfs_aux_state)) = ?w # stack (dfs_aux_state)"
       by (auto simp add: DFS_Aux_upd1_def Let_def)
     with a show ?thesis
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "p \<noteq> []" and "hd p = v"
         using "1"(7) by (auto simp: vwalk_bet_def)
       then have "v \<in> set p"
@@ -1959,7 +1959,7 @@ proof(rule invar_props_intros, elim invar_visited_through_seen_props call_cond_e
         using \<open>vwalk_bet (Graph.digraph_abs G) v p w\<close> 
         by (auto dest!: split_vwalk simp:  neq_Nil_conv)
       hence "hd p2 \<in> t_set (seen dfs_aux_state)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have nbhd_inv: "vset_inv (\<N>\<^sub>G v')"
           using Graph.neighbourhood_invars' graph_inv(1) by blast
         have seen_inv: "vset_inv (seen dfs_aux_state)"
@@ -2307,7 +2307,7 @@ proof-
     have dfs_tree_empty: "dfs_tree initial_state = {}"
       by (auto simp: dfs_tree_def initial_state_def)
     show ?case
-    proof (rule ccontr)
+    proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
       assume "\<not> (\<nexists>c. cycle' (dfs_tree initial_state) c)"
       then obtain c where "cycle' (dfs_tree initial_state) c"
         by blast

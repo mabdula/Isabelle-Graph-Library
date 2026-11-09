@@ -37,7 +37,7 @@ next
   have a: "if (ab::'a) \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then (b::'b) \<le> ba else False \<Longrightarrow>
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False \<Longrightarrow> b \<le> bb"
     for ab b aa ba bb
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume H1: "if (ab::'a) \<le> aa \<and> \<not> aa \<le> ab then True else if ab = aa then (b::'b) \<le> ba else False"
     assume H2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
     show "b \<le> bb"
@@ -64,7 +64,7 @@ next
   have b: "if a \<le> aa \<and> \<not> (aa::'a) \<le> a then True else if a = aa then (b::'b) \<le> ba else False \<Longrightarrow>
        if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False \<Longrightarrow> a \<noteq> ab \<Longrightarrow> a \<le> ab "
     for a aa ab ba b bb
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume h1: "if a \<le> aa \<and> \<not> (aa::'a) \<le> a then True else if a = aa then (b::'b) \<le> ba else False"
       assume h2: "if aa \<le> ab \<and> \<not> ab \<le> aa then True else if aa = ab then ba \<le> bb else False"
       from h1 consider (lt1) "a \<le> aa" "\<not> aa \<le> a" | (eq1) "a = aa" "b \<le> ba"

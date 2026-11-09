@@ -54,7 +54,7 @@ proof -
     by (simp add: assms(1) finite_odd_comps_in_diff)
   have "{} \<subseteq> G" by auto
   then have "card (odd_comps_in_diff G {}) \<le> card {}" using assms(2) 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "{} \<subseteq> Vs G"
       by simp
     then show ?thesis
@@ -70,7 +70,7 @@ lemma connected_comp_if_comp_out_empty:
   shows "C \<in> connected_components G"
 proof -
   obtain x where "x \<in> Vs G \<and> x \<in> C"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have odd_C: "odd (card C)"
       using assms diff_odd_compoenent_has_odd_card by blast
     have C_ne: "C \<noteq> {}"
@@ -91,7 +91,7 @@ proof -
     using odd_comps_in_diff_is_component[of C G X] 
     by (simp add: \<open>C \<in> odd_comps_in_diff G X\<close>)
   have " \<nexists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G" 
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     assume "\<exists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G"
     then obtain x y where xy: "x \<in> C" "y \<in> X" "{x, y} \<in> G" by auto
     have "{y, x} \<in> comp_out G C X"
@@ -105,7 +105,7 @@ proof -
   qed
   then have "\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> {x, y} \<in> (G \<setminus> X)"   
     using assms(1) odd_comps_in_diff_not_in_X 
-  proof (intro allI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
     fix x y
     assume "{x, y} \<in> G \<and> x \<in> C"
     hence edge: "{x, y} \<in> G" and xC: "x \<in> C" by auto
@@ -122,7 +122,7 @@ proof -
     thus "{x, y} \<in> (G \<setminus> X)" using edge graph_diffI by blast
   qed
   then have "\<forall>x y. {x, y} \<in> G \<and> x \<in> C \<longrightarrow> y \<in> C" 
-  proof (intro allI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro allI impI)
     fix x y
     assume "{x, y} \<in> G \<and> x \<in> C"
     then have xy_G: "{x, y} \<in> G" and xC: "x \<in> C"
@@ -150,7 +150,7 @@ proof -
       case False
       then obtain p where p_walk:"walk_betw G x p y"
         using `y \<in> connected_component G x`
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
         have yx: "y \<noteq> x"
           using False by blast
         show thesis
@@ -165,7 +165,7 @@ proof -
       then have "path G p" 
         using p_walk unfolding walk_betw_def  by auto
       then have "\<forall>z \<in> set p. z \<in> C"  using `hd p \<in> C`
-        proof (induction p)
+        proof \<^marker>\<open>provenance ai\<close> (induction p)
           case path0
           then show ?case by simp
         next
@@ -187,7 +187,7 @@ proof -
             using \<open>v \<in> C\<close> by auto
         qed
       then show "y \<in> C" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "p \<noteq> []"
             using p_walk by auto
           have "last p = y"
@@ -204,15 +204,15 @@ next
   fix y
   assume "y \<in> C"
   then have "y \<in> connected_component (G \<setminus> X) x"
-    using \<open>connected_component (G \<setminus> X) x = C\<close> by simp
+    using \<open>connected_component (G \<setminus> X) x = C\<close> by \<^marker>\<open>provenance ai\<close> simp
   moreover have "connected_component (G \<setminus> X) x \<subseteq> connected_component G x"
-    by (rule con_comp_subset) (rule graph_diff_subset)
-  ultimately show "y \<in> connected_component G x" by auto
+    by \<^marker>\<open>provenance ai\<close> (rule con_comp_subset) (rule graph_diff_subset)
+  ultimately show "y \<in> connected_component G x" by \<^marker>\<open>provenance ai\<close> auto
 qed
   then show ?thesis 
     using \<open>x \<in> Vs G \<and> x \<in> C\<close>
     unfolding connected_components_def
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 lemma comp_out_nonempty:
@@ -225,7 +225,7 @@ proof(rule ccontr)
   then have "comp_out G C X = {}" by auto
   obtain x where "x \<in> Vs G \<and> x \<in> C"
     using component_in_E[of C G X] assms(2)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "C \<subseteq> Vs G"
       using component_in_E assms(2) by blast
     moreover have "C \<noteq> {}"
@@ -239,7 +239,7 @@ proof(rule ccontr)
   have "C \<in> connected_components G" 
     by (meson \<open>comp_out G C X = {}\<close> assms(2) connected_comp_if_comp_out_empty)
   have "C \<in> (odd_comps_in_diff G {})"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have codd: "odd (card C)"
       using assms(2) diff_odd_compoenent_has_odd_card by blast
     obtain v where v: "v \<in> Vs G" "C = connected_component G v"
@@ -267,7 +267,7 @@ proof(rule ccontr)
     by (meson le_less_linear tutte_condition_def)
   then have "X \<subseteq> Vs M" "graph_invar G" "matching M" "M\<subseteq>G" "Vs M = Vs G"
     using \<open>perfect_matching G M\<close> perfect_matchingE assms(2)
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have pm: "M \<subseteq> G" "matching M" "Vs G = Vs M"
     using \<open>perfect_matching G M\<close> by (simp add: perfect_matching_def)+
   have X_sub: "X \<subseteq> Vs G"
@@ -285,7 +285,7 @@ proof -
 qed
   then have "finite (Vs M)" by simp
   have "finite M" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "finite (Vs G)"
       using \<open>graph_invar G\<close> by simp
     then have "finite (Vs M)"
@@ -306,7 +306,7 @@ qed
     have "card (Vs (?comp_out C)) =  sum (\<lambda> e. card e) (?comp_out C)"
       using \<open>finite (Vs M)\<close> \<open>matching M\<close> matching_card_is_sum by fastforce
     also have "\<dots> =  sum (\<lambda> e. 2) (?comp_out C)" 
-    proof (rule sum.cong)
+    proof \<^marker>\<open>provenance ai\<close> (rule sum.cong)
       show "?comp_out C = ?comp_out C"
         by simp
     next
@@ -341,14 +341,14 @@ qed
   have "\<forall>C \<in> ?QX. finite ((Vs (?comp_out C)) \<inter> X)" 
     by (meson \<open>X \<subseteq> Vs M\<close> \<open>finite (Vs M)\<close> finite_Int finite_subset)
   have "finite ?QX" 
-proof (rule ccontr)
+proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
     assume "infinite ?QX"
     then have "card ?QX = 0" by simp
     then show False
       using \<open>X \<subseteq> Vs G \<and> card X < card ?QX\<close> by simp
   qed
   have "\<forall> C1 \<in>?QX. \<forall> C2 \<in> ?QX.  C1 \<noteq> C2 \<longrightarrow> ((Vs (?comp_out C1))) \<inter> ((Vs (?comp_out C2))) = {}"
-  proof (intro ballI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI impI)
     fix C1 C2
     assume C1_mem: "C1 \<in> ?QX" and C2_mem: "C2 \<in> ?QX" and neq: "C1 \<noteq> C2"
     show "Vs (?comp_out C1) \<inter> Vs (?comp_out C2) = {}"
@@ -397,7 +397,7 @@ proof (rule ccontr)
     using union_card_is_sum[of "?QX" ?f] `\<forall>C \<in> ?QX. finite ((Vs (?comp_out C)) \<inter> X)`
       `finite ?QX`  by presburger
   then  have "sum (\<lambda> C. card ((Vs (?comp_out C)) \<inter> X)) ?QX \<le> card X" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have fin_X: "finite X"
       using finite_subset[OF \<open>X \<subseteq> Vs M\<close> \<open>finite (Vs M)\<close>] .
     have le_card: "card (\<Union>C \<in>?QX. ((Vs (?comp_out C)) \<inter> X)) \<le> card X"
@@ -433,7 +433,7 @@ proof (rule ccontr)
           using \<open>M \<subseteq> G\<close> \<open>e \<in> M\<close> 
           by (simp add: graph_diffI subsetD)
         then have "x \<in> C"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "{x, y} \<in> (G \<setminus> X)"
               using \<open>e \<in> (G \<setminus> X)\<close> \<open>e = {x, y}\<close> by simp
             then have "y \<in> connected_component (G \<setminus> X) x"
@@ -452,7 +452,7 @@ proof (rule ccontr)
         then show "y \<in> {}"  using \<open>x \<notin> C\<close> by auto
       qed
       have " ((Vs M) \<inter> C) = C" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "C \<subseteq> Vs G"
           using \<open>C \<in> odd_comps_in_diff G X\<close> component_in_E by blast
         then show ?thesis
@@ -462,7 +462,7 @@ proof (rule ccontr)
         using matching_int_card_is_sum[of M M C]  `matching M`  \<open>finite (Vs M)\<close> by blast
       then have "even (card C)" 
         using \<open>Vs M \<inter> C = C\<close>
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have card_eq: "card C = sum (\<lambda>e. card (e \<inter> C)) M"
             using \<open>card (Vs M \<inter> C) = sum (\<lambda> e. card (e \<inter> C)) M\<close> \<open>Vs M \<inter> C = C\<close> by simp
           have dvd_each: "\<And>e. e \<in> M \<Longrightarrow> 2 dvd card (e \<inter> C)"
@@ -512,7 +512,7 @@ lemma odd_comps_in_diff_connected:
   assumes "C \<in> (odd_comps_in_diff G X)" 
   shows "\<exists>x y. x \<in> C \<and> y \<in> X \<and> {x, y} \<in> G"
   using comp_out_nonempty[of G C X] 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "comp_out G C X \<noteq> {}"
     using assms comp_out_nonempty[of G C X] by blast
   then obtain e where "e \<in> comp_out G C X"
@@ -614,7 +614,7 @@ proof(rule ccontr)
       new_components_subset_of_old_one[of C' G X C Y] assms(1-3)
      by auto
   have "\<forall>C'\<in>odd_comps_in_diff G X - {C}. C' \<inter> C = {}" 
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     fix C'
     assume "C' \<in> odd_comps_in_diff G X - {C}"
     then have C'_in: "C' \<in> odd_comps_in_diff G X" and C'_neq: "C' \<noteq> C"
@@ -649,7 +649,7 @@ proof(rule ccontr)
  odd_comps_in_diff G X - {C} \<union> odd_comps_in_diff (component_edges (G \<setminus> X) C) {x}"
     using add_subset_change_odd_components[of G X C "{x}"] assms by auto
   have "graph_invar (component_edges (G \<setminus> X) C)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "component_edges (G \<setminus> X) C \<subseteq> (G \<setminus> X)"
       using Connected_Components.component_edges_subset by blast
     moreover have "(G \<setminus> X) \<subseteq> G"
@@ -665,7 +665,7 @@ proof(rule ccontr)
   then have "card ?docX \<ge> 1" 
     by (simp add: Suc_leI asm card_gt_0_iff)
   have "card (odd_comps_in_diff G (X\<union>{x})) \<le> card (X\<union>{x})"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "C \<subseteq> Vs G"
       using assms(6) component_in_E by blast
     then have "x \<in> Vs G"
@@ -676,7 +676,7 @@ proof(rule ccontr)
       using assms(2) tutte_conditionE by blast
   qed
   then have "card (odd_comps_in_diff G (X\<union>{x}))\<le> card X +1" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "card (X \<union> {x}) \<le> card X + card {x}"
       by (rule card_Un_le)
     then have "card (odd_comps_in_diff G (X \<union> {x})) \<le> card X + card {x}"
@@ -697,7 +697,7 @@ proof(rule ccontr)
             \<le> card ((odd_comps_in_diff G X) - {C}) + 2" 
     using odd_diffUn by auto
   have "\<forall>C' \<in> (odd_comps_in_diff G X - {C}). C' \<inter> C = {}"
-  proof (intro ballI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI)
     fix C'
     assume "C' \<in> odd_comps_in_diff G X - {C}"
     then have C'_in: "C' \<in> odd_comps_in_diff G X" and C'_neq: "C' \<noteq> C"
@@ -707,7 +707,7 @@ proof(rule ccontr)
   qed
   then have "Vs (odd_comps_in_diff G X - {C}) \<inter> C = {}" 
     unfolding Vs_def
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   have \<^marker>\<open>provenance ai\<close> "card ?docX \<le> 2"
   proof -
     have "finite (odd_comps_in_diff G X - {C})"
@@ -724,7 +724,7 @@ proof(rule ccontr)
   proof(cases "card ?docX = 2")
     case True
     have "card (odd_comps_in_diff G (X\<union>{x})) = card X + 1"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have Ysub: "{x} \<subseteq> C"
         using assms(7) by simp
       have disjAB: "(odd_comps_in_diff G X - {C}) \<inter>
@@ -769,7 +769,7 @@ proof(rule ccontr)
       finally show "card (odd_comps_in_diff G (X \<union> {x})) = card X + 1" .
     qed
     then have "card (odd_comps_in_diff G (X\<union>{x})) = card (X\<union>{x})" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "C \<inter> X = {}"
         using assms(6) odd_comps_in_diff_not_in_X by blast
       then have "x \<notin> X"
@@ -791,26 +791,26 @@ proof(rule ccontr)
     have "X \<subseteq> (X\<union>{x})" 
       by auto
     have "C \<inter> X = {}"
-      using assms(6) odd_comps_in_diff_not_in_X by blast
+      using assms(6) odd_comps_in_diff_not_in_X by \<^marker>\<open>provenance ai\<close> blast
     then have "x \<notin> X"
-      using assms(7) by blast
+      using assms(7) by \<^marker>\<open>provenance ai\<close> blast
     then have neq: "X \<union> {x} \<noteq> X"
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
     have "X \<union> {x} \<subseteq> Vs G"
-      using assms(3) assms(6) assms(7) component_in_E by blast
+      using assms(3) assms(6) assms(7) component_in_E by \<^marker>\<open>provenance ai\<close> blast
     then have "X \<union> {x} \<in> {Z. Z \<subseteq> Vs G \<and> barrier G Z}"
-      using \<open>barrier G (X \<union> {x})\<close> by simp
+      using \<open>barrier G (X \<union> {x})\<close> by \<^marker>\<open>provenance ai\<close> simp
     then have "\<not> X \<subseteq> X \<union> {x}"
-      using assms(5)[rule_format, of "X \<union> {x}"] neq by blast
+      using assms(5)[rule_format, of "X \<union> {x}"] neq by \<^marker>\<open>provenance ai\<close> blast
     then show ?thesis
-      using \<open>X \<subseteq> (X \<union> {x})\<close> by blast
+      using \<open>X \<subseteq> (X \<union> {x})\<close> by \<^marker>\<open>provenance ai\<close> blast
   next
     case False
     then have " card (odd_comps_in_diff (component_edges(G \<setminus> X) C) {x})  = 1" 
       using \<open>1 \<le> card (odd_comps_in_diff (component_edges (G \<setminus> X) C) {x})\<close> 
             \<open>card (odd_comps_in_diff (component_edges (G \<setminus> X) C) {x}) \<le> 2\<close> by linarith
     then have "\<exists>!C'. C' \<in> (odd_comps_in_diff (component_edges(G \<setminus> X) C) {x})"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
         obtain C' where "odd_comps_in_diff (component_edges (G \<setminus> X) C) {x} = {C'}"
           using \<open>card (odd_comps_in_diff (component_edges (G \<setminus> X) C) {x}) = 1\<close>
           by (rule card_1_singletonE)
@@ -821,7 +821,7 @@ proof -
       using  new_components_intersection_old_is_empty[of G X C "{x}"] assms 
       by simp
     then have "Vs (component_edges(G \<setminus> X) C) = C" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have C_odd_comp: "C \<in> odd_components (G \<setminus> X)"
       proof (rule ccontr)
         assume "C \<notin> odd_components (G \<setminus> X)"
@@ -862,7 +862,7 @@ proof -
       then show ?thesis .
     qed
     then show ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have inv: "graph_invar (component_edges (G \<setminus> X) C)"
         using \<open>graph_invar (component_edges (G \<setminus> X) C)\<close> by simp
       have Vs_eq: "Vs (component_edges (G \<setminus> X) C) = C"
@@ -957,7 +957,7 @@ proof(safe)
     using `x \<in> e \<and> e \<in> (G \<setminus> X)`
     by blast
   then have "connected_component (G \<setminus> X) x' = C" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from \<open>x \<in> e \<and> e \<in> (G \<setminus> X)\<close> \<open>e = {x', y}\<close> have "x = x' \<or> x = y"
     by auto
   then show "connected_component (G \<setminus> X) x' = C"
@@ -986,7 +986,7 @@ proof -
   qed
 qed
   then have "connected_component (G \<setminus> X) y = C" using ` e = {x', y}`
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "e \<in> (G \<setminus> X)"
       using \<open>x \<in> e \<and> e \<in> (G \<setminus> X)\<close> by simp
     then have "{x', y} \<in> (G \<setminus> X)"
@@ -999,7 +999,7 @@ qed
       using \<open>connected_component (G \<setminus> X) x' = C\<close> by simp
   qed
   then have "e \<subseteq> C" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "x' \<in> connected_component (G \<setminus> X) x'"
       by (rule in_own_connected_component)
     then have "x' \<in> C"
@@ -1050,7 +1050,7 @@ proof
     then have " z \<in> connected_component (G \<setminus> X) x1"
       using C' by auto
     then have " connected_component (G \<setminus> X) z = connected_component (G \<setminus> X) x1"
-      by (rule connected_components_member_eq)
+      by \<^marker>\<open>provenance ai\<close> (rule connected_components_member_eq)
     then have 2:"C' = {c . \<exists> e. e \<in> G \<and> e = {c, y1}  \<and> c \<notin> X
                      \<and> c \<in> connected_component (G \<setminus> X) z}  \<and> y1 \<in> X
         \<and> {connected_component (G \<setminus> X) z, {y1}} \<in> M'" 
@@ -1068,7 +1068,7 @@ proof
                {connected_component (G \<setminus> X) x', {y'}}"
       by (meson 2 4 assms(5) matching_def)
     then have "y1 = y'" 
-      using 3 by (auto simp: doubleton_eq_iff)
+      using 3 by \<^marker>\<open>provenance ai\<close> (auto simp: doubleton_eq_iff)
     then have "C' = ?C'" 
       using 2 3 by presburger
     then show "z \<in> ?C'" 
@@ -1102,7 +1102,7 @@ proof
         using Collect_cong by auto
     qed
     then show "z \<in> Vs ?Z2 \<inter> C" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have zZ2: "?C' \<in> ?Z2" by fact
       show "z \<in> Vs ?Z2 \<inter> C"
       proof (rule IntI)
@@ -1128,7 +1128,7 @@ proof
   proof(rule ccontr)
     assume "\<not> (\<exists>y\<in>Vs G - X.  {x, y} \<in> G)"
     then have "\<forall>e \<in> G. x \<in> e \<longrightarrow> e \<subseteq> X"
-      proof (intro ballI impI)
+      proof \<^marker>\<open>provenance ai\<close> (intro ballI impI)
         fix e
         assume "e \<in> G" and "x \<in> e"
         have card_e: "card e = 2"
@@ -1175,7 +1175,7 @@ proof
     then have "odd_components (G \<setminus> X) = odd_components (G \<setminus> (X - {x}))"
       by presburger
     have "(singl_in_diff G X) \<union> {{x}} = singl_in_diff G (X-{x})"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have x_notin_diff: "x \<notin> Vs (G \<setminus> X)"
       proof
         assume "x \<in> Vs (G \<setminus> X)"
@@ -1213,7 +1213,7 @@ proof
       using \<open>x \<in> X\<close> odd_comps_in_diff_not_in_X by blast
     then have "card (odd_comps_in_diff G (X-{x})) = 
         card (odd_comps_in_diff G X) + card {{x}}" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have fin_odd: "finite (odd_comps_in_diff G X)"
         using diff_components_finite[OF assms(1)] .
       have fin_single: "finite {{x}}"
@@ -1225,15 +1225,15 @@ proof
       with 2 show ?thesis by simp
     qed
     then have 3:"card (odd_comps_in_diff G (X-{x})) = card X + 1" 
-      by (simp add: assms(4)[unfolded barrier_def])
+      by \<^marker>\<open>provenance ai\<close> (simp add: assms(4)[unfolded barrier_def])
     have "card (odd_comps_in_diff G (X-{x})) \<le> card (X-{x})" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "X - {x} \<subseteq> Vs G"
         using assms(3) by blast
       from tutte_conditionE[OF assms(2) this] show ?thesis .
     qed
     then show False 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have le1: "card (X - {x}) \<le> card X"
         by (rule card_Diff1_le)
       have le2: "card (odd_comps_in_diff G (X - {x})) \<le> card (X - {x})"
@@ -1295,7 +1295,7 @@ proof -
     using union_card_is_sum[of "{a. {a} \<in> A}" ?f] 
     using 1 2 by presburger
   then have "card (\<Union>x\<in>{a. {a} \<in> A}. ?f x) = card {a. {a} \<in> A}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have card_f: "\<forall>x. card (?f x) = 1"
       by simp
     have "sum (\<lambda>x. card (?f x)) {a. {a} \<in> A} = sum (\<lambda>x. (1::nat)) {a. {a} \<in> A}"
@@ -1325,7 +1325,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       then obtain x y where "x \<in> Vs G \<and> y \<in> Vs G \<and> x \<noteq> y" 
         by (meson card_2_iff')
       then have "{x, y} =  Vs G" using True 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have xy_facts: "x \<in> Vs G" "y \<in> Vs G" "x \<noteq> y"
           using \<open>x \<in> Vs G \<and> y \<in> Vs G \<and> x \<noteq> y\<close> by auto
         have sub: "{x, y} \<subseteq> Vs G"
@@ -1368,7 +1368,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       proof(cases "card (Vs G) = 1")
         case True
         then show ?thesis
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           obtain x where x: "Vs G = {x}"
             using True card_1_singletonE by blast
           then have "x \<in> Vs G" by simp
@@ -1414,7 +1414,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       assume "odd (card (Vs G))"
       have " {} \<subseteq> G" by auto
       then have "card (odd_comps_in_diff G {}) \<le> card {}" 
-        by (simp add: less.prems(1,2) odd_components_in_tutte_graph)
+        by \<^marker>\<open>provenance ai\<close> (simp add: less.prems(1,2) odd_components_in_tutte_graph)
       then have card0:"card (odd_comps_in_diff G {}) = 0"
         by simp
       have "G \<setminus> {} = G" 
@@ -1427,7 +1427,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         by simp
       then have "card (odd_components G) \<ge> 1"
         using `odd (card (Vs G))`
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         show "card (odd_components G) \<ge> 1"
           using odd_components_eq_modulo_cardinality[OF less.prems(1)] \<open>odd (card (Vs G))\<close>
           by presburger
@@ -1440,7 +1440,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       by (meson bot.extremum insert_subsetI tutte_condition_def)
     then  have "\<forall>x \<in> (Vs G). even (card {x} - card (odd_comps_in_diff G {x}))" 
       using `even (card (Vs G))` diff_odd_component_parity
-      proof (intro ballI)
+      proof \<^marker>\<open>provenance ai\<close> (intro ballI)
         fix x
         assume xV: "x \<in> Vs G"
         have xsub: "{x} \<subseteq> Vs G"
@@ -1455,7 +1455,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           using `even (card (Vs G))` by simp
       qed
     then have 21:"\<forall>x \<in> (Vs G).card (odd_comps_in_diff G {x}) = 1"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume even_card: "\<forall>x \<in> Vs G. even (card {x} - card (odd_comps_in_diff G {x}))"
         {
           fix x
@@ -1471,7 +1471,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         then show ?thesis by blast
       qed
     then have "\<forall>x \<in> (Vs G). barrier G {x}"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         {
           fix x
           assume "x \<in> Vs G"
@@ -1486,7 +1486,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       qed
     then have barrier_singletons: "\<forall>x \<in> Vs G. barrier G {x}" .
     then have exBarr:"\<exists> X \<subseteq> Vs G. barrier G X" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "card (Vs G) > 2"
           using False by simp
         then have "Vs G \<noteq> {}"
@@ -1505,7 +1505,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
       by (simp add: "less.prems"(1))
     then  have "finite ?B" by auto
     then  have "\<exists>X \<in> ?B. \<forall> Y \<in> ?B. Y \<noteq> X \<longrightarrow> \<not> (X \<subseteq> Y)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
   have finVs: "finite (Vs G)"
     using less.prems(1) by simp
   have Bsub: "?B \<subseteq> Pow (Vs G)"
@@ -1542,13 +1542,13 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         by (simp add:  even_components_def)
       then obtain v0 where v0: "v0 \<in> Vs (G \<setminus> X)"
                            "connected_component (G \<setminus> X) v0 = C"
-        by blast
+        by \<^marker>\<open>provenance ai\<close> blast
       then have "v0 \<in> C"
-        using in_own_connected_component by (simp add: v0(2)[symmetric])
+        using in_own_connected_component by \<^marker>\<open>provenance ai\<close> (simp add: v0(2)[symmetric])
       then obtain v where "v \<in> C"
-        by blast
+        by \<^marker>\<open>provenance ai\<close> blast
       then have comp_C:"connected_component (G \<setminus> X) v = C"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain u where u1: "u \<in> Vs (G \<setminus> X)" and u2: "connected_component (G \<setminus> X) u = C"
           using 2 by blast
         have "v \<in> connected_component (G \<setminus> X) u"
@@ -1565,7 +1565,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
         then obtain x where x:"xs = {x} \<and> x \<in> Vs G \<and> x \<notin> X \<and> x \<notin> Vs (G \<setminus> X)" 
           by presburger
         then have "x \<notin> X \<union> {v}" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           obtain v' where v': "v' \<in> Vs (G \<setminus> X)" "connected_component (G \<setminus> X) v' = C"
             using 2 by blast
           have "v \<in> connected_component (G \<setminus> X) v'"
@@ -1603,7 +1603,7 @@ proof(induction "card (Vs G)" arbitrary: G rule: less_induct)
           by auto
         then have "x \<notin> C" 
 using connected_components_member_eq C unfolding even_components_def
-        by fastforce
+        by \<^marker>\<open>provenance ai\<close> fastforce
         then have "x \<noteq> v" 
           using \<open>v \<in> C\<close> by blast
         then have "\<exists>e \<in> (G \<setminus> X). x \<in> e" 
@@ -1621,7 +1621,7 @@ using connected_components_member_eq C unfolding even_components_def
           fix z
           assume "z \<in> C'" 
           have "z \<noteq> v"
-          proof (rule ccontr)
+          proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
             assume "\<not> z \<noteq> v"
             then have "z = v" by simp
             then have "v \<in> C'" using \<open>z \<in> C'\<close> by simp
@@ -1647,7 +1647,7 @@ using connected_components_member_eq C unfolding even_components_def
               using \<open>x \<notin> C\<close> by simp
           qed
           have "z \<notin> C"
-          proof (rule ccontr)
+          proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
             assume "\<not> z \<notin> C"
             then have zC: "z \<in> C" by blast
             have compx: "connected_component (G \<setminus> X) x = C'"
@@ -1664,7 +1664,7 @@ using connected_components_member_eq C unfolding even_components_def
               using \<open>x \<notin> C\<close> by blast
           qed
           have "\<exists>e \<in> G. e \<inter> X = {} \<and> z \<in> e" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have x_in: "x \<in> Vs (G \<setminus> X)"
             using odd_x by blast
           have C'_eq: "connected_component (G \<setminus> X) x = C'"
@@ -1701,7 +1701,7 @@ using connected_components_member_eq C unfolding even_components_def
             then have "e \<in> (G \<setminus> X)"
               using e graph_diff_def by auto
             then have "z \<in> connected_component (G \<setminus> X) v"
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "{v, z} \<in> (G \<setminus> X)"
                 using \<open>e = {z, v}\<close> \<open>e \<in> (G \<setminus> X)\<close> by (simp add: insert_commute)
               from vertices_edges_in_same_component[OF this] show ?thesis .
@@ -1723,7 +1723,7 @@ using connected_components_member_eq C unfolding even_components_def
           fix z
           assume "z\<in>C'"
           then have "\<exists>p. walk_betw (G \<setminus> X) x p z"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "z \<in> connected_component (G \<setminus> X) x"
               using odd_x \<open>z \<in> C'\<close> by auto
             then show "\<exists>p. walk_betw (G \<setminus> X) x p z"
@@ -1748,7 +1748,7 @@ using connected_components_member_eq C unfolding even_components_def
             then have 4:"C' \<in> connected_components (G \<setminus> X)" 
               by (simp add: C' components_is_union_even_and_odd)
             have "hd p \<in> C'" 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have eq: "connected_component (G \<setminus> X) x = C'"
                 using odd_x by simp
               have "x \<in> connected_component (G \<setminus> X) x"
@@ -1773,7 +1773,7 @@ using connected_components_member_eq C unfolding even_components_def
                 then have "e \<in> G \<setminus> X" 
                   using asme Connected_Components.component_edges_subset by blast
                 have "v \<notin> e" 
-                proof
+                proof \<^marker>\<open>provenance ai\<close>
                   assume "v \<in> e"
                   then have "v \<in> C'" using \<open>e \<subseteq> C'\<close> by blast
                   moreover have "connected_component (G \<setminus> X) x = C'" using odd_x by blast
@@ -1784,14 +1784,14 @@ using connected_components_member_eq C unfolding even_components_def
                   then show False using \<open>x \<notin> C\<close> by blast
                 qed
                 then have "e \<inter> (X \<union> {v}) = {}" 
-                  proof -
+                  proof \<^marker>\<open>provenance ai\<close> -
                     have "e \<inter> X = {}"
                       using \<open>e \<in> (G \<setminus> X)\<close> by (simp add: graph_diff_def)
                     thus "e \<inter> (X \<union> {v}) = {}"
                       using \<open>v \<notin> e\<close> by blast
                   qed
                 then have "e \<in> (G \<setminus> (X \<union> {v}))" 
-                  by (meson \<open>e \<in> (G \<setminus> X)\<close> graph_diffE graph_diffI)
+                  by \<^marker>\<open>provenance ai\<close> (meson \<open>e \<in> (G \<setminus> X)\<close> graph_diffE graph_diffI)
                 then show "e \<in> (component_edges (G \<setminus> (X\<union>{v})) C')" 
                   unfolding component_edges_def 
                   using \<open>e \<in> G \<setminus> X\<close> \<open>e \<subseteq> C'\<close> \<open>graph_invar (G \<setminus> X)\<close>
@@ -1814,7 +1814,7 @@ using connected_components_member_eq C unfolding even_components_def
             qed
             then show "path (G \<setminus> (X \<union> {v})) p"
               using `path (component_edges (G \<setminus> X) C')  p` 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "path (component_edges (G \<setminus> (X \<union> {v})) C') p"
                 using \<open>path (component_edges (G \<setminus> X) C') p\<close>
                       \<open>component_edges (G \<setminus> X) C' = component_edges (G \<setminus> (X \<union> {v})) C'\<close>
@@ -1857,14 +1857,14 @@ using connected_components_member_eq C unfolding even_components_def
       then have odd_sub:"odd_comps_in_diff G X \<subseteq> odd_comps_in_diff G (X \<union> {v})"
         unfolding odd_comps_in_diff_def
         using 6
-        by (rule Un_mono)
+        by \<^marker>\<open>provenance ai\<close> (rule Un_mono)
       show False
       proof(cases "\<exists>x \<in> (C-{v}). x \<notin> Vs (G \<setminus> (X \<union> {v}))")
         case True
         then  obtain x where x:"x \<in> (C-{v}) \<and> (x \<notin> Vs (G \<setminus> (X \<union> {v})))"
           by auto
         then have "x \<in> Vs G"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have xC: "x \<in> C" and xv: "x \<noteq> v"
               using x by auto
             then have cc: "x \<in> connected_component (G \<setminus> X) v"
@@ -1879,7 +1879,7 @@ using connected_components_member_eq C unfolding even_components_def
               by (rule subsetD)
           qed
         have "x \<notin> X \<and> x \<notin> Vs (G \<setminus> (X\<union>{v}))"
-          proof (rule conjI)
+          proof \<^marker>\<open>provenance ai\<close> (rule conjI)
             have xC: "x \<in> C"
               using x by auto
             moreover have xv: "x \<noteq> v"
@@ -1905,7 +1905,7 @@ using connected_components_member_eq C unfolding even_components_def
           unfolding singl_in_diff_def
           using x \<open>x \<in> Vs G\<close> by auto
         have "x \<in> Vs (G \<setminus> X)" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "x \<in> C" using x by auto
           obtain u where u1: "u \<in> Vs (G \<setminus> X)"
             and u2: "connected_component (G \<setminus> X) u = C"
@@ -1926,7 +1926,7 @@ using connected_components_member_eq C unfolding even_components_def
         then have "{x} \<notin> singl_in_diff G (X)" 
           unfolding singl_in_diff_def by blast
         have "{x} \<notin> odd_components (G \<setminus> X)" 
-        proof (rule notI)
+        proof \<^marker>\<open>provenance ai\<close> (rule notI)
           assume asm: "{x} \<in> odd_components (G \<setminus> X)"
           then obtain w where w: "w \<in> Vs (G \<setminus> X)" "connected_component (G \<setminus> X) w = {x}"
             unfolding odd_components_def odd_component_def by auto
@@ -1949,7 +1949,7 @@ using connected_components_member_eq C unfolding even_components_def
           using \<open>{x} \<notin> singl_in_diff G X\<close> by force
         then have 9:"odd_comps_in_diff G X \<subset> odd_comps_in_diff G (X \<union> {v})" 
           unfolding odd_comps_in_diff_def 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have inv:"{x} \<in> odd_comps_in_diff G (X \<union> {v})"
             using \<open>{x} \<in> singl_in_diff G (X \<union> {v})\<close>
             unfolding odd_comps_in_diff_def by blast

@@ -61,7 +61,7 @@ lemma finite_Vs_then_finite:
   assumes "finite (Vs G)"
   shows "finite G"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms have "finite (\<Union> G)"
     by (simp add: Vs_def)
   then show ?thesis
@@ -398,7 +398,7 @@ lemma neighbours_of_Vs_subset:
   shows "neighbours_of_Vs G A \<subseteq> neighbours_of_Vs G X"
   unfolding neighbours_of_Vs_def 
   using assms
-  by blast
+  by \<^marker>\<open>provenance ai\<close> blast
 
 lemma neighbours_of_Vs_insert: 
   "neighbours_of_Vs M (insert x F) = neighbours_of_Vs M F \<union> neighbours_of_Vs M {x}"
@@ -735,7 +735,7 @@ lemma graph_invar_finite:
 lemma graph_invar_subset[intro]:
   "\<lbrakk>graph_invar G1; G2 \<subseteq> G1\<rbrakk> \<Longrightarrow> graph_invar G2"
   using dblton_graph_subset
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume assms: "graph_invar G1" "G2 \<subseteq> G1"
     have "dblton_graph G2"
       using assms dblton_graph_subset by blast
@@ -883,7 +883,7 @@ proof -
   have 1: "finite (Vs M)"
     by (meson Vs_subset assms(2) assms(1) finite_subset)
   have 2: "(neighbours_of_Vs M X) \<subseteq> Vs M" 
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     fix y
     assume "y \<in> neighbours_of_Vs M X"
     then obtain u e where "u \<in> X" "e \<in> M" "y \<noteq> u" "u \<in> e" "y \<in> e"
@@ -968,7 +968,7 @@ lemma bigraph_handshaking_lemma:
 lemma sum_card_edges2:
   assumes "graph_invar G"
   shows "sum card G = (\<Sum>e\<in>G. 2)"
-proof (rule sum.cong)
+proof \<^marker>\<open>provenance ai\<close> (rule sum.cong)
   show "G = G" by simp
 next
   fix e assume "e \<in> G"

@@ -24,7 +24,7 @@ definition subseteq :: "'s \<Rightarrow> 's \<Rightarrow> bool" where
 lemma set_subseteq:
   "invar X \<Longrightarrow> invar Y \<Longrightarrow> (subseteq X Y) = (set X \<subseteq> set Y)"
   unfolding subseteq_def
-proof (intro iffI)
+proof \<^marker>\<open>provenance ai\<close> (intro iffI)
   assume "invar X" "invar Y" "diff X Y = empty"
   hence "set (diff X Y) = {}" using set_empty by simp
   moreover have "set (diff X Y) = set X - set Y"
@@ -182,7 +182,7 @@ begin
 
 lemma indep_impl_to_abs:
   "set_inv X \<Longrightarrow> indep_fn X \<Longrightarrow> indep_abs indep_fn (to_set X)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "set_inv X" and "indep_fn X"
   have fin: "finite (to_set X)"
     using finite_sets[unfolded finite_sets_def] by blast
@@ -200,7 +200,7 @@ qed
 
 lemma indep_abs_to_impl:
   "set_inv X \<Longrightarrow> indep_abs indep_fn (to_set X) \<Longrightarrow> indep_fn X"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "set_inv X" and "indep_abs indep_fn (to_set X)"
   hence "finite (to_set X)" using indep_abs_finite by blast
   have indep_eq: "indep_abs indep_fn (to_set X) = indep_fn (from_set (to_set X))"
@@ -237,7 +237,7 @@ lemma indep_ex_abs_equiv:
 lemma indep_subset_carrier_impl_to_abs:
   "(\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier) \<Longrightarrow>
    (\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume prem: "\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier"
   show "\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier"
   proof (rule allI, rule impI)
@@ -262,7 +262,7 @@ qed
 lemma indep_subset_carrier_abs_to_impl:
   "(\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier) \<Longrightarrow>
    (\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume A: "\<forall>S. indep_abs indep_fn S \<longrightarrow> S \<subseteq> carrier_abs carrier"
   show "\<forall>X. set_inv X \<longrightarrow> indep_fn X \<longrightarrow> subseteq X carrier"
   proof (intro allI impI)
@@ -290,7 +290,7 @@ lemma indep_subset_carrier_abs_equiv:
 lemma indep_subset_impl_to_abs:
   "(\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep_fn X \<longrightarrow> subseteq Y X \<longrightarrow> indep_fn Y) \<Longrightarrow>
    (\<forall>S T. indep_abs indep_fn S \<longrightarrow> T \<subseteq> S \<longrightarrow> indep_abs indep_fn T)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume H: "\<forall>X Y. set_inv X \<longrightarrow> set_inv Y \<longrightarrow> indep_fn X \<longrightarrow> subseteq Y X \<longrightarrow> indep_fn Y"
   show "\<forall>S T. indep_abs indep_fn S \<longrightarrow> T \<subseteq> S \<longrightarrow> indep_abs indep_fn T"
   proof (intro allI impI)
@@ -387,7 +387,7 @@ proof ((rule allI)+, (rule impI)+)
     set.set_cardinality[OF \<open>set_inv (from_set T)\<close>]
   have "cardinality (from_set S) = Suc (cardinality (from_set T))"
     using from_set_correct
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have finS: "finite S" by (rule indep_abs_finite[OF \<open>indep_abs indep_fn S\<close>])
     have finT: "finite T" by (rule indep_abs_finite[OF \<open>indep_abs indep_fn T\<close>])
     have eqS: "to_set (from_set S) = S" by (rule from_set_correct[OF finS])
@@ -447,7 +447,7 @@ proof ((rule allI)+, (rule impI)+)
   with \<open>indep_fn (set_insert x (from_set T))\<close>
   have "indep_fn (from_set (Set.insert x T))" by blast
   then have "indep_abs indep_fn (Set.insert x T)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<And>X. finite (to_set X)"
       using finite_sets unfolding finite_sets_def by blast
     from this[of "set_insert x (from_set T)"]

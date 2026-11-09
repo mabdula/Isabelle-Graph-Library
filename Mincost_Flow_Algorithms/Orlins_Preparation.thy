@@ -100,7 +100,7 @@ lemma consistI:
   using assms by(force simp add:  consist_def split: prod.split) 
 
 lemma consist_conv_inj:"consist E conv \<Longrightarrow> a \<in> E \<Longrightarrow> b \<in> E \<Longrightarrow> conv a = conv b \<Longrightarrow> a = b"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume consist: "consist E conv" and aE: "a \<in> E" and bE: "b \<in> E" and eq: "conv a = conv b"
   obtain a1 a2 where a_def: "a = (a1, a2)" by (cases a)
   obtain b1 b2 where b_def: "b = (b1, b2)" by (cases b)
@@ -1420,7 +1420,7 @@ qed
 
 lemma proper_path_some_redges:
   "length l \<ge> 2 \<Longrightarrow> (to_redge_path to_rdg' l) \<noteq> []" for l to_rdg' Q
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume len: "length l \<ge> 2"
   obtain u v rest where l_eq: "l = u # v # rest"
   proof (cases l)
@@ -1560,7 +1560,7 @@ lemma to_rdg_hd:
 
 lemma to_rdg_last_cons: " (last (abstract_conv_map to_rdg (u, v) # to_redge_path to_rdg (v # va # vb))) =
                           (last (to_redge_path to_rdg (v # va # vb)))"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "length (v # va # vb) \<ge> 2" by simp
   hence "to_redge_path to_rdg (v # va # vb) \<noteq> []"
     using proper_path_some_redges by blast
@@ -1611,7 +1611,7 @@ lemma consist_oedge:
     shows "{oedge (to_rdg' (v, v'))} = oedge ` {to_rdg' (v', v), to_rdg' (v, v')}"
   apply(rule consistE[OF assms(1)])
   using   assms(2,3,4)
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   obtain e where e_prop: "(to_rdg' (v, v') = F e \<and> make_pair e = (v, v')) \<or>
                           (to_rdg' (v, v') = B e \<and> make_pair e = (v', v))"
     using consistD(1)[OF assms(1) assms(3)] by auto
@@ -1775,7 +1775,7 @@ proof(induction Q rule: edges_of_path.induct)
 lemma Phi_nonneg: "invar_gamma state\<Longrightarrow> \<Phi> state \<ge> 0"
   unfolding \<Phi>_def invar_gamma_def
   apply(rule sum_nonneg) 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume gamma_pos: "current_\<gamma> state > 0"
   fix v
   assume vV: "v \<in> \<V>"
@@ -2089,7 +2089,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     case True
     hence p_allowed_edges:"set p \<subseteq> allowed_edges" 
       unfolding less
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume "cnt_P p (\<lambda>e. e \<notin> {e |e. e \<in> \<EE> \<and> oedge e \<in> to_set (actives state)} \<union> \<F>_redges state) = 0"
       then have "set p \<subseteq> {r. r \<in> {r |r. r \<in> \<EE> \<and> oedge r \<in> to_set (actives state)} \<union> \<F>_redges state}"
         by (simp add: cnt_P_0_set)
@@ -2105,7 +2105,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
                                 "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have cnt_nonzero: "cnt_P p (\<lambda>e. e \<notin> allowed_edges) \<noteq> 0"
         using False less(13,14) by simp
       have "\<exists> e \<in> set p. e \<notin> allowed_edges"
@@ -2136,7 +2136,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
            connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable  (to_graph (\<FF> state)) (fstv e) (sndv e)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume eq: "connected_component (to_graph (\<FF> state)) (fstv e) =
                   connected_component (to_graph (\<FF> state)) (sndv e)"
       have "sndv e \<in> connected_component (to_graph (\<FF> state)) (sndv e)"
@@ -2147,7 +2147,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
         by (auto elim: in_connected_componentE)
     qed
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       obtain ys zs where "p = ys @ e # zs"
         using split_list[OF \<open>e \<in> set p\<close>] by blast
       hence "ys @ [e] @ zs = p" by simp
@@ -2328,7 +2328,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
     then obtain e where e_prop:"e \<in> set p" "e \<notin> \<F>_redges state"
                                 "e \<notin> {e | e. e \<in> \<EE> \<and> oedge e \<in> to_set actives_state}"
       unfolding less 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have cnt_nonzero: "cnt_P p (\<lambda>e. e \<notin> allowed_edges) \<noteq> 0"
           using False less(13,14) by simp
         have "\<exists> e \<in> set p. e \<notin> allowed_edges"
@@ -2359,11 +2359,11 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
           = connected_component (to_graph (\<FF> state)) (sndv e)"
       by(cases e, auto)
     hence or_reach:"fstv e = sndv e \<or> reachable (to_graph (\<FF> state)) (fstv e) (sndv e)"
-      by (fastforce intro: in_connected_componentI2 elim: in_connected_componentE)
+      by \<^marker>\<open>provenance ai\<close> (fastforce intro: in_connected_componentI2 elim: in_connected_componentE)
     have e_rcap: "rcap f e > 0" 
       using augpath_rcap_pos_strict e_prop(1) less.prems(1) by blast
     obtain p1 p2 where p1p2:"p1@[e]@p2 = p"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>e \<in> set p\<close> have "\<exists>ys zs. p = ys @ e # zs"
           by (simp add: in_set_conv_decomp)
         then obtain ys zs where "p = ys @ e # zs" by blast
@@ -2372,7 +2372,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
       qed
     hence costs_split: "foldr (\<lambda>x. (+) (\<cc> x)) p 0 =
                       foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have general: "foldr (\<lambda>x. (+) (\<cc> x)) (p1@[e]@p2) 0 =
                        foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + \<cc> e + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
           by (induction p1) (auto simp add: algebra_simps)
@@ -2523,7 +2523,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
                       OF E A B C D less(6) less(7-13) _ less(15) less(16) less(17)] by simp
       moreover have costs_split3: "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
              foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) QQ' 0 + foldr (\<lambda>x. (+) (\<cc> x)) p2 0"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "foldr (\<lambda>x. (+) (\<cc> x)) (p1 @ QQ' @ p2) 0 =
               foldr (\<lambda>x. (+) (\<cc> x)) p1 0 + foldr (\<lambda>x. (+) (\<cc> x)) (QQ' @ p2) 0"
           by (simp only: map_sum_split)
@@ -2579,7 +2579,7 @@ proof(induction number_not_allowed arbitrary: p s t rule: less_induct)
            done
          done
        have QQrev_leng: "length QQrev > 0" 
-        proof (cases QQrev)
+        proof \<^marker>\<open>provenance ai\<close> (cases QQrev)
           case Nil
           with QQrevpre have "prepath []"
             by simp

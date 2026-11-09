@@ -739,7 +739,7 @@ lemma monotonicity_order_step:
 proof (cases rule: step_cases[where M = M])
   case no_neighbor
   with bipartite_graph subset_before \<open>i \<in> L\<close> \<open>j \<in> R\<close> have "{i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} = {}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     show ?thesis
     proof (rule ccontr)
       assume "{i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} \<noteq> {}"
@@ -793,7 +793,7 @@ next
     let ?min' = "min_on_rel {i'. i' \<notin> Vs M' \<and> {i',j} \<in> G \<setminus> {i}} r"
 
     have "?min' \<in> {i. i \<notin> Vs M \<and> {i,j} \<in> G}"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from new_match have "?min' \<notin> Vs M'" and "{?min', j} \<in> G \<setminus> {i}"
         by auto
       then have "{?min', j} \<in> G" (is ?g1) and "?min' \<noteq> i" (is ?g2)
@@ -995,7 +995,7 @@ proof -
         using \<open>G \<setminus> {i} \<subseteq> G\<close> that \<open>j \<in> R\<close> neighbors_right_subset_left
         by fastforce
       moreover have "x \<noteq> i"
-      proof
+      proof \<^marker>\<open>provenance ai\<close>
         assume "x = i"
         with \<open>{x, j} \<in> G \<setminus> {i}\<close> have "i \<in> Vs (G \<setminus> {i})"
           by (auto dest: edges_are_Vs)
@@ -1033,9 +1033,9 @@ proof -
   let ?M' = "ranking r (G \<setminus> {i}) \<pi>"
 
   have "j \<in> set \<pi>"
-    using perm \<open>j \<in> R\<close> by (auto dest: permutations_of_setD)
+    using perm \<open>j \<in> R\<close> by \<^marker>\<open>provenance ai\<close> (auto dest: permutations_of_setD)
   then obtain pre suff where \<pi>_decomp: "\<pi> = pre @ j # suff"
-    by (auto dest: split_list)
+    by \<^marker>\<open>provenance ai\<close> (auto dest: split_list)
 
   let ?ranking_pre = "ranking r G pre"
   let ?ranking_pre' = "ranking r (G \<setminus> {i}) pre"

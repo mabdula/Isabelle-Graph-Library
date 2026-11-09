@@ -320,7 +320,7 @@ lemma length_carrier_sorted:
 lemma carrier_sorted_distinct:
   "distinct (carrier_sorted)"
   unfolding sort_desc_axioms_def using card_distinct set_inv_carrier matroid.set.set_cardinality 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have card_eq: "cardinality carrier = card (to_set carrier)"
     using set_inv_carrier matroid.set.set_cardinality by simp
   have set_eq: "card (to_set carrier) = card (set carrier_sorted)"
@@ -457,7 +457,7 @@ proof (intro invar_props_intros, goal_cases)
 
   have carrier_pref_expr: "carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) = 
     insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     obtain x xs where carrier_split: "carrier_list best_in_greedy_state = x # xs"
       using \<open>BestInGreedy_base_call_1_conds best_in_greedy_state\<close>
       by (auto elim!: call_cond_elims)
@@ -523,7 +523,7 @@ proof (intro invar_props_intros, goal_cases)
 
   have carrier_pref_expr: "carrier_pref c order (num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state)) = 
     insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have length_ge_1: "length (carrier_list best_in_greedy_state) \<ge> 1"
       using \<open>BestInGreedy_base_call_2_conds best_in_greedy_state\<close>
       by (auto elim!: call_cond_elims)
@@ -650,7 +650,7 @@ proof(rule invar_props_intros, goal_cases)
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have list_ne: "carrier_list best_in_greedy_state \<noteq> []"
           using \<open>BestInGreedy_base_call_1_conds best_in_greedy_state\<close> by (auto elim!: call_cond_elims)
         define n where n_def: "n = num_iter c order best_in_greedy_state"
@@ -701,7 +701,7 @@ proof(rule invar_props_intros, goal_cases)
     have
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> set (carrier_sorted)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "insert (hd (carrier_list best_in_greedy_state))
               (carrier_pref c order (num_iter c order best_in_greedy_state)) =
             carrier_pref c order (num_iter c order (BestInGreedy_base_upd1 best_in_greedy_state))"
@@ -785,7 +785,7 @@ proof(rule invar_props_intros, goal_cases)
     have carrier_pref_expr:
       "carrier_pref c order (num_iter c order (BestInGreedy_base_upd2 best_in_greedy_state)) = 
       insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have drop_eq: "carrier_list best_in_greedy_state =
           drop (num_iter c order best_in_greedy_state) (sort_desc c order)"
         using \<open>invar_2 c order best_in_greedy_state\<close> by (auto elim!: invar_props_elims)
@@ -833,7 +833,7 @@ proof(rule invar_props_intros, goal_cases)
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
       \<subseteq> set (carrier_sorted)"
       unfolding carrier_pref_expr[symmetric]
-      unfolding carrier_pref_def by (rule set_take_subset)
+      unfolding carrier_pref_def by \<^marker>\<open>provenance ai\<close> (rule set_take_subset)
 
     then have insert_subset_carrier:
       "insert (hd (carrier_list best_in_greedy_state)) (carrier_pref c order (num_iter c order best_in_greedy_state))
@@ -926,7 +926,7 @@ proof-
     using \<open>carrier_pref c order (num_iter c order best_in_greedy_state) \<subseteq> set (carrier_sorted)\<close>
       indep_system.basis_in_indep_in[OF indep_system_axioms_abs]
       indep_system.indep_in_indep[OF indep_system_axioms_abs] 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     fix X
     assume basis_in_X: "indep_system.basis_in (matroid.indep_abs indep_fn)
       (carrier_pref c order (num_iter c order best_in_greedy_state)) X"
@@ -1009,7 +1009,7 @@ proof-
     by (auto elim!: invar_props_elims)
 
   have d_geq_0: "\<forall>j \<in> {1..?n}. ?d j \<ge> 0"
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     fix j
     assume j_mem: "j \<in> {1..?n}"
     then have j_ge: "1 \<le> j" and j_le: "j \<le> ?n" by auto
@@ -1057,7 +1057,7 @@ proof-
 
   from indep_system.indep_subset[OF indep_system_axioms_abs X_indep] pref_def
   have "\<forall>j \<in> {1..?n}. indep_system.indep_in (matroid.indep_abs indep_fn) (carrier_pref c order j) (pref c order (to_set X) j)"
-  by (auto simp: pref_def indep_system.indep_in_def[OF indep_system_axioms_abs]
+  by \<^marker>\<open>provenance ai\<close> (auto simp: pref_def indep_system.indep_in_def[OF indep_system_axioms_abs]
       intro: indep_system.indep_subset[OF indep_system_axioms_abs X_indep])
   with carrier_pref_subseteq_carrier indep_system.rank_geq_card_indep_in[OF indep_system_axioms_abs]
   have rank_E_j_geq_X_j:
@@ -1085,7 +1085,7 @@ proof-
       carrier_pref_def[of c] pref_def[of c] by simp
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j) - card (pref c order ?G (j - 1))) * c ((carrier_sorted) ! (j - 1))) = 
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order ?G j)) * (?d j))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     define A where "A = (\<lambda>j. rat_of_nat (card (pref c order ?G j)))"
     define e where "e = (\<lambda>j. c (carrier_sorted ! j))"
     have A0: "A 0 = 0"
@@ -1178,7 +1178,7 @@ proof-
   moreover have "(\<Sum>j = 1..?n. rat_of_nat (indep_system.lower_rank_of (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) \<ge>  
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
       (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j)) =
       (\<Sum>j = 1..?n. indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
@@ -1203,7 +1203,7 @@ proof-
     indep_system.rank_quotient (matroid.carrier_abs carrier) (matroid.indep_abs indep_fn) *
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j))"
     using rank_E_j_prod_geq_X_j_prod sum_mono rank_quotient_geq_0
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have le_sum: "(\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j)) * (?d j)) \<le>
       (\<Sum>j = 1..?n. rat_of_nat (indep_system.rank (matroid.indep_abs indep_fn) (carrier_pref c order j)) * (?d j))"
       using rank_E_j_prod_geq_X_j_prod by (intro sum_mono) simp
@@ -1215,7 +1215,7 @@ proof-
     (\<Sum>j = 1..?n. rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) * c ((carrier_sorted) ! (j - 1)))"
     using sum_diff_mult_distr[OF pref_X_pos c_carrier_sorted_nonneg pref_X_zero] semiring_1_cancel_class.of_nat_diff
       pref_X_leq c_diff_def rank_quotient_geq_0 mult_left_mono 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have cast: "\<And>j. j \<in> {1..?n} \<Longrightarrow>
         rat_of_nat (card (pref c order (to_set X) j) - card (pref c order (to_set X) (j - 1))) =
         rat_of_nat (card (pref c order (to_set X) j)) - rat_of_nat (card (pref c order (to_set X) (j - 1)))"

@@ -849,7 +849,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   have b_s: "abstract_bal_map b s > 0"
     using s_prop assms(2)
     unfolding invar_gamma_def unf 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have gamma_pos: "\<gamma> > 0"
       using assms(2) by (auto elim!: invar_gammaE simp add: unf)
     have eps_le_1: "\<epsilon> \<le> 1"
@@ -864,7 +864,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
       by linarith
   qed
   have b_t: "abstract_bal_map b t < 0"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have gamma_pos: "\<gamma> > 0"
       using assms(2) unf(3) by (simp add: invar_gamma_def)
     have eps_neg: "- \<epsilon> < 0"
@@ -931,7 +931,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
   have b_s: "abstract_bal_map b s > 0"
     using s_prop assms(2)
     unfolding invar_gamma_def unf 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have gamma_0: "0 < \<gamma>"
     proof -
       have "0 < current_\<gamma> state" using assms(2) by (auto elim!: invar_gammaE)
@@ -943,7 +943,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
       using s_prop(1) by (simp add: unf)
   qed
   have b_t: "abstract_bal_map b t < 0"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have gamma_pos: "\<gamma> > 0"
       using assms(2) by (auto simp add: unf(3) elim!: invar_gammaE)
     have eps_lt_1: "\<epsilon> < 1"
@@ -1391,7 +1391,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
   have tP: "abstract_bal_map b t < - \<epsilon> * \<gamma>" "resreach (abstract_flow_map f) s t" "t \<in> \<V>" 
     using if_send_flow_call1_cond_advanced[OF assms(1,4) _ _ assms(3,2,5,6)] 1 by auto
   have s_neq_t:"s \<noteq> t"
-  proof (rule notI)
+  proof \<^marker>\<open>provenance ai\<close> (rule notI)
     assume "s = t"
     hence "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b t"
       using sP(1) by simp
@@ -1419,7 +1419,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
                  \<lceil> (abstract_bal_map b s - \<gamma>) / \<gamma> - (1 - \<epsilon>)\<rceil>" by simp
     also have "... = \<lceil> (abstract_bal_map b s ) / \<gamma> - (1 - \<epsilon>) - 1\<rceil>"
       using gamma_0
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<gamma> \<noteq> 0"
         using gamma_0 by simp
       thus ?thesis
@@ -1519,7 +1519,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using  "1"(2,3,5,6) assms(1,4) if_send_flow_call2_cond_basic[OF assms(1,4)] 
     by auto
   have s_neq_t:"s \<noteq> t"
-proof (rule ccontr)
+proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
     assume "\<not> s \<noteq> t"
     hence "s = t" by simp
     hence "\<epsilon> * \<gamma> < abstract_bal_map b t"
@@ -1553,7 +1553,7 @@ proof (rule ccontr)
     case False
     have "\<lceil>\<bar>abstract_bal_map b t + \<gamma>\<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> = \<lceil> (\<gamma> + abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil>"
       using False 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from False have "abstract_bal_map b t + \<gamma> \<ge> 0" by linarith
       hence "\<bar>abstract_bal_map b t + \<gamma>\<bar> = \<gamma> + abstract_bal_map b t"
         by (simp add: abs_of_nonneg add.commute)
@@ -1566,7 +1566,7 @@ proof (rule ccontr)
     also have "... \<le> 1 -  1" by simp
     also have "... \<le> \<lceil> (- abstract_bal_map b t) / \<gamma> - (1 - \<epsilon>)\<rceil> -1"
       using tP(1) gamma_0 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "(1 - \<epsilon>) * \<gamma> < - abstract_bal_map b t"
           using tP(1) by argo
         hence "(1 - \<epsilon>) < (- abstract_bal_map b t) / \<gamma>"
@@ -1578,7 +1578,7 @@ proof (rule ccontr)
         thus ?thesis by linarith
       qed
     also have "... = \<lceil>\<bar> abstract_bal_map b t \<bar> / \<gamma> - (1 - \<epsilon>)\<rceil> - 1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have eps_pos: "1 - \<epsilon> > 0"
           using \<epsilon>_axiom(2) by linarith
         have "(1 - \<epsilon>) * \<gamma> > 0"
@@ -1702,7 +1702,7 @@ proof(rule send_flow_call1_condE[OF assms(1)], goal_cases)
     using send_flow_call1_cond_Phi_decr[of state, OF assms(1-6)] by simp
   ultimately have "abstract_flow_map f' e \<ge> abstract_flow_map f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
     using gamma_0 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have phi_real_ge: "(1::real) \<le> real_of_int (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
       using Int.of_int_le_iff[THEN iffD2, OF \<open>\<Phi> state - \<Phi> (send_flow_call1_upd state) \<ge> 1\<close>] by simp
     have gamma_le: "\<gamma> \<le> \<gamma> * real_of_int (\<Phi> state - \<Phi> (send_flow_call1_upd state))"
@@ -1752,7 +1752,7 @@ proof(rule send_flow_call2_condE[OF assms(1)], goal_cases)
     using send_flow_call2_cond_Phi_decr[of state, OF assms(1-6)] by simp
   ultimately have "abstract_flow_map f' e \<ge> abstract_flow_map f e - \<gamma> * (\<Phi> state - \<Phi> (send_flow_call2_upd state))"
     using gamma_0 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume h1: "abstract_flow_map f e - \<gamma> \<le> abstract_flow_map f' e"
     assume h2: "1 \<le> \<Phi> state - \<Phi> (send_flow_call2_upd state)"
     assume gp: "0 < \<gamma>"
@@ -2051,7 +2051,7 @@ proof(all \<open>rule send_flow_call1_condE[OF assms(1)]\<close>, goal_cases)
     "distinct P" "Rcap (abstract_flow_map f) (set P) > 0"
     using if_send_flow_call1_cond_advanced[OF assms(1,4) _ _ assms(3,2,5,6) ] 1 by auto
   have s_neq_t:"s \<noteq> t"
-  proof (rule notI)
+  proof \<^marker>\<open>provenance ai\<close> (rule notI)
     assume s_eq_t: "s = t"
     have "(1 - \<epsilon>) * \<gamma> < abstract_bal_map b t"
       using sP(1) s_eq_t by simp
@@ -2164,7 +2164,7 @@ proof(all \<open>rule send_flow_call2_condE[OF assms(1)]\<close>, goal_cases)
     using  "1"(2,3,5,6) if_send_flow_call2_cond_basic[OF assms(1,4)] 
     by auto
   have s_neq_t:"s \<noteq> t"
-  proof (rule notI)
+  proof \<^marker>\<open>provenance ai\<close> (rule notI)
     assume eq: "s = t"
     have lt: "\<epsilon> * \<gamma> < - (1 - \<epsilon>) * \<gamma>"
       using sP(1) tP(1)[simplified eq[symmetric]] by linarith
@@ -2722,7 +2722,7 @@ lemma send_flow_Phi_final[send_flow_results]:
           "invar_above_6Ngamma state"
           "state' = send_flow state"
   shows   "a_current_flow  state' e \<ge> a_current_flow state e - \<Phi> state*current_\<gamma> state'"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have dom: "send_flow_dom state"
     using send_flow_termination[OF assms(1,2,3,4,5,6)] .
   have invar_gamma': "invar_gamma state'"
@@ -3010,7 +3010,7 @@ proof-
   have eps_card_V':"real (card \<V> ) * \<epsilon> - 1 \<le> 0"
     using eps_card_V by linarith
   have eps_card_rewrite:"- real (card \<V>) * \<epsilon> + 1 \<le> - real (card \<V> - 1) * \<epsilon> + 1 - \<epsilon>"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have card_ge: "(1::nat) \<le> card \<V>"
         using cardV_0 by simp
       have real_diff: "real (card \<V> - 1) = real (card \<V>) - 1"

@@ -136,7 +136,7 @@ proof-
        "[next_frontier frontier vis]\<^sub>s =
           [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N]\<^sub>s"
     using fold_vset[OF assms(1)]
- proof -
+ proof \<^marker>\<open>provenance ai\<close> -
   obtain xs where xs_set: "set xs = [frontier]\<^sub>s"
     and xs_eq: "fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N =
                 foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N"
@@ -153,7 +153,7 @@ qed
            [foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs' \<emptyset>\<^sub>N]\<^sub>s"
        "distinct xs'"
     using distinct_remdups set_remdups
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have p1: "set (remdups xs) = [frontier]\<^sub>s"
       using xs_props(1) by (simp add: set_remdups)
     have p2: "[next_frontier frontier vis]\<^sub>s =
@@ -196,7 +196,7 @@ qed
   show "vset_inv (next_frontier frontier vis)"
     unfolding next_frontier_def
     using fold_vset[where f="\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)" and acc="\<emptyset>\<^sub>N", OF assms(1)]
-  proof (elim exE conjE)
+  proof \<^marker>\<open>provenance ai\<close> (elim exE conjE)
     fix xs
     assume "set xs = [frontier]\<^sub>s"
       and h2: "fold_vset (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) frontier \<emptyset>\<^sub>N = foldr (\<lambda>u nf. nf \<union>\<^sub>G (\<N>\<^sub>G u -\<^sub>G vis)) xs \<emptyset>\<^sub>N"

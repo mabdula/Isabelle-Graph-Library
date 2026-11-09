@@ -276,7 +276,7 @@ lemmas ddfs_library_adaptor_simps[simp] = ddfs.arc_to_ends_eq ddfs.arcs_ends_eq 
   ddfs.wf_digraph_digraph_of ddfs.pair_wf_digraph_pair_digraph_of
 
 lemma digraph_of_eq_imp_eq: "ddfs.digraph_of G = ddfs.digraph_of H \<Longrightarrow> G = H"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "ddfs.digraph_of G = ddfs.digraph_of H"
   hence "arcs (ddfs.digraph_of G) = arcs (ddfs.digraph_of H)"
     by simp

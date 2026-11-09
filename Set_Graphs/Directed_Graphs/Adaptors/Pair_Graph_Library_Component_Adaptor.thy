@@ -124,7 +124,7 @@ lemma max_subgraph_imp_max_subgraph:
   shows "max_subgraph G P H"
   using assms
   unfolding max_subgraph_def pre_digraph.max_subgraph_def
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have sub: "subgraph_digraph (ddfs.digraph_of H) (ddfs.digraph_of G)"
     using assms unfolding pre_digraph.max_subgraph_def by blast
   have P_arcs: "(P \<circ> arcs) (ddfs.digraph_of H)"
@@ -209,15 +209,15 @@ proof-
     next
       case False
       have arcs_eq: "arcs (digraph_of_all_verts H G) = H"
-        by (simp add: digraph_of_all_verts_def pre_digraph.arcs_add_verts ddfs.arcs_eq)
+        by \<^marker>\<open>provenance ai\<close> (simp add: digraph_of_all_verts_def pre_digraph.arcs_add_verts ddfs.arcs_eq)
       have "arcs (digraph_of_all_verts H G) \<subseteq> arcs H'"
-        using that(2) by (auto simp: Digraph_Component.subgraph_def)
+        using that(2) by \<^marker>\<open>provenance ai\<close> (auto simp: Digraph_Component.subgraph_def)
       hence subgraph1: "subgraph H (arcs H')"
-        using arcs_eq by (auto simp: Component_Defs.subgraph_def)
+        using arcs_eq by \<^marker>\<open>provenance ai\<close> (auto simp: Component_Defs.subgraph_def)
       have "arcs H' \<subseteq> G"
-        using that(3) by (auto simp: Digraph_Component.subgraph_def)
+        using that(3) by \<^marker>\<open>provenance ai\<close> (auto simp: Digraph_Component.subgraph_def)
       hence subgraph2: "subgraph (arcs H') G"
-        by (auto simp: Component_Defs.subgraph_def)
+        by \<^marker>\<open>provenance ai\<close> (auto simp: Component_Defs.subgraph_def)
       show ?thesis
         using G_max_sg_H(3)[OF False subgraph1 subgraph2 that(4)] .
     qed
@@ -241,7 +241,7 @@ lemma max_subgraph_arcs_eq':
   assumes "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) H'"
   shows "arcs H' = H"
   using assms pre_digraph.subgraphI_max_subgraph[OF assms(3)] pre_digraph.max_subgraph_prop[OF assms(3)]
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms(3) have H'_subgraph_G: "subgraph_digraph H' (ddfs.digraph_of G)"
     by (rule pre_digraph.subgraphI_max_subgraph)
   from assms(3) have H'_prop: "(P \<circ> arcs) H'"
@@ -292,7 +292,7 @@ lemma max_subgraph_digraph_of_additional_verts_disconnected:
   assumes "u \<in> verts H'" "u \<notin> dVs H"
   assumes "H \<subseteq> arcs H'" \<comment> \<open>a max subgraph is not unique, therefore we have to enforce that we are talking about the "same" max subgraph in both worlds\<close>
   shows "\<nexists>v. (u \<rightarrow>\<^bsub>H'\<^esub> v \<or> v \<rightarrow>\<^bsub>H'\<^esub> u)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have arcs_H': "arcs H' = H"
     using max_subgraph_arcs_eq[OF assms(1) assms(5) assms(2)] .
   have "subgraph_digraph H' (ddfs.digraph_of G)"
@@ -323,7 +323,7 @@ lemma max_subgraph_iff:
   assumes "ddfs.digraph_of H = digraph_of_all_verts H G"
   shows "max_subgraph G P H \<longleftrightarrow> pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (ddfs.digraph_of H)"
   using assms max_subgraph_imp_max_subgraph max_subgraph_imp_max_subgraph_all_verts
-proof (intro iffI)
+proof \<^marker>\<open>provenance ai\<close> (intro iffI)
   assume "max_subgraph G P H"
   hence "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) (digraph_of_all_verts H G)"
     using max_subgraph_imp_max_subgraph_all_verts by blast
@@ -343,7 +343,7 @@ lemma dVs_arcs_subset_verts:
 lemma strongly_connected_induced_is_digraph_of_verts:
   assumes "induced_subgraph_digraph H (ddfs.digraph_of G)" "u \<in> verts H" "strongly_connected_digraph H" "verts H \<noteq> {u}"
   shows "verts H = dVs (arcs H)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms(1) have sub: "subgraph_digraph H (ddfs.digraph_of G)"
     by (auto elim: Digraph_Component.induced_subgraphE)
   from assms(3) have reach: "\<And>a b. a \<in> verts H \<Longrightarrow> b \<in> verts H \<Longrightarrow> a \<rightarrow>\<^sup>*\<^bsub>H\<^esub> b"
@@ -399,7 +399,7 @@ lemma strongly_connected_induced_is_digraph_of:
   assumes "u \<in> verts H" "verts H \<noteq> {u}"
   shows "ddfs.digraph_of (arcs H) = H"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have verts_eq: "verts H = dVs (arcs H)"
     using strongly_connected_induced_is_digraph_of_verts[OF assms(2) assms(3) assms(1) assms(4)] .
   obtain H' where H'_def: "H' = arcs H" and ind_H': "induced_subgraph H' G"
@@ -448,7 +448,7 @@ proof-
     case False
     then show ?thesis
       using that
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have H'_subgraph: "subgraph_digraph H' (ddfs.digraph_of G)"
         using assms(3) induced_imp_subgraph by blast
       have v1_in_verts: "v1 \<in> verts H'"
@@ -530,7 +530,7 @@ qed
 
 lemma in_sccs_digraph_of_imp_in_sccs:
   "(ddfs.digraph_of c) \<in> pre_digraph.sccs (ddfs.digraph_of G) \<Longrightarrow> c \<in> sccs G"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume asm: "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
   have H_c: "induced_subgraph_digraph (ddfs.digraph_of c) (ddfs.digraph_of G)"
     using asm by (simp add: pre_digraph.sccs_def)
@@ -565,7 +565,7 @@ qed
 
 lemma in_sccs_iff:
   shows "c \<in> sccs G \<longleftrightarrow> ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume "c \<in> sccs G"
   then show "ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
     by (rule in_sccs_imp_in_sccs_digraph_of)

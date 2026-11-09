@@ -719,7 +719,7 @@ proof-
           reachable_sym 
         by(force simp add: x'_def x_def xx_def xy_def y'_def y_def yy_def local.\<FF>_def r_card_def)+
       have x'_fix: "abstract_rep_map r_card x' = x'"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "reachable (to_graph \<FF>) xx x' \<or> x' = xx"
           using inv_rep_reachableD[OF all_invars(6), of xx] by (force simp add: x'_def \<FF>_def r_card_def)
         then show ?thesis
@@ -735,7 +735,7 @@ proof-
         qed
       qed
       have y'_fix: "abstract_rep_map r_card y' = y'"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "reachable (to_graph \<FF>) yy y' \<or> y' = yy"
           using inv_rep_reachableD[OF all_invars(6), of yy] by (force simp add: y'_def \<FF>_def r_card_def)
         then show ?thesis
@@ -751,7 +751,7 @@ proof-
         qed
       qed
       show ?case
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         consider (r_x) "reachable (to_graph \<FF>) x' v"
                | (r_y) "reachable (to_graph \<FF>) y' v"
                | (eq_y) "y' = v"

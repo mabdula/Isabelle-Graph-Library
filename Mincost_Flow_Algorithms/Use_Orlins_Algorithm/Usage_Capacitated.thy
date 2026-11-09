@@ -86,12 +86,12 @@ next
   case (3 x y z)
   then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>, all \<open>cases z\<close>)
-    by (auto split: if_splits simp add: less_le_not_le intro: order.trans)
+    by \<^marker>\<open>provenance ai\<close> (auto split: if_splits simp add: less_le_not_le intro: order.trans)
 next
   case (4 x y)
   then show ?case 
     apply(all \<open>cases x\<close>, all \<open>cases y\<close>)
-    by(auto split: if_split simp add: less_le_not_le) (auto split: if_splits simp add: less_le_not_le intro: antisym)+
+    by \<^marker>\<open>provenance ai\<close>(auto split: if_split simp add: less_le_not_le) (auto split: if_splits simp add: less_le_not_le intro: antisym)+
 next
   case (5 x y)
   then show ?case 
@@ -308,18 +308,18 @@ next
              (the (bal_lookup tree (vertex (fst xy))) - real_of_ereal u) tree)
          ES bs"
   have prem_x: "x \<in> dom (bal_lookup bs)" and prem_inv: "bal_invar bs"
-    using Cons.prems by auto
+    using Cons.prems by \<^marker>\<open>provenance ai\<close> auto
   have distinct_ES: "distinct ES" and a_notin_ES: "a \<notin> set ES"
-    using Cons.prems by auto
+    using Cons.prems by \<^marker>\<open>provenance ai\<close> auto
   have invar_T: "bal_invar T"
-    unfolding T_def Let_def using prem_inv by (rule bal_invar_fold)
+    unfolding T_def Let_def using prem_inv by \<^marker>\<open>provenance ai\<close> (rule bal_invar_fold)
   have IH: "bal_lookup T x =
       (case x of vertex u \<Rightarrow>
           Some (the (bal_lookup bs (vertex u))
               - sum (\<lambda>e. real_of_ereal (the (flow_lookup \<u>_impl e))) {e. e \<in> set ES \<and> u = fst e})
         | _ \<Rightarrow> bal_lookup bs x)"
     using Cons.IH[OF prem_x prem_inv distinct_ES] T_def
-    by presburger
+    by \<^marker>\<open>provenance ai\<close> presburger
   have fold_Cons: "foldr
      (\<lambda>xy tree.
          let u = the (flow_lookup \<u>_impl xy)
@@ -328,9 +328,9 @@ next
          (a # ES) bs
        = bal_update (vertex (fst a))
              (the (bal_lookup T (vertex (fst a))) - real_of_ereal (the (flow_lookup \<u>_impl a))) T"
-    by (simp add: T_def Let_def)
+    by \<^marker>\<open>provenance ai\<close> (simp add: T_def Let_def)
   show ?case
-  proof (cases x)
+  proof \<^marker>\<open>provenance ai\<close> (cases x)
     case (edge e)
     show ?thesis
       using edge IH fold_Cons bal_map.map_update[OF invar_T]
@@ -1090,7 +1090,7 @@ proof(rule not_has_neg_infty_cycleI, goal_cases)
     using top(1,2)
     by(induction D)(auto simp add: \<E>_impl'_def \<c>'_def c_lookup'_def)
   then obtain D1 D2 where D_prop:"D = D1@[new_edge (create_edge t s)]@D2" "new_edge (create_edge t s) \<notin> set D1"
-    by (fastforce dest: split_list_first)
+    by \<^marker>\<open>provenance ai\<close> (fastforce dest: split_list_first)
   then obtain u where u_prop: "awalk (make_pair' ` set \<E>_impl') u
                     (map make_pair' (D1@[new_edge (create_edge t s)]@D2)) u"
       "0 < length (map make_pair' (D1@[new_edge (create_edge t s)]@D2))"
@@ -1099,7 +1099,7 @@ proof(rule not_has_neg_infty_cycleI, goal_cases)
     by (auto simp add: awalk_Cons_iff  create_edge'(1))
   obtain D21 D22 where D2_prop:"[new_edge (create_edge t s)]@D2 = D21@[new_edge (create_edge t s)]@D22"
                              "new_edge (create_edge t s) \<notin> set D22" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have "new_edge (create_edge t s) \<in> set ([new_edge (create_edge t s)] @ D2)"
     by simp
   from split_list_last[OF this] obtain ys zs where

@@ -198,7 +198,7 @@ lemma unused_edge_vwalk:
 lemma unused_edge_vwalk_bet:
   "\<lbrakk>Vwalk.vwalk_bet E u p v; e \<notin> set (edges_of_vwalk p); length p \<ge> 2\<rbrakk>
    \<Longrightarrow> Vwalk.vwalk_bet(E-{e}) u p v"
-  unfolding vwalk_bet_def using unused_edge_vwalk by blast
+  unfolding vwalk_bet_def using unused_edge_vwalk by \<^marker>\<open>provenance ai\<close> blast
 
 lemma distinct_edges_of_vwalk:
   "distinct p \<Longrightarrow> distinct (edges_of_vwalk p)"
@@ -523,7 +523,7 @@ lemma vwalk_ConsE:
   assumes "vwalk E (a # p)" "p \<noteq> []"
   obtains e where "e \<in> E" "e = (a, hd p)" "vwalk E p"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms(2) have p_eq: "p = hd p # tl p"
     by (simp add: hd_Cons_tl)
   from assms(1) p_eq have aw: "vwalk E (a # hd p # tl p)"
@@ -951,7 +951,7 @@ lemma closed_vwalk_bet_decompE:
     "vwalk_bet E y r y"
     "vwalk_bet E y s v"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have decomp1: "p = xs @ y # (ys @ y # zs)"
     using p_decomp by simp
   obtain q1 r1 where
@@ -986,7 +986,7 @@ proof -
     xs_distinct: "distinct xs" and
     y_not_in_xs: "y \<notin> set xs"
     using p_not_distinct not_distinct_decomp    
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from p_not_distinct obtain xs' y zs where
     xs'_distinct: "distinct xs'" and
     y_in_xs': "y \<in> set xs'" and
@@ -1209,7 +1209,7 @@ lemma reachableE[elim?]:
     step: "\<And>x. \<lbrakk> (u,x)\<in>E; reachable E x v\<rbrakk> \<Longrightarrow> P"
   shows "P"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have v_dVs: "v \<in> dVs E"
     using assms(1) by (rule reachable_in_dVs(2))
   show ?thesis
@@ -1319,7 +1319,7 @@ next
   case (vwalk2 v v' vs)
   then show ?case
     apply (auto simp: dVs_def)
-    by (iprover intro: insertCI)
+    by \<^marker>\<open>provenance ai\<close> (iprover intro: insertCI)
 qed
 
 text \<open>A lemma which allows for case splitting over paths when doing induction on graph edges.\<close>
@@ -1366,7 +1366,7 @@ next
         using path2
         by auto
       then show ?thesis
-        by auto
+        by \<^marker>\<open>provenance ai\<close> auto
     next
       case F2: False
       hence "v \<in> dVs G"
@@ -1427,7 +1427,7 @@ lemma vwalk_not_vwalk:
           (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G'))"
    apply (induction rule: vwalk.induct) 
    apply (auto simp: dVs_def)
-   by (case_tac vs) (auto dest: dVsI(2))
+   by \<^marker>\<open>provenance ai\<close> (case_tac vs) (auto dest: dVsI(2))
 
  lemma vwalk_not_vwalk_elim: 
    "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 

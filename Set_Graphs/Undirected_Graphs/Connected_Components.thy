@@ -390,7 +390,7 @@ proof-
   have "\<Union> (connected_components X \<union> ((\<lambda>v. {v}) ` (V - (Vs X)))) = 
     \<Union> (connected_components X) \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))" by simp  
   also have "... = Vs X \<union> \<Union> ((\<lambda>v. {v}) ` (V - (Vs X)))"
-    using Union_connected_components[OF \<open>dblton_graph X\<close>] by simp
+    using Union_connected_components[OF \<open>dblton_graph X\<close>] by \<^marker>\<open>provenance ai\<close> simp
   also have "... = Vs X \<union> (V - Vs X)"
     by auto
   also have "... = V"
@@ -413,7 +413,7 @@ lemma connected_component_non_empt: "connected_component A x \<noteq> {}"
 lemma unequal_components_disjoint: 
   "\<lbrakk>connected_component E u \<noteq> connected_component E v; u \<in> X; v \<in> X\<rbrakk> 
   \<Longrightarrow> connected_component E u \<inter> connected_component E v = {}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "connected_component E u \<noteq> connected_component E v" "u \<in> X" "v \<in> X"
   show "connected_component E u \<inter> connected_component E v = {}"
   proof (rule ccontr)
@@ -446,7 +446,7 @@ lemma same_connected_component_SOME:
 lemma connected_component_subset:
   assumes "v \<in> Vs G"
   shows "connected_component G v \<subseteq> Vs G"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   fix u
   assume "u \<in> connected_component G v"
   then have "u \<in> Vs G \<or> v = u"
@@ -458,7 +458,7 @@ qed
 lemma component_is_finite:
   assumes "graph_invar G"
   shows "finite (connected_component G v)"
-proof (cases "v \<in> Vs G")
+proof \<^marker>\<open>provenance ai\<close> (cases "v \<in> Vs G")
   case True
   have sub: "connected_component G v \<subseteq> Vs G"
     by (rule connected_component_subset[OF True])
@@ -680,7 +680,7 @@ proof(safe)
   fix e
   assume "e \<in> G" 
   then obtain C where "e \<subseteq> C" "C \<in> connected_components G"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from assms \<open>e \<in> G\<close> obtain u v where uv: "e = {u, v}" "u \<noteq> v"
       by (blast elim: dblton_graphE)
     have "{u, v} \<in> G"
@@ -719,11 +719,11 @@ next
       have "x \<in> \<Union> G" using Vs_def by fastforce
     then have "\<exists>e. e \<in> G \<and> x \<in> e" by blast
     then obtain e where e: "e \<in> G" "x \<in> e"
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
     obtain u w where uv: "e = {u, w}" "u \<noteq> w"
-      using \<open>dblton_graph G\<close> e(1) by (rule dblton_graphE)
+      using \<open>dblton_graph G\<close> e(1) by \<^marker>\<open>provenance ai\<close> (rule dblton_graphE)
     have "\<exists>y. x \<noteq> y \<and> {x, y} \<in> G"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from e(2) uv(1) consider "x = u" | "x = w" by auto
       then show ?thesis
       proof cases
@@ -748,7 +748,7 @@ next
      by auto 
   note witness = this
   show ?case
-  proof (rule subsetI)
+  proof \<^marker>\<open>provenance ai\<close> (rule subsetI)
     fix x
     assume "x \<in> C"
     with witness
@@ -768,7 +768,7 @@ proof-
     {\<Union> (component_edges G C) |C. C \<in> connected_components G}" by blast
   also have "... = 
     {C |C. C \<in> connected_components G}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<And>C. C \<in> connected_components G \<Longrightarrow> \<Union> (component_edges G C) = C"
       using Vs_component_edges[OF \<open>dblton_graph G\<close>]
       by (simp add: Vs_def)
@@ -951,7 +951,7 @@ lemma path_in_comp:
   assumes "C \<in> connected_components G"
   assumes "last p \<in> C"
   shows "\<forall>x \<in> set p. x \<in> C"
-proof (cases "p = []")
+proof \<^marker>\<open>provenance ai\<close> (cases "p = []")
   case True
   then show ?thesis by simp
 next
@@ -979,7 +979,7 @@ proof(safe)
     fix e
     assume "e \<in> A"
     obtain C where "C \<in> connected_components A \<and> e \<subseteq> C"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       obtain u v where huv: "e = {u, v}" and "u \<noteq> v"
         using dblton_graphE assms \<open>e \<in> A\<close> by blast
       have "{u, v} \<in> A"
@@ -1301,7 +1301,7 @@ lemma edge_subset_component:
   assumes "e \<in> G"
   assumes "v \<in> e"
   shows "e \<subseteq> connected_component G v"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   obtain u w where uw: "e = {u, w}" and neq: "u \<noteq> w"
     using assms(1) assms(2) dblton_graphE by blast
   from assms(3) uw have disj: "v = u \<or> v = w"
@@ -1348,7 +1348,7 @@ proof -
   then obtain e where e: "e \<in> G" "x \<in> e" 
     by (meson assms(3) subsetD vs_member_elim)
   have "e \<subseteq> C"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "e \<subseteq> connected_component G x"
       by (rule edge_subset_component[OF assms(1) e(1) e(2)])
     moreover have "connected_component G x = C"
@@ -1718,7 +1718,7 @@ proof(safe)
     then obtain e where "x \<in> e \<and> e \<in> (component_edges A C)" 
       by (meson vs_member_elim)
     then have "e \<subseteq> C" 
-      by (auto simp: component_edges_def)
+      by \<^marker>\<open>provenance ai\<close> (auto simp: component_edges_def)
     then show "x \<in> C"
       by (meson \<open>x \<in> e \<and> e \<in> component_edges A C\<close> subsetD)
   }
@@ -1731,7 +1731,7 @@ proof(safe)
   then obtain y where "e = {x, y}" 
     using assms(1) by fastforce
   then have "y \<in> C"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have xy_A: "{x, y} \<in> A"
       using \<open>e = {x, y}\<close> \<open>x \<in> e \<and> e \<in> A\<close> by simp
     have eq: "A = insert {x, y} (A - {{x, y}})"
@@ -1775,12 +1775,12 @@ lemma connected_component_not_singleton:
   shows "card (connected_component G v) > 1"
 proof -
   obtain e where "e \<in> G" "v \<in> e"
-    using assms(2) by (rule vs_member_elim)
+    using assms(2) by \<^marker>\<open>provenance ai\<close> (rule vs_member_elim)
   then have "e \<subseteq> (connected_component G v)"
     by (simp add: edge_subset_component assms(1) \<open>v\<in> Vs G\<close>)
   then have "card (connected_component G v) \<ge> 2"
     using edge_in_E_card[of G e] component_is_finite[of G v]  assms(1)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "card e \<le> card (connected_component G v)"
       using component_is_finite[OF assms(1)] \<open>e \<subseteq> connected_component G v\<close>
       by (rule card_mono)
@@ -1861,7 +1861,7 @@ proof-
     using  connected_components_member_eq[OF v_prop(2)] 
      in_own_connected_component[of v B] same_component_set_mono[OF assms(1)]
       some_value  v_prop(3) f_def  
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume hx: "connected_component B x \<in> f ` (comps X A)"
     assume hv: "connected_component B v \<in> f ` (comps X A)"
     from hx obtain C where C_mem: "C \<in> comps X A" and C_f: "connected_component B x = f C"
@@ -1923,9 +1923,9 @@ proof(rule card_inj[where f = "\<lambda> C. (let x = (SOME x. x \<in> C \<and> x
   proof(rule inj_onI, goal_cases)
     case (1 x y)
     from "1"(1) obtain x0 where x0: "x0 \<in> X" "x = connected_component A x0"
-      by auto
+      by \<^marker>\<open>provenance ai\<close> auto
     from "1"(2) obtain y0 where y0: "y0 \<in> X" "y = connected_component A y0"
-      by auto
+      by \<^marker>\<open>provenance ai\<close> auto
     define xr where "xr = (SOME z. z \<in> x \<and> z \<in> X)"
     define yr where "yr = (SOME z. z \<in> y \<and> z \<in> X)"
     have Ax: "connected_component A xr = x"
@@ -1935,11 +1935,11 @@ proof(rule card_inj[where f = "\<lambda> C. (let x = (SOME x. x \<in> C \<and> x
       unfolding yr_def y0(2)
       using same_connected_component_SOME[OF y0(1)] .
     have B_eq: "connected_component B xr = connected_component B yr"
-      using "1"(3) by (simp add: xr_def yr_def Let_def)
+      using "1"(3) by \<^marker>\<open>provenance ai\<close> (simp add: xr_def yr_def Let_def)
     have A_eq: "connected_component A xr = connected_component A yr"
       using same_component_set_mono[OF "2"(1) B_eq] .
     thus ?case
-      using Ax Ay by simp
+      using Ax Ay by \<^marker>\<open>provenance ai\<close> simp
   qed 
 qed simp
 
@@ -1951,7 +1951,7 @@ proof(goal_cases)
   then have "dblton_graph X" unfolding dblton_graph_def by simp
   from Union_connected_components[OF this]
   have "connected_components X \<inter> ((\<lambda>v. {v}) ` (V - (Vs X))) = {}"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have Union_eq: "\<Union> (connected_components X) = Vs X"
       by fact
     show ?thesis
@@ -2021,11 +2021,11 @@ proof(cases "u = v")
 next
   obtain w where w: "w \<in> Vs G" "C = connected_component G w"
     using C_in_comp
-    by (fastforce simp add: connected_components_def)
-  have w_in_C: "w \<in> C" using w(2) by (simp add: in_own_connected_component)
+    by \<^marker>\<open>provenance ai\<close> (fastforce simp add: connected_components_def)
+  have w_in_C: "w \<in> C" using w(2) by \<^marker>\<open>provenance ai\<close> (simp add: in_own_connected_component)
   then obtain pwu where pwu: "pwu \<noteq> []" "path G pwu" "hd pwu = w" "last pwu = u"
     using same_con_comp_path[OF C_in_comp w_in_C uC]
-    by auto
+    by \<^marker>\<open>provenance ai\<close> auto
   moreover case False
   ultimately have "path G (pwu @ (tl puv))" "hd (pwu @ (tl puv)) = w" "last (pwu @ (tl puv)) = v"
     apply(intro path_append connected pwu tl_path_is_path; simp)
@@ -2033,7 +2033,7 @@ next
     by fastforce+
   then show ?thesis
     using w
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume facts: "path G (pwu @ tl puv)" "hd (pwu @ tl puv) = w" "last (pwu @ tl puv) = v" "w \<in> Vs G" "C = connected_component G w"
     have "set (pwu @ tl puv) \<subseteq> connected_component G w"
       using facts path_subset_conn_comp[of G "pwu @ tl puv"] by auto
@@ -2054,22 +2054,22 @@ proof-
     using assms component_has_path'
     by auto
   have card_ge_2: "2 \<le> card (set p)"
-    using assms(3) p(2) by simp
+    using assms(3) p(2) by \<^marker>\<open>provenance ai\<close> simp
   from remove_cycle_pfx_works[of p "last p"] obtain pfx
-    where pfx: "p = pfx @ remove_cycle_pfx (last p) p" by blast
+    where pfx: "p = pfx @ remove_cycle_pfx (last p) p" by \<^marker>\<open>provenance ai\<close> blast
   have pfx_path: "path G (pfx @ remove_cycle_pfx (last p) p)"
-    using p(1) pfx[symmetric] by simp
+    using p(1) pfx[symmetric] by \<^marker>\<open>provenance ai\<close> simp
   have path_suffix: "path G (remove_cycle_pfx (last p) p)"
-    using pfx_path path_suff by blast
+    using pfx_path path_suff by \<^marker>\<open>provenance ai\<close> blast
   have set_hd_last:
     "hd (remove_cycle_pfx (last p) p) \<noteq> last (remove_cycle_pfx (last p) p)"
     "set (remove_cycle_pfx (last p) p) = set p"
-    using remove_cycle_pfx_works_card_ge_2 card_ge_2 by blast+
+    using remove_cycle_pfx_works_card_ge_2 card_ge_2 by \<^marker>\<open>provenance ai\<close> blast+
   have set_eq: "C = set (remove_cycle_pfx (last p) p)"
-    using p(2) set_hd_last(2) by simp
+    using p(2) set_hd_last(2) by \<^marker>\<open>provenance ai\<close> simp
   show ?thesis
     using path_suffix set_eq set_hd_last(1)
-    by (intro exI[where x="remove_cycle_pfx (last p) p"]) simp
+    by \<^marker>\<open>provenance ai\<close> (intro exI[where x="remove_cycle_pfx (last p) p"]) simp
 qed
 
 lemma path_in_comp_edges:
@@ -2097,7 +2097,7 @@ next
   have "v \<in> C" 
     using path2.prems by auto
   have "v' \<in> C"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have edge_exists: "\<exists>C'. C' \<in> connected_components G \<and> {v, v'} \<subseteq> C'"
       using path2.hyps(1) by (rule edge_in_component)
     obtain C' where C'_comp: "C' \<in> connected_components G" and subset: "{v, v'} \<subseteq> C'"
@@ -2455,7 +2455,7 @@ proof-
   proof(cases "degree C u", goal_cases)
     case (1 nat)
     moreover have "enat nn + 1 + 1 + 1 \<le> 2  \<Longrightarrow> False" for nn
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume assm: "enat nn + 1 + 1 + 1 \<le> 2"
       have lhs: "enat nn + 1 + 1 + 1 = enat (nn + 3)"
       proof -
@@ -2489,7 +2489,7 @@ proof-
   proof(cases "degree C v", goal_cases)
     case (1 nat)
     moreover have "enat nn + 1 + 1 + 1 \<le> 2  \<Longrightarrow> False" for nn
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume assm: "enat nn + 1 + 1 + 1 \<le> 2"
       have eq1: "enat nn + 1 + 1 + 1 = enat (nn + 3)"
         by (simp only: one_enat_def plus_enat_simps(1), rule arg_cong, simp)
@@ -2512,7 +2512,7 @@ proof-
       using degree_in_p_leq_2[OF uv_in_p(2)] by simp
   qed
   moreover have "enat (2 * (length p - 2)) + 1 + 2 =  enat (2* (length p -2) + 3)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "enat (2 * (length p - 2)) + 1 + 2 = enat (2 * (length p - 2) + 1 + 2)"
       by (simp only: numeral_eq_enat one_enat_def plus_enat_simps(1))
     also have "\<dots> = enat (2 * (length p - 2) + 3)"
@@ -2520,7 +2520,7 @@ proof-
     finally show ?thesis .
   qed
   moreover have "enat (2 * (length p - 2)) + 2 + 1 = enat (2* (length p -2) + 3)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     note calc4 = calculation(4)
     have "enat (2 * (length p - 2)) + 2 + 1 = enat (2 * (length p - 2)) + 1 + 2"
       by (simp add: ac_simps)

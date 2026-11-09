@@ -22,7 +22,7 @@ when we have a corresponding inverse element\<close>
 
 lemma var_not_zero:
   shows "((Var\<^sub>0 n) :: ('a \<Rightarrow>\<^sub>0 nat) \<Rightarrow>\<^sub>0 real) \<noteq> 0" unfolding Var\<^sub>0_def 
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume eq: "Poly_Mapping.single (Poly_Mapping.single n (1::nat)) (1::real) = 0"
   have "(1::real) =
         Poly_Mapping.lookup
@@ -78,7 +78,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
       then have "a \<noteq> a'" 
         using \<open>a \<in> A \<and> f a \<noteq> a\<close> \<open>a' = f a\<close> by fastforce
       have "card (A - {a, a'}) < card A" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have a_in: "a \<in> A"
             using \<open>a \<in> A \<and> f a \<noteq> a\<close> by simp
           have "A - {a, a'} = A - {a} - {a'}"
@@ -89,7 +89,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
             by simp
         qed
       have " \<forall>x\<in>(A - {a, a'}). f x \<in> (A - {a, a'})" 
-      proof
+      proof \<^marker>\<open>provenance ai\<close>
         fix x
         assume xin: "x \<in> A - {a, a'}"
         then have "x \<in> A" by blast
@@ -164,7 +164,7 @@ lemma univ_is_finite:
 lemma oriented_edges[elim?]:
   assumes "(a, b) \<in> oriented_edges" 
   shows "{a, b} \<in> G" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms obtain x y where xy: "(a, b) = get_oriented x y" and G: "{x, y} \<in> G"
     by (auto simp: oriented_edges_def)
   have "{a, b} = {x, y}"
@@ -189,11 +189,11 @@ proof -
   have ab: "a \<noteq> b"
     using assms graph by fastforce
   have go: "get_oriented x y = (x, y) \<or> get_oriented x y = (y, x)" for x y
-    by (simp add: get_oriented_def)
+    by \<^marker>\<open>provenance ai\<close> (simp add: get_oriented_def)
   have in_or: "get_oriented x y \<in> oriented_edges" if "{x, y} \<in> G" "x < y" for x y
-    using that unfolding oriented_edges_def by blast
+    using that unfolding oriented_edges_def by \<^marker>\<open>provenance ai\<close> blast
   show ?thesis
-  proof (cases a b rule: linorder_cases)
+  proof \<^marker>\<open>provenance ai\<close> (cases a b rule: linorder_cases)
     case less
     from in_or[OF assms less] show ?thesis
       using go[of a b] by auto
@@ -246,7 +246,7 @@ proof -
   have "(i, j) \<notin> oriented_edges" 
     using assms oriented_edges by blast
   have "(j, i) \<notin> oriented_edges" 
-    proof (rule notI)
+    proof \<^marker>\<open>provenance ai\<close> (rule notI)
     assume "(j, i) \<in> oriented_edges"
     then have "{j, i} \<in> G"
       by (rule oriented_edges)
@@ -292,7 +292,7 @@ qed
 
 lemma tutte_skew_symmetric:
   shows "tutte_matrix $i$j = - tutte_matrix $j$i"
-proof (cases "(i, j) \<in> oriented_edges")
+proof \<^marker>\<open>provenance ai\<close> (cases "(i, j) \<in> oriented_edges")
   case True
   have 1: "tutte_matrix $i$j = Var\<^sub>0 {i, j}"
     using True by (rule in_oriented)
@@ -342,7 +342,7 @@ proof -
   have "(i, j) \<notin> oriented_edges" using zero_tutte_not_in_oriented 
     by (simp add: assms)
   moreover have "(j, i) \<notin> oriented_edges" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "tutte_matrix $j$i = - tutte_matrix $i$j"
       by (rule tutte_skew_symmetric)
     then have "tutte_matrix $j$i = 0"
@@ -480,7 +480,7 @@ proof(rule ccontr)
   have "{i, i} \<notin> G" 
     using graph by fastforce
   then show False 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "{i, p i} \<in> G"
       by (rule nonzero_edge_in_graph[OF assms])
     then have "{i, i} \<in> G"
@@ -507,7 +507,7 @@ next
   have "\<forall>i<length xs-1. {xs ! i, xs ! (i + 1)} \<in> A" 
     using Cons.prems  less_diff_conv by auto
   have " {(a # xs) ! 0, (a # xs) ! (0 + 1)} \<in> A" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "0 < length (a # xs) - 1"
       using Cons.prems(2) by (simp add: Suc_le_eq)
     then show ?thesis
@@ -532,7 +532,7 @@ next
       have "xs!0 \<in> Vs A" 
         using \<open>{(a # xs) ! 0, (a # xs) ! (0 + 1)} \<in> A\<close> nth_Cons' by auto
       have "xs = [xs!0]" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have len: "length xs = 1" using True by simp
         show ?thesis
         proof (rule nth_equalityI)
@@ -558,14 +558,14 @@ next
       have "xs = hd xs # tl xs" 
         by (simp add: \<open>xs \<noteq> []\<close>)
       then have "{a, hd xs} \<in> A" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "hd xs = xs ! 0"
             using \<open>xs \<noteq> []\<close> by (rule hd_conv_nth)
           then show "{a, hd xs} \<in> A"
             using \<open>{a, xs ! 0} \<in> A\<close> by simp
         qed
       then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain y ys where y_ys: "xs = y # ys"
           using \<open>xs \<noteq> []\<close> by (cases xs) auto
         have "{a, y} \<in> A"
@@ -639,7 +639,7 @@ proof (cases "n = 0", simp)
       by (induct k) (simp_all add: funpow_add)
 
     have "(p ^^ (n mod ?lpow a)) ((p ^^ (n - (n mod ?lpow a))) a) = (p ^^ n) a"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have le: "n mod (least_power p a) \<le> n"
         by (rule mod_less_eq_dividend)
       have eq: "(n mod (least_power p a)) + (n - (n mod (least_power p a))) = n"
@@ -694,7 +694,7 @@ proof -
   have "((inv p)^^(?inv_l)) i = i" 
     by (simp add: assms least_power_of_permutation(1) p_is_permutation permutation_inverse)
   then have "i = (p^^?inv_l) i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have bij_p: "bij p"
       using assms by (rule permutes_imp_bij)
     then have bij_pn: "bij (p ^^ least_power (inv p) i)"
@@ -714,7 +714,7 @@ proof -
   proof(rule ccontr)
     assume "?l \<noteq> ?inv_l"
     then have "?l < ?inv_l" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume ne: "least_power p i \<noteq> least_power (inv p) i"
       have perm_inv: "permutation (inv p)"
         using assms p_is_permutation permutation_inverse by blast
@@ -730,7 +730,7 @@ proof -
         using ne by simp
     qed
     moreover have "least_power (inv p) i \<le> least_power p i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
         have perm: "permutation p"
           using assms by (rule p_is_permutation)
         have bij_p: "bij p"
@@ -747,7 +747,7 @@ proof -
           using least_power_of_permutation(2)[OF perm] by (rule least_power_le)
       qed
       ultimately show False
-        by linarith
+        by \<^marker>\<open>provenance ai\<close> linarith
   qed
 qed
 
@@ -759,17 +759,17 @@ proof -
   then have "support p i!0 = i" 
     by (simp add: assms least_power_of_permutation(2) p_is_permutation)
   have "permutation p"
-    using assms by (rule p_is_permutation)
+    using assms by \<^marker>\<open>provenance ai\<close> (rule p_is_permutation)
   then have lp_pos: "0 < least_power p i"
-    by (rule least_power_of_permutation(2))
+    by \<^marker>\<open>provenance ai\<close> (rule least_power_of_permutation(2))
   then have "0 < length (support p i)"
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   then have "support p i ! 0 \<in> set (support p i)"
-    by (rule nth_mem)
+    by \<^marker>\<open>provenance ai\<close> (rule nth_mem)
   moreover have "support p i ! 0 = i"
-    using lp_pos by simp
+    using lp_pos by \<^marker>\<open>provenance ai\<close> simp
   ultimately show ?thesis
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
 qed
 
 lemma p_diff_inv_p_pow:
@@ -778,7 +778,7 @@ lemma p_diff_inv_p_pow:
   shows "((inv p)^^ k) ((p^^n) i) = (p^^(n-k)) i" 
 proof -
   have "(p^^n) i = ((p^^k) \<circ> (p^^(n-k))) i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have kn: "k + (n - k) = n"
       using assms(2) by (rule le_add_diff_inverse)
     have "(p ^^ k) \<circ> (p ^^ (n - k)) = p ^^ (k + (n - k))"
@@ -788,7 +788,7 @@ proof -
     finally show ?thesis by simp
   qed
   then show ?thesis 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have bij_p: "bij p"
     by (rule permutation_bijective[OF assms(1)])
   then have bij_pk: "bij (p ^^ k)"
@@ -817,7 +817,7 @@ proof(safe)
   let ?len = "least_power p i"  
   have "i \<in> set (support (inv p) i)" 
     using el_in_own_support assms 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have perm_inv: "permutation (inv p)"
       using assms by (rule permutation_inverse)
     then have pos: "0 < least_power (inv p) i"
@@ -837,7 +837,7 @@ proof(safe)
     then obtain j where "x = (p^^j) i \<and> j < least_power p i" 
       by fastforce
     have "i = ((inv p)^^?len) i" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have bij_p: "bij p"
         using assms by (rule permutation_bijective)
       have bij_pow: "bij (p ^^ least_power p i)"
@@ -854,11 +854,11 @@ proof(safe)
     then have "x = (p^^j) (((inv p)^^?len) i)" 
       using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by presburger
     have len_fix: "(p ^^ ?len) i = i"
-      by (rule least_power_of_permutation(1)[OF assms])
+      by \<^marker>\<open>provenance ai\<close> (rule least_power_of_permutation(1)[OF assms])
     have j_le: "j \<le> ?len"
-      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> less_imp_le_nat by blast
+      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> less_imp_le_nat by \<^marker>\<open>provenance ai\<close> blast
     have inv_pow_eq: "((inv p) ^^ (?len - j)) i = (p ^^ j) i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "((inv p) ^^ (?len - j)) i = ((inv p) ^^ (?len - j)) ((p ^^ ?len) i)"
         by (simp add: len_fix)
       also have "\<dots> = (p ^^ (?len - (?len - j))) i"
@@ -868,7 +868,7 @@ proof(safe)
       finally show ?thesis .
     qed
     then have "x = ((inv p)^^(?len - j)) i"
-      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by simp
+      using \<open>x = (p ^^ j) i \<and> j < least_power p i\<close> by \<^marker>\<open>provenance ai\<close> simp
     then show "x \<in>  set (support (inv p) i)"
       using elemnets_in_support_expo[of "inv p" i i x "?len - j"] 
             \<open>i \<in> set (support (inv p) i)\<close> assms p_is_permutation permutation_inverse by blast
@@ -882,7 +882,7 @@ proof(safe)
   then have "x = ((inv p)^^j) (((p)^^?len) i)" 
     using \<open>x = ((inv p) ^^ j) i \<and> j < least_power (inv p) i\<close> by presburger
   have "x = (p^^(?len - j)) i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have step: "\<And>k n. k \<le> n \<Longrightarrow> (inv p ^^ k) ((p ^^ n) i) = (p ^^ (n - k)) i"
     using p_diff_inv_p_pow[OF assms] by blast
   have x_eq: "x = (inv p ^^ j) i"
@@ -930,7 +930,7 @@ proof -
   have "x \<in>  set (support (inv p) i)" 
     using assms(1) assms(2) inv_support_same by fastforce
   have "((inv p)^^n) x = y" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have bij_p: "bij p"
       using assms(1) by (rule permutation_bijective)
     have inj_pn: "inj (p ^^ n)"
@@ -958,7 +958,7 @@ proof(safe)
   have "hd (support p i) = i" 
     by (simp add: assms(1) hd_conv_nth least_power_of_permutation(2) p_is_permutation)
   then have "i \<in> set ?l" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "0 < least_power p i"
       by (simp add: assms(1) p_is_permutation least_power_of_permutation(2))
     then have "0 \<in> {0..<least_power p i}" by simp
@@ -974,21 +974,21 @@ proof(safe)
     have "path (u_edges p) ?l" 
       using assms(1) circuit_is_upath by blast
     obtain ys zs where "?l = ys @ x # zs" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<exists>ys zs. ?l = ys @ x # zs"
         using \<open>x \<in> set ?l\<close> by (rule split_list)
       then show thesis using that by blast
     qed
     then have "(ys @ [x]) @ zs = ?l" by simp
     then have "path (u_edges p) (ys @ [x])" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "path (u_edges p) ((ys @ [x]) @ zs)"
           using \<open>path (u_edges p) ?l\<close> \<open>(ys @ [x]) @ zs = ?l\<close> by simp
         then show ?thesis
           by (rule path_pref)
       qed
     then have "hd (ys @ [x]) = i" using `hd ?l = i`
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "hd (ys @ [x]) = hd ((ys @ [x]) @ zs)"
         by (cases ys) simp_all
       also have "\<dots> = hd ?l"
@@ -1028,7 +1028,7 @@ proof(safe)
     have "v = i" 
       using path1.prems by auto
     show ?case
-    proof (intro ballI)
+    proof \<^marker>\<open>provenance ai\<close> (intro ballI)
       fix y
       assume "y \<in> set [v]"
       then have "y = v" by simp
@@ -1039,7 +1039,7 @@ proof(safe)
   next
     case (path2 v v' vs)
     have "v = p v' \<or> v' = p v" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from path2.hyps(1) obtain w where w: "{v, v'} = {w, p w}"
           unfolding u_edges_def by blast
         then have "(v = w \<and> v' = p w) \<or> (v = p w \<and> v' = w)"
@@ -1070,7 +1070,7 @@ proof(safe)
       then have "(p^^(n+1)) i = v" by simp
 
       then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have last_eq: "last (v' # vs) = i"
           using path2.prems by simp
         have IH: "\<forall>z \<in> set (v' # vs). \<exists>m. (p ^^ m) i = z"
@@ -1107,7 +1107,7 @@ proof(safe)
         using elemnets_in_support_expo'[of p v' i "(1::nat)" v] 
         using \<open>v' \<in> set (support p i)\<close> assms(1) p_is_permutation by blast
       then obtain j where "v = support p i!j \<and> j < least_power p i" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain m where m_less: "m < least_power p i" and m_eq: "v = (p ^^ m) i"
           using \<open>v \<in> set (support p i)\<close> by fastforce
         have "support p i ! m = (p ^^ m) i"
@@ -1128,7 +1128,7 @@ proof(safe)
   then show "x \<in> set (support p i)" 
     using elemnets_in_support_expo[OF p_is_permutation[OF assms(1)]
             \<open>i \<in> set (support p i)\<close> \<open>(p ^^ n) i = x\<close>[symmetric]]
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 
@@ -1146,7 +1146,7 @@ lemma p_in_same_cycle:
   assumes "p permutes (UNIV :: 'a set)"
   assumes "a \<in> set (support p i)"
   shows "p a \<in> set (support p i)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have perm: "permutation p"
     using assms(1) by (simp add: p_is_permutation)
   have "p a = (p ^^ (1::nat)) a"
@@ -1164,7 +1164,7 @@ lemma nths_in_result:
 lemma nths_obtain_index:
   assumes "a \<in>  set (nths xs I)"
   obtains i where "a = xs!i" "i \<in> I" "i < length xs"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "a \<in> {xs ! i | i. i < length xs \<and> i \<in> I}"
     using assms by (simp only: set_nths)
   then obtain i where "a = xs ! i" and "i < length xs" and "i \<in> I"
@@ -1184,7 +1184,7 @@ proof -
   have "(support p i)!(n-1) = (p^^(n-1)) i" 
     using assms(3) by fastforce
   have "(p^^n) i = (p \<circ> (p^^(n-1))) i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "(p ^^ n) i = (p ^^ Suc (n - 1)) i"
       using assms(2) by simp
     also have "\<dots> = (p \<circ> (p ^^ (n - 1))) i"
@@ -1206,7 +1206,7 @@ proof -
   have "n + 1< length (support p i)" using assms(2) by linarith
   then show ?thesis
     using next_elem_by_p[of p "n+1"] assms(1) \<open>0 < n + 1\<close>
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
 qed
 
 lemma perm_verts_in_all_verts:
@@ -1219,7 +1219,7 @@ lemma perm_verts_eq_all:
   shows "Vs (u_edges p) = Vs G" 
 proof - 
   have "Vs (u_edges p) = UNIV" 
-    proof (rule equalityI)
+    proof \<^marker>\<open>provenance ai\<close> (rule equalityI)
     show "Vs (u_edges p) \<subseteq> (UNIV :: 'a set)"
       by (rule subset_UNIV)
   next
@@ -1249,7 +1249,7 @@ proof -
   have "C \<subseteq> Vs (u_edges p)" 
     by (simp add: \<open>C \<in> connected_components (u_edges p)\<close> connected_component_subs_Vs)
   obtain x where "x \<in> C" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "C \<noteq> {}"
       using assms(2) by (rule connected_comp_nempty)
     then have "\<exists>x. x \<in> C"
@@ -1270,7 +1270,7 @@ proof -
   have "even (card (set (support p x)))" 
     using \<open>set (support p x) = C\<close> assms(3) by blast
   then have "even (length (support p x))" 
-    using distinct_card[OF perm_support_distinct[OF \<open>p permutes UNIV\<close>]] by simp
+    using distinct_card[OF perm_support_distinct[OF \<open>p permutes UNIV\<close>]] by \<^marker>\<open>provenance ai\<close> simp
   have 3:"set ?start_vert \<subseteq> (UNIV :: 'a set)" 
     by blast
   then have "?m_edges \<subseteq> u_edges p" 
@@ -1280,7 +1280,7 @@ proof -
     {  fix y
       assume "y \<in> Vs ?m_edges"
       then obtain a where "y \<in> {a, (p a)} \<and> a \<in> set ?start_vert" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>y \<in> Vs ?m_edges\<close> obtain e where ye: "y \<in> e" and em: "e \<in> ?m_edges"
           by (auto simp add: Vs_def)
         from em obtain b where eb: "e = {b, p b}" and bs: "b \<in> set ?start_vert"
@@ -1289,7 +1289,7 @@ proof -
         then show thesis using that bs by blast
       qed
       then show "y \<in> set (support p x)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume ya: "y \<in> {a, p a} \<and> a \<in> set ?start_vert"
         have a_in: "a \<in> set (support p x)"
         proof (rule ccontr)
@@ -1314,7 +1314,7 @@ proof -
     fix y
     assume "y \<in> set (support p x)" 
     then obtain n where n_exp: "y = (support p x)!n \<and> n < least_power p x" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have len: "length (support p x) = least_power p x"
           by simp
         from \<open>y \<in> set (support p x)\<close> obtain k
@@ -1331,7 +1331,7 @@ proof -
       then have "n \<in>  {j \<in> {0..<length (support p x)}. even j}" 
         by (simp add: n_exp)
       then have "y \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have n_lt: "n < length (support p x)"
           using n_exp by simp
         have n_mem: "n \<in> {j \<in> {0..<length (support p x)}. even j}"
@@ -1355,7 +1355,7 @@ proof -
         by (simp add: n_exp less_imp_diff_less)
       then have 1:"(support p x)!(n-1) \<in> 
                  set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"      
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have lt: "n - 1 < length (support p x)"
           using n_exp by (simp add: less_imp_diff_less)
         have mem: "n - 1 \<in> {j \<in> {0..<length (support p x)}. even j}"
@@ -1392,7 +1392,7 @@ proof -
           assume "e1 \<inter> e2 \<noteq> {}" 
           then obtain t where "t \<in> e1 \<inter> e2" by auto
           obtain u v where uv:"e1 = {u, t} \<and> e2 = {t, v}" 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have te1: "t \<in> e1" and te2: "t \<in> e2"
                 using \<open>t \<in> e1 \<inter> e2\<close> by auto
               from asme1 obtain a1 where a1: "e1 = {a1, p a1}" by blast
@@ -1432,7 +1432,7 @@ proof -
           then obtain a where a_elem:"{a, (p a)} = {u, t}  \<and> a \<in> set ?start_vert" 
             using asme1 uv by blast
           obtain b where b_elem:"{b, (p b)} = {v, t}  \<and> b \<in> set ?start_vert" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             from asme2 obtain b where b1: "e2 = {b, p b}" and b2: "b \<in> set ?start_vert"
               by blast
             have "{b, p b} = e2" using b1 by (rule sym)
@@ -1448,7 +1448,7 @@ proof -
             using a_elem notin_set_nthsI by fastforce
           then obtain an where an: "a = (support p x)!an \<and> 
                                     an \<in> {j \<in> {0..<length (support p x)}. even j}" 
-            using a_elem by (blast elim: nths_obtain_index)
+            using a_elem by \<^marker>\<open>provenance ai\<close> (blast elim: nths_obtain_index)
           then have "even an"  
             by blast
           then have 4:"an < (length (support p x)) - 1"
@@ -1460,7 +1460,7 @@ proof -
           then obtain bn where bn: "b = (support p x)!bn \<and> 
                                     bn \<in> {j \<in> {0..<length (support p x)}. even j}"
             using b_elem  nths_obtain_index 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have bmem: "b \<in> set (nths (support p x) {j \<in> {0..<length (support p x)}. even j})"
               using b_elem by blast
             have "\<exists>bn. b = (support p x)!bn \<and> bn \<in> {j \<in> {0..<length (support p x)}. even j}"
@@ -1482,7 +1482,7 @@ proof -
                 using `a = u \<and> (p a) = t` True 
                 by auto
               then have "a = b" 
-                by (blast intro: injD permutes_inj \<open>p permutes UNIV\<close>)
+                by \<^marker>\<open>provenance ai\<close> (blast intro: injD permutes_inj \<open>p permutes UNIV\<close>)
               then show ?thesis 
                 using True uv \<open>e1 \<noteq> e2\<close> a_elem by blast
             next
@@ -1499,7 +1499,7 @@ proof -
               have "an + 1 \<noteq> bn" 
                 using \<open>even an\<close> \<open>even bn\<close> even_add odd_one by blast
               then have "\<not> distinct (support p x)" 
-                proof -
+                proof \<^marker>\<open>provenance ai\<close> -
                   have len1: "an + 1 < length (support p x)"
                     using 4 by (simp add: less_diff_conv)
                   have len2: "bn < length (support p x)"
@@ -1537,7 +1537,7 @@ proof -
               have "bn + 1 \<noteq> an" 
                 using \<open>even an\<close> \<open>even bn\<close> even_add odd_one by blast
               then have "\<not> distinct (support p x)" 
-              proof -
+              proof \<^marker>\<open>provenance ai\<close> -
                 have ean: "even an" using an by auto
                 have ebn: "even bn" using bn by auto
                 have Bl: "bn + 1 < length (support p x)"
@@ -1632,7 +1632,7 @@ proof -
   have "(p^^n) i = ((p^^n) \<circ> (p^^least_power p i)) i" 
     by (simp add: assms(1) least_power_of_permutation(1))
   then have "((p^^least_power p i)\<circ>(p^^n)) i = (p^^n) i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have fix_i: "(p ^^ least_power p i) i = i"
     by (simp add: assms(1) least_power_of_permutation(1))
   have "(p ^^ least_power p i) \<circ> (p ^^ n) = p ^^ (least_power p i + n)"
@@ -1662,7 +1662,7 @@ proof  -
     using assms(1) assms(2) inv_support_same by fastforce
   ultimately have "(inv p) a \<in> set (support (inv p) i)" 
     using elemnets_in_support_expo[where n = 1 and p = "inv p" and x = a and i = i and y = "inv p a"]
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   then show ?thesis 
     using assms(1) inv_support_same by fastforce
 qed
@@ -1678,7 +1678,7 @@ proof(rule ccontr)
   then have "p ((inv p) a) = a" 
     by (meson assms(1) bij_inv_eq_iff permutation_bijective)
   have "p ((inv p) a) \<in> set (support p i)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "p (inv p a) = (p ^^ (1::nat)) (inv p a)"
       by simp
     then show ?thesis
@@ -1695,11 +1695,11 @@ lemma p_rev_p_same:
   shows "p (rev_p p x) = x" 
 proof -
   have "rev_p p x = inv p x"
-    using assms(2) by (simp add: rev_p_def)
+    using assms(2) by \<^marker>\<open>provenance ai\<close> (simp add: rev_p_def)
   hence "p (rev_p p x) = p (inv p x)"
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
   also have "\<dots> = x"
-    by (rule permutes_inverses(1)[OF assms(1)])
+    by \<^marker>\<open>provenance ai\<close> (rule permutes_inverses(1)[OF assms(1)])
   finally show ?thesis .
 qed
 
@@ -1741,7 +1741,7 @@ lemma on_odd_p_permutes:
 proof -
   let ?A = "set (support p  (least_odd p))"
   have "(\<forall>x\<in>?A. \<forall>y\<in>?A. (on_odd p) x = (on_odd p) y \<longrightarrow> x = y)"
-  proof (intro ballI impI)
+  proof \<^marker>\<open>provenance ai\<close> (intro ballI impI)
     fix x y
     assume xA: "x \<in> set (support p (least_odd p))"
       and yA: "y \<in> set (support p (least_odd p))"
@@ -1766,7 +1766,7 @@ proof -
       using \<open>x \<in> ?A\<close> assms inv_in_support p_is_permutation
       by fast
     have "(on_odd p) ((inv p) x) = x" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "on_odd p (inv p x) = p (inv p x)"
         using \<open>inv p x \<in> ?A\<close> by (rule on_odd_in)
       also have "\<dots> = x"
@@ -1774,7 +1774,7 @@ proof -
       finally show ?thesis .
     qed
     then show "x \<in> (on_odd p) ` ?A" 
-      by (rule image_eqI[OF sym]) fact
+      by \<^marker>\<open>provenance ai\<close> (rule image_eqI[OF sym]) fact
   qed
   then have "bij_betw (on_odd p) ?A ?A" 
     unfolding bij_betw_def 
@@ -1805,7 +1805,7 @@ proof -
     then have "not_on_odd p y = p y" 
       using not_on_odd_in  \<open>y \<in> ?A\<close> by blast
     then show "x = y" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have inj_p: "inj p"
         using assms by (rule permutes_inj)
       have "p x = not_on_odd p y"
@@ -1826,7 +1826,7 @@ proof -
       fix x
       assume "x \<in> ?A"
       then have "p x \<in> ?A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have perm: "permutation p"
           using assms by (rule p_is_permutation)
         have xout: "x \<notin> set (support p (least_odd p))"
@@ -1842,7 +1842,7 @@ proof -
         then show ?thesis by blast
       qed
       then show "x \<in> not_on_odd p ` ?A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have perm: "permutation p"
           using assms by (rule p_is_permutation)
         have "x \<notin> set (support p (least_odd p))"
@@ -1869,7 +1869,7 @@ proof -
     have "(inv p x) \<in> set (support p (least_odd p))" 
       using asmx assms inv_in_support p_is_permutation by fast
     then have "x \<in> ?A" 
-      using asmx by (force simp add: not_on_odd_in permutes_inverses(2)[OF assms])
+      using asmx by \<^marker>\<open>provenance ai\<close> (force simp add: not_on_odd_in permutes_inverses(2)[OF assms])
     then show False 
       using \<open>x \<in> set (support p (least_odd p))\<close> by force
   qed
@@ -1902,7 +1902,7 @@ proof
     have " (on_odd  p) x = p x" using on_odd_in[of x "inv p"] True 
       using on_odd_def by presburger
     then have "inv (on_odd  p) x = (inv p) x" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
   have xA: "inv p x \<in> set (support p (least_odd p))"
     by (rule inv_in_support[OF p_is_permutation[OF assms], OF True])
   have "on_odd p (inv p x) = p (inv p x)"
@@ -1916,7 +1916,7 @@ proof
     using qx by (rule iffD2[OF permutes_inv_eq[OF q]])
 qed
     then have "rev_p p x = (inv p x)" 
-      using True by (simp add: rev_p_def)
+      using True by \<^marker>\<open>provenance ai\<close> (simp add: rev_p_def)
     then show ?thesis 
       by (simp add: \<open>inv (on_odd p) x = inv p x\<close> \<open>not_on_odd p x = x\<close>)
   next
@@ -1926,7 +1926,7 @@ qed
     have "not_on_odd p x = p x" 
       using False not_on_odd_in by presburger
     then have "inv (on_odd  p) (p x) = p x" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have notin: "p x \<notin> set (support p (least_odd p))"
       proof
         assume "p x \<in> set (support p (least_odd p))"
@@ -1960,7 +1960,7 @@ proof -
   obtain C where C:"C \<in> connected_components (u_edges p) \<and> odd (card C)"
     using assms by blast
   then obtain x where "x \<in> C" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "C \<noteq> {}"
   proof
     assume "C = {}"
@@ -1979,7 +1979,7 @@ qed
   have "C = set (support p x)" 
     using support_is_connected_component[of p C x] C \<open>x \<in> C\<close> assms(1) by fastforce
   then have " odd (least_power p x)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have dist: "distinct (support p x)"
     using assms(1) by (rule cycle_vert_is_distict)
   have "card C = card (set (support p x))"
@@ -2007,7 +2007,7 @@ proof -
     using odd_component_then_odd_circuit[of p] assms by blast
   then show ?thesis
     unfolding least_odd_def
-    using LeastI[of "\<lambda>a. odd (least_power p a)"] by blast
+    using LeastI[of "\<lambda>a. odd (least_power p a)"] by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 lemma reverse_for_each_product:
@@ -2019,7 +2019,7 @@ lemma reverse_for_each_product:
 proof(induct "card A" arbitrary: A rule: less_induct)
   case less
   have "finite A" 
-  proof (rule ccontr)
+  proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
     assume "infinite A"
     then have "card A = 0"
       by (rule card.infinite)
@@ -2029,7 +2029,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
   proof(cases "card A = 1")
     case True
     obtain a where "a \<in> A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from True obtain b where "A = {b}"
           by (rule card_1_singletonE)
         then have "b \<in> A"
@@ -2038,7 +2038,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
           using that by blast
       qed
     then have "A = {a}" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain b where "A = {b}"
           using True by (rule card_1_singletonE)
         then show "A = {a}"
@@ -2053,7 +2053,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
   next
     case False
     then have "card A > 1" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "card A \<noteq> 0"
           using less.prems(2) by presburger
         moreover have "card A \<noteq> 1"
@@ -2062,7 +2062,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
           by linarith
       qed
     then obtain a b where ab: "a \<in> A \<and> b \<in> A \<and> a \<noteq> b" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume gt: "1 < card A"
       then have "A \<noteq> {}" by force
       then obtain x where x: "x \<in> A" by blast
@@ -2094,7 +2094,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
       then show thesis by (rule that)
     qed
     then have "odd (card (A - {a, b}))" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
   have aA: "a \<in> A" and bA: "b \<in> A" and neq: "a \<noteq> b"
     using \<open>a \<in> A \<and> b \<in> A \<and> a \<noteq> b\<close> by auto
   have finb: "finite (A - {b})"
@@ -2115,7 +2115,7 @@ proof(induct "card A" arbitrary: A rule: less_induct)
     using card_Diff_subset[OF fin2 sub] card2 less.prems(2) by presburger
       qed
     have "(card (A - {a, b})) < card A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have finA: "finite A"
           using \<open>finite A\<close> .
         have aA: "a \<in> A"
@@ -2168,7 +2168,7 @@ proof
     have "not_on_odd p x = x" 
       using True not_on_odd_out by presburger
     have "on_odd p x = p x" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "x \<in> set (support p (least_odd p))"
       using True by blast
     then show ?thesis
@@ -2184,7 +2184,7 @@ proof
       unfolding on_odd_def
       using False
         inv_in_support[OF p_is_permutation[OF assms], where a = "p x" and i = "least_odd p"]
-      by (auto simp add: on_odd_def permutes_inverses(2)[OF assms])
+      by \<^marker>\<open>provenance ai\<close> (auto simp add: on_odd_def permutes_inverses(2)[OF assms])
     then show ?thesis 
       by (simp add: \<open>not_on_odd p x = p x\<close>)
   qed
@@ -2196,17 +2196,17 @@ lemma rev_p_opposit_tutte_value:
   shows "(tutte_matrix )$i$p i = - (tutte_matrix )$p i$(rev_p p) (p i)"
 proof - 
   have "p i \<in> set (support p  (least_odd p))" 
-    by (rule p_in_same_cycle[OF assms]) 
+    by \<^marker>\<open>provenance ai\<close> (rule p_in_same_cycle[OF assms]) 
   then have "(rev_p p) (p i) = i"  
     unfolding rev_p_def 
-    by (simp add: rev_p_def
+    by \<^marker>\<open>provenance ai\<close> (simp add: rev_p_def
                    if_P[OF p_in_same_cycle[OF assms(1) assms(2)]]
                    permutes_inv_eq[OF assms(1)])
   note rev_eq = this
   have "tutte_matrix $ i $ p i = - tutte_matrix $ (p i) $ i"
-    by (rule tutte_skew_symmetric)
+    by \<^marker>\<open>provenance ai\<close> (rule tutte_skew_symmetric)
   then show ?thesis
-    by (simp only: rev_eq)
+    by \<^marker>\<open>provenance ai\<close> (simp only: rev_eq)
 qed
 
 lemma least_odd_support_is_odd:
@@ -2230,7 +2230,7 @@ proof -
   let ?h = "(\<lambda>i. (tutte_matrix )$i$p i)" 
   let ?g = "(\<lambda>i. (tutte_matrix )$i$(rev_p p) i)" 
   have 3: "prod ?h UNIV =  prod ?h ?A *  prod ?h (UNIV - ?A)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have fin: "finite (UNIV :: 'a set)"
       by (rule univ_is_finite)
     have subs: "?A \<subseteq> (UNIV :: 'a set)"
@@ -2239,7 +2239,7 @@ proof -
       by (rule trans[OF prod.subset_diff[OF subs fin] mult.commute])
   qed
   have 4:"prod ?g UNIV =  prod ?g ?A *  prod ?g (UNIV - ?A)"
-    by (rule trans[OF prod.subset_diff[OF subset_UNIV univ_is_finite] mult.commute])
+    by \<^marker>\<open>provenance ai\<close> (rule trans[OF prod.subset_diff[OF subset_UNIV univ_is_finite] mult.commute])
   have "\<forall> i\<in> (UNIV - ?A). (rev_p p) i = p i" 
     using assms p_rev_p_same' by auto
   then have 2:" prod ?h (UNIV  - ?A) =  prod ?g (UNIV - ?A)"    
@@ -2275,7 +2275,7 @@ proof -
   have 4:"(rev_p p) = (inv (on_odd  p)) \<circ>  not_on_odd p"
     using rev_is_composition assms(1) by auto
   have 5: "evenperm p \<longleftrightarrow> evenperm (on_odd  p) = evenperm (not_on_odd p)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "evenperm (on_odd p \<circ> not_on_odd p) \<longleftrightarrow>
           (evenperm (on_odd p) = evenperm (not_on_odd p))"
       using 1 2 by (rule evenperm_comp)
@@ -2342,7 +2342,7 @@ proof (induct n)
     have "\<forall>n. p (inv p n) = n"
       by (meson assms(1) permutes_inverses(1))
     then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have pperm: "permutation p"
           by (rule p_is_permutation[OF assms(1)])
         have "inv p a \<in> set (support p (least_odd p))"
@@ -2353,7 +2353,7 @@ proof (induct n)
       qed
   qed
   then have "(inv p ^^ n) a \<in> set (support (inv p)  (least_odd p))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have perm: "permutation p"
       using assms(1) p_is_permutation by blast
     then have perm_inv: "permutation (inv p)"
@@ -2381,7 +2381,7 @@ proof (induct n)
   case (Suc n)
   let ?A = "(set (support p (least_odd p)))" 
   have "(p^^n) a \<notin>  (set (support p  (least_odd p)))" 
-  proof (rule ccontr)
+  proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
     assume "\<not> (p ^^ n) a \<notin> set (support p (least_odd p))"
     then have h1: "(p ^^ n) a \<in> set (support p (least_odd p))" by blast
     have h2: "permutation p" using assms(1) p_is_permutation by blast
@@ -2415,7 +2415,7 @@ proof(safe)
     then obtain j where j:"x = (p^^j) i \<and> j < least_power p i" 
       by fastforce
     then have "((inv p)^^j) x= i" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have bij_p: "bij p" using assms permutes_imp_bij by blast
     then have inj_pj: "inj (p ^^ j)" using bij_fn bij_is_inj by blast
     have "inv (p ^^ j) x = i" using j inj_pj inv_f_f by fastforce
@@ -2428,7 +2428,7 @@ proof(safe)
     then have "(p^^(((least_power p i)-j)+j)) x = (p^^((least_power p i)+j)) i"
       using 1 by simp
     then have "(p^^(((least_power p i)-j))) x = (p^^((least_power p i))) i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have j1: "x = (p ^^ j) i" and j2: "j < least_power p i"
         using j by auto
       have j3: "j \<le> least_power p i"
@@ -2475,7 +2475,7 @@ proof(safe)
     using `?lp-j > 0`  
     by simp
   then have "((rev_p p)^^((?lp-j))) x = ((rev_p p)^^(?lp)) i"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have j_le: "j \<le> ?lp" using j_sup by linarith
     have exp_eq: "(?lp - j) + j = ?lp" using j_le by linarith
     have "((rev_p p)^^(?lp-j)) x = ((rev_p p)^^(?lp-j)) (((rev_p p)^^j) i)"
@@ -2496,7 +2496,7 @@ proof(safe)
     then have "((inv p)^^j) i = x" 
       using j_sup by presburger
     then have "i = (p^^j) x" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume inv_fact: "(inv p ^^ j) i = x"
       have bij_p: "bij p"
         using assms permutes_imp_bij by blast
@@ -2525,7 +2525,7 @@ proof(safe)
     then have "((rev_p p)^^(?lp-j)) x = i" 
       using \<open>(rev_p p ^^ (least_power (rev_p p) i - j)) x = i\<close> by blast 
     show ?thesis
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have i_in_supp: "i \<in> set (support p i)"
         using assms el_in_own_support by blast
       have perm_p: "permutation p"
@@ -2557,11 +2557,11 @@ proof(safe)
     proof(cases "i \<in> ?A")
       case True
       then have "p i \<in> ?A" 
-        by (blast intro: p_in_same_cycle assms(1))
+        by \<^marker>\<open>provenance ai\<close> (blast intro: p_in_same_cycle assms(1))
       then have "(rev_p p) (p i) = (inv p) (p i)" 
         using rev_p_def by presburger
       then have "(rev_p p) (p i) = i " 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "inv p (p i) = i"
           by (rule permutes_inverses(2)[OF assms(1)])
         with \<open>rev_p p (p i) = inv p (p i)\<close> show ?thesis
@@ -2592,7 +2592,7 @@ proof(safe)
     have "{((inv p) i), (p ((inv p) i))} \<in> u_edges p" 
       using u_edges_def by auto
     then show ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have p_inv: "p (inv p i) = i"
         using permutes_inv_eq[OF assms(1)] by blast
       have mem: "{inv p i, p (inv p i)} \<in> u_edges p"
@@ -2617,7 +2617,7 @@ lemma least_odd_least:
   assumes "odd (least_power p a)"
   shows "(least_odd p) \<le> a" 
   unfolding least_odd_def
-  using assms(3) by (rule Least_le[of _ a])
+  using assms(3) by \<^marker>\<open>provenance ai\<close> (rule Least_le[of _ a])
 
 lemma rev_least_odd_same:
   assumes "p permutes (UNIV:: 'a set)"
@@ -2639,7 +2639,7 @@ proof -
   have "?sup p ?i = ?sup (rev_p p) ?i" 
     using assms(1) rev_p_support_same by presburger
   then have 5: "odd (least_power (rev_p p) ?i)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have supp_eq: "set (support p (least_odd p)) = set (support (rev_p p) (least_odd p))"
       using assms(1) rev_p_support_same by presburger
     have dist_p: "distinct (support p (least_odd p))"
@@ -2671,7 +2671,7 @@ proof -
           least_power (rev_p p) (least_odd (rev_p p))"
       using 1 3 distinct_card perm_support_distinct by force
     then show ?thesis
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have card_eq_p: "card (set (support p (least_odd (rev_p p)))) = 
                     least_power p (least_odd (rev_p p))"
         using assms(1) distinct_card perm_support_distinct by force
@@ -2686,7 +2686,7 @@ proof -
     qed
   qed
   then have "least_odd p \<le> least_odd (rev_p p)" 
-    unfolding least_odd_def by (rule Least_le)
+    unfolding least_odd_def by \<^marker>\<open>provenance ai\<close> (rule Least_le)
   have "least_odd p \<ge> least_odd (rev_p p)"  
     using 5 least_odd_def wellorder_Least_lemma(2) by fastforce
   then show ?thesis 
@@ -2708,7 +2708,7 @@ proof(rule ccontr)
   then have "(inv p) (p x) \<in> set (support (inv p) i)" 
     using assms(1) inv_in_support inv_support_same p_is_permutation by fast
   then have "x \<in> set (support (inv p) i)" 
-    using permutes_inverses(2)[OF assms(1)] by simp
+    using permutes_inverses(2)[OF assms(1)] by \<^marker>\<open>provenance ai\<close> simp
   then show False 
     using assms inv_support_same p_is_permutation by fast
 qed
@@ -2736,13 +2736,13 @@ proof
     then have "not_on_odd (rev_p p) x = x" 
       using \<open>?A = ?A'\<close> not_on_odd_out by force
     have "p x \<in> ?A" 
-      using p_in_same_cycle[OF assms(1) True] by blast
+      using p_in_same_cycle[OF assms(1) True] by \<^marker>\<open>provenance ai\<close> blast
     then have "(on_odd  (rev_p p)) (p x) = (inv p) (p x)"   
       unfolding on_odd_def using \<open>?A = ?A'\<close> unfolding rev_p_def by presburger 
     then have "(on_odd  (rev_p p)) (p x) = x" 
-      by (simp add: permutes_inverses(2)[OF assms(1)])
+      by \<^marker>\<open>provenance ai\<close> (simp add: permutes_inverses(2)[OF assms(1)])
     then have "inv ((on_odd  (rev_p p))) x = p x" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume prev: "on_odd (rev_p p) (p x) = x"
         have "rev_p p permutes UNIV"
           using assms(1) rev_p_permutes by blast
@@ -2764,7 +2764,7 @@ proof
     have "p x \<notin> ?A" 
       using False p_also_not_in_support assms(1) by presburger
     then  have "(on_odd  (rev_p p)) (p x) = (p x)" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "p x \<notin> set (support (rev_p p) (least_odd (rev_p p)))"
         using \<open>set (support p (least_odd p)) = set (support (rev_p p) (least_odd (rev_p p)))\<close>
               \<open>p x \<notin> set (support p (least_odd p))\<close>
@@ -2773,7 +2773,7 @@ proof
         by (rule on_odd_out)
     qed
     then have "inv (on_odd  (rev_p p)) (p x) = (p x)" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume E: "on_odd (rev_p p) (p x) = p x"
       have perm: "on_odd (rev_p p) permutes UNIV"
         using assms(1) rev_p_permutes on_odd_p_permutes_UNIV by blast
@@ -2839,7 +2839,7 @@ proof -
       by (simp add: sign_def)
     then have "(\<Prod>i\<in>UNIV. local.tutte_matrix  $ i $ p i) = 0"
       using `?g p = 0` unfolding sign_def
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have zero: "of_int (sign p) * (\<Prod>i\<in>UNIV. local.tutte_matrix $ i $ p i) = 0"
         using `?g p = 0` by simp
       show ?thesis
@@ -2907,7 +2907,7 @@ proof -
       then have "a (a i) = i" 
         using \<open>a = rev_p a\<close> by auto
       then have "(a^^2) i = i" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "(a ^^ 2) i = a (a ((a ^^ 0) i))"
           by (simp add: numeral_2_eq_2 funpow.simps o_apply)
         also have "\<dots> = a (a i)"
@@ -2922,7 +2922,7 @@ proof -
         using \<open>a \<in> nonzero_perms\<close> a_perm i assms least_odd_is_odd by blast
       then have "(least_power a i) = 1" 
         using \<open>least_power a i \<le> 2\<close> \<open>odd (least_power a i)\<close>
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume le: "least_power a i \<le> 2" and odd: "odd (least_power a i)"
   have "least_power a i = 0 \<or> least_power a i = 1 \<or> least_power a i = 2"
     using le by auto
@@ -2930,7 +2930,7 @@ proof -
     using odd by auto
 qed
       then have "(a^^1) i = i" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have perm: "permutation a"
           by (rule p_is_permutation[OF a_perm])
         have "(a ^^ least_power a i) i = i"
@@ -3009,7 +3009,7 @@ proof(induct A)
       have "(tutte_matrix)$a$p a =  Var\<^sub>0  {a, p a}" 
         by (simp add: True in_oriented)
       then show ?thesis 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           assume eq_a: "tutte_matrix $ a $ p a = Var\<^sub>0 {a, p a}"
           have F_sub: "\<forall>i\<in>F. {i, p i} \<in> G"
             using insert.prems by auto
@@ -3063,7 +3063,7 @@ proof(induct A)
   next
     case False
     then have "(prod (\<lambda>i. (tutte_matrix)$i$p i) F) = - prod (\<lambda> i.  Var\<^sub>0 ({i, p i})) F"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<forall>i\<in>F. {i, p i} \<in> G"
         using insert.prems by blast
       then have "(prod (\<lambda>i. (tutte_matrix)$i$p i) F) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) F \<or>
@@ -3089,7 +3089,7 @@ proof(induct A)
       have "(tutte_matrix)$a$p a =  Var\<^sub>0  {a, p a}" 
         by (simp add: True in_oriented)
       then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have eq_a: "(tutte_matrix)$a$p a = Var\<^sub>0 {a, p a}"
           by (simp add: True in_oriented)
         have F_sub: "\<forall>i\<in>F. {i, p i} \<in> G"
@@ -3170,7 +3170,7 @@ next
   have "var_sign p = -1"
     by (meson False var_sign_def)
   have "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = - prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have disj: "(prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV \<or>
         - (prod (\<lambda>i. (tutte_matrix)$i$p i) (UNIV::'a set)) = prod (\<lambda> i. Var\<^sub>0 ({i, p i})) UNIV"
       using product_is_var_product[OF assms finite_class.finite_UNIV] .
@@ -3214,7 +3214,7 @@ proof(induct A)
   then have "Poly_Mapping.single (sum (\<lambda> i. Poly_Mapping.single {i, p i} 1) (insert x F)) (1::real) 
              = 
             (Poly_Mapping.single (sum (\<lambda> i. Poly_Mapping.single {i, p i} 1) F) 1) * Var\<^sub>0 {x, p x}" 
-    unfolding Var\<^sub>0_def by (simp add: 2 mult_single insert.hyps(2) sum.insert add.commute)
+    unfolding Var\<^sub>0_def by \<^marker>\<open>provenance ai\<close> (simp add: 2 mult_single insert.hyps(2) sum.insert add.commute)
   then show ?case
     by (simp add:1 insert.hyps(3))
 qed simp
@@ -3235,7 +3235,7 @@ proof -
     by simp
   then have "Poly_Mapping.single 
             (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real) \<noteq> 0" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume lookup_neq: "Poly_Mapping.lookup (Poly_Mapping.single 
               (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) (1::real))
               (sum (\<lambda> i. Poly_Mapping.single {i, p i} (1::nat)) (UNIV::'a set)) \<noteq> 0"
@@ -3292,7 +3292,7 @@ proof(induct A)
       have 3: "poly_mapping.lookup (\<Sum>b\<in>(insert t T). ?m b) (f a) = 
             poly_mapping.lookup (\<Sum>b\<in>T. ?m b) (f a) +
       poly_mapping.lookup (?m t) (f a)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "(\<Sum>b\<in>insert t T. ?m b) = ?m t + (\<Sum>b\<in>T. ?m b)"
           by (simp add: sum.insert insert.hyps(1) insert.hyps(2))
         then show ?thesis
@@ -3305,7 +3305,7 @@ proof(induct A)
       then have "f a \<noteq> f t" 
         using insert.prems(1-2) by force
       then have "poly_mapping.lookup (?m t) (f a) = 0" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have e1: "of_int (sign t) = Poly_Mapping.single 0 (of_int (sign t) :: real)"
           by (simp add: single_of_int)
         have e2: "of_int (g t) = Poly_Mapping.single 0 (of_int (g t) :: real)"
@@ -3348,7 +3348,7 @@ proof(induct A)
       by auto
     then have "poly_mapping.lookup (of_int (sign a) * of_int (g a) * 
               (Poly_Mapping.single (f a) (int 1))) (f a) \<noteq> 0"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
   have g_ne: "g a \<noteq> (0::int)"
     using assms(2) assms(4) by auto
   have sign_ne: "of_int (sign a) \<noteq> (0::real)"
@@ -3381,7 +3381,7 @@ proof(induct A)
 qed
     then  have "poly_mapping.lookup (?m x) (f a) \<noteq> 0" 
       using True 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have gx: "g x \<in> {1::int, - 1}"
           using True insert.prems by auto
         have sx: "sign x \<in> {1::int, - 1}"
@@ -3422,7 +3422,7 @@ qed
     then have 7: "poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a) \<noteq> 0" 
       using insert.hyps 1 insert.prems(3) by blast
     have "(f x ) \<noteq> (f a )" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have "x \<in> insert x F - {a}"
         using False by simp
       then have "f a \<noteq> f x"
@@ -3436,7 +3436,7 @@ qed
                   poly_mapping.lookup (\<Sum>b\<in>F. ?m b) (f a) + poly_mapping.lookup (?m x) (f a)" 
       by (simp add: lookup_add)
     have " poly_mapping.lookup (?m x) (f a) = 0"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have scalar: "of_int (sign x) * of_int (g x)
           = Poly_Mapping.single 0 (of_int (sign x) * of_int (g x))"
       proof -
@@ -3474,7 +3474,7 @@ lemma el_in_sum_is_nonzero:
   assumes "a \<in> A"
   shows "Poly_Mapping.lookup (sum (\<lambda> b. (Poly_Mapping.single (f b) (1::nat))) A) (f a) \<noteq> 0" 
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have lookup_eq: "Poly_Mapping.lookup (sum (\<lambda>b. Poly_Mapping.single (f b) (1::nat)) A) (f a) =
         (\<Sum>b\<in>A. Poly_Mapping.lookup (Poly_Mapping.single (f b) (1::nat)) (f a))"
     by (simp add: lookup_sum)
@@ -3511,7 +3511,7 @@ proof -
     using assms(2) by blast
   have 1:"Poly_Mapping.lookup (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
           (Poly_Mapping.single (?f b) (1::real))) nonzero_perms) (?f p) \<noteq> 0" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have mem_int: "\<forall>a' \<in> nonzero_perms. (var_sign a' :: int) \<in> {1, -1}"
       unfolding var_sign_def by auto
     have cast_eq: "\<And>b. of_int (var_sign b :: int) = (var_sign b :: real)"
@@ -3549,7 +3549,7 @@ proof -
              (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))) nonzero_perms) =
              (sum (\<lambda> b. of_int (sign b) * (var_sign b) *
              (Poly_Mapping.single (?f b) (1::nat))) nonzero_perms)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume eq: "\<forall>b \<in> nonzero_perms. (var_sign b)*  (Poly_Mapping.single (?f b) (1::real)) = 
                                   (prod (\<lambda>i. (tutte_matrix)$i$b i) (UNIV::'a set))"
     show ?thesis
@@ -3595,7 +3595,7 @@ proof -
       using el_in_sum_is_nonzero[of UNIV a "\<lambda> j. {j, p j}"] 
             a finite_class.finite_UNIV by blast 
     have "Poly_Mapping.lookup (\<Sum>i\<in>UNIV. Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "\<And>i. i \<in> (UNIV::'a set) \<Longrightarrow> 
               Poly_Mapping.lookup (Poly_Mapping.single {i, p' i} (1::nat)) e = 0"
         proof -
@@ -3628,7 +3628,7 @@ proof -
       using el_in_sum_is_nonzero[of UNIV a "\<lambda> j. {j, p' j}"] 
             a finite_class.finite_UNIV by blast 
     have "Poly_Mapping.lookup (\<Sum>i\<in>UNIV. Poly_Mapping.single {i, p i} (1::nat)) e = 0" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<And>i. {i, p i} \<noteq> e"
       proof -
         fix i
@@ -3704,7 +3704,7 @@ proof -
   then have M_match: "matching M" 
     using perfect_matching_def by blast
   have "Vs M = UNIV" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have MG: "Vs M = Vs G"
       using \<open>perfect_matching G M\<close>
       unfolding perfect_matching_def by simp
@@ -3721,7 +3721,7 @@ proof -
     fix i
     assume asmi: "i \<in> Vs M" 
     have 1:"\<exists>!e.  e \<in> M \<and> i \<in> e" 
-      using M_match asmi unfolding matching_def2 by blast
+      using M_match asmi unfolding matching_def2 by \<^marker>\<open>provenance ai\<close> blast
     then obtain e where e:"e \<in> M \<and> i \<in> e" 
       by auto
     then have "{e . e \<in> M \<and> i \<in> e} =  {e}" 
@@ -3738,7 +3738,7 @@ proof -
     fix i
     assume asmi: "i \<in> Vs M" 
     have 1: "\<exists>!e. e \<in> M \<and> i \<in> e" 
-      using M_match asmi unfolding matching_def2 by blast
+      using M_match asmi unfolding matching_def2 by \<^marker>\<open>provenance ai\<close> blast
     then obtain e where e: "e \<in> M \<and> i \<in> e" 
       by auto
     then have "{e . e \<in> M \<and> i \<in> e} =  {e}" 
@@ -3771,11 +3771,11 @@ proof -
         have "is_singleton (\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e})" 
           using 1 by blast
         then have 3: "\<Union>{e - {x} |e. e \<in> M \<and> x \<in> e} = {a}"
-          using 1 a by (simp add: is_singleton_the_elem)
+          using 1 a by \<^marker>\<open>provenance ai\<close> (simp add: is_singleton_the_elem)
         have "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {x} |e. e \<in> M \<and> x \<in> e}" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             from 2 have s: "is_singleton {e - {x} |e. e \<in> M \<and> x \<in> e}" by auto
             then have eq: "{e - {x} |e. e \<in> M \<and> x \<in> e} = {the_elem {e - {x} |e. e \<in> M \<and> x \<in> e}}"
               by (simp add: is_singleton_the_elem)
@@ -3793,7 +3793,7 @@ proof -
         have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})" 
           using 1 by blast
         then have 4:"\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} = {a}" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "is_singleton (\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e})"
             using 1 by blast
           then have singleton_eq: "\<Union>{e - {y} |e. e \<in> M \<and> y \<in> e} =
@@ -3810,7 +3810,7 @@ proof -
         have "is_singleton {e - {y} |e. e \<in> M \<and> y \<in> e}" 
           using 2 by auto
         then have "{a} \<in> {e - {y} |e. e \<in> M \<and> y \<in> e}" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           let ?S = "{e - {y} |e. e \<in> M \<and> y \<in> e}"
           have "is_singleton ?S"
             using 2 by auto
@@ -3834,7 +3834,7 @@ proof -
         then have "{y, a} \<in> M" 
           using insert_Diff by force
         then show "x = y"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "{x, a} = {y, a}"
             using matching_unique_match[of M a "{x, a}" "{y, a}"]
               M_match \<open>{x, a} \<in> M\<close> \<open>{y, a} \<in> M\<close>
@@ -3849,7 +3849,7 @@ proof -
         assume "x \<in> (UNIV :: 'a set)"
         obtain e where e: "x \<in> e \<and> e \<in> M" 
         using \<open>Vs M = UNIV\<close>
-        by (blast dest: vs_member[THEN iffD1])
+        by \<^marker>\<open>provenance ai\<close> (blast dest: vs_member[THEN iffD1])
         then obtain y where y: "e = {x, y}" 
           using \<open>graph_invar M\<close> by fastforce
         then have "y \<in> e \<and> e \<in> M" 
@@ -3857,7 +3857,7 @@ proof -
         then have "y \<in> Vs M" 
           by (simp add: \<open>Vs M = UNIV\<close>)
         have "\<exists>!e. e \<in> M \<and> y \<in> e" 
-          using \<open>matching M\<close>[unfolded matching_def2] \<open>y \<in> Vs M\<close> by blast
+          using \<open>matching M\<close>[unfolded matching_def2] \<open>y \<in> Vs M\<close> by \<^marker>\<open>provenance ai\<close> blast
         then have "{e . e \<in> M \<and> y \<in> e} =  {e}" 
           using `y \<in> e \<and> e \<in> M` by blast
         then have "{e - {y} |e. e \<in> M \<and> y \<in> e} = {e - {y}}" 
@@ -3886,11 +3886,11 @@ proof -
       have "is_singleton (\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e})" 
         using 1 by blast
       then have 6: "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
-        by (simp add: is_singleton_the_elem b)
+        by \<^marker>\<open>provenance ai\<close> (simp add: is_singleton_the_elem b)
       have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
         using 2 by auto
       then have "{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         assume "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}"
         then have eq: "{e - {a} |e. e \<in> M \<and> a \<in> e} = {the_elem {e - {a} |e. e \<in> M \<and> a \<in> e}}"
           by (simp add: is_singleton_the_elem)
@@ -3902,7 +3902,7 @@ proof -
           by simp
       qed
       then have "{a, b} \<in> M"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain e' where e': "e' \<in> M" "a \<in> e'" "e' - {a} = {b}"
           using \<open>{b} \<in> {e - {a} |e. e \<in> M \<and> a \<in> e}\<close>
           by blast
@@ -3927,7 +3927,7 @@ proof -
     have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}" 
       using 2 by auto
     then have "\<Union>{e - {a} |e. e \<in> M \<and> a \<in> e} = {b}" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "is_singleton {e - {a} |e. e \<in> M \<and> a \<in> e}"
         using 2 by auto
       then obtain x where x: "{e - {a} |e. e \<in> M \<and> a \<in> e} = {x}"
@@ -3975,7 +3975,7 @@ proof -
           using 1 \<open>u_edges ?f = u_edges p\<close> \<open>{x, ?f x} \<in> u_edges ?f\<close> 
           using \<open>u_edges ?f = M\<close> by force
         then show "?f x = p x" 
-          by (fastforce simp: doubleton_eq_iff)
+          by \<^marker>\<open>provenance ai\<close> (fastforce simp: doubleton_eq_iff)
       qed
       then have "?f = p"by auto 
       then show False 

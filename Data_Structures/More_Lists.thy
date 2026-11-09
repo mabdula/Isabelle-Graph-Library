@@ -525,7 +525,7 @@ proof(goal_cases)
           then obtain xs1 x xs2 where "(a # xs) = (a #xs1) @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
             by auto
           then show ?thesis
-            by blast
+            by \<^marker>\<open>provenance ai\<close> blast
         next
           case x_notin_ys2: False
           hence "a # xs = a#ys2 \<and> P2 y \<and> (\<forall>y\<in>set ys2. \<not> P1 y)"
@@ -552,14 +552,14 @@ proof(goal_cases)
           then obtain xs1 x xs2 where "(a # xs) = (a #xs1) @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
             by auto
           then show ?thesis
-            by blast
+            by \<^marker>\<open>provenance ai\<close> blast
         next
           case x_notin_ys2: False
           hence "a # xs = (a# ys1') @ [y] @ ys2 \<and> P2 y \<and> (\<forall>y\<in>set ys2. \<not> P1 y)"
             using \<open>xs = ys1' @ [y] @ ys2\<close> \<open>P2 y\<close>
             by auto
           then show ?thesis
-            by blast
+            by \<^marker>\<open>provenance ai\<close> blast
         qed
       qed
     next
@@ -573,7 +573,7 @@ proof(goal_cases)
       hence "a # xs = (a # xs1) @ [x] @ xs2 \<and> P2 x \<and> (\<forall>y\<in>set xs2. \<not> P1 y)"
         by auto
       thus ?thesis
-        by blast
+        by \<^marker>\<open>provenance ai\<close> blast
     qed
   qed
 qed
@@ -594,7 +594,7 @@ proof(goal_cases)
     by auto
   hence "(\<forall>z\<in>set ys2. \<not>P1 z \<and> \<not> P2 z)"
     using \<open>(\<forall>y\<in>set xs2. \<not> P1 y)\<close> \<open>P2 x\<close>
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have subset: "set ys2 \<subseteq> set (x # xs2)"
       using \<open>x # xs2 = ys1 @ [y] @ ys2\<close> by auto
     {
@@ -630,7 +630,7 @@ proof(goal_cases)
 qed
 
 lemma list_inter_mem_iff: "set xs \<inter> s \<noteq> {} \<longleftrightarrow> (\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> x \<in> s)"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume "set xs \<inter> s \<noteq> {}"
   then obtain x where x_mem: "x \<in> set xs" "x \<in> s"
     by auto
@@ -743,7 +743,7 @@ proof(induction arbitrary: xs rule: less_induct)
         hence "xs = []@[x]@as@[s]@bs@[s]@cs@[x]@fs \<and> distinct bs \<and> s \<notin> set bs"
           using local.Cons  gf_def  by force
         then show ?thesis  
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           assume prem: "xs = [] @ [x] @ as @ [s] @ bs @ [s] @ cs @ [x] @ fs \<and> distinct bs \<and> s \<notin> set bs"
           from prem have eq: "xs = [] @ [x] @ as @ [s] @ bs @ [s] @ cs @ [x] @ fs"
             by (rule conjunct1)
@@ -763,7 +763,7 @@ proof(induction arbitrary: xs rule: less_induct)
       then obtain as bs cs s where "ys = as @ [s] @ bs @ [s] @ cs \<and> distinct bs \<and> s \<notin> set bs"
         using less(1)[of "length ys" ys] by auto
       then show ?thesis using Cons 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "xs = (x # as) @ [s] @ bs @ [s] @ cs"
             using local.Cons \<open>ys = as @ [s] @ bs @ [s] @ cs \<and> distinct bs \<and> s \<notin> set bs\<close>
             by simp
@@ -777,7 +777,7 @@ qed
 
 lemma double_occur_non_dist: 
   "\<lbrakk>set (xs) \<subseteq> X; card X < length xs; finite X; xs \<noteq> []\<rbrakk> \<Longrightarrow> \<not> distinct xs"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume xs_subset: "set xs \<subseteq> X"
      and card_lt: "card X < length xs"
      and finX: "finite X"
@@ -1094,7 +1094,7 @@ lemma in_union_of_sets_append:
 
 lemma extract_first_x:
   "\<lbrakk>x \<in> set xs; P x\<rbrakk> \<Longrightarrow> \<exists> y ys zs. xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set ys \<and>  P z)"
-proof(induction xs)
+proof \<^marker>\<open>provenance ai\<close>(induction xs)
   case Nil
   then show ?case by simp
 next
@@ -1139,7 +1139,7 @@ proof(induction xs arbitrary: x)
     proof(cases "\<exists> z. z \<in> set list \<and> P z")
       case True
       then obtain y ys zs where "xs = ys@[y]@zs \<and> P y \<and>( \<nexists> z. z \<in> set zs \<and>  P z)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         obtain w where w_mem: "w \<in> set list" and wP: "P w"
           using True by blast
         have "w \<in> set xs"
@@ -1149,9 +1149,9 @@ proof(induction xs arbitrary: x)
         then show thesis using that by blast
       qed
       then have "xx # xs = (xx # ys) @ [y] @ zs"
-        by simp
+        by \<^marker>\<open>provenance ai\<close> simp
       then show ?thesis
-        using \<open>xs = ys @ [y] @ zs \<and> P y \<and> (\<nexists>z. z \<in> set zs \<and> P z)\<close> by blast
+        using \<open>xs = ys @ [y] @ zs \<and> P y \<and> (\<nexists>z. z \<in> set zs \<and> P z)\<close> by \<^marker>\<open>provenance ai\<close> blast
     next
       case False
       hence "P a \<or> P x"
@@ -1184,11 +1184,11 @@ lemma extract_first_and_last:
              \<and> (\<nexists> z. z \<in> set cs \<and> P z)"
 proof-
   obtain as a rest where asarest:"xs = as@[a]@rest \<and> P a \<and> (\<nexists> z. z \<in> set as \<and> P z)" 
-    using extract_first_x[of y xs P] assms(2) assms(4) by blast
+    using extract_first_x[of y xs P] assms(2) assms(4) by \<^marker>\<open>provenance ai\<close> blast
   hence "\<exists> z. z \<in> set rest \<and> P z"
     using assms by auto
   then obtain bs b cs where bsdcs:"rest = bs@[b]@cs \<and> P b \<and> (\<nexists>z. z \<in> set cs \<and> P z)" 
-    by (blast dest: extract_last_x)
+    by \<^marker>\<open>provenance ai\<close> (blast dest: extract_last_x)
   thus ?thesis using asarest by force
 qed
 
@@ -1196,7 +1196,7 @@ lemma map_hd: "xs \<noteq> [] \<Longrightarrow> hd (map f xs) = f (hd (xs))"
   using list.map_sel(1) by auto
 
 lemma map_last': "\<lbrakk>xs \<noteq> []; \<And> x. g (f x) = h x\<rbrakk> \<Longrightarrow>g (last (map f xs)) = h (last xs)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "xs \<noteq> []" and eq: "\<And>x. g (f x) = h x"
   from \<open>xs \<noteq> []\<close> have "last (map f xs) = f (last xs)"
     by (rule last_map)
@@ -1214,7 +1214,7 @@ lemma single_in_append: "([a]@xs) = a#xs"
 
 lemma map_split_exists:
   "map f xs = ys@zs \<Longrightarrow> \<exists> ys' zs'. ys'@zs' = xs \<and> map f ys' = ys \<and> map f zs' = zs"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "map f xs = ys @ zs"
   then have "ys @ zs = map f xs" by simp
   then obtain us vs where "xs = us @ vs" "ys = map f us" "zs = map f vs"
@@ -1257,7 +1257,7 @@ lemma non_empt_elim_triple:
 
 lemma nth_append':
   "\<lbrakk>(xs@ys) ! i = (xs@ys) ! j; i < length xs; j < length xs\<rbrakk> \<Longrightarrow> xs ! i =xs ! j"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume assms: "(xs@ys) ! i = (xs@ys) ! j" "i < length xs" "j < length xs"
   from assms(2) have "(xs@ys) ! i = xs ! i" by (simp add: nth_append)
   moreover from assms(3) have "(xs@ys) ! j = xs ! j" by (simp add: nth_append)
@@ -1268,7 +1268,7 @@ lemma list_cases4:
   "\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P ;
     \<And> x y. xs = x#y#[] \<Longrightarrow> P; \<And> x y z zs. xs = x#y#z#zs \<Longrightarrow> P\<rbrakk>
     \<Longrightarrow> P"
-proof(goal_cases)
+proof \<^marker>\<open>provenance ai\<close>(goal_cases)
   case 1
   show ?case
   proof(cases xs)
@@ -1307,7 +1307,7 @@ lemma append_two: "[a]@[b] = [a,b]"
   by simp
 
 lemma list_induct3: "\<lbrakk>P Nil; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs"
-proof (goal_cases)
+proof \<^marker>\<open>provenance ai\<close> (goal_cases)
   case assms: 1
   show ?case
   proof (cases "xs = []")
@@ -1344,7 +1344,7 @@ lemma list_induct3_len_geq_2: "length xs \<ge> 2 \<Longrightarrow> (\<And> x y. 
 
 lemma list_induct2_len_geq_1: 
   "\<lbrakk>length xs \<ge> 1; \<And> x. P [x]; \<And> x y xs. P (y#xs) \<Longrightarrow> P (x#y#xs)\<rbrakk> \<Longrightarrow> P xs" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume len: "length xs \<ge> 1"
     and base: "\<And>x. P [x]"
     and step: "\<And>x y xs. P (y # xs) \<Longrightarrow> P (x # y # xs)"
@@ -1376,7 +1376,7 @@ lemma neq_Nil_conv_snoc: "xs \<noteq> [] \<longleftrightarrow> (\<exists>x ys. x
 
 lemma list_cases_both_sides: 
 "\<lbrakk>xs = [] \<Longrightarrow> P; \<And> x. xs =[x] \<Longrightarrow> P; \<And> x y ys. xs =[x]@ys@[y] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P "
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume 0: "xs = [] \<Longrightarrow> P"
   assume 1: "\<And>x. xs = [x] \<Longrightarrow> P"
   assume 2: "\<And>x y ys. xs = [x] @ ys @ [y] \<Longrightarrow> P"
@@ -1416,25 +1416,25 @@ proof(induction xs rule: rev_induct)
       case (Cons b llist)
       note list_eq = this
       have len_xs: "length xs \<ge> 2"
-        using cons list_eq by auto
+        using cons list_eq by \<^marker>\<open>provenance ai\<close> auto
       have xs_nonempty: "xs \<noteq> []"
-      proof
+      proof \<^marker>\<open>provenance ai\<close>
         assume "xs = []"
         with len_xs show False by simp
       qed
       obtain y ys0 where xs_snoc: "xs = ys0 @ [y]"
-        using xs_nonempty by (auto simp: neq_Nil_conv_snoc)
+        using xs_nonempty by \<^marker>\<open>provenance ai\<close> (auto simp: neq_Nil_conv_snoc)
       have ys0_nonempty: "ys0 \<noteq> []"
-      proof
+      proof \<^marker>\<open>provenance ai\<close>
         assume ys0_nil: "ys0 = []"
         have "xs = [y]"
           using xs_snoc ys0_nil by simp
         with len_xs show False by simp
       qed
       obtain x ys where ys0_snoc: "ys0 = ys @ [x]"
-        using ys0_nonempty by (auto simp: neq_Nil_conv_snoc)
+        using ys0_nonempty by \<^marker>\<open>provenance ai\<close> (auto simp: neq_Nil_conv_snoc)
       have axs_subst: "xs = ys@[x,y]"
-        using xs_snoc ys0_snoc by simp
+        using xs_snoc ys0_snoc by \<^marker>\<open>provenance ai\<close> simp
       show ?thesis
         using axs_subst IH(3,4) snoc.IH 
         by (fastforce intro: IH(4))
@@ -1466,7 +1466,7 @@ obtains ys p' q' where "p = p'@ys" "q =q'@ys"
 proof(induction "length p" arbitrary: p q thesis rule: less_induct)
   case less
   then obtain pa a where p_last:"p = pa@[a]"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "p \<noteq> []"
       using less.prems(2) by auto
     hence "p = butlast p @ [last p]"
@@ -1475,7 +1475,7 @@ proof(induction "length p" arbitrary: p q thesis rule: less_induct)
       by (rule that)
   qed
   from less obtain qb b where q_last:"q = qb@[b]"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "q \<noteq> []"
       using less.prems(3) by auto
     hence "q = butlast q @ [last q]"
@@ -1563,7 +1563,7 @@ qed simp
 
 lemma rev_cases3: 
   "\<lbrakk>xs = Nil \<Longrightarrow> P; \<And> x. xs = [x] \<Longrightarrow> P; \<And> ys y x. xs=ys@[y,x] \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume A1: "xs = [] \<Longrightarrow> P"
      and A2: "\<And>x. xs = [x] \<Longrightarrow> P"
      and A3: "\<And>ys y x. xs = ys @ [y, x] \<Longrightarrow> P"

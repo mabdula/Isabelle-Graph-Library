@@ -223,7 +223,7 @@ lemma awalk_induce:
   using assms
   apply (auto simp: hd_in_awalk_verts set_awalk_verts image_subset_iff intro!: in_induce_subgraph_dVsI)
   subgoal
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     obtain e es where p_eq: "p = e # es"
       using assms(3) by (cases p) auto
     have cas_upv: "cas u p v"
@@ -249,7 +249,7 @@ lemma awalk_induce:
     show "\<exists>v'\<in>S. (u, v') \<in> G \<or> (v', u) \<in> G"
       using snd_e_in_S uv'_in_G by blast
   qed
-  by (fastforce simp: induce_subgraph_def set_awalk_verts elim!: awalkE')
+  by \<^marker>\<open>provenance ai\<close> (fastforce simp: induce_subgraph_def set_awalk_verts elim!: awalkE')
 
 lemma induce_subgraph_of_subgraph_verts[simp]:
   "subgraph H G \<Longrightarrow> dVs (G \<downharpoonright> dVs H) = dVs H"
@@ -264,7 +264,7 @@ lemma induced_subgraphI':
 
 lemma induced_subgraph_altdef:
   "induced_subgraph H G \<longleftrightarrow> subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume ind: "induced_subgraph H G"
   have subg: "subgraph H G"
     using ind by (auto dest: induced_subgraphD)
@@ -318,7 +318,7 @@ lemma in_induce_subgraph_dVsI_reachable:
     and "S \<noteq> {u} \<or> (u,v) \<in> G"
     and "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   shows "u \<in> dVs (G \<downharpoonright> S)" "v \<in> dVs (G \<downharpoonright> S)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have scc_reach: "\<And>a b. a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> b"
     and scc_out: "\<And>a b. a \<in> S \<Longrightarrow> b \<notin> S \<Longrightarrow> \<not> a \<rightarrow>\<^sup>*\<^bsub>G\<^esub> b \<or> \<not> b \<rightarrow>\<^sup>*\<^bsub>G\<^esub> a"
     using assms(3) by (auto simp: sccs_dVs_def)
@@ -406,7 +406,7 @@ lemma induce_sccs_dVs:
 proof
   show "dVs (G \<downharpoonright> S) \<subseteq> S" by (auto dest: induce_dVs_subset)
   show "S \<subseteq> dVs (G \<downharpoonright> S)"
-  proof (rule subsetI)
+  proof \<^marker>\<open>provenance ai\<close> (rule subsetI)
     fix v
     assume v_in: "v \<in> S"
     have reach: "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
@@ -430,7 +430,7 @@ lemma induce_sccs_dVs_digraph_of_eq:
   assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "ddfs.digraph_of (G \<downharpoonright> S) = ddfs.digraph_of G \<restriction> S"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have vs_eq: "dVs (G \<downharpoonright> S) = S"
     using assms by (rule induce_sccs_dVs)
   then have vs_eq': "dVs {(u, v). (u, v) \<in> G \<and> u \<in> S \<and> v \<in> S} = S"
@@ -493,7 +493,7 @@ lemma induced_subgraphI_arc_mono:
   shows "induced_subgraph H G"
   using assms
   unfolding induced_subgraph_def arc_mono_def max_subgraph_def
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have P_H: "P H"
     using assms(1) unfolding max_subgraph_def by blast
   have subg_H: "subgraph H G"
@@ -576,7 +576,7 @@ lemma sccs_dVs_restrict_eq:
 
 lemma in_sccs_dVsI_sccs:
   assumes "S \<in> dVs ` sccs G" shows "S \<in> sccs_dVs G"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms obtain C where C: "C \<in> sccs G" and S: "S = dVs C" by auto
   have wfd: "wf_digraph (ddfs.digraph_of G)" by (rule ddfs.wf_digraph_digraph_of)
   have c: "ddfs.digraph_of C \<in> pre_digraph.sccs (ddfs.digraph_of G)"
@@ -603,7 +603,7 @@ proof -
     have sg: "subgraph H G" using a3 by (auto simp: max_subgraph_def)
     then have "H = H'"
       using a1 a2 a3 a4
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
     show "H = H'"
     proof (rule ccontr)
       assume neq: "H \<noteq> H'"
@@ -691,7 +691,7 @@ proof
       by (rule max_reachable_set.intro)
 
     have "S \<in> ?R"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from ms.not_empty obtain u where u_in: "u \<in> S" by blast
       note cond = not_singleton[of u]
       from scc u_in cond have mem: "G \<downharpoonright> S \<in> sccs G" by (rule in_sccs_dVsD_sccs)
@@ -723,7 +723,7 @@ proof
 next
   { fix S assume "S \<in> ?R"
     then have "S \<in> ?L"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>S \<in> ?R\<close> obtain T where T_scc: "T \<in> sccs_dVs G"
         and S_eq: "S = G \<downharpoonright> T" and S_ne: "S \<noteq> {}"
         by auto
@@ -841,7 +841,7 @@ lemma scc_of_eq': "u \<in> scc_of G v \<Longrightarrow> scc_of G u = scc_of G v"
 
 lemma strongly_connected_eq_iff:
   "strongly_connected G \<longleftrightarrow> sccs G = {G}"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume sc: "strongly_connected G"
   have max: "max_subgraph G strongly_connected G"
   proof (rule max_subgraphI)
@@ -898,7 +898,7 @@ proof (cases "u \<in> dVs G")
       using \<open>u \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> \<open>v \<in> dVs G\<close> in_sccs_dVsD_sccs scc_of_in_sccs_dVs by fastforce
 
     have False
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "G \<downharpoonright> scc_of G v \<subseteq> \<Union>(sccs G)"
         using \<open>G \<downharpoonright> scc_of G v \<in> sccs G\<close> by (rule Sup_upper)
       hence dVs_le: "dVs (G \<downharpoonright> scc_of G v) \<subseteq> dVs (\<Union>(sccs G))"
@@ -934,7 +934,7 @@ lemma vertex_not_in_sccs:
     "c \<in> dVs C"
     "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
     "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<notin> dVs (\<Union>(sccs G))"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms(3) obtain C where C_in: "C \<in> sccs G"
     by blast
   from C_in have sc: "strongly_connected C"
@@ -962,7 +962,7 @@ lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
   shows "\<lbrakk>u \<in> dVs G; u \<notin> dVs (\<Union>(sccs G))\<rbrakk> \<Longrightarrow> scc_of G u = {u}"
   using in_scc_ofD not_in_dVs_sccs_not_reachable_and_reach
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume u_in: "u \<in> dVs G"
   assume u_notin: "u \<notin> dVs (\<Union>(sccs G))"
   have subset1: "{u} \<subseteq> scc_of G u"

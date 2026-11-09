@@ -287,7 +287,7 @@ lemma SSP_simps:
     apply(rule SSP_call_3_condE, simp)
     apply(subst SSP.psimps[OF assms])
     unfolding SSP_upd3_def
-    by (auto simp: Let_def split: option.splits if_splits prod.splits)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: Let_def split: option.splits if_splits prod.splits)
   by (auto simp add: SSP.psimps[OF assms]
                        SSP_ret_1_cond_def SSP_ret1_def
                        SSP_ret_2_cond_def SSP_ret2_def
@@ -396,7 +396,7 @@ proof(rule invar_integralI)
   define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (cases "the (get_source_target_path f b)" rule: prod_cases3) fastforce
+    by \<^marker>\<open>provenance ai\<close> (cases "the (get_source_target_path f b)" rule: prod_cases3) fastforce
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF assms(1)])
     using b_def f_def stp_def by simp
@@ -545,7 +545,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-    by (cases "the (get_source_target_path f b)") simp
+    by \<^marker>\<open>provenance ai\<close> (cases "the (get_source_target_path f b)") simp
   have stp_prop: "Some (s,t,P) = get_source_target_path f b"
     apply(rule SSP_call_3_condE[OF 3])
     using b_def f_def stp_def by simp
@@ -717,7 +717,7 @@ proof-
   define b where "b = balance state"
   define f where " f = current_flow state"
   obtain s t P where stp_def: "(s,t,P) = the (get_source_target_path f b)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   obtain s' t' P' where "the (get_source_target_path f b) = (s', t', P')"
     by (rule prod_cases3)
   hence "(s', t', P') = the (get_source_target_path f b)"
@@ -1025,7 +1025,7 @@ proof-
            by (auto intro: augpathI )
          then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have pp: "prepath p" using p_prop(1) by (simp add: augpath_def)
             show ?thesis
             proof (cases "distinct p")
@@ -1077,7 +1077,7 @@ proof-
            by auto
         then obtain p' where p'_prop: "prepath  p'" "set p' \<subseteq> set p"
                                    "fstv (hd p') = s" "sndv (last p') = t" "distinct p'" "p' \<noteq> []"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have p_prepath: "prepath p"
     using p_prop(1) unfolding augpath_def by auto
   have p_nonempty: "p \<noteq> []"
@@ -1594,7 +1594,7 @@ proof(rule ccontr)
     using C_prop  
     by (auto simp add: image_def augcycle_def \<EE>_def)
   ultimately show False using conservative_weights aa(1)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume f1: "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0"
       and f2: "map to_vertex_pair C = map make_pair (map oedge C)"
       and f3: "set (map oedge C) \<subseteq> \<E>"

@@ -60,14 +60,14 @@ proof(induction k arbitrary: i init)
   have step_stable: "orlins_one_step_time_check ((orlins_one_step_time_check ^^ i) init)
                      = (orlins_one_step_time_check ^^ i) init"
     using terminated_mono_one_step[OF Suc.prems]
-    by (simp add: funpow.simps(2) o_apply)
+    by \<^marker>\<open>provenance ai\<close> (simp add: funpow.simps(2) o_apply)
   have "(orlins_one_step_time_check ^^ (i + Suc k)) init
       = orlins_one_step_time_check ((orlins_one_step_time_check ^^ (i + k)) init)"
-    by (simp add: add_Suc_right funpow.simps(2) o_apply)
+    by \<^marker>\<open>provenance ai\<close> (simp add: add_Suc_right funpow.simps(2) o_apply)
   also have "... = orlins_one_step_time_check ((orlins_one_step_time_check ^^ i) init)"
-    by (simp add: IH)
+    by \<^marker>\<open>provenance ai\<close> (simp add: IH)
   also have "... = (orlins_one_step_time_check ^^ i) init"
-    by (simp add: step_stable)
+    by \<^marker>\<open>provenance ai\<close> (simp add: step_stable)
   finally show ?case .
 qed simp
 
@@ -185,7 +185,7 @@ next
       case notyetterm
       hence "return state = notyetterm" 
         unfolding orlins_one_step_time_check.simps[of tt  state] add_fst_def 
-proof (cases "return state")
+proof \<^marker>\<open>provenance ai\<close> (cases "return state")
   case success
   hence "orlins_one_step_time_check (tt, state) = (tt, state)"
     by (simp add: orlins_one_step_time_check.simps)
@@ -267,16 +267,16 @@ next
           "state''time = send_flow_time (prod.snd state'time)"
         have unfolded: "add_fst tt (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time, prod.snd state''time)
                  = (tfin, state')"
-          using 1 by (simp add: funpow_0 Let_def state'time_def state''time_def)
+          using 1 by \<^marker>\<open>provenance ai\<close> (simp add: funpow_0 Let_def state'time_def state''time_def)
         have snd_eq: "prod.snd state''time = state'"
           and tfin_eq: "tfin = tt + (t\<^sub>O\<^sub>C + t\<^sub>O\<^sub>B + prod.fst state'time + prod.fst state''time)"
-          using unfolded by (auto simp add: add_fst_def)
+          using unfolded by \<^marker>\<open>provenance ai\<close> (auto simp add: add_fst_def)
         have dom': "orlins_time_dom (tt, state')"
-          using assms(2) by (blast intro: orlins_time.domintros)
+          using assms(2) by \<^marker>\<open>provenance ai\<close> (blast intro: orlins_time.domintros)
         have step_result: "orlins_time tt (prod.snd state''time) = (tt, state')"
-          using dom' snd_eq assms(2) by (auto simp add: orlins_time.psimps)
+          using dom' snd_eq assms(2) by \<^marker>\<open>provenance ai\<close> (auto simp add: orlins_time.psimps)
         thus ?case
-          by (simp add: Let_def state'time_def state''time_def add_fst_def step_result tfin_eq add.commute)
+          by \<^marker>\<open>provenance ai\<close> (simp add: Let_def state'time_def state''time_def add_fst_def step_result tfin_eq add.commute)
         next
         case (2 nat)
         show ?case 
@@ -1669,7 +1669,7 @@ proof-
             using stateX_def stateY_def 2 by simp
           hence "X = Y"
             using X_Y_props y_prop(2) x_prop(2)
-          proof-
+          proof \<^marker>\<open>provenance ai\<close>-
             obtain w where w_XY: "w \<in> X" "w \<in> Y"
               using X_Y_props(3) by auto
             have X_eq: "X = connected_component (to_graph (\<FF> stateY)) x"
@@ -1705,7 +1705,7 @@ proof-
             using X_Y_props(3) Y_subs_Y' by blast
           hence "Y' = X"
             using Y'_def x_prop(2) 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               obtain z where z_props: "z \<in> X" "z \<in> Y"
                 using X_Y_props(3) by auto
               then have z_in_Y': "z \<in> Y'"

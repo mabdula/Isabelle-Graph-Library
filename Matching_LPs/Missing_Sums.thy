@@ -126,7 +126,7 @@ lemma swap_zero_fun_nonneg:
   assumes "\<forall>ia < length xs. 0 \<le> f ia" 
   shows "\<forall>ia < length xs. 0 \<le> (f(0 := f j, j := f 0)) ia"
   using assms swap_fun_nonneg 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "0 < length xs"
     using assms(1) by linarith
   then show ?thesis
@@ -266,7 +266,7 @@ proof -
     then have "c i = 1"
       using  nonneg_sum_range_each_le[of "length L" c] 
         assms(5) nonneg_sum_1 order_le_imp_less_or_eq 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have nonneg_c: "\<forall>j<length L. c j \<ge> 0" using nonneg_sum_1 by blast
       have le_sum: "c i \<le> sum c {0..<length L}"
         using nonneg_sum_range_each_le[of "length L" c, OF nonneg_c] assms(5) by blast
@@ -277,7 +277,7 @@ proof -
       using sum_eq_one_elem_other_zero[of "{0..<length L}" c i] 
       by (auto simp: \<open>c i = 1\<close> assms(5) nonneg_sum_1) 
     then have "x \<in> \<int>\<^sub>v" using convex_lincom_int[of c L x] 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "\<forall>k < length L. c k \<in> \<int>"
   proof (intro allI impI)
     fix k
@@ -309,7 +309,7 @@ proof -
     using nth_upt[of 1 _ "length ax + 1"] by auto
   have "(map (\<lambda> i. (f (i+1) \<cdot>\<^sub>v (a # ax) ! (i+1))) [0..<length ax]) = 
     (map (\<lambda> i. (f i \<cdot>\<^sub>v (a # ax) ! i)) [1..<length ax + 1])"
-  proof (rule nth_equalityI)
+  proof \<^marker>\<open>provenance ai\<close> (rule nth_equalityI)
     show "length (map (\<lambda>i. f (i + 1) \<cdot>\<^sub>v (a # ax) ! (i + 1)) [0..<length ax]) =
           length (map (\<lambda>i. f i \<cdot>\<^sub>v (a # ax) ! i) [1..<length ax + 1])"
       by (simp add: length_upt del: upt_Suc)
@@ -382,7 +382,7 @@ proof -
     using swap_zero_fun_nonneg[of i Wsl c] assms(3) cll  apply presburger
     using sum_of_swap_fun_eq[of "{0..<length Wsl}" 0 i c] 
 using sum_of_swap_fun_eq[of "{0..<length Wsl}" 0 i c] cll assms(3)
-      by force
+      by \<^marker>\<open>provenance ai\<close> force
 qed
 
 lemma convex_lincomb_in_convex_hull_list:
@@ -415,7 +415,7 @@ proof -
   have "length (a # ax) = 1 + length ax" 
     by simp
   then have 0:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = sum (\<lambda>i. f i) {1..<length (a # ax)}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have shift: "sum f {0 + 1..<length ax + 1} = sum (\<lambda>i. f (i + 1)) {0..<length ax}"
     by (rule sum.shift_bounds_nat_ivl)
   have len: "length (a # ax) = length ax + 1"
@@ -429,18 +429,18 @@ qed
     using mult_hom.hom_sum[of "(1/(1 - f 0))" "(\<lambda>i. f (i + 1))" "{0..<length ax}"]
     by simp
   then have "f 0 + sum f {1..<length (a#ax)} = sum f {0..<length (a#ax)}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "length (a # ax) = length ax + 1"
       using \<open>length (a # ax) = 1 + length ax\<close> by (simp add: add.commute)
     then show ?thesis
       using sum_range_divided_at_zero[of f "length ax"] by simp
   qed
   then have "f 0 + sum f {1..<length (a#ax)} = 1" 
-    using assms(1) by linarith
+    using assms(1) by \<^marker>\<open>provenance ai\<close> linarith
   then have 2:"sum (\<lambda>i. f (i + 1)) {0..<length ax} = 1 - f 0" 
     using 0 by linarith 
   then have "(1/(1 - f 0)) * (1 - f 0) =  1" using `f 0 \<noteq> 1` 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "1 - f 0 \<noteq> 0"
       using `f 0 \<noteq> 1` by simp
     then show ?thesis
@@ -453,7 +453,7 @@ qed
 lemma sumlist_distr_zero:
   assumes "m > 0"
   shows "sumlist (map f [0..<m]) = f 0 + sumlist (map f [1..<m])" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "[0..<m] = 0 # [1..<m]"
     using add_zero_to_range_list[OF assms] by simp
   then have "map f [0..<m] = f 0 # map f [1..<m]"
@@ -501,7 +501,7 @@ lemma elem_int_hull_lincomb_list:
 proof -
 obtain Ws c' where Ws_c':"finite Ws" "Ws \<subseteq> P \<inter> \<int>\<^sub>v" "convex_lincomb c' Ws x"
   using assms(2) unfolding integer_hull_def
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "P = convex_hull (P \<inter> \<int>\<^sub>v)"
     using assms(2) unfolding integer_hull_def by blast
   then have "x \<in> convex_hull (P \<inter> \<int>\<^sub>v)"
@@ -520,11 +520,11 @@ qed
   then obtain c where c: "convex_lincomb_list c Wsl x" 
     using Ws_subs Ws_c' obt_convect_lincomb_list by blast
   have set_int: "set Wsl \<subseteq> \<int>\<^sub>v"
-    using Wsl Ws_c'(2) by blast
+    using Wsl Ws_c'(2) by \<^marker>\<open>provenance ai\<close> blast
   have set_carr: "set Wsl \<subseteq> carrier_vec n"
-    using Wsl Ws_subs by blast
+    using Wsl Ws_subs by \<^marker>\<open>provenance ai\<close> blast
   have "\<exists>i. i < length Wsl \<and> c i \<noteq> 0"
-  proof (rule ccontr)
+  proof \<^marker>\<open>provenance ai\<close> (rule ccontr)
     assume "\<nexists>i. i < length Wsl \<and> c i \<noteq> 0"
     then have all_zero: "\<forall>i < length Wsl. c i = 0"
       by blast
@@ -536,9 +536,9 @@ qed
       using assms(4) by blast
   qed
   then obtain i where i: "i < length Wsl \<and> c i \<noteq> 0" 
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   have Ws_swap: "Ws = set (Wsl[0:= Wsl ! i, i:=Wsl ! 0])"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have i_len: "i < length Wsl"
     using i by blast
   have i_mem: "Wsl ! i \<in> set Wsl"
@@ -555,7 +555,7 @@ qed
  then have "Wsl \<noteq> []" 
     using \<open>Ws \<noteq> {}\<close> Wsl by fastforce
   show ?thesis
-  proof (rule that[of "c(0 := c i, i := c 0)" "Wsl[0 := Wsl ! i, i := Wsl ! 0]"])
+  proof \<^marker>\<open>provenance ai\<close> (rule that[of "c(0 := c i, i := c 0)" "Wsl[0 := Wsl ! i, i := Wsl ! 0]"])
     have i_lt: "i < length Wsl" and ci_neq: "c i \<noteq> 0"
       using i by auto
     have Wsl_carr: "set Wsl \<subseteq> carrier_vec n"
@@ -591,7 +591,7 @@ lemma elem_of_P_is_lin_comb:
   obtains y z l where "y \<in> P \<inter> \<int>\<^sub>v" "z \<in> P" "x = l \<cdot>\<^sub>v y + (1 - l) \<cdot>\<^sub>v z" "l > 0 \<and> l < 1"
 proof -
   obtain Wsl c where Wc: "convex_lincomb_list c Wsl x \<and> c 0 \<noteq> 0 \<and> (set Wsl) \<subseteq> P \<inter> \<int>\<^sub>v \<and> Wsl \<noteq> []"
-    by (rule elem_int_hull_lincomb_list[OF assms(1) assms(2) assms(3) assms(4)])
+    by \<^marker>\<open>provenance ai\<close> (rule elem_int_hull_lincomb_list[OF assms(1) assms(2) assms(3) assms(4)])
   then have lin_comb_x: 
     "lincomb_list c Wsl = x \<and> (\<forall> i < length Wsl. c i \<ge> 0) \<and> sum c {0..<length Wsl} = 1"
     using convex_lincomb_list_def nonneg_lincomb_list_def Wc by blast
@@ -603,7 +603,7 @@ proof -
     using convex_lincomb_less_1_coeff[of c Wsl x] using Wc assms(1) 
     using assms(4) by blast
   then have "c 0 \<noteq> 1" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume c_lt_1: "\<forall>i<length Wsl. c i < 1"
     have "Wsl \<noteq> []" using Wc by auto
     hence "0 < length Wsl" by (simp add: length_greater_0_conv)
@@ -612,7 +612,7 @@ proof -
   qed
   let ?f = "(\<lambda>i. c (i + 1) / (1 - c 0))" 
   have "sum ?f {0..<length ax} = 1" using sum_except_one 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "sum c {0..<length (a # ax)} = 1"
       using \<open>sum c {0..<length Wsl} = 1\<close> \<open>Wsl = a # ax\<close> by simp
     from sum_except_one[OF this \<open>c 0 \<noteq> 1\<close>] show ?thesis .
@@ -640,7 +640,7 @@ proof -
   have 3:"a \<in> P \<inter> \<int>\<^sub>v" 
     using \<open>Wsl = a # ax\<close> Wc  by force
   have 4:"c 0 > 0" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from Wc have "Wsl \<noteq> []" by blast
     hence "0 < length Wsl" by (simp add: length_greater_0_conv)
     hence "0 \<le> c 0" using \<open>\<forall>i<length Wsl. 0 \<le> c i\<close> by blast

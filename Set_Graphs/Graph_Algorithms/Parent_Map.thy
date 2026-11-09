@@ -131,7 +131,7 @@ next
   case cons1: (Cons v' follow_v')
   then have "v' = v"
     using follow_cons
-    by (blast intro: follow_cons sym)
+    by \<^marker>\<open>provenance ai\<close> (blast intro: follow_cons sym)
   show ?case
   proof (cases follow_v')
     case nil2: Nil
@@ -145,7 +145,7 @@ next
     case cons2: (Cons v'' follow_v'')
     then show ?thesis
       using cons1
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have veq: "follow v = v # v'' # follow_v''"
           using cons1 cons2 \<open>v' = v\<close> by simp
         have follow_v''_eq: "follow v'' = v'' # follow_v''"
@@ -332,7 +332,7 @@ proof(rule ccontr, goal_cases)
   hence "follow x = [x]@p2@[x]@p3" 
     by (simp add: follow_append)
   moreover have "follow x = [x]@p3"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "follow v = (p1 @ [x] @ p2) @ x # p3"
       using split by simp
     then have "follow x = x # p3"
@@ -345,7 +345,7 @@ proof(rule ccontr, goal_cases)
 qed
 
 lemma follow_cons_3: "\<exists>l. follow v = v # l"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "follow v \<noteq> []"
     by (rule follow_nempty)
   then obtain x xs where fx: "follow v = x # xs"
@@ -356,7 +356,7 @@ proof -
 qed
 
 lemma follow_cons_3': obtains l where "follow v = v # l"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   obtain x l where x_l: "follow v = x # l"
     using follow_nempty by (cases "follow v") auto
   have "x = v"
@@ -373,7 +373,7 @@ lemma follow_cons_4: "parent v = Some v' \<Longrightarrow> follow v = v # (follo
 
 lemma follow_pinduct:
   "(\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v) \<Longrightarrow> P a"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume IH: "\<And>v. (\<And>x2. parent v = Some x2 \<Longrightarrow> P x2) \<Longrightarrow> P v"
   show "P a"
   proof (induction a rule: follow.pinduct[OF follow_dom])
@@ -450,17 +450,17 @@ proof(induction rule: parent_spec.follow.pinduct[OF assms(2)])
   proof(cases "par v")
     case None
     then have follow_v: "parent_spec.follow par v = [v]"
-      by (simp add: parent.follow_psimps[OF assms(1)])
+      by \<^marker>\<open>provenance ai\<close> (simp add: parent.follow_psimps[OF assms(1)])
     have v_mem: "v \<in> set (parent_spec.follow par v)"
-      by (simp add: follow_v)
+      by \<^marker>\<open>provenance ai\<close> (simp add: follow_v)
     have "par v = par' v"
-      using "1.prems"(1) v_mem by blast
+      using "1.prems"(1) v_mem by \<^marker>\<open>provenance ai\<close> blast
     with None have "par' v = None"
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
     then have "parent_spec.follow par' v = [v]"
-      by (simp add: parent.follow_psimps[OF "1.prems"(2)])
+      by \<^marker>\<open>provenance ai\<close> (simp add: parent.follow_psimps[OF "1.prems"(2)])
     with follow_v show ?thesis
-      by simp
+      by \<^marker>\<open>provenance ai\<close> simp
   next
     case (Some a)
     have "\<forall>v\<in>set (parent_spec.follow par a). par v = par' v"
@@ -554,7 +554,7 @@ lemma wf_par':
   shows "parent_spec par'" (is ?g1) "parent_spec (par(v2 := Some v1))" (is ?g2)
 proof-
   have "(v2, v1) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-    proof (rule notI)
+    proof \<^marker>\<open>provenance ai\<close> (rule notI)
       assume "(v2, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*"
       then show False
       proof (cases rule: converse_rtranclE)
@@ -576,7 +576,7 @@ proof-
     by simp
 
   have "(v3, v2) \<notin> {(x,y) | x y. (Some x = par y)}\<^sup>*"
-  proof
+  proof \<^marker>\<open>provenance ai\<close>
     assume "(v3, v2) \<in> {(x, y) | x y. Some x = par y}\<^sup>*"
     then show False
     proof (rule converse_rtranclE)
@@ -596,7 +596,7 @@ proof-
     qed
   qed
   moreover have "(v3, v2) \<notin>  {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
-        proof (rule notI)
+        proof \<^marker>\<open>provenance ai\<close> (rule notI)
       assume "(v3, v2) \<in> {(x, y). (x, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>* \<and> (v2, y) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*}"
       then have "(v3, v1) \<in> {(x,y) | x y. (Some x = par y)}\<^sup>*" by auto
       then show False

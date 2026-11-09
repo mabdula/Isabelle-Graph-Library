@@ -155,7 +155,7 @@ lemma min_if_finite':
   assumes "preorder_on' S r"
   assumes "finite S" "S \<noteq> {}"
   shows "min_on_rel S r \<in> S" and "\<not>(\<exists>x\<in>S. (x, min_on_rel S r) \<in> Restr r S \<and> (min_on_rel S r, x) \<notin> Restr r S)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   let ?P = "\<lambda>x. x \<in> S"
   let ?r = "Restr r S"
   have "\<exists>x. is_min_rel ?P ?r x"

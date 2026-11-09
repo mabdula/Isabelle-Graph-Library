@@ -44,7 +44,7 @@ lemma reachable_dist_2:
   assumes "reachable G u v"
   obtains p where "Vwalk.vwalk_bet G u p v" "distance G u v = length p - 1"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms obtain q where q: "vwalk_bet G u q v"
     by (auto simp: reachable_vwalk_bet_iff)
   define f where "f = (\<lambda>p. if vwalk_bet G u p v then length p - 1 else \<infinity>)"
@@ -129,7 +129,7 @@ lemma distance_split:
   "\<lbrakk>distance G u v \<noteq> \<infinity>; distance G u v = distance G u w + distance G w v \<rbrakk> \<Longrightarrow>
        \<exists>w'. reachable G u w' \<and> distance G u w' = distance G u w \<and>
             reachable G w' v \<and> distance G w' v = distance G w' v"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume dist_neq: "distance G u v \<noteq> \<infinity>"
   assume dist_eq: "distance G u v = distance G u w + distance G w v"
   have sum_neq: "distance G u w + distance G w v \<noteq> \<infinity>"
@@ -186,7 +186,7 @@ qed
 lemma dist_eq: 
   "\<lbrakk>\<And>p. Vwalk.vwalk_bet G' u p v \<Longrightarrow> Vwalk.vwalk_bet G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume asm: "\<And>p. Vwalk.vwalk_bet G' u p v \<Longrightarrow> Vwalk.vwalk_bet G u (map f p) v"
   show "distance G u v \<le> distance G' u v"
     unfolding distance_def
@@ -221,7 +221,7 @@ qed
 
 lemma distance_subset: 
   "G \<subseteq> G' \<Longrightarrow> distance G' u v \<le> distance G u v"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume asm: "G \<subseteq> G'"
   show "distance G' u v \<le> distance G u v"
   proof (cases "reachable G u v")
@@ -405,7 +405,7 @@ proof(goal_cases)
   case (1 x1 x2 xs1 xs2 xs3)
   hence "Vwalk.vwalk_bet G u (xs1 @ x2 # xs3) v"
     using vwalk_bet_transitive_2 closed_vwalk_bet_decompE
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have p': "p = xs1 @ x2 # xs2 @ x2 # xs3"
       using \<open>p = xs1 @ x1 # xs2 @ x2 # xs3\<close> \<open>x1 = x2\<close> by simp
     have W: "vwalk_bet G u (xs1 @ [x2] @ xs2 @ [x2] @ xs3) v"
@@ -427,7 +427,7 @@ qed
 lemma diet_eq': 
   "\<lbrakk>\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     assume H: "\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v"
     show "distance G u v \<le> distance G' u v"
     proof (cases "distance G' u v = \<infinity>")
@@ -475,7 +475,7 @@ next
   hence "length p = 1" "vwalk_bet G u p v"
     using \<open>distance G u v = 0\<close>
     apply (auto simp: shortest_path_def)
-    by (auto simp: zero_enat_def diff_is_0_eq le_Suc_eq dest: vwalk_bet_nonempty)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: zero_enat_def diff_is_0_eq le_Suc_eq dest: vwalk_bet_nonempty)
   then obtain x where "p = [x]"
     by (auto simp: length_Suc_conv)
   then have "x = u" "x = v" "x \<in> dVs G"
@@ -504,7 +504,7 @@ qed
 lemma distance_neighbourhood':
   "\<lbrakk>v \<in> neighbourhood G u\<rbrakk> \<Longrightarrow> distance G x v \<le> distance G x u + 1"
   using triangle_ineq distance_neighbourhood
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume hyp: "v \<in> neighbourhood G u"
   have dist_uv: "distance G u v \<le> 1"
     using hyp by (rule distance_neighbourhood)
@@ -517,7 +517,7 @@ qed
 
 lemma Suc_le_length_iff_2:
   "(Suc n \<le> length xs) = (\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys)"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume assm: "Suc n \<le> length xs"
   then have "xs \<noteq> []" by auto
   then show "\<exists>x ys. xs = ys @ [x] \<and> n \<le> length ys"
@@ -583,7 +583,7 @@ lemma dist_not_inf'':
 proof(goal_cases)
   case main: 1
   then obtain p where "vwalk_bet G u (u#p) v" "length p = distance G u v"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have dist_fin: "distance G u v \<noteq> \<infinity>"
     using main(1) main(3) by simp
   have "distance G u v < \<infinity>"
@@ -655,7 +655,7 @@ qed
 lemma dist_not_inf''':
   "\<lbrakk>distance_set G U v \<noteq> \<infinity>; u\<in>U; distance G u v = distance_set G U v\<rbrakk>
       \<Longrightarrow> \<exists>p. shortest_path G u (u#p) v \<and> set p \<inter> U = {}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume dist_ne: "distance_set G U v \<noteq> \<infinity>"
      and u_in: "u \<in> U"
      and dist_eq: "distance G u v = distance_set G U v"
@@ -681,7 +681,7 @@ proof(goal_cases)
     by (simp add: plus_eq_infty_iff_enat)
   then obtain w' where "w' \<in> U'" "distance_set G U' v = distance G w' v" "reachable G w' v"
     using 1
-    by (blast dest: dist_not_inf')
+    by \<^marker>\<open>provenance ai\<close> (blast dest: dist_not_inf')
 *)
 
 lemma distance_set_union:
@@ -704,7 +704,7 @@ lemma distance_set_wit:
 
 lemma distance_set_single_source:
   "distance_set G {s} x = distance G s x" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "s \<in> {s}" by simp
   then obtain v' where "v' \<in> {s}" "distance_set G {s} x = distance G v' x"
     by (rule distance_set_wit)
@@ -720,7 +720,7 @@ lemma distance_set_wit':
 
 lemma dist_set_not_inf: 
 "distance_set G U v \<noteq> \<infinity> \<Longrightarrow> \<exists>u\<in>U. distance G u v = distance_set G U v"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "distance_set G U v \<noteq> \<infinity>"
   then obtain u where "u \<in> U" and "distance_set G U v = distance G u v"
     by (rule distance_set_wit')
@@ -729,7 +729,7 @@ qed
 
 lemma dist_not_inf': 
   "distance_set G U v \<noteq> \<infinity> \<Longrightarrow>\<exists>u\<in>U. distance G u v = distance_set G U v \<and> reachable G u v"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume asm: "distance_set G U v \<noteq> \<infinity>"
   obtain u where u_in: "u \<in> U" and u_eq: "distance G u v = distance_set G U v"
     using dist_set_not_inf[OF asm] by blast
@@ -803,7 +803,7 @@ proof(goal_cases)
 qed
 
 lemma diff_le_self_enat: "m - n \<le> (m::enat)"
-  by (cases m; cases n; simp add: idiff_enat_enat idiff_infinity_right diff_le_self)
+  by \<^marker>\<open>provenance ai\<close> (cases m; cases n; simp add: idiff_enat_enat idiff_infinity_right diff_le_self)
 
 lemma shortest_path_dist_set_union:
   "\<lbrakk>distance_set G U v = distance G u v; u \<in> U; shortest_path G u (p1 @ x # p2) v;
@@ -913,7 +913,7 @@ proof(goal_cases)
   have "(INF v\<in>V. (f::'a \<Rightarrow> enat) v) + (x::enat) \<le> f_v" if "f_v \<in> {f v + x | v . v\<in>V}" for f_v
     using that
     apply(auto simp: image_def)
-    by (fastforce intro!: Inf_lower add_mono)
+    by \<^marker>\<open>provenance ai\<close> (fastforce intro!: Inf_lower add_mono)
   moreover have "(INF v\<in>V. (f::'a \<Rightarrow> enat) v) + (x::enat) \<in> {f v + x | v . v\<in>V}"
   proof-
     have "Inf {f v | v. v \<in> V} \<in> {f v | v. v \<in> V}"
@@ -962,7 +962,7 @@ proof(goal_cases)
     using 1 distance_parent
     by fastforce
   thus ?thesis
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have dist_w_le: "distance_set G Vs w \<le> distance G u w"
       using dist_set_mem[OF \<open>u \<in> Vs\<close>] .
     have le1: "distance_set G Vs w + 1 \<le> distance_set G Vs v"
@@ -988,7 +988,7 @@ lemma distance_set_parent':
   "\<lbrakk>0 < distance_set G Vs v; distance_set G Vs v < \<infinity>; Vs \<noteq> {}\<rbrakk> \<Longrightarrow> 
      \<exists>w. distance_set G Vs w + 1 = distance_set G Vs v \<and> v \<in> neighbourhood G w"
   using distance_set_parent
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume pos: "0 < distance_set G Vs v"
      and fin: "distance_set G Vs v < \<infinity>"
      and ne: "Vs \<noteq> {}"
@@ -1023,7 +1023,7 @@ proof(safe, goal_cases)
   moreover have "distance G v v = 0"
     by (meson calculation(1) distance_0)
   ultimately show ?case
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "distance_set G Vs v \<le> distance G v v"
       using \<open>v \<in> Vs\<close> by (rule dist_set_mem)
     with \<open>distance G v v = 0\<close> have "distance_set G Vs v \<le> 0"
@@ -1035,15 +1035,15 @@ next
   case 1
   note prems = this
   from prems have not_inf: "distance_set G Vs v \<noteq> \<infinity>"
-    using infinity_ne_i0 by auto
+    using infinity_ne_i0 by \<^marker>\<open>provenance ai\<close> auto
   obtain u where u_mem: "u \<in> Vs" and u_dist: "distance G u v = distance_set G Vs v"
-    using dist_set_not_inf[OF not_inf] by blast
+    using dist_set_not_inf[OF not_inf] by \<^marker>\<open>provenance ai\<close> blast
   from prems u_dist have "distance G u v = 0"
-    by auto
+    by \<^marker>\<open>provenance ai\<close> auto
   then have "u = v"
-    using distance_0 by fastforce
+    using distance_0 by \<^marker>\<open>provenance ai\<close> fastforce
   with u_mem show ?case
-    by simp
+    by \<^marker>\<open>provenance ai\<close> simp
 qed
 
 lemma dist_set_leq: 
@@ -1053,7 +1053,7 @@ lemma dist_set_leq:
 lemma dist_set_eq: 
   "\<lbrakk>\<And>u. u \<in> Vs \<Longrightarrow> distance G u v = distance G' u v\<rbrakk> \<Longrightarrow> distance_set G Vs v = distance_set G' Vs v"
   using dist_set_leq
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume eq: "\<And>u. u \<in> Vs \<Longrightarrow> distance G u v = distance G' u v"
   have le1: "distance_set G Vs v \<le> distance_set G' Vs v"
     by (rule dist_set_leq) (simp add: eq)
@@ -1068,7 +1068,7 @@ lemma distance_set_subset: "G \<subseteq> G' \<Longrightarrow> distance_set G' V
 
 lemma vwalk_bet_dist_set:
   "\<lbrakk>Vwalk.vwalk_bet G u p v; u \<in> U\<rbrakk> \<Longrightarrow> distance_set G U v \<le> length p - 1"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "Vwalk.vwalk_bet G u p v" "u \<in> U"
   then have "distance_set G U v \<le> distance G u v"
     by (intro dist_set_mem)
@@ -1206,7 +1206,7 @@ proof(goal_cases)
     using \<open>G \<subseteq> G'\<close>
     by(auto simp: distance_subset)
   moreover  have "distance G u v \<le> distance G' u v"
-    proof(rule dist_eq[where f = id])
+    proof \<^marker>\<open>provenance ai\<close>(rule dist_eq[where f = id])
       fix p assume p': "Vwalk.vwalk_bet G' u p v"
       from \<open>reachable G u v\<close> obtain q where q: "Vwalk.vwalk_bet G u q v" "distance G u v = enat (length q - 1)"
         by (auto intro: reachable_dist_2)
@@ -1223,7 +1223,7 @@ qed
 lemma forest_shortest_path:
   "\<lbrakk>forest G; Vwalk.vwalk_bet G u p v\<rbrakk> \<Longrightarrow> shortest_path G u p v"
   apply(auto elim!: forest_props intro!: shortest_path_intro)
-  by simp
+  by \<^marker>\<open>provenance ai\<close> simp
 
 lemma forest_insert: "\<lbrakk>forest G; v \<notin> dVs G\<rbrakk> \<Longrightarrow> forest (insert (u,v) G)"
 proof(intro forest_intro, goal_cases)
@@ -1250,7 +1250,7 @@ proof(goal_cases)
     using \<open>forest G'\<close>  \<open>G \<subseteq> G'\<close> 
     by(auto dest: forest_subset intro!: forest_shortest_path)
   then show ?case
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>vwalk_bet G u p v\<close> \<open>G \<subseteq> G'\<close> have "vwalk_bet G' u p v"
         by (rule vwalk_bet_subset)
       with \<open>forest G'\<close> have "shortest_path G' u p v"

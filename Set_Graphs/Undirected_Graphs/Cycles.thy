@@ -28,7 +28,7 @@ and decycleD:
 
 lemma decycle_subset:
   "\<lbrakk>decycle G u p; G \<subseteq> G'\<rbrakk> \<Longrightarrow> decycle G' u p"
-  unfolding decycle_def by (auto intro: epath_subset)
+  unfolding decycle_def by \<^marker>\<open>provenance ai\<close> (auto intro: epath_subset)
 
 lemma decycle_not_subset:
   "\<lbrakk>\<exists>u. decycle G u p; \<nexists>u. decycle G' u p\<rbrakk> \<Longrightarrow> \<not>set p \<subseteq> G'"
@@ -37,7 +37,7 @@ proof (rule ccontr, goal_cases)
   then have "set p \<subseteq> G'" by blast
   from \<open>\<exists>u. decycle G u p\<close> decycle_def
     have "(\<exists>u. epath G u p u \<and> length p > 2 \<and> distinct p)"
-    by (simp add: decycle_def)
+    by \<^marker>\<open>provenance ai\<close> (simp add: decycle_def)
   then obtain u where "epath G u p u" "length p > 2" "distinct p"
     by blast
 
@@ -45,7 +45,7 @@ proof (rule ccontr, goal_cases)
     have "decycle G' u p"
       unfolding decycle_def
       using epath_subset_other_set[OF \<open>epath G u p u\<close> \<open>set p \<subseteq> G'\<close>] \<open>length p > 2\<close> \<open>distinct p\<close>
-      by blast
+      by \<^marker>\<open>provenance ai\<close> blast
   with \<open>\<nexists>u. decycle G' u p\<close> show ?case by blast
 qed
 
@@ -67,14 +67,14 @@ lemma has_no_cycle_indep_ex:
 proof-
   have "{} \<subseteq> G" by simp
   moreover have "\<nexists>u c. decycle {} u c"
-    by (fastforce simp: decycle_def dest: epath_empty(2))
+    by \<^marker>\<open>provenance ai\<close> (fastforce simp: decycle_def dest: epath_empty(2))
   ultimately show "\<exists>X. has_no_cycle X"
     unfolding has_no_cycle_def by auto
 qed
 
 lemma has_no_cycle_indep_subset:
   "\<lbrakk>has_no_cycle X; Y \<subseteq> X\<rbrakk> \<Longrightarrow> has_no_cycle Y"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "has_no_cycle X" and "Y \<subseteq> X"
   have "X \<subseteq> G"
     using \<open>has_no_cycle X\<close> has_no_cycle_indep_subset_carrier by blast
@@ -193,7 +193,7 @@ proof (induction rule: induct_walk_betw)
   from subset_edges_G[OF \<open>X \<subseteq> G\<close>]
   have "\<And> e. e \<in> X \<Longrightarrow> \<exists>u v. e = {u, v} \<and> u \<noteq> v" by simp
   with path1 have "\<exists>u. {u, v} \<in> X \<and> u \<noteq> v" unfolding Vs_def
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "v \<in> \<Union> X"
       using path1 unfolding Vs_def by blast
     then obtain e where e_X: "e \<in> X" and v_e: "v \<in> e"
@@ -228,13 +228,13 @@ proof (induction rule: induct_walk_betw)
     with assms obtain w c where "decycle (insert {u, v} Y) w c" by blast
     with decycle_not_subset assms(4)
     have decycle_ex: "\<exists>z. decycle (insert {u, v} Y) z c"
-      using \<open>decycle (insert {u, v} Y) w c\<close> by blast
+      using \<open>decycle (insert {u, v} Y) w c\<close> by \<^marker>\<open>provenance ai\<close> blast
     have no_decycle_Y: "\<nexists>z. decycle Y z c"
-      using assms(4) by blast
+      using assms(4) by \<^marker>\<open>provenance ai\<close> blast
     have "\<not> set c \<subseteq> Y"
       using decycle_not_subset[OF decycle_ex no_decycle_Y] .
     moreover have "set c \<subseteq> (insert {u, v} Y)" 
-                  by (fact epath_edges_subset[OF decycleD(1)[OF \<open>decycle (insert {u, v} Y) w c\<close>]])
+                  by \<^marker>\<open>provenance ai\<close> (fact epath_edges_subset[OF decycleD(1)[OF \<open>decycle (insert {u, v} Y) w c\<close>]])
     ultimately have "{u, v} \<in> set c" by blast
     have "(insert {u, v} Y) \<subseteq> G"
       using \<open>{u, v} \<in> X\<close> assms(1) assms(2) by blast
@@ -259,7 +259,7 @@ next
     with assms obtain w c where "decycle (insert {v, v'} Y) w c" by blast
     with decycle_not_subset assms(4)
     have "\<not> set c \<subseteq> Y"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "\<exists>u. decycle (insert {v, v'} Y) u c"
         using \<open>decycle (insert {v, v'} Y) w c\<close> by blast
       moreover have "\<nexists>u. decycle Y u c"
@@ -268,7 +268,7 @@ next
         by (rule decycle_not_subset)
     qed
     moreover have "set c \<subseteq> (insert {v, v'} Y)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "epath (insert {v, v'} Y) w c w"
           using \<open>decycle (insert {v, v'} Y) w c\<close>
           unfolding decycle_def by blast
@@ -316,7 +316,7 @@ next
     using \<open>e \<notin> F\<close> by auto
   also have "... = 
     component_edges F C \<union> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e}"
-    unfolding component_edges_def by blast
+    unfolding component_edges_def by \<^marker>\<open>provenance ai\<close> blast
   finally have edges_expr:
     "component_edges (insert e F) C = component_edges F C \<union> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e}" .
   have edges_disj: "component_edges F C \<inter> {{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {}"
@@ -335,7 +335,7 @@ next
         by (meson reachable_def \<open>C \<in> connected_components F\<close> insert_subset same_con_comp_reachable) 
       then obtain p where "walk_betw F u p v" by blast
       have "has_no_cycle (component_edges (insert e F) C)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "component_edges (insert e F) C \<subseteq> insert e F"
           by (rule component_edges_subset)
         from has_no_cycle_indep_subset[OF \<open>has_no_cycle (insert e F)\<close> this]
@@ -361,7 +361,7 @@ next
     proof (safe, goal_cases)
       case 1
       have "\<And>x y. {x, y} \<subseteq> C \<Longrightarrow> {x, y} \<notin> F"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
   fix x y
   assume "{x, y} \<subseteq> C"
   show "{x, y} \<notin> F"
@@ -403,7 +403,7 @@ qed
       have "component_edges (insert e F) C = insert {u, v} (component_edges F C)"
         by simp
       have "v' \<notin> (connected_component F u')"
-        using "2"(3) "2"(4) in_connected_component_in_edges by fastforce
+        using "2"(3) "2"(4) in_connected_component_in_edges by \<^marker>\<open>provenance ai\<close> fastforce
       from edges_disj \<open>{{x, y} | x y. {x, y} \<subseteq> C \<and> {x, y} = e} = {{u, v}}\<close>
       have "{u, v} \<notin> component_edges F C"
         by simp
@@ -434,7 +434,7 @@ qed
         {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}" by blast
       moreover have "{{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F} =
         {{x, y} |x y. x = v' \<and> y \<in> (connected_component F u') \<and> {x, y} \<in> F}"
-        proof (intro set_eqI iffI)
+        proof \<^marker>\<open>provenance ai\<close> (intro set_eqI iffI)
           fix z
           assume "z \<in> {{x, y} |x y. x \<in> (connected_component F u') \<and> y = v' \<and> {x, y} \<in> F}"
           then obtain x y where z_def: "z = {x, y}" and x_in: "x \<in> connected_component F u'"
@@ -510,7 +510,7 @@ qed
       moreover have
         "{{x, y} |x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<and> {x, y} \<in> F} =
          {{x, y} |x y. x \<in> (connected_component F v) \<and> y \<in> (connected_component F u) \<and> {x, y} \<in> F}"
-        proof (rule set_eqI)
+        proof \<^marker>\<open>provenance ai\<close> (rule set_eqI)
           fix e
           show "e \<in> {{x, y} |x y. x \<in> connected_component F u \<and> y \<in> connected_component F v \<and> {x, y} \<in> F} \<longleftrightarrow>
                 e \<in> {{x, y} |x y. x \<in> connected_component F v \<and> y \<in> connected_component F u \<and> {x, y} \<in> F}"
@@ -538,7 +538,7 @@ qed
         {{x, y} |x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<and> {x, y} \<in> F}"
         by simp
       moreover have "\<And>x y. x \<in> (connected_component F u) \<and> y \<in> (connected_component F v) \<Longrightarrow> {x, y} \<notin> F"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           fix x y
           assume "x \<in> connected_component F u \<and> y \<in> connected_component F v"
           then have x_mem: "x \<in> connected_component F u" and y_mem: "y \<in> connected_component F v"
@@ -577,7 +577,7 @@ qed
         card (component_edges F (connected_component F u)) +
         card (component_edges F (connected_component F v)) + 1"
         (* TODO later: maybe simplify proof *)
-      proof-
+      proof \<^marker>\<open>provenance ai\<close>-
   have finite_A: "finite (component_edges F (connected_component F u))"
     using finite_subset[OF component_edges_subset[of F "connected_component F u"] insert.hyps(1)] .
   have finite_B: "finite (component_edges F (connected_component F v))"
@@ -644,7 +644,7 @@ proof(goal_cases)
     by (simp add: \<open>dblton_graph X\<close> connected_component_finite connected_components_def)
   then have "\<And> C. C \<in> connected_components X \<Longrightarrow> finite (component_edges X C)"
     unfolding component_edges_def using \<open>finite X\<close>
-    by (auto intro: finite_subset[OF _ \<open>finite X\<close>])
+    by \<^marker>\<open>provenance ai\<close> (auto intro: finite_subset[OF _ \<open>finite X\<close>])
   then have "\<And> A. A \<in> (components_edges X) \<Longrightarrow> finite A"
     unfolding components_edges_def by auto
   have "finite (connected_components X)"
@@ -682,7 +682,7 @@ proof(goal_cases)
     by(auto intro!: card_UN_disjoint[OF \<open>finite (components_edges X)\<close>, of id, simplified])
   also have "... = (\<Sum>C \<in> connected_components X. card (component_edges X C))"
     unfolding components_edges_def using component_edges_distinct
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have set_eq: "{component_edges X C | C. C \<in> connected_components X}
                   = component_edges X ` connected_components X"
       by blast

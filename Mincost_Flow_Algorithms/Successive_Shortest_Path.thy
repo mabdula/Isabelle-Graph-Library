@@ -225,7 +225,7 @@ definition "SSP_upd4' state = (let b = balance state; f = current_flow state;
                                         if v = t then b t + \<gamma> else b v)  \<rparr>))"
 
 lemma SSP_upd4_same: "SSP_upd4' state = SSP_upd4 state"
-  unfolding SSP_upd4_def SSP_upd4'_def Let_def by simp
+  unfolding SSP_upd4_def SSP_upd4'_def Let_def by \<^marker>\<open>provenance ai\<close> simp
 
 declare[[simp_trace_depth_limit=1000]]
 
@@ -240,7 +240,7 @@ lemma SSP_simps:
     apply(thin_tac " SSP_call_4_cond state")
     apply(subst SSP.psimps[OF assms])
     unfolding SSP_upd4_def
-    apply(simp split: option.splits if_splits, simp add: Let_def)
+    apply \<^marker>\<open>provenance ai\<close>(simp split: option.splits if_splits, simp add: Let_def)
     done    
   by (auto simp add: SSP.psimps[OF assms]
                        SSP_ret_1_cond_def SSP_ret1_def
@@ -414,7 +414,7 @@ proof(rule invar_integralI)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
     unfolding \<gamma>_def using integral_min
-    by (auto simp: min_def)
+    by \<^marker>\<open>provenance ai\<close> (auto simp: min_def)
 
   show "is_integral_flow (current_flow (SSP_upd4 state))"
   proof-
@@ -431,7 +431,7 @@ proof(rule invar_integralI)
   proof-
       have b'_integral: "is_integral_balance b'"
         unfolding b'_def
-        proof (intro is_integral_balanceI)
+        proof \<^marker>\<open>provenance ai\<close> (intro is_integral_balanceI)
           fix v assume v_in_V: "v \<in> \<V>"
           have b_integral: "is_integral (b v)"
             using assms(2) v_in_V
@@ -500,7 +500,7 @@ lemma SSP_call_4_cond_SSP_dom:
   apply(rule forw_subst[of _ "SSP_upd4 state" SSP_dom])
   subgoal
     unfolding SSP_upd4_def SSP_call_4_cond_def Let_def
-    by (auto simp add: ereal_min option.sel cong: if_cong)
+    by \<^marker>\<open>provenance ai\<close> (auto simp add: ereal_min option.sel cong: if_cong)
   by simp 
 
 lemma SSP_ret_1_cond_SSP_dom:
@@ -610,7 +610,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
       
   ultimately have integral_gamma: "is_integral \<gamma>"
     unfolding \<gamma>_def using integral_min
-  proof (cases "ereal (min (b s) (- b t)) \<le> Rcap f (set P)")
+  proof \<^marker>\<open>provenance ai\<close> (cases "ereal (min (b s) (- b t)) \<le> Rcap f (set P)")
     case True
     hence gamma_val_eq1:
       "real_of_ereal (min (min (b s) (- b t)) (Rcap f (set P))) = min (b s) (- b t)"
@@ -639,7 +639,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
   have gamma_pos: "\<gamma> > 0"
     unfolding \<gamma>_def
     using Rcap_pos t_is_neg b_s_pos
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have min1_pos: "0 < min (ereal (b s)) (ereal (- b t))"
       using b_s_pos t_is_neg by (simp add: min_less_iff_conj)
     have overall_pos: "0 < min (min (ereal (b s)) (ereal (- b t))) (Rcap f (set P))"
@@ -660,7 +660,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
   qed
     
   have s_red: "abs (b' s) < abs (b s)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have step1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
       by (rule min.cobounded1)
     have step2: "min (b s) (- b t) \<le> b s"
@@ -697,7 +697,7 @@ proof(induction "bABSnat (balance state)" arbitrary: state rule: less_induct)
     unfolding b'_def 
     using gamma_pos t_is_neg
     unfolding \<gamma>_def 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have step1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> ereal (min (b s) (- b t))"
       by (rule min.cobounded1)
     have step2: "min (b s) (- b t) \<le> - b t"
@@ -830,7 +830,7 @@ proof-
   have gamma_pos: "\<gamma> > 0"
     unfolding \<gamma>_def
     using Rcap_pos t_is_neg b_s_pos
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have ne_le: "\<And>x y::ereal. x \<le> y \<Longrightarrow> y \<noteq> \<infinity> \<Longrightarrow> x \<noteq> \<infinity>"
     proof -
       fix x y :: ereal
@@ -879,7 +879,7 @@ proof-
 
   have good_cap: "ereal \<gamma> \<le> Rcap (current_flow state) (set P)"
     unfolding \<gamma>_def f_def
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have Rcap_eq: "Rcap (current_flow state) (set P) = Rcap f (set P)"
       by (simp add: f_def)
     have le1: "min (min (b s) (- b t)) (Rcap f (set P)) \<le> Rcap f (set P)"
@@ -972,7 +972,7 @@ proof(rule ccontr)
     by(rule augcycle_to_closed_w, simp)+
   have "foldr (\<lambda> e acc. acc + \<cc> e) C 0 < 0"
     using C_prop unfolding augcycle_def \<CC>_def using distinct_sum[of C \<cc>] by simp
-  hence cost_neg': "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by simp
+  hence cost_neg': "foldr (\<lambda> e acc. acc + \<c> e) (map oedge C) 0 < 0" using aa by \<^marker>\<open>provenance ai\<close> simp
   moreover have map_eq: "map to_vertex_pair C = map make_pair (map oedge C)"
   proof-
     have "e \<in> set C \<Longrightarrow> to_vertex_pair e = make_pair (oedge e)" for e
@@ -990,7 +990,7 @@ proof(rule ccontr)
     using C_prop  
     by (auto simp add: image_def augcycle_def \<EE>_def)
   ultimately show False
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have closed_w_oedge: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C))"
       using aa(1) map_eq by simp
     have conj: "closed_w (make_pair ` \<E>) (map make_pair (map oedge C)) \<and>
@@ -1145,11 +1145,11 @@ proof-
                          Rescut_around_in_V 
                simp add:  is_Opt_def )
       have "ereal (sum \<b> (Rescut \<f> s)) \<le> ereal (sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s))"
-        using le_cut rescutsat by simp
+        using le_cut rescutsat by \<^marker>\<open>provenance ai\<close> simp
       hence "sum \<b> (Rescut \<f> s) \<le> sum (\<lambda> v. \<b> v -  b v) (Rescut \<f> s)"
-        by (simp add: ereal_less_eq)
+        by \<^marker>\<open>provenance ai\<close> (simp add: ereal_less_eq)
       thus False
-        using sumbb' by linarith
+        using sumbb' by \<^marker>\<open>provenance ai\<close> linarith
     qed
   qed
   show "return final = notyetterm \<Longrightarrow> False"

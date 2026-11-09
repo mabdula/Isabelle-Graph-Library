@@ -31,7 +31,7 @@ lemma sym_diff_subset:
 lemma card_Int_Diff:
   assumes "finite s" "finite t" 
   shows "card (s - t) + card (s \<inter> t) = card s"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
     have fin1: "finite (s - t)" using assms(1) by simp
     have fin2: "finite (s \<inter> t)" using assms(1) by simp
     have disj: "(s - t) \<inter> (s \<inter> t) = {}" by auto
@@ -233,7 +233,7 @@ lemma matching_graph_mono: "\<lbrakk>graph_matching G M; G \<subseteq> G'\<rbrak
   by(auto simp add: matching_def)
 
 lemma the_match: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> (THE u. {u,v} \<in> M) = u"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume match: "matching M" and edge: "{u,v} \<in> M"
   show "(THE u. {u,v} \<in> M) = u"
   proof (rule the_equality)
@@ -430,7 +430,7 @@ lemma remove_edge_matching:
   assumes "matching M" and "{u,v} \<in> M"
   shows "M \<setminus> {u,v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-proof (rule set_eqI)
+proof \<^marker>\<open>provenance ai\<close> (rule set_eqI)
   fix e
   show "e \<in> {e \<in> M. e \<inter> {u, v} = {}} \<longleftrightarrow> e \<in> M - {{u, v}}"
   proof
@@ -455,7 +455,7 @@ lemma remove_vertex_matching:
   assumes "matching M" and "{u,v} \<in> M"
   shows "M \<setminus> {u} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-proof (rule set_eqI)
+proof \<^marker>\<open>provenance ai\<close> (rule set_eqI)
   fix e
   show "e \<in> {e \<in> M. e \<inter> {u} = {}} \<longleftrightarrow> e \<in> M - {{u, v}}"
   proof
@@ -483,7 +483,7 @@ lemma remove_vertex_matching':
   assumes "matching M" and "{u,v} \<in> M"
   shows "M \<setminus> {v} = M - {{u,v}}"
   unfolding remove_vertices_graph_def
-proof (intro set_eqI iffI)
+proof \<^marker>\<open>provenance ai\<close> (intro set_eqI iffI)
   fix e
   assume lhs: "e \<in> {e \<in> M. e \<inter> {v} = {}}"
   then have eM: "e \<in> M" and ev: "v \<notin> e"
@@ -522,7 +522,7 @@ next
 qed
 
 lemma remove_edge_matching_vs: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {u,v}) = Vs M - {u,v}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume matching: "matching M" and edge_in: "{u,v} \<in> M"
   show "Vs (M \<setminus> {u,v}) = Vs M - {u,v}"
   proof (rule equalityI)
@@ -577,7 +577,7 @@ proof -
 qed
 
 lemma remove_vertex_matching_vs: "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {u}) = Vs M - {u,v}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume matching: "matching M" and edge_in: "{u,v} \<in> M"
   have vertex_eq: "M \<setminus> {u} = M - {{u,v}}"
     using matching edge_in by (rule remove_vertex_matching)
@@ -589,7 +589,7 @@ proof -
 qed
 
 lemma remove_vertex_matching_vs': "matching M \<Longrightarrow> {u,v} \<in> M \<Longrightarrow> Vs (M \<setminus> {v}) = Vs M - {u,v}"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume matching: "matching M" and edge_in: "{u,v} \<in> M"
   have vertex_eq: "M \<setminus> {v} = M - {{u,v}}"
     using matching edge_in by (rule remove_vertex_matching')
@@ -676,12 +676,12 @@ lemma neighbours_of_Vs_in_matching_singl:
   shows "\<exists> v. (neighbours_of_Vs M {x}) = {v}"
 proof -
   have "\<exists>!e. e \<in> M \<and> x \<in> e"
-    using assms(1) assms(2) by (fastforce simp: matching_def2)
+    using assms(1) assms(2) by \<^marker>\<open>provenance ai\<close> (fastforce simp: matching_def2)
   then obtain e where e: " e \<in> M \<and> x \<in> e" by auto
   then have x_one_edge:"\<forall> e' \<in> M. e' \<noteq> e \<longrightarrow> x \<notin> e'" 
     using \<open>\<exists>!e. e \<in> M \<and> x \<in> e\<close> by blast
   have "\<exists>v. (\<exists> e\<in>M. x \<in> e \<and> v\<in>e \<and> x \<noteq> v)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have eG: "e \<in> G"
       using e assms(3) by blast
     have dblton_G: "dblton_graph G"
@@ -714,7 +714,7 @@ proof -
   qed
   then obtain v where "(\<exists> e\<in>M. x\<in> e \<and> v \<in> e \<and> x \<noteq> v)" by auto
   have "\<forall>v'. (\<exists> e\<in>M. x\<in> e \<and> v'\<in>e \<and> x \<noteq> v') \<longrightarrow> v = v'"
-  proof (rule allI, rule impI)
+  proof \<^marker>\<open>provenance ai\<close> (rule allI, rule impI)
     fix v'
     assume "\<exists> e'\<in>M. x\<in> e' \<and> v'\<in>e' \<and> x \<noteq> v'"
     then obtain e' where e'_props: "e' \<in> M" "x \<in> e'" "v' \<in> e'" "x \<noteq> v'"
@@ -761,7 +761,7 @@ proof(rule ccontr)
   assume "\<not> y \<notin> neighbours_of_Vs M X"
   then show False 
     unfolding neighbours_of_Vs_def 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     from \<open>\<not> y \<notin> neighbours_of_Vs M X\<close>[unfolded neighbours_of_Vs_def]
     obtain u e where hu_X: "u \<in> X" and he_M: "e \<in> M"
       and hu_ne_y: "u \<noteq> y" and hu_e: "u \<in> e" and hy_e: "y \<in> e"
@@ -800,7 +800,7 @@ proof -
     then have "e = {x, v}" 
       using assms(1) assms(3) by fastforce
     then have "v \<notin> neighbours_of_Vs M F"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "{x, v} \<in> M" using e \<open>e = {x, v}\<close> by simp
       then show ?thesis
         using assms(2) insert.hyps(2)
@@ -810,7 +810,7 @@ proof -
       by (simp add: v)
     then have card_sum_u: "card (neighbours_of_Vs M {x}) + card( neighbours_of_Vs M F) = 
                   card (neighbours_of_Vs M {x} \<union> neighbours_of_Vs M F)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have fin1: "finite (neighbours_of_Vs M {x})"
         using finite_neighbours_of_Vs assms(1) assms(3) by blast
       have fin2: "finite (neighbours_of_Vs M F)"
@@ -827,7 +827,7 @@ proof -
     have "card (insert x F) = card F + 1"
       by (simp add: insert.hyps(1) insert.hyps(2)) 
     then show  "card (insert x F) = card (neighbours_of_Vs M (insert x F))" using 3
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have hF: "F \<subseteq> Vs M"
         using insert.prems insert_subset by blast
       have hcardF: "card F = card (neighbours_of_Vs M F)"
@@ -1205,7 +1205,7 @@ lemma aug_paths_are_even:
   shows "even (length p)"
   using assms
   unfolding matching_augmenting_path_def
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have len_ge_2: "length p \<ge> 2" using assms unfolding matching_augmenting_path_def by auto
   hence ne: "p \<noteq> []" by auto
   have odd_edges: "odd (length (edges_of_path p))"
@@ -2190,7 +2190,7 @@ proof(induction "length p" arbitrary: p rule: nat_less_induct)
         using ass cons1
         apply (simp add: neq_Nil_conv split: if_splits)
         apply clarify
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           fix y ys
           assume p_eq: "p = a' # a'' # y # ys"
           assume p'_eq: "p' = a'' # y # ys"
@@ -2628,7 +2628,7 @@ next
     proof (intro in_remove_verticesI, goal_cases)
       case 2
       then show ?case
-      proof (auto simp: vs_member)
+      proof \<^marker>\<open>provenance ai\<close> (auto simp: vs_member)
         fix v e'
         assume v_in_e: "v \<in> e"
         assume e'_in_E: "e' \<in> E"
@@ -2658,7 +2658,7 @@ next
     proof (intro in_remove_verticesI, goal_cases)
       case 2
       then show ?case
-        proof (auto simp: vs_member)
+        proof \<^marker>\<open>provenance ai\<close> (auto simp: vs_member)
           fix w e'
           assume w_in_e: "w \<in> e"
           assume e'_in_E: "e' \<in> E"
@@ -3752,7 +3752,7 @@ proof -
   have "\<forall> e \<in> G. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs G - A)"
     using assms(1) unfolding partitioned_bipartite_def by auto
   then have "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume forG: "\<forall>e\<in>G. \<exists>u v. e = {u, v} \<and> u \<in> A \<and> v \<in> Vs G - A"
       show "\<forall>e \<in> M. \<exists> u v. e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs M - A)"
       proof

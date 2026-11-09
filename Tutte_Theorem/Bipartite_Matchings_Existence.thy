@@ -33,7 +33,7 @@ proof rule+
     then have 3: "card (neighbours_of_Vs M X) \<le> card (neighbours_of_Vs G X)" using 1 2 
       by (simp add: card_mono)
     have "card X = card (neighbours_of_Vs M X)" 
-      by (simp add: cover_matching_neighbours_of_Vs_card[OF assms(1,2)] \<open>X \<subseteq> A\<close>)
+      by \<^marker>\<open>provenance ai\<close> (simp add: cover_matching_neighbours_of_Vs_card[OF assms(1,2)] \<open>X \<subseteq> A\<close>)
     then show ?thesis using 3 by auto
   qed
 qed
@@ -62,7 +62,7 @@ proof(induct "card A" arbitrary: A G rule: less_induct)
     proof (cases "G = {}") 
       case True
       then show ?thesis 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "Vs G = {}"
             using True by (simp add: Vs_def)
           then have "A = {}"
@@ -77,7 +77,7 @@ proof(induct "card A" arbitrary: A G rule: less_induct)
       have "\<exists> e. e \<in> G" 
         using False by blast
       then obtain e where e:"\<exists>u v. e \<in> G \<and> e = {u, v} \<and> u \<in> A \<and> v \<in> Vs G - A"
-        using less.prems(1) unfolding partitioned_bipartite_def by fastforce
+        using less.prems(1) unfolding partitioned_bipartite_def by \<^marker>\<open>provenance ai\<close> fastforce
       then obtain u v where u_v: "e = {u, v} \<and> (u \<in> A \<and> v \<in> Vs G - A)" 
         by auto
       then  have "(u \<in> A \<and> v \<in> Vs G - A)" by auto
@@ -89,7 +89,7 @@ proof(induct "card A" arbitrary: A G rule: less_induct)
       have 0:"?E_s \<subseteq> G" 
         by force
       have "u \<notin> Vs ?E_s"
-proof (rule notI)
+proof \<^marker>\<open>provenance ai\<close> (rule notI)
   assume "u \<in> Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e})"
   then obtain e where e: "e \<in> G - {e \<in> G. u \<in> e \<or> v \<in> e}" "u \<in> e"
     by (auto simp: vs_member)
@@ -100,10 +100,10 @@ proof (rule notI)
 qed
       then have "u \<notin> ?A_s" by auto
       have "v \<notin> Vs ?E_s"
-        by (auto simp: vs_member)
+        by \<^marker>\<open>provenance ai\<close> (auto simp: vs_member)
       then have "v \<notin> ?B_s" by auto
       have "card ?A_s < card A" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have A_s_subset: "?A_s \<subseteq> A" by blast
         have u_in_A: "u \<in> A" using \<open>u \<in> A \<and> v \<in> Vs G - A\<close> by blast
         have "?A_s \<subset> A" using A_s_subset u_in_A \<open>u \<notin> ?A_s\<close> by blast
@@ -117,7 +117,7 @@ qed
         by auto
       have "neighbours_of_Vs ?E_s ?A_s = Vs ?E_s - ?A_s" 
         using part_bipartite_diff
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have pb: "partitioned_bipartite ?E_s ?A_s"
             using less.prems(1,3) part_bipartite_diff by blast
           show ?thesis
@@ -153,7 +153,7 @@ qed
             using 0 by blast
 
           have "{u, v} \<inter> X = {}" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "u \<notin> X"
               using \<open>X \<subseteq> ?A_s\<close> \<open>u \<notin> ?A_s\<close> by blast
             moreover have "v \<notin> A"
@@ -178,7 +178,7 @@ qed
             using \<open>neighbours_of_Vs G X \<subseteq> {u, v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X\<close> by fastforce
 
           then have "card (neighbours_of_Vs G X) - 1 \<le> card (neighbours_of_Vs ?E_s X)"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
   have subset_N': "neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X \<subseteq> neighbours_of_Vs G X"
     using \<open>neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X \<subseteq> neighbours_of_Vs G X\<close> .
   have subset_vN': "neighbours_of_Vs G X \<subseteq> {v} \<union> neighbours_of_Vs (G - {e \<in> G. u \<in> e \<or> v \<in> e}) X"
@@ -220,7 +220,7 @@ qed
           then have "card (neighbours_of_Vs G {a}) \<ge> 2" 
             by simp
           then obtain v1 v2 where v1_v2:"v1 \<noteq> v2 \<and> v1 \<in> neighbours_of_Vs G {a} \<and> v2 \<in> neighbours_of_Vs G {a}"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             assume card_ge: "2 \<le> card (neighbours_of_Vs G {a})"
             have fin: "finite (neighbours_of_Vs G {a})"
             proof (rule ccontr)
@@ -241,7 +241,7 @@ qed
           then have "v1 \<noteq> v \<or> v2 \<noteq> v" 
             by blast
           then have "\<exists> v'. v' \<noteq> v \<and> (\<exists> u \<in> {a}. \<exists> e \<in> G. v' \<noteq> u \<and> u \<in> e \<and> v' \<in> e)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "v1 \<noteq> v \<or> v2 \<noteq> v"
     using v1_v2 by blast
   then consider (v1) "v1 \<noteq> v" | (v2) "v2 \<noteq> v" by blast
@@ -265,7 +265,7 @@ qed
           then have "a \<in> A \<and> v' \<in> Vs G - A"
             using `partitioned_bipartite G A` 
             unfolding partitioned_bipartite_def neighbours_of_Vs_def 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "e' \<in> G"
               using v'_e by blast
             then obtain p q where pq: "e' = {p, q} \<and> (p \<in> A \<and> q \<in> Vs G - A)"
@@ -305,7 +305,7 @@ qed
       have "matching M" 
         using \<open>cover_matching G M ?A_s\<close> cover_matching_def by blast
       have "\<forall> e \<in> M. u \<notin> e \<and> v \<notin> e "
-        proof (rule ballI)
+        proof \<^marker>\<open>provenance ai\<close> (rule ballI)
           fix e
           assume "e \<in> M"
           have "M \<subseteq> ?E_s"
@@ -321,7 +321,7 @@ qed
         using `matching M` unfolding matching_def  
         by auto 
       have "A \<subseteq> Vs (insert {u, v} M)"
-      proof (rule subsetI)
+      proof \<^marker>\<open>provenance ai\<close> (rule subsetI)
         fix a
         assume "a \<in> A"
         show "a \<in> Vs (insert {u, v} M)"
@@ -373,7 +373,7 @@ qed
         using \<open>?X_gr \<subseteq> G\<close>
         by (meson graphE graph_invar_subset)
       have "X \<subseteq> Vs ?X_gr" 
-      proof
+      proof \<^marker>\<open>provenance ai\<close>
         fix x
         assume "x \<in> X"
         then have "x \<in> A"
@@ -419,7 +419,7 @@ qed
       have "X \<noteq> {}"
         by (simp add: \<open>X \<subset> A \<and> X \<noteq> {} \<and> card (neighbours_of_Vs G X) = card X\<close>)
       have " card (A - X) < card A"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have finite_A: "finite A"
           using finite_subset graphE Asubs by meson
         have X_subset_A: "X \<subseteq> A"
@@ -462,7 +462,7 @@ qed
           using x'_e graphE by fastforce
         have "z \<in> Vs G - A" 
           using less.prems(1) z unfolding partitioned_bipartite_def
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "e \<in> G"
               using x'_e by blast
             then obtain u v where uv: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
@@ -503,7 +503,7 @@ qed
           using neighbours_of_Vs_def asm by force
         then have "\<exists> u. u \<in> (A - X) \<and>  x \<noteq> u \<and> u \<in> e \<and> x\<in> e"
           using e less.prems(1) unfolding partitioned_bipartite_def 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           obtain u v where uv: "e = {u, v}" "u \<in> A" "v \<in> Vs G - A"
             using less.prems(1) e unfolding partitioned_bipartite_def by meson
           have "x \<noteq> u"
@@ -535,7 +535,7 @@ qed
       then have vs_subs: "Vs G - neighbours_of_Vs G X - A \<subseteq> Vs ?AX_gr - (A - X)"
         by blast
       have AX_unfold:"\<forall>e\<in> ?AX_gr. \<exists>u v. e = {u, v} \<and> (u \<in> A - X \<and> v \<in> Vs ?AX_gr - (A - X))" 
-      proof
+      proof \<^marker>\<open>provenance ai\<close>
         fix e
         assume e_mem: "e \<in> ?AX_gr"
         then obtain x y where xy: "x \<in> A - X" "y \<in> Vs G - neighbours_of_Vs G X - A"
@@ -622,7 +622,7 @@ qed
         have "(neighbours_of_Vs G Y - neighbours_of_Vs G X) \<inter> neighbours_of_Vs G X = {}"  by auto
         then have "card (neighbours_of_Vs G (Y \<union> X))  = 
                    card (neighbours_of_Vs G Y - neighbours_of_Vs G X) + card (neighbours_of_Vs G X)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have finite_X: "finite (neighbours_of_Vs G X)"
             using finite_neighbours_of_Vs graphE by auto
           have finite_Y: "finite (neighbours_of_Vs G Y)"
@@ -646,7 +646,7 @@ qed
         then have card_diff:"card (neighbours_of_Vs G Y - neighbours_of_Vs G X) = 
                    card (neighbours_of_Vs G (Y \<union> X)) - card (neighbours_of_Vs G X)" by auto
         have "card (neighbours_of_Vs G (Y \<union> X)) \<ge> card (Y \<union> X)"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "Y \<union> X \<subseteq> A"
               using \<open>Y \<subseteq> A - X\<close> \<open>X \<subset> A\<close> by blast
             thus ?thesis
@@ -655,9 +655,9 @@ qed
         then have "card (neighbours_of_Vs G (Y \<union> X)) - card (neighbours_of_Vs G X) \<ge> card (Y \<union> X) - card X"
           using `card X = card (neighbours_of_Vs G X)` by auto
         moreover have "X \<inter> Y = {}"
-          using \<open>Y \<subseteq> A - X\<close> by auto
+          using \<open>Y \<subseteq> A - X\<close> by \<^marker>\<open>provenance ai\<close> auto
         moreover have "card (Y \<union> X) - card X = card Y" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have finVsG: "finite (Vs G)"
             using graph_invar_finite_Vs graphE by blast
           have fin_X: "finite X"
@@ -689,7 +689,7 @@ qed
         then obtain z where z: "z \<in> Vs ?X_gr \<and> z\<in> Vs ?AX_gr" 
           by auto
         then have "\<exists> e \<in> G. \<exists>x\<in>X. x \<in> e \<and> z \<in> e"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           from z have "z \<in> Vs {e \<in> G. \<exists>x \<in> X. x \<in> e}" by simp
           then obtain e where "z \<in> e" and "e \<in> {e \<in> G. \<exists>x \<in> X. x \<in> e}"
             by (rule vs_member_elim)
@@ -699,7 +699,7 @@ qed
           by auto
         then obtain e x y where e:"e \<in> G \<and> z \<in> e \<and> x \<in> A - X \<and> 
                                y \<in> Vs G - neighbours_of_Vs G X - A \<and> y \<in> e \<and> x \<in> e"
-          by (insert z) (auto simp: vs_member)
+          by \<^marker>\<open>provenance ai\<close> (insert z) (auto simp: vs_member)
         then have "z = x \<or> z = y"
           using graphE by fastforce
         then have "z \<in> A - X \<or> z\<in> Vs G - neighbours_of_Vs G X - A" using e by presburger
@@ -748,7 +748,7 @@ qed
           case False
           have "\<exists>!e\<in>(M'). v \<in> e" 
             using M' unfolding cover_matching_def 
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have "v \<in> Vs M \<union> Vs M'"
                 using \<open>Vs M \<union> Vs M' = Vs (M \<union> M')\<close> \<open>v \<in> Vs (M \<union> M')\<close> by simp
               hence v_in_M': "v \<in> Vs M'"
@@ -769,7 +769,7 @@ qed
         by fast
       have "A \<subseteq> Vs (M \<union> M')" 
         using M M' unfolding cover_matching_def
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have X_sub_M: "X \<subseteq> Vs M"
           using M unfolding cover_matching_def by blast
         have AX_sub_M': "A - X \<subseteq> Vs M'"
@@ -996,7 +996,7 @@ next
     proof(rule ccontr, goal_cases)
       case 1
       then obtain p1 p2 y z where p_split: "p = p1@[y,x,z]@p2" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have hd_neq: "x \<noteq> hd p"
           using 1 by auto
         have last_neq: "x \<noteq> last p"
@@ -1353,7 +1353,7 @@ proof
       by (simp add: assms neighbours_of_Vs_bipartite)
     then have "neighbours_of_Vs M A = Vs G - A" 
       using M unfolding cover_matching_def 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
       have fin: "finite (neighbours_of_Vs G A)"
         using finite_neighbours_of_Vs assms(2) by blast
       have card_eq: "card (neighbours_of_Vs M A) = card (neighbours_of_Vs G A)"
@@ -1375,7 +1375,7 @@ proof
       using neighbours_of_Vs_bipartite[OF part_bipart_of_cover_matching[OF assms(1) M]] 
         M assms unfolding partitioned_bipartite_def cover_matching_def
       using assms M unfolding partitioned_bipartite_def cover_matching_def
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have bip_M: "partitioned_bipartite M A"
           using M assms(1,2) part_bipart_of_cover_matching by auto
         have nvs_M: "neighbours_of_Vs M A = Vs M - A"

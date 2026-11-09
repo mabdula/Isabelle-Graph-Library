@@ -1096,7 +1096,7 @@ proof -
                 by (auto intro: dominance)
 
               with \<open>Vs_enum i < n\<close> \<open>i \<in> L\<close> have "rop_dual_sol (Y(i:=y)) (ranking (linorder_from_keys L (Y(i:=y))) G \<pi>) $ Vs_enum i = g y / F"
-              proof -
+              proof \<^marker>\<open>provenance ai\<close> -
                 let ?M = "ranking (linorder_from_keys L (Y(i:=y))) G \<pi>"
                 have "Vs_enum i < card L"
                   using \<open>i \<in> L\<close> by (simp add: Vs_enum_L L_enum_less_card)

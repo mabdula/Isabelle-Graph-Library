@@ -168,18 +168,18 @@ proof-
   obtain Yr where Yr: "X = old_edge ` Yr" 
     using assms by blast
     have get_old_edge_Yr: "get_old_edge ` (old_edge ` Yr) = Yr"
-      by (simp add: image_image get_old_edge.simps)
+      by \<^marker>\<open>provenance ai\<close> (simp add: image_image get_old_edge.simps)
     have make_pair'_eq: "\<And>x. make_pair' (old_edge x) = make_pair x"
-      by (simp add: case_edge_wrapper_make_pair[symmetric])
+      by \<^marker>\<open>provenance ai\<close> (simp add: case_edge_wrapper_make_pair[symmetric])
     have make_pair'_Yr: "make_pair' ` (old_edge ` Yr) = make_pair ` Yr"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "(make_pair' o old_edge) ` Yr = make_pair ` Yr"
         by (rule image_cong) (simp_all add: comp_def make_pair'_eq make_pair_function)
       then show ?thesis
         by (simp add: image_image)
     qed
     show ?thesis
-      unfolding Yr get_old_edge_Yr make_pair'_Yr by simp
+      unfolding Yr get_old_edge_Yr make_pair'_Yr by \<^marker>\<open>provenance ai\<close> simp
 qed
 
 lemma map_make_pair'_is_make_pair_of_get_old_edge:
@@ -378,7 +378,7 @@ proof(cases "Abs f > 0", goal_cases)
     case (1 cs')
     then obtain cs where cs_prop: "cs \<in> set css" " set cs \<subseteq> old_edge ` \<E>"
       "cs' = map network_of_network.get_old_edge cs"
-      by (auto dest: set_zip_leftD)
+      by \<^marker>\<open>provenance ai\<close> (auto dest: set_zip_leftD)
     hence cs_further_prop:"network_of_network.flowcycle f' cs"
       "set cs \<subseteq> network_of_network.support t s f'"  "distinct cs"
       using css_ws(4) by auto
@@ -403,7 +403,7 @@ proof(cases "Abs f > 0", goal_cases)
       using cs_prop(3)  cs_prop(2)  make_pair by auto
     moreover hence "make_pair ` set cs' = (id o make_pair') ` set cs " 
       using cs_prop(3)  cs_prop(2)  make_pair 
-      by (subst list.set_map[symmetric], simp add: list.set_map)
+      by \<^marker>\<open>provenance ai\<close> (subst list.set_map[symmetric], simp add: list.set_map)
     ultimately have "awalk (make_pair ` set cs') (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
       by(simp only:)
         (fastforce intro!: awalk_image[OF _ _ refl, of "make_pair' ` set cs" "prod.fst (make_pair' (hd cs))"
@@ -412,7 +412,7 @@ proof(cases "Abs f > 0", goal_cases)
       by (meson subset_UNIV subset_mono_awalk)
     moreover hence "(fst (hd cs')) = (snd (last cs'))"
       using awalk_fst_last cs_non_empty(2) 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume aw: "awalk UNIV (fst (hd cs')) (map make_pair cs') (fst (hd cs'))"
         and afl: "\<And>es E u v. es \<noteq> [] \<Longrightarrow> awalk E u es v
           \<Longrightarrow> prod.fst (hd es) = u \<and> prod.snd (last es) = v"
@@ -481,7 +481,7 @@ proof(cases "Abs f > 0", goal_cases)
       using css_ws(4) unfolding network_of_network.support_def
       by auto
     then obtain C1 C2 where cs'_split:"cs' = C1@[new_edge (create_edge t s)]@C2" 
-      by (force simp: in_set_conv_decomp)
+      by \<^marker>\<open>provenance ai\<close> (force simp: in_set_conv_decomp)
     have C1C2_in_E:"set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
     proof(rule ccontr)
       assume "\<not> set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
@@ -530,7 +530,7 @@ proof(cases "Abs f > 0", goal_cases)
       by(auto simp add:awalk_Cons_iff snd'_def  fst'_def  create_edge' cs'_split )   
     moreover hence C2C1_Nil:"C2@C1 \<noteq> []" 
       using flowcycle_elt(2) flowcycle_elt(3) props(5) awalk_ends
-      by (fastforce simp add: awalk_Cons_iff snd'_def fst'_def create_edge' cs'_split list.simps(8))
+      by \<^marker>\<open>provenance ai\<close> (fastforce simp add: awalk_Cons_iff snd'_def fst'_def create_edge' cs'_split list.simps(8))
     ultimately have awalk_C2C1:"awalk (make_pair' ` set (C2@C1)) s (map make_pair' (C2@C1)) t"      
       by(fastforce intro!: subset_mono_awalk'[of UNIV s "(map make_pair' (C2 @ C1))" t])
     moreover have "(make_pair' ` set (C2@C1)) \<subseteq> make_pair ` \<E>"
@@ -538,7 +538,7 @@ proof(cases "Abs f > 0", goal_cases)
     moreover have "(map make_pair' (C2@C1)) = map make_pair (map get_old_edge (C2@C1))"
       using C1C2_in_E  make_pair'  by auto
     ultimately have awalk_in_E: "awalk (make_pair ` \<E> ) s (map make_pair (map get_old_edge (C2@C1))) t"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume A1: "awalk (make_pair' ` set (C2 @ C1)) s (map make_pair' (C2 @ C1)) t"
         and A2: "make_pair' ` set (C2 @ C1) \<subseteq> make_pair ` \<E>"
         and A3: "map make_pair' (C2 @ C1) = map make_pair (map get_old_edge (C2 @ C1))"
@@ -647,7 +647,7 @@ proof(cases "Abs f > 0", goal_cases)
           using css_ws(4) unfolding network_of_network.support_def
           by auto
         then obtain C1 C2 where cs'_split:"ps = C1@[new_edge (create_edge t s)]@C2" 
-          using split_list by fastforce
+          using split_list by \<^marker>\<open>provenance ai\<close> fastforce
         have C1C2_in_E:"set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
         proof(rule ccontr)
           assume "\<not> set C1 \<union> set C2 \<subseteq> old_edge ` \<E>"
@@ -1121,7 +1121,7 @@ proof(rule set_eqI, all \<open>rule\<close>, goal_cases)
 next
   case (2 x)
   then obtain e where "(e \<in> \<E> \<and> (prod.fst (make_pair e) = x \<or> prod.snd (make_pair e) = x))"
-    by (auto simp add: dVs_def make_pair_function)
+    by \<^marker>\<open>provenance ai\<close> (auto simp add: dVs_def make_pair_function)
   hence "(old_edge e \<in> old_edge ` \<E> \<and> (prod.fst (make_pair' (old_edge e)) = x \<or> prod.snd (make_pair' (old_edge e)) = x))"
     using make_pair by auto
   then show ?case 

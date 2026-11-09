@@ -241,7 +241,7 @@ qed
 lemma symmetric_buddy_matching:
   assumes "symmetric_buddies M" "no_self_loop_buddy M" 
   shows "matching (\<M> M)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have edge_form: "\<exists> z. buddy_lookup M w = Some z \<and> e = {w, z}"
     if "e \<in> \<M> M" "w \<in> e" for e w
   proof -
@@ -334,7 +334,7 @@ proof-
         case 1
         have edges_of_p_split:
             "edges_of_path p = edges_of_path (p1@[a]) @[{a, u},{u, b}]@(edges_of_path (b#p2))"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have list_eq: "p = p1 @ [a,u,b] @ p2"
             using "1" by simp
           have split_eq:
@@ -351,7 +351,7 @@ proof-
         qed
         have "({a, u} \<in> \<M> M \<and> {u, b} \<notin> \<M> M) 
                \<or> ({a, u} \<notin> \<M> M \<and> {u, b} \<in> \<M> M)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have h: "alt_list (\<lambda>e. e \<notin> \<M> M) (\<lambda>e. e \<in> \<M> M)
                     (edges_of_path (p1 @ [a]) @ [{a, u}, {u, b}] @ edges_of_path (b # p2))"
             using assms(2)[simplified edges_of_p_split] by simp

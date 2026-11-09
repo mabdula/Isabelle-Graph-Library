@@ -56,7 +56,7 @@ lemma dVs_member':
   by (auto dest: symmetric)
 
 lemma vs_member': "v \<in> Vs G \<longleftrightarrow> (\<exists>u. {u, v} \<in> G)"
-proof
+proof \<^marker>\<open>provenance ai\<close>
   assume "v \<in> Vs G"
   then obtain e where "v \<in> e" and "e \<in> G"
     unfolding Vs_def by blast
@@ -425,7 +425,7 @@ lemma no_self_loops_2:
 
 lemma awalk_imp_epath:
   "awalk D u p v \<Longrightarrow> epath G u (map undirected p) v"
-proof (induction p arbitrary: u v)
+proof \<^marker>\<open>provenance ai\<close> (induction p arbitrary: u v)
   case Nil
   then show ?case by fastforce
 next
@@ -469,7 +469,7 @@ next
     case a
     then have "length p = 2" by simp
     then have "p = [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         show "p = [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
         proof (rule nth_equalityI)
           show "length p = length [(fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]"
@@ -488,7 +488,7 @@ next
 
     from \<open>e # p = [(fst e, snd e), (fst (p ! 0), snd (p ! 0)), (fst (p ! 1), snd (p ! 1))]\<close>
       have "e # p = [(u, snd e), (snd e, snd (p ! 0)), (snd (p ! 0), v)]"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from Cons.prems(1) have e1: "fst e = u" and p1: "awalk D (snd e) p v"
         by (simp_all add: awalk_Cons_iff)
       from \<open>length p = 2\<close> obtain x y where p_ab: "p = [x, y]"
@@ -512,13 +512,13 @@ next
         by simp
     qed
     then have "awalk_verts u (e # p) = [u, snd e, snd (p ! 0), v]"
-      by (simp del: list.inject prod_eq_iff)
+      by \<^marker>\<open>provenance ai\<close> (simp del: list.inject prod_eq_iff)
     with \<open>distinct (tl (awalk_verts u (e # p)))\<close>
       have "distinct [snd e, snd (p ! 0), v]" by simp
 
     from \<open>e # p = [(u, snd e), (snd e, snd (p ! 0)), (snd (p ! 0), v)]\<close>
       have "map undirected (e # p) = [{u, snd e}, {snd e, snd (p ! 0)}, {snd (p ! 0), v}]"
-      by (cases e; cases "p ! 0"; cases p; simp add: undirected.simps)
+      by \<^marker>\<open>provenance ai\<close> (cases e; cases "p ! 0"; cases p; simp add: undirected.simps)
     with \<open>distinct [snd e, snd (p ! 0), v]\<close>
       show ?thesis 
       using Cons.prems(3) \<open>awalk_verts u (e # p) = [u, snd e, snd (p ! 0), v]\<close> butlast.simps(2)
@@ -547,10 +547,10 @@ next
     have "(x, y) \<notin> set p"
     proof (rule ccontr, goal_cases)
       case 1
-      then have "(x, y) \<in> set p" by simp
-      then have "EX ys zs. p = ys @ (x, y) # zs" by (rule split_list)
-      then obtain p1 p2 where "p = p1 @ (x, y) # p2" by blast
-      then have "p = p1 @ [(x, y)] @ p2" by simp
+      then have "(x, y) \<in> set p" by \<^marker>\<open>provenance ai\<close> simp
+      then have "EX ys zs. p = ys @ (x, y) # zs" by \<^marker>\<open>provenance ai\<close> (rule split_list)
+      then obtain p1 p2 where "p = p1 @ (x, y) # p2" by \<^marker>\<open>provenance ai\<close> blast
+      then have "p = p1 @ [(x, y)] @ p2" by \<^marker>\<open>provenance ai\<close> simp
   
       with e awalk_verts_conv'[of "u" "e # p", OF \<open>cas u (e # p) v\<close>]
         have "tl (awalk_verts u (e # p)) = map snd ([(x, y)] @ p1 @ [(x, y)] @ p2)"
@@ -564,7 +564,7 @@ next
     proof (rule ccontr, goal_cases)
       case 1
       then obtain p1 p2 where "p = p1 @ [(y, x)] @ p2"
-        by (fastforce dest: split_list_first)
+        by \<^marker>\<open>provenance ai\<close> (fastforce dest: split_list_first)
     
       from \<open>awalk D u (e # p) v\<close> have "cas u (e # p) v" unfolding awalk_def by blast
   
@@ -608,7 +608,7 @@ next
   
     from \<open>(x, y) \<notin> set p\<close> \<open>(y, x) \<notin> set p\<close> e
       have "(undirected e) \<notin> set (map undirected p)"
-      proof (intro notI)
+      proof \<^marker>\<open>provenance ai\<close> (intro notI)
         assume "undirected e \<in> set (map undirected p)"
         then obtain e' where e'_mem: "e' \<in> set p" and eq: "undirected e = undirected e'"
           by (auto simp: list.set_map)
@@ -632,7 +632,7 @@ lemma cycle'_imp_decycle:
   "cycle' D p \<Longrightarrow> \<exists>u. decycle G u (map undirected p)"
   using cycle'_def cycle_def decycle_def
    awalk_imp_epath awalk_distinct_imp_epath_distinct cycle'_imp_awalk_verts_distinct
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "cycle' D p"
   then obtain u where awalk: "awalk D u p u"
     and distinct_tl: "distinct (tl (awalk_verts u p))"
@@ -692,7 +692,7 @@ next
     using \<open>e \<in> G\<close> \<open>{u, w} = e\<close> \<open>u \<noteq> w\<close> D_def
     by force
   show ?case
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have eq: "epath_to_awalk u (e # p) = (u, w) # epath_to_awalk w p"
       using \<open>epath_to_awalk u (e # p) = (let v' = (THE v. v \<in> e - {u}) in (u, v') # epath_to_awalk v' p)\<close>
             \<open>(THE v. v \<in> e - {u}) = w\<close>
@@ -722,7 +722,7 @@ proof-
   from \<open>length p > 2\<close> have "length ?p_tl > 1" by auto
   from \<open>epath G u p u\<close> \<open>length p > 2\<close>
     have "\<exists>x. u \<noteq> x \<and> p = {u, x} # ?p_tl \<and> epath G x ?p_tl u \<and> {u, x} \<in> G"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have p_eq: "p = hd p # tl p"
       using list.collapse[OF \<open>p \<noteq> []\<close>] by simp
     from \<open>epath G u p u\<close> p_eq have "epath G u (hd p # tl p) u"
@@ -750,7 +750,7 @@ proof-
   moreover have "(u, x) \<in> D" using D_def \<open>{u, x} \<in> G\<close> by auto
   ultimately have "awalk D u ?c' u"
     using awalk_Cons_iff
-    by (simp add: awalk_Cons_iff fst_conv snd_conv)
+    by \<^marker>\<open>provenance ai\<close> (simp add: awalk_Cons_iff fst_conv snd_conv)
 
   from apath have distinct_verts: "distinct (awalk_verts x (awalk_to_apath D (epath_to_awalk x (tl p))))"
     unfolding apath_def by auto
@@ -763,7 +763,7 @@ proof-
     have "distinct (tl (awalk_verts u ?c'))" by simp
 
   have list_decomp_1: "\<And>l. length l = 1 \<Longrightarrow> \<exists>a. l = [a]"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     fix l
     assume "length l = 1"
     then show "\<exists>a. l = [a]"
@@ -775,7 +775,7 @@ proof-
     case 1
     then have "length ?c' \<le> 2" by simp
     with \<open>awalk D u ?c' u\<close> \<open>u \<noteq> x\<close> have "length ?c' = 2"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "length ?c' \<ge> 1" by simp
       moreover have "length ?c' \<noteq> 1"
       proof
@@ -795,19 +795,19 @@ proof-
       using list_decomp_1 by fastforce
     with awalk_to_apath_subset[OF \<open>awalk D x (epath_to_awalk x (tl p)) u\<close>]
       have "(x, u) \<in> set (epath_to_awalk x (tl p))"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "(x, u) \<in> set (awalk_to_apath D (epath_to_awalk x (tl p)))"
       using \<open>[(x, u)] = (awalk_to_apath D (epath_to_awalk x (tl p)))\<close>[symmetric] by simp
     then show "(x, u) \<in> set (epath_to_awalk x (tl p))"
       using awalk_to_apath_subset[OF \<open>awalk D x (epath_to_awalk x (tl p)) u\<close>] by blast
   qed
     then have "undirected (x, u) \<in> set (map undirected (epath_to_awalk x (tl p)))"
-      by (force simp: set_map)
+      by \<^marker>\<open>provenance ai\<close> (force simp: set_map)
     with map_undirected_epath_to_awalk[OF \<open>epath G x (tl p) u\<close>]
       have "{x, u} \<in> set (tl p)" by simp
     with \<open>p = {u, x} # ?p_tl\<close> \<open>distinct p\<close>
       show ?case 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>p = {u, x} # ?p_tl\<close> have "distinct ({u, x} # tl p)"
           using \<open>distinct p\<close> by (rule subst)
         then have "{u, x} \<notin> set (tl p)"

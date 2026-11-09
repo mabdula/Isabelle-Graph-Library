@@ -212,7 +212,7 @@ lemma Vs_enum_inv_leftE:
   assumes "i < card L"
   obtains j where "j \<in> L" "Vs_enum_inv i = j"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "L \<noteq> {}"
     using assms card.empty by fastforce
   then have "from_nat_into L i \<in> L"
@@ -228,7 +228,7 @@ lemma Vs_enum_inv_rightE:
   assumes "\<not> i < card L"
   obtains j where "j \<in> R" "Vs_enum_inv i = j"
   using assms
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms(2) have card_le: "card L \<le> i" by simp
   have lt_R: "i - card L < card R"
     using geq_L_less_n_less_R[OF card_le assms(1)] .
@@ -255,7 +255,7 @@ lemma G_not_empty_if:
 lemma from_nat_into_G_E_aux:
   assumes "i < m"
   obtains e where "e \<in> G" "from_nat_into G i = e"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   from assms have ne: "G \<noteq> {}" by (rule G_not_empty_if)
   have mem: "from_nat_into G i \<in> G" by (rule from_nat_into[OF ne])
   show thesis by (rule that[OF mem refl])
@@ -265,7 +265,7 @@ lemma from_nat_into_G_E:
   assumes "i < m"
   obtains l r where "{l,r} \<in> G" "from_nat_into G i = {l,r}" "l \<in> L" "r \<in> R"
   using assms bipartite_graph
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   obtain e where e_in_G: "e \<in> G" and e_eq: "from_nat_into G i = e"
     using from_nat_into_G_E_aux[OF assms] .
   obtain l r where e_lr: "e = {l,r}" and l_L: "l \<in> L" and r_R: "r \<in> R"
@@ -275,7 +275,7 @@ proof -
 qed
 
 lemma Vs_enum_neqI: "\<lbrakk>v \<in> Vs G; v' \<in> Vs G; v \<noteq> v'\<rbrakk> \<Longrightarrow> Vs_enum v \<noteq> Vs_enum v'"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "v \<in> Vs G" and "v' \<in> Vs G" and "v \<noteq> v'"
   show "Vs_enum v \<noteq> Vs_enum v'"
   proof

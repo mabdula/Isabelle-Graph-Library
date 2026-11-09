@@ -334,9 +334,9 @@ lemma invar_2_holds_upd1[invar_holds_intros]:
   apply(auto elim!: call_cond_elims invar_1_props invar_2_props intro!: invar_props_intros simp: BFS_upd1_def Let_def)
   apply(auto simp: dVs_def)
   subgoal premises prems for v1 v2
-    using prems(4) prems(13) prems(15) by blast
+    using prems(4) prems(13) prems(15) by \<^marker>\<open>provenance ai\<close> blast
   subgoal premises prems for v1 v2
-    using prems(4) prems(13) prems(15) by blast
+    using prems(4) prems(13) prems(15) by \<^marker>\<open>provenance ai\<close> blast
   done
 
 lemma invar_2_holds_ret_1[invar_holds_intros]:
@@ -524,7 +524,7 @@ lemma dist_current_plus_1_new:
 
       ultimately show False
         using \<open>invar_3_4 bfs_state\<close>
-        by (fastforce elim!: invar_props_elims)
+        by \<^marker>\<open>provenance ai\<close> (fastforce elim!: invar_props_elims)
     qed
     ultimately show ?thesis
       by force
@@ -586,7 +586,7 @@ next
       by auto
     ultimately obtain u' where "?d u' + 1 = ?d u" "u \<in> neighbourhood (Graph.digraph_abs G) u'"
       using distance_set_parent'
-      by (meson srcs_invar(1))
+      by \<^marker>\<open>provenance ai\<close> (meson srcs_invar(1))
     hence "?d u' = ?d v'"
       using \<open>?d v = ?d v' + 1\<close> \<open>?d v = ?d u\<close>
       by auto
@@ -651,7 +651,7 @@ proof(intro invar_props_intros, goal_cases)
       using assms
       by(fastforce intro!: dist_current_plus_1_new)
     ultimately show ?thesis
-      by (fastforce intro: order.trans simp: le_iff_add)
+      by \<^marker>\<open>provenance ai\<close> (fastforce intro: order.trans simp: le_iff_add)
   qed
 qed
 
@@ -937,9 +937,9 @@ proof(intro invar_props_intros, goal_cases)
             by (meson dVsI(1) distance_set_0 neighbourhoodI v'(3))
           moreover have "?dSrcsG v' = 0"
             using v'_in_srcs
-            by (fastforce intro: iffD2[OF distance_set_0[where G = "(Graph.digraph_abs G)"]] simp: srcs_in_G)
+            by \<^marker>\<open>provenance ai\<close> (fastforce intro: iffD2[OF distance_set_0[where G = "(Graph.digraph_abs G)"]] simp: srcs_in_G)
           then show ?thesis
-            proof -
+            proof \<^marker>\<open>provenance ai\<close> -
               have v'0a: "distance_set (Graph.digraph_abs (parents bfs_state')) (t_set srcs) v' = 0"
                 using calculation(1) .
               have v'0b: "distance_set (Graph.digraph_abs G) (t_set srcs) v' = 0"
@@ -1135,7 +1135,7 @@ proof(intro invar_props_intros, goal_cases)
         case 1
 
         moreover have "vwalk_bet (Graph.digraph_abs G) u p v"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "Graph.digraph_abs (parents bfs_state') \<subseteq> Graph.digraph_abs G"
             using \<open>invar_2 bfs_state'\<close>
             by (auto elim!: invar_2_props)
@@ -1371,7 +1371,7 @@ next
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
     including Graph.adjmap.automation and Graph.vset.set.automation
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have vset_inv_lookup: "\<And>v N. lookup G v = Some N \<Longrightarrow> vset_inv N"
         using graph_inv(1) by (blast elim: Graph.graph_invE)
       show ?thesis

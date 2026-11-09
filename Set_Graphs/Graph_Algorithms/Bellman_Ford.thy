@@ -26,7 +26,7 @@ lemma unique_path_backward_determ_acyclic:
 proof(rule ccontr, goal_cases)
   case 1
   have same_lasts: " last p = last q"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "v = last p"
       using assms(2) by (rule last_of_vwalk_bet)
     moreover have "v = last q"
@@ -301,11 +301,11 @@ lemma bellman_ford_upd_one:
 
 lemma finite_of_V: "finite {f xs | xs. P xs \<and> length xs \<le> l \<and> set xs \<subseteq> set vs}"
 proof-
-  have "finite (set vs)" by simp
+  have "finite (set vs)" by \<^marker>\<open>provenance ai\<close> simp
   hence "finite {xs. set xs \<subseteq> set vs \<and> length xs \<le> l}"
-    by (rule finite_lists_length_le)
+    by \<^marker>\<open>provenance ai\<close> (rule finite_lists_length_le)
   hence "finite {xs. length xs \<le> l \<and> set xs \<subseteq> set vs}"
-    by (rule rev_finite_subset, auto)
+    by \<^marker>\<open>provenance ai\<close> (rule rev_finite_subset, auto)
   thus ?thesis by simp
 qed
 
@@ -316,7 +316,7 @@ lemma finite_weight_set:
 
 lemma finite_lists_length_le1: "finite {xs. length xs \<le> i \<and> set xs \<subseteq> set vs}" for i
   using finite_lists_length_le[ of _ i] 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have eq: "{xs. length xs \<le> i \<and> set xs \<subseteq> set vs} = {xs. set xs \<subseteq> set vs \<and> length xs \<le> i}"
     by auto
   show ?thesis
@@ -499,7 +499,7 @@ next
       apply(rule connection_inver_fold_pres[OF assms(1)])
       apply simp
       using Cons[of v] 
-      by (auto simp: prod_eq_iff)
+      by \<^marker>\<open>provenance ai\<close> (auto simp: prod_eq_iff)
   next
     case 1 
     have Cons_applied: 
@@ -516,7 +516,7 @@ next
          (insert (OPT l s (fst e) + edge_costs (fst e) v) 
          (insert (OPT l s v) {OPT l s u + edge_costs u v |u. (u, v) \<in> set es}))" 
       using sym[OF 1] 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       obtain a b where e_eq: "e = (a, b)"
         by (rule prod.exhaust)
       have b_eq: "b = v"
@@ -656,7 +656,7 @@ lemma same_domain_bellman_ford[invar_lemmas]:
 proof(induction l)
   case (Suc l)
  have "set (map snd es) \<subseteq> set vs" 
-  proof (rule subsetI)
+  proof \<^marker>\<open>provenance ai\<close> (rule subsetI)
     fix x
     assume "x \<in> set (map snd es)"
     then obtain e where e_es: "e \<in> set es" and x_eq: "x = snd e"
@@ -1425,10 +1425,10 @@ proof(rule, goal_cases)
         by (intro vwalk_rotate[of _ u Nil v "butlast p2"])fastforce
       hence pref: "Vwalk.vwalk (pred_graph (relax connections u v))
                 ((v # butlast p2 @ [u]) @ [v])"
-        by simp
+        by \<^marker>\<open>provenance ai\<close> simp
       thus ?case
         using 1 pref
-        by (fastforce intro: append_vwalk_pref)
+        by \<^marker>\<open>provenance ai\<close> (fastforce intro: append_vwalk_pref)
     qed simp
     moreover have "\<lbrakk>p1 = b#pp1; p2= []\<rbrakk> 
          \<Longrightarrow> vwalk_bet (pred_graph (relax connections u v)) v  ([v]@tl p1@[u]) u"
@@ -1450,7 +1450,7 @@ proof(rule, goal_cases)
       by auto
     ultimately obtain q where  "vwalk_bet (pred_graph (relax connections u v)) v ([v]@q@[u]) u" 
       using append_Nil[of "[u]"] 
-      by(cases p1)( cases p2, fastforce intro: that[of "[]"], simp, cases p2, fast+)
+      by \<^marker>\<open>provenance ai\<close>(cases p1)( cases p2, fastforce intro: that[of "[]"], simp, cases p2, fast+)
     then obtain r where  r_prop:"vwalk_bet (pred_graph (relax connections u v)) v r u" "distinct r"
       by (meson distinct_vwalk_bet_def vwalk_bet_to_distinct_is_distinct_vwalk_bet)
     hence lengthr: "length r \<ge> 2"
@@ -1483,7 +1483,7 @@ proof(rule, goal_cases)
     hence "snd (the (connection_lookup connections u))
             > snd (the (connection_lookup connections u)) + edge_costs u v + weight r"
       using True 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dominates: "snd (the (connection_lookup connections v)) + weight r
                         \<le> snd (the (connection_lookup connections u))"
         using r_walk_in_old weight_pred_path[OF lengthr assms(5)] by simp
@@ -1519,7 +1519,7 @@ proof(rule, goal_cases)
       qed
     qed
     hence weight_sum:"edge_costs u v + weight r < 0"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       assume big: "snd (the (connection_lookup connections u)) + edge_costs u v + weight r
                    < snd (the (connection_lookup connections u))"
       show "edge_costs u v + weight r < 0"
@@ -1740,7 +1740,7 @@ proof(cases "OPT (length vs - 1) s v")
     using sym[OF distinct_card[OF distinct_vs]]  sym[OF distinct_card[OF P_prop(4)]]
     by (auto simp add: card_mono)
   have "\<exists>pp. P = [s]@pp@[v]"
-  proof(cases P)
+  proof \<^marker>\<open>provenance ai\<close>(cases P)
     case Nil
     hence False
       using calculation(2) calculation(3) assms(2) hd_Nil_eq_last by force
@@ -1768,7 +1768,7 @@ proof(cases "OPT (length vs - 1) s v")
       thus ?thesis by blast
     qed
   qed
-  then obtain pp where pp_is:"P = [s]@pp@[v]" by blast
+  then obtain pp where pp_is:"P = [s]@pp@[v]" by \<^marker>\<open>provenance ai\<close> blast
   have "length ([s]@pp@[v]) \<le> length vs"
     using P_length pp_is by blast
   moreover have "weight ([s]@pp@[v]) < PInfty" 
@@ -1820,7 +1820,7 @@ next
     using sym[OF distinct_card[OF distinct_vs]]  sym[OF distinct_card[OF P_prop(4)]]
     by (auto simp add: card_mono)
   obtain pp where pp_is:"P = [s]@pp@[v]"  
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<exists>pp. P = [s] @ pp @ [v]"
     proof(cases P)
       case Nil
@@ -2386,7 +2386,7 @@ proof-
    proof-
      have "weight (rev (search_rev_path s connections pred)@[v])
           = weight (butlast (rev (search_rev_path s connections pred))@[pred, v])"
-      proof(rule vwalk_bet_props[OF vwalk_s_pred], goal_cases)
+      proof \<^marker>\<open>provenance ai\<close>(rule vwalk_bet_props[OF vwalk_s_pred], goal_cases)
         case 1
         have "rev (search_rev_path s connections pred) @ [v]
               = (butlast (rev (search_rev_path s connections pred))

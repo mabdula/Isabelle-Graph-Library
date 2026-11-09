@@ -227,7 +227,7 @@ proof(rule ccontr)
   then obtain cs where cs_def: "augcycle f cs" by auto
   then obtain \<gamma> where gamma_def: "\<gamma> > 0 \<and> ereal \<gamma> \<le> Rcap f (set cs)"
     using augcycle_def augpath_rcap
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have Rcap_pos: "0 < Rcap f (set cs)"
       using cs_def by (auto simp add: augcycle_def intro: augpath_rcap)
     obtain z where z1: "0 < ereal z" and z2: "ereal z < Rcap f (set cs)"
@@ -350,7 +350,7 @@ proof
           finite_imageI[of "\<delta>\<^sup>+ v" "\<lambda> e. B e"]   delta_plus_finite[of v]
           finite_imageI[of "\<delta>\<^sup>+ v" F ] finite_imageI[of "\<delta>\<^sup>- v" "\<lambda> e. B e"]
     unfolding Setcompr_eq_image
-      by auto
+      by \<^marker>\<open>provenance ai\<close> auto
   have 00: "(\<Sum> e \<in> {F e |e. e \<in> \<delta>\<^sup>- v} \<union> {B e |e. e \<in> \<delta>\<^sup>+ v}.  
                                   (difference f' f)  e)                =
                 ((\<Sum> e \<in> {F e |e. e \<in> \<delta>\<^sup>- v}.  (difference f' f)  e) +
@@ -460,7 +460,7 @@ proof-
       by fastforce 
   also have " ... = (\<Sum>e\<in>\<E>. difference f' f (F e) *\<c> e) +
                     (\<Sum>e\<in>\<E>. - difference f' f (B e) * \<c> e) "
-    by (simp add: \<cc>.simps(1) \<cc>.simps(2))
+    by \<^marker>\<open>provenance ai\<close> (simp add: \<cc>.simps(1) \<cc>.simps(2))
   also have "... = (\<Sum>e\<in>\<E>.     difference f' f (F e) *\<c> e
                              - difference f' f (B e) * \<c> e) " 
     using sym[OF sum.distrib[of "\<lambda> e. difference f' f (F e) * \<c> e"_ \<E>]] by simp
@@ -569,7 +569,7 @@ proof(rule ccontr)
     using  f_f'_diff_neg  R_cost_g by fastforce
   then obtain i where i_Def:"i<length css" 
               "(\<Sum>e\<in>\<EE>. (if e \<in> set (css ! i) then ws ! i else 0) * \<cc> e) < 0" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have neg: "residual_flow.\<C> g < 0"
       using f_f'_diff_neg R_cost_g by simp
     have ex_i: "\<exists>i. i < length css \<and>
@@ -649,7 +649,7 @@ proof(rule ccontr)
   proof-
     have "(\<Sum>e\<in>  set (css ! i). (ws ! i) * \<cc> e) = 
            (ws ! i) * (\<Sum>e\<in>  set (css ! i). \<cc> e)" 
-      by (simp add: sum_distrib_left)
+      by \<^marker>\<open>provenance ai\<close> (simp add: sum_distrib_left)
     also have 000:"... = (ws ! i)*(\<CC> (css ! i))" unfolding \<CC>_def by simp
     show "(\<CC> (css ! i)) < 0" 
      using calculation css_ws_def(1) css_ws_def(3) i_Def  sum_weigt_c unfolding \<CC>_def 

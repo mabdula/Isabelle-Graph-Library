@@ -1039,7 +1039,7 @@ proof(induction k arbitrary: state state')
   case (Suc k)
   have unfold:"(orlins_one_step_check ^^ Suc k) state = 
         (orlins_one_step_check ^^ k) (orlins_one_step_check state)"
-    by (simp only: funpow_simps_right(2) o_apply)
+    by \<^marker>\<open>provenance ai\<close> (simp only: funpow_simps_right(2) o_apply)
   show ?case 
   proof(cases "return state = notyetterm")
     case True
@@ -2081,7 +2081,7 @@ proof-
       using connected_compt_subs by simp
   qed
   thus ?thesis 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       show ?thesis
       proof(rule ccontr)
         assume contr: "\<not> ?thesis"

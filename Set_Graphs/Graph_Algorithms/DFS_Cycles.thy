@@ -28,7 +28,7 @@ proof-
     case 1
     from \<open>i < length l\<close> \<open>l ! i = x\<close>
       have "l = (take i l) @ [x] @ (drop (i + 1) l)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "drop i l = l ! i # drop (Suc i) l"
           using \<open>i < length l\<close> by (simp add: Cons_nth_drop_Suc)
         hence "drop i l = [x] @ drop (Suc i) l"
@@ -44,7 +44,7 @@ proof-
     have "j \<ge> i + 1" using \<open>i < j\<close> by auto
     with \<open>j < length l\<close> have "y \<in> set (drop (i + 1) l)"
       using \<open>l ! j = y\<close>
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have len_le: "i + 1 \<le> length l"
         using \<open>j \<ge> i + 1\<close> \<open>j < length l\<close> by linarith
       have sum_eq: "(i + 1) + (j - (i + 1)) = j"
@@ -63,7 +63,7 @@ proof-
     qed
     from \<open>l ! j = y\<close>
       have "\<exists>xs ys. (drop (i + 1) l) = xs @ [y] @ ys"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>y \<in> set (drop (i + 1) l)\<close> show ?thesis
           by (auto simp add: in_set_conv_decomp)
       qed
@@ -75,7 +75,7 @@ proof-
     case 2
     from \<open>j < length l\<close> \<open>l ! j = y\<close>
       have "l = (take j l) @ [y] @ (drop (j + 1) l)"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have drop_eq: "drop j l = l ! j # drop (j + 1) l"
           using Cons_nth_drop_Suc[OF \<open>j < length l\<close>, symmetric] by simp
         with drop_eq \<open>l ! j = y\<close> have "drop j l = y # drop (j + 1) l"
@@ -89,7 +89,7 @@ proof-
     have "i \<ge> j + 1" using \<open>j < i\<close> by auto
     with \<open>i < length l\<close> have "x \<in> set (drop (j + 1) l)"
       using \<open>l ! i = x\<close>
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have len_le: "j + 1 \<le> length l"
           using \<open>j < i\<close> \<open>i < length l\<close> by simp
         have idx_eq: "(j + 1) + (i - (j + 1)) = i"
@@ -112,7 +112,7 @@ proof-
       qed
     from \<open>l ! i = x\<close>
       have "\<exists>xs ys. (drop (j + 1) l) = xs @ [x] @ ys"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>x \<in> set (drop (j + 1) l)\<close> obtain xs ys
         where "drop (j + 1) l = xs @ [x] @ ys"
         by (auto simp: in_set_conv_decomp)
@@ -554,7 +554,7 @@ proof (intro invar_props_intros, goal_cases)
 
     have "\<forall>e \<in> (Graph.digraph_abs G). prod.swap e \<in> (Graph.digraph_abs G)" by auto
       have "\<nexists>p. awalk (Graph.digraph_abs G) w p v"
-      proof (rule notI)
+      proof \<^marker>\<open>provenance ai\<close> (rule notI)
         assume "\<exists>p. awalk (Graph.digraph_abs G) w p v"
         then obtain p where p_awalk: "awalk (Graph.digraph_abs G) w p v" by blast
         have sym_edges: "\<forall>e \<in> Graph.digraph_abs G. prod.swap e \<in> Graph.digraph_abs G"
@@ -841,7 +841,7 @@ proof (intro invar_props_intros, goal_cases)
       then obtain xs ys zs where "c = xs @ [e1] @ ys @ [e2] @ zs" by blast
       with c_awalk awalk_append_iff
         have "awalk ?G_seen_new u (xs @ [e1]) (awlast u (xs @ [e1]))"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have c_eq: "c = (xs @ [e1]) @ (ys @ [e2] @ zs)"
           using \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> by simp
         have "awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u"
@@ -854,7 +854,7 @@ proof (intro invar_props_intros, goal_cases)
         by (auto simp add: awalk_verts_conv)
       with \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> c_awalk awalk_append_iff
         have "awalk ?G_seen_new (snd e1) (ys @ [e2] @ zs) (awlast (snd e1) (ys @ [e2] @ zs))"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         from \<open>c = xs @ [e1] @ ys @ [e2] @ zs\<close> c_awalk
           have "awalk ?G_seen_new u ((xs @ [e1]) @ (ys @ [e2] @ zs)) u"
           by simp
@@ -895,7 +895,7 @@ proof (intro invar_props_intros, goal_cases)
       then obtain xs ys zs where "c = xs @ [e2] @ ys @ [e1] @ zs" by blast
       with c_awalk awalk_append_iff
         have "awalk ?G_seen_new u (xs @ [e2]) (awlast u (xs @ [e2]))"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have c_eq: "c = (xs @ [e2]) @ (ys @ [e1] @ zs)"
           using \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> by simp
         from awalk_append_iff[THEN iffD1, THEN conjunct1, OF c_awalk[unfolded c_eq]]
@@ -906,7 +906,7 @@ proof (intro invar_props_intros, goal_cases)
         by (auto simp add: awalk_verts_conv)
       with \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> c_awalk awalk_append_iff
         have "awalk ?G_seen_new (snd e2) (ys @ [e1] @ zs) (awlast (snd e2) (ys @ [e1] @ zs))"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have c_eq: "c = (xs @ [e2]) @ (ys @ [e1] @ zs)"
           using \<open>c = xs @ [e2] @ ys @ [e1] @ zs\<close> by simp
         from awalk_append_iff[THEN iffD1, THEN conjunct2, OF c_awalk[unfolded c_eq]]

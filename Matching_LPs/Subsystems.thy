@@ -27,7 +27,7 @@ lemma sub_system_snd:
 
 lemma dim_row_subsyst_mat:
   shows "dim_row (fst (sub_system A b I)) = card {i. i < dim_row A \<and> i \<in> I}" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "dim_row (fst (sub_system A b I)) = dim_row (submatrix A I UNIV)"
     by (simp add: sub_system_fst)
   also have "\<dots> = card {i. i < dim_row A \<and> i \<in> I}"
@@ -42,7 +42,7 @@ lemma dim_col_submatrix_UNIV:
 
 lemma dim_col_subsyst_mat:
   shows "dim_col (fst (sub_system A b I)) = dim_col A" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "dim_col (fst (sub_system A b I)) = dim_col (submatrix A I UNIV)"
     by (simp add: sub_system_fst)
   also have "\<dots> = dim_col A"
@@ -65,11 +65,11 @@ lemma dim_subsyst_vec:
   shows "dim_vec (snd (sub_system A b I)) = card {i. i < dim_vec b \<and> i \<in> I}"
 proof -
   have "dim_vec (snd (sub_system A b I)) = length (nths (list_of_vec b) I)"
-    by (simp add: sub_system_snd Matrix.dim_vec_of_list)
+    by \<^marker>\<open>provenance ai\<close> (simp add: sub_system_snd Matrix.dim_vec_of_list)
   also have "\<dots> = card {i. i < length (list_of_vec b) \<and> i \<in> I}"
-    by (rule length_nths)
+    by \<^marker>\<open>provenance ai\<close> (rule length_nths)
   also have "\<dots> = card {i. i < dim_vec b \<and> i \<in> I}"
-    by (simp only: Matrix.length_list_of_vec)
+    by \<^marker>\<open>provenance ai\<close> (simp only: Matrix.length_list_of_vec)
   finally show ?thesis .
 qed
 
@@ -78,9 +78,9 @@ lemma  dim_subsyst_vec_less_b:
 proof -
   have "{i. i < dim_vec b \<and> i \<in> I} \<subseteq> {0..<dim_vec b}" by auto
   then have "card {i. i < dim_vec b \<and> i \<in> I} \<le> card  {0..<dim_vec b}" 
-    by (rule card_mono[OF finite_atLeastLessThan])
+    by \<^marker>\<open>provenance ai\<close> (rule card_mono[OF finite_atLeastLessThan])
   then show ?thesis 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have fin: "finite {0..<dim_vec b}"
       by simp
     have sub: "{i. i < dim_vec b \<and> i \<in> I} \<subseteq> {0..<dim_vec b}"
@@ -100,15 +100,15 @@ lemma  dim_subsyst_mat_less_A:
 proof -
   have "{i. i < dim_row A \<and> i \<in> I} \<subseteq> {0..<dim_row A}" by auto
   then have "card {i. i < dim_row A \<and> i \<in> I} \<le> card  {0..<dim_row A}" 
-    by (rule card_mono[OF finite_atLeastLessThan])
+    by \<^marker>\<open>provenance ai\<close> (rule card_mono[OF finite_atLeastLessThan])
   then show ?thesis 
-    by (simp add: dim_row_subsyst_mat)
+    by \<^marker>\<open>provenance ai\<close> (simp add: dim_row_subsyst_mat)
 qed
 
 lemma dims_subsyst_same:
   assumes "dim_row A = dim_vec b"
   shows "dim_row (fst (sub_system A b I)) = dim_vec (snd (sub_system A b I))" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "dim_row (fst (sub_system A b I)) = card {i. i < dim_row A \<and> i \<in> I}"
     by (rule dim_row_subsyst_mat)
   also have "\<dots> = card {i. i < dim_vec b \<and> i \<in> I}"
@@ -122,7 +122,7 @@ lemma dims_subsyst_same':
   assumes "dim_row A = dim_vec b"
   assumes "(A', b') = (sub_system A b I)" 
   shows "dim_row A' = dim_vec b'"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have eq: "sub_system A b I = (A', b')"
     using assms(2) by (rule sym)
   have "dim_row A' = dim_row (fst (sub_system A b I))"
@@ -139,7 +139,7 @@ lemma dims_subsyst_same_carr:
   assumes "b \<in> carrier_vec nr" 
   assumes "(A', b') = (sub_system A b I)" 
   shows "dim_row A' = dim_vec b'"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have "dim_row A = nr"
     using assms(1) by (rule carrier_matD(1))
   moreover have "dim_vec b = nr"
@@ -161,9 +161,9 @@ proof -
   then have " card {i. i < dim_row A \<and> i \<in> I} = card I" using A by auto
   then have eq_card: "card {i. i < dim_row A \<and> i \<in> I} = card I" .
   have "dim_row (fst (sub_system A b I)) = card {i. i < dim_row A \<and> i \<in> I}"
-    by (rule dim_row_subsyst_mat)
+    by \<^marker>\<open>provenance ai\<close> (rule dim_row_subsyst_mat)
   also have "\<dots> = card I"
-    by (rule eq_card)
+    by \<^marker>\<open>provenance ai\<close> (rule eq_card)
   finally show "dim_row (fst (sub_system A b I)) = card I" .
   then show "dim_vec (snd (sub_system A b I)) = card I" using b 
     by (simp add: \<open>{i. i < nr \<and> i \<in> I} = I\<close> dim_subsyst_vec)
@@ -177,7 +177,7 @@ lemma carrier_mat_subsyst:
 lemma subsyst_rows_carr:
   assumes "A \<in> carrier_mat nr n"
   shows "set (rows (submatrix A I UNIV)) \<subseteq> carrier_vec n"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have dc: "dim_col (submatrix A I UNIV) = n"
     using dim_col_submatrix_UNIV[of A I] carrier_matD(2)[OF assms] by simp
   show ?thesis
@@ -197,7 +197,7 @@ qed
 lemma nths_list_pick_vec_same:
   shows "vec_of_list (nths (list_of_vec b) I) = 
     vec (card {i. i<dim_vec b \<and> i\<in>I})  (\<lambda> i. b $ (pick I i))"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have len_lv: "length (list_of_vec b) = dim_vec b"
     by (simp add: Matrix.length_list_of_vec)
   have len: "length (nths (list_of_vec b) I) = card {i. i < dim_vec b \<and> i \<in> I}"
@@ -245,7 +245,7 @@ qed
 lemma subsyst_b_i:
   assumes "i < dim_vec (snd (sub_system A b I))"  
   shows "(snd (sub_system A b I)) $ i = b $ (pick I i)" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have idx: "i < card {j. j < dim_vec b \<and> j \<in> I}"
     using assms by (simp add: dim_subsyst_vec)
   have eq: "snd (sub_system A b I) = vec (card {j. j < dim_vec b \<and> j \<in> I}) (\<lambda>j. b $ pick I j)"
@@ -275,7 +275,7 @@ proof
   then show "fst (A, b) = fst (sub_system A b UNIV)"
     unfolding sub_system_fst fst_conv .
   show "snd (A, b) = snd (sub_system A b UNIV)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
   have "snd (sub_system A b UNIV) = vec_of_list (nths (list_of_vec b) UNIV)"
     by (rule sub_system_snd)
   also have "\<dots> = vec_of_list (list_of_vec b)"
@@ -290,7 +290,7 @@ qed
 lemma pick_index_row_in_A:
   assumes "j < dim_row (fst (sub_system A b I))" 
   shows "row (fst (sub_system A b I)) j = row A (pick I j)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have j: "j < card {i. i < dim_row A \<and> i \<in> I}"
     using assms by (simp add: dim_row_subsyst_mat)
   have "row (fst (sub_system A b I)) j = row (submatrix A I UNIV) j"
@@ -307,14 +307,14 @@ lemma exist_index_in_A:
           \<and> (snd (sub_system A b I)) $ j = b $ i \<and> i = pick I j"
 proof -
   have "(pick I j) < dim_vec b" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "j < card {i. i < dim_vec b \<and> i \<in> I}"
       using assms(2) by (simp add: dim_subsyst_vec)
     then show ?thesis
       by (rule pick_le)
   qed
   moreover have "(pick I j) \<in> I" 
-  proof (cases "finite I")
+  proof \<^marker>\<open>provenance ai\<close> (cases "finite I")
     case True
     have "j < dim_row (fst (sub_system A b I))"
       using assms(2) dims_subsyst_same[OF assms(1)] by simp
@@ -327,14 +327,14 @@ proof -
     then show ?thesis by (rule pick_in_set_inf)
   qed
   moreover have "row (fst (sub_system A b I)) j = row A (pick I j)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "j < dim_row (fst (sub_system A b I))"
       using assms(2) dims_subsyst_same[OF assms(1)] by simp
     from pick_index_row_in_A[OF this] show ?thesis .
   qed
   moreover have "snd (sub_system A b I) $ j = b $ (pick I j)"
-    by (rule subsyst_b_i[OF assms(2)])
-  ultimately show ?thesis by blast
+    by \<^marker>\<open>provenance ai\<close> (rule subsyst_b_i[OF assms(2)])
+  ultimately show ?thesis by \<^marker>\<open>provenance ai\<close> blast
 qed
 
 lemma exist_index_in_A_carr:
@@ -344,7 +344,7 @@ lemma exist_index_in_A_carr:
   assumes "j < dim_row C"
   shows "\<exists> i < nr. i \<in> I \<and> row C j = row A i 
           \<and> d $ j = b $ i \<and> i = pick I j"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have Cd: "sub_system A b I = (C, d)"
     by (rule assms(3)[symmetric])
   have C_eq: "fst (sub_system A b I) = C"
@@ -385,7 +385,7 @@ proof -
   let ?i = "card {a\<in>I. a < j}" 
   have "pick I ?i = j" using pick_card_in_set assms(2) by auto
   have "dim_vec (snd (sub_system A b I)) = card {i. i < dim_vec b \<and> i \<in> I}" 
-    by (rule dim_subsyst_vec)
+    by \<^marker>\<open>provenance ai\<close> (rule dim_subsyst_vec)
   have "j \<notin> {a\<in>I. a < j} \<and> j \<in> {i. i < dim_vec b \<and> i \<in> I}" using assms(1-2) by auto
   then  have "{a\<in>I. a < j} \<subset> {i. i < dim_vec b \<and> i \<in> I}" 
     by auto
@@ -427,10 +427,10 @@ proof
   fix i
   assume "i \<in> I \<inter> {0..<dim_row A}" 
   have "dim_row A' = dim_vec b'" using assms(1) 
-    by (simp add: dims_subsyst_same'[OF assms(1,2)])
+    by \<^marker>\<open>provenance ai\<close> (simp add: dims_subsyst_same'[OF assms(1,2)])
   then obtain j where "j<dim_row A' \<and> row A' j = row A i \<and> b' $ j = b $ i" 
     using exist_index_in_A'[of A b i I]  assms(1-2) 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have i_in: "i \<in> I"
       using \<open>i \<in> I \<inter> {0..<dim_row A}\<close> by auto
     have i_lt: "i < dim_row A"
@@ -470,7 +470,7 @@ proof(rule)+
   fix i
   assume "i < dim_row A'"
   have "dim_row A' = dim_vec b'" using assms(1) 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have subsys: "sub_system A b I = (A', b')"
       using assms(2) by (rule sym)
     have "dim_row A' = dim_row (fst (sub_system A b I))"
@@ -482,18 +482,18 @@ proof(rule)+
     finally show ?thesis .
   qed
   have A'_eq: "fst (sub_system A b I) = A'" and b'_eq: "snd (sub_system A b I) = b'"
-    by (simp_all add: assms(2)[symmetric])
+    by \<^marker>\<open>provenance ai\<close> (simp_all add: assms(2)[symmetric])
   have "i < dim_vec (snd (sub_system A b I))"
-    using \<open>i < dim_row A'\<close> dims_subsyst_same'[OF assms(1) assms(2)] b'_eq by simp
+    using \<open>i < dim_row A'\<close> dims_subsyst_same'[OF assms(1) assms(2)] b'_eq by \<^marker>\<open>provenance ai\<close> simp
   from exist_index_in_A[OF assms(1) this]
   obtain j where j_props: "j < dim_vec b" "j \<in> I"
     "row (fst (sub_system A b I)) i = row A j"
     "snd (sub_system A b I) $ i = b $ j"
-    by blast
+    by \<^marker>\<open>provenance ai\<close> blast
   have "j \<in> I \<and> j < dim_row A \<and> row A j = row A' i \<and> b $ j = b' $ i"
-    using j_props assms(1) A'_eq b'_eq by simp
+    using j_props assms(1) A'_eq b'_eq by \<^marker>\<open>provenance ai\<close> simp
   then have "P (row A j) (b $ j)" using assms(3) 
-    by fastforce
+    by \<^marker>\<open>provenance ai\<close> fastforce
   then show " P (row A' i) (b' $ i)" 
     by (simp add: \<open>j \<in> I \<and> j < dim_row A \<and> row A j = row A' i \<and> b $ j = b' $ i\<close>)
 qed
@@ -514,14 +514,14 @@ proof
       using subsystem_fulfills_P  assms(1) assms(4) by blast
     note P_all = this
     have i_lt: "i < dim_row A"
-      using assms(1,2) by simp
+      using assms(1,2) by \<^marker>\<open>provenance ai\<close> simp
     have P_i: "P (row A i) (b $ i)"
-      using P_all i_lt by auto
+      using P_all i_lt by \<^marker>\<open>provenance ai\<close> auto
     have "\<forall> j \<in> I \<inter> {0..<dim_row A}. P (row A j) (b $ j)"
-      using P_all by auto
+      using P_all by \<^marker>\<open>provenance ai\<close> auto
     note P_sub = subsystem_fulfills_P'[OF assms(1) assms(3) this]
     show "?P_A'"
-      using P_sub P_i by blast
+      using P_sub P_i by \<^marker>\<open>provenance ai\<close> blast
   qed
   show "?P_A' \<Longrightarrow> ?P_A''" 
   proof -
@@ -563,7 +563,7 @@ proof -
       using insert_elem_sub_system_fulfills_P[of A b i A' b' I A'' b'' "(\<lambda> r y.   r \<bullet> x = y)"] 
         assms by fast
     then show "A'' *\<^sub>v x = b'' \<longleftrightarrow>  A' *\<^sub>v x = b' \<and> row A i \<bullet> x = b $ i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have d': "dim_row A' = dim_vec b'"
         by (rule dims_subsyst_same'[OF assms(1) assms(3)])
       have d'': "dim_row A'' = dim_vec b''"
@@ -614,7 +614,7 @@ proof -
       using insert_elem_sub_system_fulfills_P[of A b i A' b' I A'' b'' "(\<lambda> r y.   r \<bullet> x \<le> y)"] 
         assms by fast
     then show "A'' *\<^sub>v x \<le> b'' \<longleftrightarrow>  A' *\<^sub>v x \<le> b' \<and> row A i \<bullet> x \<le> b $ i"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have dA': "dim_row A' = dim_vec b'"
         using assms(1) assms(3) by (rule dims_subsyst_same')
       have dA'': "dim_row A'' = dim_vec b''"
@@ -689,7 +689,7 @@ proof(safe)
     fix r
     assume "r \<in> set (rows C)" 
     then obtain j' where j': "j' < dim_row C \<and> row C j' = r" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from \<open>r \<in> set (rows C)\<close> obtain k
         where k: "k < length (rows C)" and rk: "rows C ! k = r"
         by (auto simp: in_set_conv_nth)
@@ -701,7 +701,7 @@ proof(safe)
         using that kdim \<open>row C k = r\<close> by blast
     qed
     obtain i' where i:"i' < dim_row A \<and> i' \<in> (I - {i}) \<and> row A i' = row C j' \<and> d $ j' = b $ i'" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have C_eq: "fst (sub_system A b (I - {i})) = C"
       using assms(5)[symmetric] by simp
     have d_eq: "snd (sub_system A b (I - {i})) = d"
@@ -721,7 +721,7 @@ proof(safe)
     then show thesis by (rule that)
   qed
     then obtain j where j: "j < dim_row A' \<and> row A' j = row A i'"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have i'_in_I: "i' \<in> I"
         using i by blast
       have i'_lt: "i' < dim_vec b"
@@ -743,7 +743,7 @@ proof(safe)
         using that by blast
     qed
     then show "r \<in> set (rows A')" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "r = row C j'"
           using j' by simp
         also have "\<dots> = row A i'"
@@ -767,11 +767,11 @@ proof(safe)
   assume "r \<in> set (rows A')" 
   assume "r \<notin> set (rows C)"
   then obtain j' where j': "j' < dim_row A' \<and> row A' j' = r" using `r \<in> set (rows A')`
-    by (auto simp add: in_set_conv_nth length_rows nth_rows)
+    by \<^marker>\<open>provenance ai\<close> (auto simp add: in_set_conv_nth length_rows nth_rows)
   obtain i' where i:"i' < dim_row A \<and> i' \<in> I \<and> row A i' = row A' j' \<and> b' $ j' = b $ i'" 
     using exist_index_in_A[of A b j' "I"] 
       dims_subsyst_same' fst_conv j' snd_conv 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     note eq = assms(4)[symmetric]
     note dims = dims_subsyst_same'[OF assms(1) assms(4)]
     have j'_lt: "j' < dim_vec (snd (sub_system A b I))"
@@ -796,7 +796,7 @@ proof(safe)
     case True
     then obtain j where j: "j < dim_row C \<and> row C j = row A i'" 
       using exist_index_in_A'[of A b i' "I - {i}"] 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have C_eq: "fst (sub_system A b (I - {i})) = C"
         by (simp add: assms(5)[symmetric])
       have d_eq: "snd (sub_system A b (I - {i})) = d"
@@ -815,7 +815,7 @@ proof(safe)
         by (rule that)
     qed
     then show ?thesis 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have jC: "j < dim_row C"
           using j by simp
         have "rows C ! j = row C j"
@@ -853,7 +853,7 @@ lemma add_index_sub_system_dims:
   shows "dim_vec b'' = dim_vec b' + 1"
 proof -
   have 1:"dim_vec b' = card {i. i < dim_vec b \<and> i \<in> I}" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "snd (sub_system A b I) = b'"
       by (simp add: assms(3)[symmetric])
     then have "dim_vec b' = dim_vec (snd (sub_system A b I))"
@@ -864,7 +864,7 @@ proof -
   qed
   have "{i. i < dim_vec b \<and> i \<in> I} = {i. i < dim_vec b} \<inter> I" by auto
   have 2:"dim_vec b'' = card {j. j < dim_vec b \<and> j \<in> (I \<union> {i})}" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have "snd (A'', b'') = snd (sub_system A b (I \<union> {i}))"
         using assms(4) by simp
       then have b''_eq: "b'' = snd (sub_system A b (I \<union> {i}))"
@@ -915,7 +915,7 @@ proof -
   also have "\<dots> = l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b" 
     using assms(5) assms(6) by presburger
   finally show "A *\<^sub>v z = b" 
-  proof (rule trans)
+  proof \<^marker>\<open>provenance ai\<close> (rule trans)
     show "l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b = b"
     proof (rule eq_vecI)
       fix i
@@ -955,7 +955,7 @@ lemma linear_comb_holds_less_eq:
   shows "A *\<^sub>v z \<le> b" 
 proof -
   have "l \<cdot>\<^sub>v (A *\<^sub>v x) \<le> l \<cdot>\<^sub>v b" 
-  proof (unfold less_eq_vec_def, intro conjI allI impI)
+  proof \<^marker>\<open>provenance ai\<close> (unfold less_eq_vec_def, intro conjI allI impI)
     show "dim_vec (l \<cdot>\<^sub>v (A *\<^sub>v x)) = dim_vec (l \<cdot>\<^sub>v b)"
       using assms(5) unfolding less_eq_vec_def by simp
   next
@@ -978,7 +978,7 @@ proof -
     finally show "(l \<cdot>\<^sub>v (A *\<^sub>v x)) $ i \<le> (l \<cdot>\<^sub>v b) $ i" .
   qed
   have "(1 - l) \<cdot>\<^sub>v (A *\<^sub>v y) \<le> (1 - l) \<cdot>\<^sub>v b" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have nonneg: "0 \<le> 1 - l"
       using assms(8) by simp
     have dims: "dim_vec (A *\<^sub>v y) = dim_vec b"
@@ -1009,7 +1009,7 @@ proof -
       by (rule conjI[OF dims' all_le])
   qed
   have "A *\<^sub>v z \<le> A *\<^sub>v (l \<cdot>\<^sub>v x) + A *\<^sub>v ((1 - l) \<cdot>\<^sub>v y)" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have x': "l \<cdot>\<^sub>v x \<in> carrier_vec n"
       using assms(2) by simp
     have y': "(1 - l) \<cdot>\<^sub>v y \<in> carrier_vec n"
@@ -1023,7 +1023,7 @@ proof -
     using mult_mat_vec[of A] 
     using assms(1) assms(2) assms(3) by presburger
   also have "\<dots> \<le> l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have l_nonneg: "0 \<le> l" and l_le_one: "l \<le> 1"
       using assms(8) by simp_all
     have one_minus_nonneg: "0 \<le> 1 - l"
@@ -1056,7 +1056,7 @@ proof -
     qed
   qed
   finally show "A *\<^sub>v z \<le> b" 
-  proof (rule order_trans)
+  proof \<^marker>\<open>provenance ai\<close> (rule order_trans)
     have "l \<cdot>\<^sub>v b + (1 - l) \<cdot>\<^sub>v b = (l + (1 - l)) \<cdot>\<^sub>v b"
       by (rule add_smult_distrib_vec[symmetric])
     also have "\<dots> = 1 \<cdot>\<^sub>v b"

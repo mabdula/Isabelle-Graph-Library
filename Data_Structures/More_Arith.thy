@@ -334,7 +334,7 @@ proof(induction )
   moreover have "finite ((\<Union> x \<in> X. f x))" 
     by (simp add: insert.hyps(1) insert.prems(2))
   ultimately show ?case using sum.union_disjoint[of "f xx" "(\<Union> x \<in> X. f x)" g]
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have fin_fxx: "finite (f xx)"
       using insert.prems(2) by blast
     have fin_union: "finite (\<Union>x\<in>X. f x)"
@@ -400,7 +400,7 @@ lemma sum_index_shift: "finite X \<Longrightarrow> sum f {x+(k::nat)|x. x \<in> 
     next
       case True
       then show ?thesis
-        using insertI.IH by (simp add: insert_absorb)
+        using insertI.IH by \<^marker>\<open>provenance ai\<close> (simp add: insert_absorb)
     qed
 
  qed simp
@@ -426,7 +426,7 @@ qed
 
 lemma sum_except_two: 
   "\<lbrakk>finite X; a \<noteq> b; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> sum f X = sum f (X- {a,b}) +  f a + f b"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume fin: "finite X" and neq: "a \<noteq> b" and ain: "a \<in> X" and bin: "b \<in> X"
   have Xeq: "X = insert a (insert b (X - {a,b}))"
     using ain bin neq by auto
@@ -448,7 +448,7 @@ lemma sum_split_off: "\<lbrakk>A \<subseteq> B; finite B; \<And> x. x \<in> B - 
   by (simp add: sum.mono_neutral_cong_right)
 
 lemma sum_filter_zero: "finite X \<Longrightarrow> sum f X = sum f {x|x.   x \<in> X \<and> f x \<noteq>0 }"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume fin: "finite X"
   define S where "S = {x |x. x \<in> X \<and> f x \<noteq> 0}"
   have S_sub: "S \<subseteq> X"
@@ -531,7 +531,7 @@ lemma binary_sum:
 lemma get_least: 
   assumes "P (n::nat)"
   obtains n_min where "P n_min" "\<not> (\<exists> m < n_min. P m)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have p: "P (Least P)"
     using assms by (rule LeastI)
   have np: "\<not> (\<exists>m<Least P. P m)"
@@ -556,7 +556,7 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
     case True
     then obtain j_min where j_min_prop:"j_min < Suc i" "x \<in> S j_min" 
                                        "\<not> (\<exists> j < Suc i. x \<in> S j \<and> j < j_min)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       from True obtain j0 where j0: "j0 < Suc i" "x \<in> S j0" by blast
       have ex_P: "\<exists> j. j < Suc i \<and> x \<in> S j" using j0 by blast
       define j_min' where "j_min' = (LEAST j. j < Suc i \<and> x \<in> S j)"
@@ -584,7 +584,7 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
       using 2(5)[of j_min j x] by simp
    have "(\<Sum>j = 0..<Suc i. card (S j)) = (\<Sum>j = 0..< j_min. card (S j)) +
                    (\<Sum>j = j_min..<Suc i. card (S j))" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have j_min_le: "j_min \<le> Suc i"
         using j_min_prop(1) by simp
       have "sum (\<lambda>j. card (S j)) {0..<j_min} + sum (\<lambda>j. card (S j)) {j_min..<Suc i}
@@ -596,7 +596,7 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
                    ((\<Sum>j = j_min..< Suc (min (j_min + life_time) i). card (S j))+
                    (\<Sum>j = Suc (min (j_min + life_time) i)..< Suc i. card (S j)))"
     apply(rule sum_eq_split, simp)
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have j_le_i: "j_min \<le> i"
       using j_min_prop(1) by simp
     have min_ge: "j_min \<le> min (j_min + life_time) i"
@@ -658,7 +658,7 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
     by simp
   also have "... = (\<Sum>j = 0..<j_min. card (S j - {x})) +
   (\<Sum>j = j_min..<Suc i. card (S j - {x})) + (life_time + 1)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have le1: "j_min \<le> Suc (min (j_min + life_time) i)"
       using min.boundedI[of "j_min" "j_min + life_time" i] j_min_prop(1) by simp
     have le2: "Suc (min (j_min + life_time) i) \<le> Suc i"
@@ -671,7 +671,7 @@ proof(induction arbitrary: S rule: finite_induct[OF assms(1)] )
       using concat by linarith
   qed
   also have "... = (\<Sum>j = 0..<Suc i. card (S j - {x})) + (life_time + 1)"
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have sum_split: "(\<Sum>j = 0..<j_min. card (S j - {x})) + (\<Sum>j = j_min..<Suc i. card (S j - {x}))
          = (\<Sum>j = 0..<Suc i. card (S j - {x}))"
       by (rule sum.atLeastLessThan_concat) (use j_min_prop(1) in simp)+
@@ -689,7 +689,7 @@ next
   case False
   have "(\<Sum>j = 0..<Suc i. card (S j)) = 
         (\<Sum>j = 0..<Suc i. card (S j - {x}))"
-  proof (rule sum.cong, rule refl)
+  proof \<^marker>\<open>provenance ai\<close> (rule sum.cong, rule refl)
     fix j assume "j \<in> {0..<Suc i}"
     hence "j < Suc i" by simp
     hence "x \<notin> S j" using False by blast
@@ -757,7 +757,7 @@ lemma ereal_of_real_of_ereal_leq: "x \<ge> 0 \<Longrightarrow> ereal (real_of_er
   by (simp add: ereal_real)
 
 lemma is_multiple_multiple: "(\<exists> n::nat.  y = (real n) * x) \<Longrightarrow> (\<exists> n::nat. y*2 = (real n) * x )"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "\<exists>n::nat. y = real n * x"
   then obtain n where n_def: "y = real n * x" by blast
   have "y * 2 = real (n + n) * x"
@@ -820,7 +820,7 @@ lemma x_in_xs_Min: "\<lbrakk>x \<in> (set xs); a \<le> Min {y . \<exists> x. x \
       hence "Min ({y. \<exists>x. x \<in> set xs \<and> y = f x} \<union> {f z}) =
                      min (Min {y. \<exists>x. x \<in> set xs \<and> y = f x}) (f z)"
       using  Min_Un[of " {y. \<exists>x. x \<in> set xs \<and> y = f x}" "{f z}"]
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have A_finite: "finite {y. \<exists>x. x \<in> set xs \<and> y = f x}"
           using \<open>finite {y. \<exists>x. x \<in> set xs \<and> y = f x}\<close> .
         have A_nonempty: "{y. \<exists>x. x \<in> set xs \<and> y = f x} \<noteq> {}"
@@ -883,7 +883,7 @@ lemma  obtain_min:
 
 lemma Min_bigger: 
   "\<lbrakk>finite X; finite Y; X \<noteq> {}; \<And> a b. \<lbrakk>a \<in> X; b \<in> Y\<rbrakk> \<Longrightarrow> b \<ge> a\<rbrakk> \<Longrightarrow> Min X = Min (X \<union> Y)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume fin_X: "finite X" and fin_Y: "finite Y" and X_ne: "X \<noteq> {}"
      and ge: "\<And>a b. a \<in> X \<Longrightarrow> b \<in> Y \<Longrightarrow> b \<ge> a"
   show "Min X = Min (X \<union> Y)"
@@ -946,7 +946,7 @@ and P_of_minE_strict2:
 
 lemma add_non_min_element_Min:
   "\<lbrakk>finite A; A \<noteq> {}; y \<le> x; y \<in> A; B = insert x A\<rbrakk> \<Longrightarrow> Min B = Min A"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume fin: "finite A" and ne: "A \<noteq> {}" and yx: "y \<le> x" and yA: "y \<in> A" and B_def: "B = insert x A"
   have fin_B: "finite B" using fin B_def by simp
   have MinA_in_A: "Min A \<in> A" using fin ne by (rule Min_in)
@@ -985,7 +985,7 @@ lemma integral_Min: "\<lbrakk>finite M; M \<noteq> {}; \<And> x. x \<in> M \<Lon
 
 lemma is_integral_neg: "is_integral x \<Longrightarrow> is_integral (- x)"
   unfolding is_integral_def 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "\<exists>n::int. x = real_of_int n"
   then obtain n where "x = real_of_int n" by blast
   have "- x = real_of_int (- n)" using \<open>x = real_of_int n\<close> by simp
@@ -994,7 +994,7 @@ qed
 
 lemma integral_add: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a+b)"
   unfolding is_integral_def 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume "\<exists>n::int. a = n" and "\<exists>n::int. b = n"
   then obtain na nb :: int where "a = na" and "b = nb" by blast
   hence "a + b = of_int (na + nb)" by (simp add: of_int_add)
@@ -1002,7 +1002,7 @@ proof -
 qed
 
 lemma integral_sub: "\<lbrakk>is_integral a; is_integral b\<rbrakk> \<Longrightarrow> is_integral (a-b)"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   assume ia: "is_integral a" and ib: "is_integral b"
   obtain m :: int where a_eq: "a = of_int m"
     using ia by (rule is_integralE)
@@ -1050,7 +1050,7 @@ lemma integer_multiple_sub:
   done
 
 lemma sum_integral: "\<lbrakk>finite A; \<And> x . x\<in> A \<Longrightarrow> is_integral (f x)\<rbrakk> \<Longrightarrow> is_integral (sum f A)"
-proof(induction rule: finite.induct)
+proof \<^marker>\<open>provenance ai\<close>(induction rule: finite.induct)
   case emptyI
   then show ?case by (simp add: is_integral_def)
 next

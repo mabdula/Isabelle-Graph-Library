@@ -52,7 +52,7 @@ proof(induction g n v rule: find_cycle.induct)
     using "2.prems"(3) flow_non_neg_def by blast
   obtain e where a: "fst e = v \<and> g e > 0 \<and> e \<in> \<E>"  using 2(3) 
     unfolding flow_out_def delta_plus_def 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have "\<exists>e. fst e = v \<and> g e > 0 \<and> e \<in> \<E>"
     proof (rule ccontr)
       assume "\<nexists>e. fst e = v \<and> g e > 0 \<and> e \<in> \<E>"
@@ -73,7 +73,7 @@ proof(induction g n v rule: find_cycle.induct)
    hence b:"(\<exists>e\<in>\<E>. 0 < g e \<and> fst e = v) = True" by auto
    then obtain d where d_def: "d = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in>\<E>)" by simp
    hence b1:"fst d = v" "g d > 0" "d \<in> \<E>" 
-  proof -
+  proof \<^marker>\<open>provenance ai\<close> -
     have Pe: "0 < g e \<and> fst e = v \<and> e \<in> \<E>"
       using a by simp
     have Pd: "0 < g d \<and> fst d = v \<and> d \<in> \<E>"
@@ -113,7 +113,7 @@ proof(induction g n v rule: find_cycle.induct)
     case True
     then obtain e where e_Def:"e = (SOME e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>)" by auto
     hence a:"0 < g e" "fst e = v" "e \<in> \<E>" 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have ex_prop: "\<exists>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>"
         using True by blast
       have conj_prop: "0 < g e \<and> fst e = v \<and> e \<in> \<E>"
@@ -176,7 +176,7 @@ proof(induction g n v rule: find_cycle.induct)
       by simp
     hence aaa:"0 < g e" "fst e = v" "e \<in> \<E>" 
       using True someI_ex[of "\<lambda>e. 0 < g e \<and> fst e = v \<and> e \<in> \<E>"]
-      unfolding x_def by auto
+      unfolding x_def by \<^marker>\<open>provenance ai\<close> auto
     hence find_cycle_prop: "find_cycle g (Suc n) v = v#(find_cycle g n (snd e))" 
       using True x_def by simp
     obtain es where es_def: "length es = length (find_cycle g n (snd e)) - 1 \<and>
@@ -187,7 +187,7 @@ proof(induction g n v rule: find_cycle.induct)
       using "2" True x_def by presburger
     have "length (e#es) = length (find_cycle g (Suc n) v) - 1" 
       using find_cycle_prop es_def 
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have len_pos: "length (find_cycle g n (snd e)) > 0"
       proof (cases n)
         case 0
@@ -209,7 +209,7 @@ proof(induction g n v rule: find_cycle.induct)
                     fst ((e#es) ! i) = find_cycle g (Suc n) v ! i \<and>
                     snd ((e#es) ! i) = find_cycle g (Suc n) v ! (i + 1)" for i
         using es_def
-        by (cases i; cases n) (use aaa find_cycle_prop in auto)
+        by \<^marker>\<open>provenance ai\<close> (cases i; cases n) (use aaa find_cycle_prop in auto)
     moreover have " flowpath g (e#es)" 
         using  calculation(2)[of 1] calculation(2)[of 0] es_def find_cycle_prop aaa
         by (cases es) (auto intro: flowpath_intros)
@@ -330,7 +330,7 @@ proof-
       using distinct_conv_nth by blast
     hence "find_cycle g (card \<V>) v ! (a_len + i) =
               find_cycle g (card \<V>) v ! (a_len + j)"
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
       have i_lt: "i < length ES" and j_lt: "j < length ES" and eq_ij: "ES ! i = ES ! j"
         using ij_def by auto
       have i_eq: "fst (ES ! i) = find_cycle g (card \<V>) v ! (a_len + i)"
@@ -415,7 +415,7 @@ proof-
         proof-
           assume subassm: "eov' \<in> \<delta>\<^sup>+ u \<and> eov' \<in> set ES " "eov' \<noteq> eov"
           then obtain j where j_def: "j < length ES \<and> ES ! j = eov' \<and> j \<noteq> i" 
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             from i_def have i_eq: "ES ! i = eov" by blast
             from subassm(1) have es_mem: "eov' \<in> set ES" by blast
             from es_mem obtain j0 where j0_len: "j0 < length ES" and j0_eq: "ES ! j0 = eov'"
@@ -454,7 +454,7 @@ proof-
         by presburger
       also have fgh: "... = nat (((int i)  mod int b_len) )" by simp
       finally have nat_i_int:"(nat ((int i - 1) mod int b_len) + 1) mod b_len  = i" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
   have i_less: "i < b_len" using Es_len_b_len i_def by auto
   have "nat (int i mod int b_len) = i" using i_less by (simp add: mod_pos_pos_trivial)
   with 001 002 fgh show ?thesis by simp
@@ -487,7 +487,7 @@ qed
         assume subassm: "eiv' \<in> \<delta>\<^sup>- u \<and> eiv' \<in>  set ES" "eiv' \<noteq> eiv"
         then obtain j where j_def: "j < length ES" "ES ! j = eiv'" 
                                    "j \<noteq> nat ((int i - 1) mod int b_len)"
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have eiv'_in: "eiv' \<in> set ES" using subassm(1) by simp
           have j_ex: "\<exists>j<length ES. ES ! j = eiv'"
             using eiv'_in by (simp add: in_set_conv_nth)
@@ -515,7 +515,7 @@ qed
           by (cases "j +1 = length ES")  auto       
         ultimately have  "\<not> distinct ([x] @ bs)" 
           using hij j_def 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
           show "\<not> distinct ([x] @ bs)"
           proof (rule notI)
           assume dist_xbs: "distinct ([x] @ bs)"
@@ -553,7 +553,7 @@ proof -
           using \<open>\<delta>\<^sup>+ u \<inter> set ES \<noteq> {} \<or> \<delta>\<^sup>- u \<inter> set ES \<noteq> {}\<close> by auto
         then obtain ie where ie_def: "ie \<in> \<delta>\<^sup>- u \<and> ie \<in> set ES" by auto 
         then obtain i where "i < b_len \<and> ES ! i = ie" 
-          using Es_len_b_len by (auto simp: in_set_conv_nth)
+          using Es_len_b_len by \<^marker>\<open>provenance ai\<close> (auto simp: in_set_conv_nth)
         have "snd ie = u" using ie_def unfolding delta_minus_def by simp
         have "b_len > 0" 
           using Es_len_b_len \<open>ES \<noteq> []\<close> by blast
@@ -662,7 +662,7 @@ proof(induction n arbitrary: g rule: less_induct)
   have integral_g: "is_integral_flow g \<Longrightarrow>is_integral_flow g'"
     using integral_gamma 
     unfolding g'_def is_integral_flow_def
-    proof -
+    proof \<^marker>\<open>provenance ai\<close> -
   assume h1: "(\<forall>e\<in>\<E>. \<exists>n::int. g e = n) \<Longrightarrow> (\<exists>n::nat. \<gamma> = n)"
   assume h2: "\<forall>e\<in>\<E>. \<exists>n::int. g e = n"
   show "\<forall>e\<in>\<E>. \<exists>n::int. (if e \<in> set es then g e - \<gamma> else g e) = n"
@@ -790,7 +790,7 @@ qed
         ultimately show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
           using less.prems(3) v_Assm
           unfolding is_circ_def ex_def
-          by simp
+          by \<^marker>\<open>provenance ai\<close> simp
       next
         case False
         then obtain eov eiv where eov_def:"\<delta>\<^sup>+ v \<inter> set es = {eov}"  
@@ -842,7 +842,7 @@ qed
         hence "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = sum g (\<delta>\<^sup>- v) - sum g (\<delta>\<^sup>+ v)" 
           using 005 by simp
         then show "sum g' (\<delta>\<^sup>- v) - sum g' (\<delta>\<^sup>+ v) = 0" 
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have "ex g v = 0"
             using less.prems(3) v_Assm unfolding is_circ_def by blast
           thus ?thesis
@@ -875,7 +875,7 @@ qed
     proof(rule ccontr)
       assume set_assm: "\<not> {e |e. 0 < g' e \<and> e \<in> \<E>} \<noteq> {}"
       obtain e where "g' e > 0 \<and> e \<in> \<E>"
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "\<exists>e. 0 < g' e \<and> e \<in> \<E>"
         proof(rule ccontr)
           assume "\<nexists>e. 0 < g' e \<and> e \<in> \<E>"
@@ -930,7 +930,7 @@ qed
       also have ac:"... =  (\<Sum>i\<in>{0..<length (css)}. if e \<in> set ((es # css) ! (i+1)) 
                                               then (\<gamma> # ws) ! (i+1) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have "(\<Sum>i<length css. if e \<in> set (css ! i) then ws ! i else 0) =
               (\<Sum>i\<in>{0..<length css}. if e \<in> set (css ! i) then ws ! i else 0)"
           by (simp only: lessThan_atLeast0)
@@ -953,7 +953,7 @@ qed
       also have "... =  (\<Sum>i\<in>{x |x. x > 0 \<and> x <length (es# css)}. if e \<in> set ((es # css) ! (i)) 
                                               then (\<gamma> # ws) ! (i) else 0) +
                         (if e \<in> set es then \<gamma> else 0)" 
-      proof -
+      proof \<^marker>\<open>provenance ai\<close> -
         have set_eq: "{x + 1 |x. x \<in> {0..<length css}} = {x |x. x > 0 \<and> x < length (es # css)}"
         proof (rule set_eqI, rule iffI)
           fix y

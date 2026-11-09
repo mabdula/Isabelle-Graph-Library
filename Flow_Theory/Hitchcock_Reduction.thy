@@ -285,7 +285,7 @@ proof-
           have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
             using "1" vertex by blast
           then obtain a b d where "d \<in> \<E>'" "make_pair' d = (a, b)" "a = vertex x1 \<or> b = vertex x1"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             have "vertex x1 \<in> dVs (make_pair' ` \<E>')"
               using "1" vertex by blast
             then obtain d where
@@ -871,7 +871,7 @@ proof-
         hence ab_where:"e \<in> \<E>1 \<union> \<E>2" 
           using C_inE \<E>'_def by blast
         obtain C1 C2 where C_split: "C = C1@[e]@C2" 
-          using split_list[OF "1"(1)] by auto
+          using split_list[OF "1"(1)] by \<^marker>\<open>provenance ai\<close> auto
         hence rotated:"closed_w (make_pair' ` \<E>') (map make_pair' ([e]@ C2@C1))" 
           "set (map make_pair' C) = set (map make_pair'([e]@C2@C1))"
           "closed_w (make_pair' ` \<E>') (map make_pair' (C2@C1@[e]))" 
@@ -1409,7 +1409,7 @@ then 0 else undefined)"
       proof(rule ballI, goal_cases)
         case (1 v)
         hence "vertex v \<in> dVs \<E>'"
-          proof -
+          proof \<^marker>\<open>provenance ai\<close> -
             obtain a b where ab: "(a, b) \<in> \<E>" and v_ab: "v = a \<or> v = b"
               using 1 by (auto simp add: dVs_def)
             show "vertex v \<in> dVs \<E>'"
@@ -1526,7 +1526,7 @@ then 0 else undefined)"
         using 3 C_in_E' \<E>'_def \<E>1_def \<E>2_def by force
       moreover have "snd e = fst d" 
         using 3
-        proof -
+        proof \<^marker>\<open>provenance ai\<close> -
           have C_eq: "C = e # d # rest"
             using 3 by simp
           have awalk_C: "awalk \<E>' u (e # d # rest) u"

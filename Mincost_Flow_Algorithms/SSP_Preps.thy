@@ -157,7 +157,7 @@ proof(cases "\<u> (oedge e)", goal_cases)
     moreover have "\<u> (oedge e) \<noteq> PInfty"
       by (simp add: one)
     ultimately have "is_integral (real n')" 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
       have "is_integral (real_of_int (int n'))"
         by (rule is_integralI[of _ "int n'"]) simp
       thus ?thesis
@@ -236,7 +236,7 @@ next
 
 lemma is_integral_neg: "is_integral x \<Longrightarrow> is_integral (- x)"
   unfolding is_integral_def 
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
     assume "\<exists>n::int. x = real_of_int n"
     then obtain n where "x = real_of_int n" by auto
     hence "- x = real_of_int (- n)" by simp

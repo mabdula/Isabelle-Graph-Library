@@ -21,7 +21,7 @@ lemma preorder_witness:"set (map fst (preorder N)) = Tree2.set_tree N \<and> fol
   unfolding fold_rbt_is_foldr_of_preorder prderorder_set by auto
 
 lemma rbt_fold_spec:"vset_inv N \<Longrightarrow> \<exists>xs. set xs = Tree2.set_tree N \<and> fold_rbt f N acc = foldr f xs acc"
-proof -
+proof \<^marker>\<open>provenance ai\<close> -
   have seteq: "set (map fst (preorder N)) = Tree2.set_tree N"
     by (fact prderorder_set)
   have folds: "fold_rbt f N acc = foldr f (map fst (preorder N)) acc"
