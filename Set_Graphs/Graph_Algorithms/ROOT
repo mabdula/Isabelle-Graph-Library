@@ -45,6 +45,8 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     DFS_Skeletons
     Directed_Cycle_DFS
     AI_Provenance
+  theories [document = false]
+    DFS_Aux_Skel
   theories
     RBT_Map_Extension
     DFS
@@ -60,9 +62,6 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     Parent_Map
     Bellman_Ford
     Bellman_Ford_Example
-
-  theories [document = false]
-    DFS_Aux_Skel
 
   document_files
     "root.tex"
