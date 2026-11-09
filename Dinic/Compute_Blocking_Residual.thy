@@ -1,5 +1,5 @@
 theory Compute_Blocking_Residual                 
-  imports DFS_Collect_Backtrack_Example Compute_Blocking_Simple
+  imports DFS_CB_Skel_Example Compute_Blocking_Simple
     "HOL-Library.Product_Lexorder"
     Graph_Algorithms_Dev.BFS_Example Graph_Algorithms_Dev.RBT_Map_Extension
 begin
@@ -14,11 +14,14 @@ The level graph is computed by BFS.\<close>
 lemma same_graph_consts: "G.graph_inv = dfs.Graph.graph_inv"
   "G.digraph_abs = dfs.Graph.digraph_abs"
   "BFS_Example.neighbourhood = dfs.Graph.neighbourhood"
-  "DFS_Collect_Backtrack_Example.neighbourhood = 
+  "DFS_CB_Skel_Example.neighbourhood = 
                           dfs.Graph.neighbourhood"
   "G.graph_inv = dfs.Graph.graph_inv"
   by (auto simp add: adj_inv_def RBT_Set.empty_def
-      BFS_Example.neighbourhood_def DFS_Collect_Backtrack_Example.neighbourhood_def)
+      BFS_Example.neighbourhood_def DFS_CB_Skel_Example.neighbourhood_def)
+
+lemma\<^marker>\<open>provenance ai\<close> empty_digraph_abs: "dfs.Graph.digraph_abs vset_empty = {}"
+  using G.digraph_abs_empty same_graph_consts(2) by (simp add: RBT_Set.empty_def)
 
 global_interpretation blocking_simple: blocking_simple 
   where insert = vset_insert 
@@ -58,7 +61,7 @@ defines blocking_simple_loop=blocking_simple.compute_blocking_loop_impl
       M.Map_axioms[simplified RBT_Set.empty_def adj_inv_def[symmetric]])
 
 definition "find_path F s t = 
-   (if DFS_Collect_Backtrack_Example.neighbourhood F s = vset_empty then None
+   (if DFS_CB_Skel_Example.neighbourhood F s = vset_empty then None
     else let final_state = dfs_del_dead_impl F t ( dfs_backtrack_initial_state s)
          in  (case return final_state of NotReachable \<Rightarrow> None |
                                          Reachable    \<Rightarrow> 
@@ -87,78 +90,58 @@ lemma find_path_correct:
        (\<forall>e\<in>set dlt. \<nexists>p. e \<in> set (edges_of_vwalk p) \<and> vwalk_bet (dfs.Graph.digraph_abs F) s p t)"
     (is "?asm2 \<Longrightarrow> ?asm3 \<Longrightarrow> ?thesis2")
 
-proof(all \<open>cases "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_empty"\<close>)
-  show  "?asm1 \<Longrightarrow> ?thesis1" if asy: "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_empty"
+proof\<^marker>\<open>provenance ai\<close>(all \<open>cases "DFS_CB_Skel_Example.neighbourhood F s = vset_empty"\<close>)
+  show  "?asm1 \<Longrightarrow> ?thesis1" if asy: "DFS_CB_Skel_Example.neighbourhood F s = vset_empty"
     using assms(4) dfs.Graph.vset.set.set_empty vwalk_then_edge[of "dfs.Graph.digraph_abs F" s _  t] 
     by(unfold dfs.Graph.are_connected_abs[OF assms(1), symmetric] asy) blast
-  show  "?asm2 \<Longrightarrow> ?asm3 \<Longrightarrow> ?thesis2"  if asy: "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_empty"
+  show  "?asm2 \<Longrightarrow> ?asm3 \<Longrightarrow> ?thesis2"  if asy: "DFS_CB_Skel_Example.neighbourhood F s = vset_empty"
     using asy by(simp add: find_path_def)
-  assume s_neighb_non_empty:"DFS_Collect_Backtrack_Example.neighbourhood F s \<noteq> vset_empty"
-  have DFS_axioms: "DFS.DFS_axioms isin t_set adj_inv vset_empty vset_inv lookup F s"
+  assume s_neighb_non_empty:"DFS_CB_Skel_Example.neighbourhood F s \<noteq> vset_empty"
+  have DFS_axioms: "DFS_CB.DFS_axioms isin t_set adj_inv vset_empty vset_inv lookup F s"
     using RBT_Set.empty_def Tree2.eq_set_tree_empty assms(1,2,3)  s_neighb_non_empty
     by(auto intro:dfs.Graph.neighbourhood_absD simp add: dfs.DFS_axioms_def)
-  have dfs_thms: "DFS_thms map_empty RBT_Map.delete vset_insert isin t_set sel update adj_inv vset_empty vset_delete vset_inv
+  have dfs_thms: "DFS_CB_thms map_empty RBT_Map.delete vset_insert isin t_set sel update adj_inv vset_empty vset_delete vset_inv
      vset_union vset_inter vset_diff lookup F s"
-    by(auto intro!: DFS_thms.intro DFS_thms_axioms.intro simp add: dfs.DFS_axioms DFS_axioms)
-  have same_final_state: "dfs_del_dead_impl F t ( dfs_backtrack_initial_state s) =
-                         dfs.DFS_collect_backtrack F t ( dfs_backtrack_initial_state s)"
-    by(simp add: dfs_del_dead_impl_def dfs_backtrack_initial_state_def
-        DFS_thms.DFS_collect_backtrack_impl_same_on_initial[OF dfs_thms]) 
-  have same_final_as_ordinary: "to_ordinary_DFS_state 
-                    (dfs.DFS_collect_backtrack F t ( dfs_backtrack_initial_state s)) =
-                    dfs.DFS F t ( dfs.initial_state s)"
-    using DFS_thms.same_as_old_dfs_on_initial[OF dfs_thms]
-    by(simp add: dfs_backtrack_initial_state_def)
-  note DFS_correct_1 = DFS_thms.DFS_correct_1_strong[OF dfs_thms]
-  note DFS_correct_2 = DFS_thms.DFS_correct_2[OF dfs_thms]
+    by(auto intro!: DFS_CB_thms.intro DFS_CB_thms_axioms.intro simp add: dfs.DFS_CB_axioms DFS_axioms)
+  define final_state where "final_state = dfs_del_dead_impl F t ( dfs_backtrack_initial_state s)"
+  have same_final_state: "final_state = dfs.DFS_collect_backtrack F t ( dfs_backtrack_initial_state s)"
+    by(simp add: final_state_def dfs_del_dead_impl_def dfs_backtrack_initial_state_def
+        DFS_CB_thms.DFS_collect_backtrack_impl_same_on_initial[OF dfs_thms]) 
+  have final_not_reachable: "\<nexists>p. vwalk_bet (dfs.Graph.digraph_abs F) s p t"
+    if "return final_state = NotReachable"
+    using that DFS_CB_thms.DFS_correct_1_strong[OF dfs_thms]
+    by(simp add: same_final_state dfs_backtrack_initial_state_def)
+  have final_reachable: "vwalk_bet (dfs.Graph.digraph_abs F) s (rev (stack final_state)) t"
+                        "distinct (rev (stack final_state))"
+    if "return final_state = Reachable"
+    using that DFS_CB_thms.DFS_correct_2[OF dfs_thms]
+    by(simp_all add: same_final_state dfs_backtrack_initial_state_def)
+  have final_dead_ends: "\<nexists>p. e \<in> set (edges_of_vwalk p) \<and> vwalk_bet (dfs.Graph.digraph_abs F) s p t"
+    if "dir_acyc (dfs.Graph.digraph_abs F)" "e \<in> set (backtrack final_state)" for e
+    using that DFS_CB_thms.dfs_backtrack_final(5)[OF dfs_thms]
+    by(auto simp add: same_final_state dfs_backtrack_initial_state_def
+        elim!: DFS_CB_thms.invar_dfs_backtrack_5E[OF dfs_thms])
+  have find_path_is: "find_path F s t = (case return final_state of NotReachable \<Rightarrow> None |
+                         Reachable \<Rightarrow> Some (rev (stack final_state), backtrack final_state))"
+    using s_neighb_non_empty unfolding final_state_def by(simp add: find_path_def)
   show  "?asm1 \<Longrightarrow> ?thesis1"
   proof(goal_cases)
     case 1
-    hence dfs_reachable:"DFS_state.return (dfs.DFS F t (dfs.initial_state s)) = Reachable"
-      using DFS_correct_1 return.exhaust by blast
-    define final_state where "final_state = dfs_del_dead_impl F t ( dfs_backtrack_initial_state s)"
-    have dfs_backtrack_reachable: "return final_state =  Reachable"
-      using  dfs_reachable same_final_as_ordinary[symmetric]  same_final_state
-      by(auto simp add: final_state_def)
-    show ?case 
-    proof(rule exI[of _ "rev (stack final_state)"], rule exI[of _ "backtrack final_state"],
-        rule conjI, goal_cases)
-      case 2
-      then show ?case
-        using s_neighb_non_empty dfs_backtrack_reachable 
-        by(auto simp add: find_path_def  final_state_def split: return.split)
-    next
-      case 1
-      then show ?case 
-        using  DFS_correct_2[OF dfs_reachable] same_final_as_ordinary[symmetric]
-        by(simp add: final_state_def  same_final_state) 
-    qed 
+    hence reachable: "return final_state = Reachable"
+      using final_not_reachable return.exhaust by blast
+    show ?case
+      using final_reachable(1)[OF reachable] reachable
+      by(auto simp add: find_path_is)
   qed
   show  "?asm2 \<Longrightarrow> ?asm3 \<Longrightarrow> ?thesis2"
   proof(goal_cases)
     case 1
-    define final_state where "final_state = dfs_del_dead_impl F t ( dfs_backtrack_initial_state s)"
-    have dfs_backtrack_result: "return final_state =  Reachable" "rev (stack final_state) = p" 
+    have dfs_backtrack_result: "return final_state = Reachable" "rev (stack final_state) = p" 
       "backtrack final_state = dlt"
-        apply(all \<open>rule case_split[of "DFS_Collect_Backtrack_Example.neighbourhood F s = vset_empty"]\<close>)
-           apply(all \<open>rule return.exhaust[of "DFS_backtrack_state.return (dfs_del_dead_impl
-                         F t (dfs_backtrack_initial_state s))"]\<close>)
-      using "1"(1) 
-      by(auto simp add: final_state_def find_path_def) 
-    have "vwalk_bet (dfs.Graph.digraph_abs F) s p t"
-      using DFS_correct_2[of t]  dfs_backtrack_result(1) dfs_backtrack_result(2)       
-      by(auto simp add: final_state_def same_final_state same_final_as_ordinary[symmetric])
-    moreover have "distinct p" 
-      using DFS_thms.invar_seen_stack_holds[OF dfs_thms 
-          DFS_thms.initial_state_props(6,1,3)[OF dfs_thms], of t]
-      by(simp add: dfs.invar_seen_stack_def same_final_as_ordinary[symmetric]
-          dfs_backtrack_result(2)[symmetric] final_state_def same_final_state)
-    moreover have "e\<in>set dlt \<Longrightarrow>
-                  \<nexists>p. e \<in> set (edges_of_vwalk p) \<and> vwalk_bet (dfs.Graph.digraph_abs F) s p t" for e
-      using  same_final_state  "1"(2) DFS_thms.dfs_backtrack_final(5)[OF dfs_thms, of t]       
-      by(auto simp add: dfs_backtrack_initial_state_def  final_state_def dfs_backtrack_result(2,3)[symmetric] 
-          elim!: dir_acycE dfs.invar_dfs_backtrack_5E)     
-    ultimately show ?case by auto
+      using "1"(1) by(auto simp add: find_path_is split: return.splits)
+    show ?case
+      using final_reachable[OF dfs_backtrack_result(1)] final_dead_ends[OF "1"(2)]
+      by(auto simp add: dfs_backtrack_result(2,3))
   qed
 qed
 
@@ -398,7 +381,7 @@ lemma bfs_axiom: "neighbourhood E_simple s \<noteq>vset_empty \<Longrightarrow>
   using E_simple_props(1-3) 
   by (auto simp add: dfs.Graph.vset.set.set_insert[OF  dfs.Graph.vset.set.invar_empty]
       dfs.Graph.vset.set.set_empty dfs.Graph.vset.set.invar_empty
-      Tree2.finite_set_tree[of "DFS_Collect_Backtrack_Example.neighbourhood 
+      Tree2.finite_set_tree[of "DFS_CB_Skel_Example.neighbourhood 
                                                   E_simple _", 
         simplified dfs.Graph.neighbourhood_abs[OF  E_simple_props(1)]]
       same_graph_consts(1-3))
@@ -447,7 +430,7 @@ proof(all \<open>cases "neighbourhood E_simple s = vset_empty"\<close>)
   show "?none \<Longrightarrow> neighbourhood E_simple s = vset_empty \<Longrightarrow> ?nowalk"
     by (auto simp add: G.source_of_path_neighb_non_empty RBT_Set.empty_def s_neq_t
         vwalk_bet_diff_verts_length_geq_2  dfs.Graph.neighbourhood_def
-        DFS_Collect_Backtrack_Example.neighbourhood_def
+        DFS_CB_Skel_Example.neighbourhood_def
         blocking_flow_simple_def same_graph_consts(3))
   show "?some \<Longrightarrow> neighbourhood E_simple s = vset_empty \<Longrightarrow> ?walk"
     "?some \<Longrightarrow> neighbourhood E_simple s = vset_empty \<Longrightarrow> ?blocking_flow"
