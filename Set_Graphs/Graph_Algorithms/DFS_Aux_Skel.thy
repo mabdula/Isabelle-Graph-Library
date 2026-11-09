@@ -1679,7 +1679,7 @@ qed
 subsection \<open>Return condition lemmas\<close>
 
 text \<open>In the skeleton, ret_1_conds = stack empty (on_empty path) and ret_2_conds = found (on_found
-path). This is the reverse of DFS_Cycles_Aux where ret_1 = found and ret_2 = empty.\<close>
+path). This is the reverse of the former hand-written DFS_Aux, where ret_1 = found and ret_2 = empty.\<close>
 
 lemma DFS_Aux_ret_1[ret_holds_intros]:
   "aux.DFS_skeleton_ret_1_conds dfs_aux_state \<Longrightarrow>

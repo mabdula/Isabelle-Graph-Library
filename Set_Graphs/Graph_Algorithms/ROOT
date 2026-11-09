@@ -54,7 +54,6 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     BFS_2
     BFS_Subprocedures
     BFS_Example
-    DFS_Cycles_Aux
     DFS_Cycles
     DFS_Cycles_Example
     DFS_Time
