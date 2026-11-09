@@ -53,7 +53,7 @@ value "vertices edges"
 value G
 value "neighbourhood G"
 text \<open>The two runs below exercise the executable dead-end-collecting DFS. (The bare initial state is
-not displayed via value: the fresh backtrack field's polymorphic list element type has no term_of
+not displayed via value: the fresh backtrack field's polymorphic list element type has no \<open>term_of\<close>
 instance for direct printing; the concrete runs below fix the type and evaluate.)\<close>
 value "dfs_del_dead_impl G 2 (dfs_backtrack_initial_state 0)"
 value "dfs_del_dead_impl G 10 (dfs_backtrack_initial_state 0)"

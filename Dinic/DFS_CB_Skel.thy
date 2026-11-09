@@ -158,7 +158,7 @@ lemma initial_invars[simp,intro]:
 lemma initial_dom: "cb.DFS_skeleton_dom initial_state"
   by (intro cb.DFS_skeleton_terminates initial_invars)
 
-subsubsection \<open>invar_2\<close>
+subsubsection \<open>\<open>invar_2\<close>\<close>
 
 lemma invar_2_props[invar_props_elims]:
   "invar_2 dfs_state \<Longrightarrow> (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) \<Longrightarrow> P) \<Longrightarrow> P"
@@ -199,7 +199,7 @@ proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
     by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
-subsubsection \<open>invar_s_in_stack\<close>
+subsubsection \<open>\<open>invar_s_in_stack\<close>\<close>
 
 lemma invar_s_in_stack_props[invar_props_elims]:
    "invar_s_in_stack dfs_state \<Longrightarrow>
@@ -243,7 +243,7 @@ proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
     by (auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
-subsubsection \<open>invar_visited_through_seen\<close>
+subsubsection \<open>\<open>invar_visited_through_seen\<close>\<close>
 
 lemma invar_visited_through_seen_props[elim!]:
    "invar_visited_through_seen dfs_state \<Longrightarrow>
@@ -500,7 +500,7 @@ lemma invar_dfs_backtrack_5E: "invar_dfs_backtrack_5 state \<Longrightarrow> ((\
                             Vwalk.vwalk_bet (Graph.digraph_abs G) s p t) \<Longrightarrow> P) \<Longrightarrow> P"
   by(auto simp add: invar_dfs_backtrack_5_def)
 
-subsubsection \<open>invar_dfs_backtrack_1: collected endpoints are seen\<close>
+subsubsection \<open>\<open>invar_dfs_backtrack_1\<close>: collected endpoints are seen\<close>
 
 lemma invar_dfs_backtrack_1_holds_1[invar_holds_intros]:
   "\<lbrakk>cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_1 dfs_state; cb.invar_1 dfs_state\<rbrakk> \<Longrightarrow>
@@ -553,7 +553,7 @@ proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
     by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
-subsubsection \<open>invar_dfs_backtrack_2: collected edges are graph edges\<close>
+subsubsection \<open>\<open>invar_dfs_backtrack_2\<close>: collected edges are graph edges\<close>
 
 lemma invar_dfs_backtrack_2_holds_1[invar_holds_intros]:
   "\<lbrakk>cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_2 dfs_state; cb.invar_1 dfs_state\<rbrakk> \<Longrightarrow>
@@ -590,7 +590,7 @@ proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
     by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
-subsubsection \<open>invar_dfs_backtrack_3: collected edges are off the current search path\<close>
+subsubsection \<open>\<open>invar_dfs_backtrack_3\<close>: collected edges are off the current search path\<close>
 
 lemma invar_dfs_backtrack_3_holds_1[invar_holds_intros]:
   "\<lbrakk>cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_3 dfs_state;
@@ -679,7 +679,7 @@ proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
     by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
-subsubsection \<open>invar_dfs_backtrack_4: collected edges are distinct\<close>
+subsubsection \<open>\<open>invar_dfs_backtrack_4\<close>: collected edges are distinct\<close>
 
 lemma invar_dfs_backtrack_4_holds_1[invar_holds_intros]:
   "\<lbrakk>cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_4 dfs_state\<rbrakk> \<Longrightarrow>
@@ -716,7 +716,7 @@ proof(induction rule: cb.DFS_skeleton_induct[OF assms(1)])
     by(auto intro!: IH(2-) invar_holds_intros simp: cb.DFS_skeleton_simps[OF IH(1)])
 qed
 
-subsubsection \<open>invar_dfs_backtrack_5: on an acyclic graph, collected edges lie on no s-t walk\<close>
+subsubsection \<open>\<open>invar_dfs_backtrack_5\<close>: on an acyclic graph, collected edges lie on no s-t walk\<close>
 
 lemma invar_dfs_backtrack_5_holds_1[invar_holds_intros]:
   "\<lbrakk>cb.DFS_skeleton_call_1_conds dfs_state; invar_dfs_backtrack_5 dfs_state\<rbrakk> \<Longrightarrow>
