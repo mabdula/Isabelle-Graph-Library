@@ -86,7 +86,7 @@ lemma spine_preservation:
   "stack (reach_on_found st) = stack st" "seen (reach_on_found st) = seen st"
   "stack (reach_on_empty st) = stack st" "seen (reach_on_empty st) = seen st"
   "stack (reach_on_backtrack v st) = stack st" "seen (reach_on_backtrack v st) = seen st"
-  by \<^marker>\<open>provenance ai_human\<close> (auto simp: reach_on_found_def reach_on_empty_def reach_on_backtrack_def no_push_def split: list.splits)
+  by (auto simp: reach_on_found_def reach_on_empty_def reach_on_backtrack_def no_push_def split: list.splits)
 
 sublocale reach: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
@@ -94,7 +94,7 @@ sublocale reach: DFS_skeleton_thms
     and on_empty = reach_on_empty and on_backtrack = reach_on_backtrack
     and on_push = no_push
   using DFS_axioms
-  by \<^marker>\<open>provenance ai_human\<close> (unfold_locales)
+  by (unfold_locales)
      (auto simp: reach.DFS_skeleton_axioms_def DFS_axioms_def
                  reach_on_found_def reach_on_empty_def reach_on_backtrack_def no_push_def split: list.splits)
 
@@ -104,7 +104,7 @@ lemma upd1_unfold:
   "stack (reach.DFS_skeleton_upd1 st) = sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st) # stack st"
   "seen (reach.DFS_skeleton_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
   "return (reach.DFS_skeleton_upd1 st) = return st"
-  by \<^marker>\<open>provenance ai_human\<close> (auto simp: reach.DFS_skeleton_upd1_def no_push_def Let_def)
+  by (auto simp: reach.DFS_skeleton_upd1_def no_push_def Let_def)
 
 lemma upd2_unfold:
   "stack (reach.DFS_skeleton_upd2 st) = tl (stack st)"

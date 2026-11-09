@@ -59,7 +59,7 @@ lemma spine_preservation:
   "stack (cyc_on_found st) = stack st" "seen (cyc_on_found st) = seen st"
   "stack (cyc_on_empty st) = stack st" "seen (cyc_on_empty st) = seen st"
   "stack (cyc_on_backtrack v st) = stack st" "seen (cyc_on_backtrack v st) = seen st"
-  by \<^marker>\<open>provenance ai_human\<close> (auto simp: cyc_on_found_def cyc_on_empty_def cyc_on_backtrack_def no_push_def)
+  by (auto simp: cyc_on_found_def cyc_on_empty_def cyc_on_backtrack_def no_push_def)
 
 sublocale dc: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
@@ -67,7 +67,7 @@ sublocale dc: DFS_skeleton_thms
     and on_empty = cyc_on_empty and on_backtrack = cyc_on_backtrack
     and on_push = no_push
   using dircycle_axioms
-  by \<^marker>\<open>provenance ai_human\<close> (unfold_locales)
+  by (unfold_locales)
      (auto simp: dc.DFS_skeleton_axioms_def DFS_dircycle_axioms_def
                  cyc_on_found_def cyc_on_empty_def cyc_on_backtrack_def no_push_def)
 
@@ -118,7 +118,7 @@ lemma upd1_unfold:
   "seen (dc.DFS_skeleton_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
   "finished (dc.DFS_skeleton_upd1 st) = finished st"
   "cycle (dc.DFS_skeleton_upd1 st) = cycle st"
-  by \<^marker>\<open>provenance ai_human\<close> (auto simp: dc.DFS_skeleton_upd1_def no_push_def Let_def)
+  by (auto simp: dc.DFS_skeleton_upd1_def no_push_def Let_def)
 
 lemma invar_fin_props[invar_props_elims]:
   "invar_fin dfs_state \<Longrightarrow> (vset_inv (finished dfs_state) \<Longrightarrow> P) \<Longrightarrow> P"

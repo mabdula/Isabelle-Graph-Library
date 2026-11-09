@@ -74,7 +74,7 @@ lemma spine_preservation:
   "stack (cb_on_found st) = stack st" "seen (cb_on_found st) = seen st"
   "stack (cb_on_empty st) = stack st" "seen (cb_on_empty st) = seen st"
   "stack (cb_on_backtrack v st) = stack st" "seen (cb_on_backtrack v st) = seen st"
-  by \<^marker>\<open>provenance ai_human\<close> (auto simp: cb_on_found_def cb_on_empty_def cb_on_backtrack_def no_push_def split: list.splits)
+  by (auto simp: cb_on_found_def cb_on_empty_def cb_on_backtrack_def no_push_def split: list.splits)
 
 sublocale cb: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
@@ -82,7 +82,7 @@ sublocale cb: DFS_skeleton_thms
     and on_empty = cb_on_empty and on_backtrack = cb_on_backtrack
     and on_push = no_push
   using DFS_axioms
-  by \<^marker>\<open>provenance ai_human\<close> (unfold_locales)
+  by (unfold_locales)
      (auto simp: cb.DFS_skeleton_axioms_def DFS_axioms_def
                  cb_on_found_def cb_on_empty_def cb_on_backtrack_def no_push_def split: list.splits)
 
@@ -93,7 +93,7 @@ lemma upd1_unfold:
   "seen (cb.DFS_skeleton_upd1 st) = insert (sel ((𝒩⇩G (hd (stack st))) -⇩G seen st)) (seen st)"
   "return (cb.DFS_skeleton_upd1 st) = return st"
   "backtrack (cb.DFS_skeleton_upd1 st) = backtrack st"
-  by \<^marker>\<open>provenance ai_human\<close> (auto simp: cb.DFS_skeleton_upd1_def no_push_def Let_def)
+  by (auto simp: cb.DFS_skeleton_upd1_def no_push_def Let_def)
 
 lemma upd2_unfold:
   "stack (cb.DFS_skeleton_upd2 st) = tl (stack st)"
