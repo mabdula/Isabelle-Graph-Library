@@ -2,6 +2,8 @@ theory DFS_Aux_Skel_Example
   imports DFS_Aux_Skel Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
+provenance human
+
 text ‹RBT global interpretation of the undirected-cycle DFS skeleton.
   Mirrors the ‹DFS_Cycles_Example› pattern but wires up ‹DFS_Aux_Skel›
   instead of the original ‹DFS_Aux›.›

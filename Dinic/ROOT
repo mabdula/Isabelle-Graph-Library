@@ -4,6 +4,7 @@ session "Dinic" = "HOL-Library" +
 sessions
   Flow_Theory
   Graph_Algorithms_Dev
+  AI_Provenance
 
 theories
 Blocking_Flow

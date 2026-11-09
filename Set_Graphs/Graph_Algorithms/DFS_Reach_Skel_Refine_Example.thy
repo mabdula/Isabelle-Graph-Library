@@ -2,6 +2,8 @@ theory DFS_Reach_Skel_Refine_Example
   imports DFS_Reach_Skel_Refine DFS_Reach_Skel_Example
 begin
 
+provenance ai_human
+
 text \<open>The refined reachability DFS at the red-black-tree instantiation, run side by side with
 the plain one of \<^theory>\<open>Graph_Algorithms_Dev.DFS_Reach_Skel_Example\<close> on the same graph: same
 verdicts --- it does the same thing --- computed off the state-carried pruned map instead of a
@@ -26,9 +28,13 @@ rdfs_del_in_edges = rdfs.del_in_edges
           simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                     vset_inv_def)
 
+provenance human
+
 text \<open>The partial-function unfolding equation cannot serve as a code equation directly (its head
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
 instance, with the callbacks inlined.\<close>
+provenance ai_human
+
 lemmas rdfs_impl_code[code] =
   rdfs.rr.DFS_skeleton_refine_impl.simps[folded rdfs_impl_def[folded rreach_found_def],
     unfolded rdfs.rreach_on_found_def rdfs.rreach_on_empty_def rdfs.rreach_on_backtrack_def
@@ -36,9 +42,13 @@ lemmas rdfs_impl_code[code] =
 
 text \<open>The graph of \<open>DFS_Reach_Skel_Example\<close>, and its reverse map --- the predecessors, built
 once by swapping every edge --- for the in-edge deletion.\<close>
+provenance human
+
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (2,1), (1,5), (5,8), (8,7), (7,1),
                      (7,2), (7,4), (4,3), (3,4), (3,3), (9, 8), (8, 1), (4,5), (5,10)]"
 definition "G = a_graph edges"
+provenance ai_human
+
 definition "RG = a_graph (map prod.swap edges)"
 
 value "rdfs_initial_state G RG (0::nat)"

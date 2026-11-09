@@ -2,6 +2,8 @@ theory DFS_CB_Skel_Example
   imports DFS_CB_Skel Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
+provenance human
+
 text ‹Instantiation of the dead-end collecting DFS (skeleton instance) with Red-Black Trees.›
 
 global_interpretation dfs: DFS_CB

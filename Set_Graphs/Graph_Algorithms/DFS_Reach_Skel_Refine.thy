@@ -2,6 +2,8 @@ theory DFS_Reach_Skel_Refine
   imports DFS_Reach_Skel DFS_Skeletons.DFS_Skeleton_Refine
 begin
 
+provenance ai_human
+
 section \<open>Reachability on the prune-at-push refined skeleton\<close>
 
 text \<open>The reachability search of \<^theory>\<open>Graph_Algorithms_Dev.DFS_Reach_Skel\<close> as an instance of

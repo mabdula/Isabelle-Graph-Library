@@ -2,6 +2,8 @@ theory DFS_Aux_Skel
   imports Directed_Cycle_DFS.DFS_DirCycle
 begin
 
+provenance human
+
 text \<open>Undirected-graph cycle detection (skeleton instance) as an instance of the DFS skeleton. This is a self-contained
 replacement for the \<open>DFS_Aux\<close> development: it reuses only the record \<open>('ver,'vset) DFS_dircycle_state\<close>
 (skeleton spine plus a finished set and a cycle flag) from \<open>DFS_DirCycle\<close>, not its lemmas. Unlike the
@@ -184,7 +186,7 @@ lemma spine_preservation:
   "stack (aux_on_found st) = stack st" "seen (aux_on_found st) = seen st"
   "stack (aux_on_empty st) = stack st" "seen (aux_on_empty st) = seen st"
   "stack (aux_on_backtrack v st) = stack st" "seen (aux_on_backtrack v st) = seen st"
-  by (auto simp: aux_on_found_def aux_on_empty_def aux_on_backtrack_def no_push_def)
+  by \<^marker>\<open>provenance ai_human\<close> (auto simp: aux_on_found_def aux_on_empty_def aux_on_backtrack_def no_push_def)
 
 sublocale aux: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
@@ -192,7 +194,7 @@ sublocale aux: DFS_skeleton_thms
     and on_empty = aux_on_empty and on_backtrack = aux_on_backtrack
     and on_push = no_push
   using DFS_Aux_axioms
-  by (unfold_locales)
+  by \<^marker>\<open>provenance ai_human\<close> (unfold_locales)
      (auto simp: aux.DFS_skeleton_axioms_def DFS_Aux_axioms_def
                  aux_on_found_def aux_on_empty_def aux_on_backtrack_def no_push_def)
 
@@ -287,7 +289,7 @@ lemma upd1_unfold:
   "seen (aux.DFS_skeleton_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
   "finished (aux.DFS_skeleton_upd1 st) = finished st"
   "cycle (aux.DFS_skeleton_upd1 st) = cycle st"
-  by (auto simp: aux.DFS_skeleton_upd1_def no_push_def Let_def)
+  by \<^marker>\<open>provenance ai_human\<close> (auto simp: aux.DFS_skeleton_upd1_def no_push_def Let_def)
 
 text \<open>The \<open>found\<close>-condition of the skeleton, exposed in the parent-excluding form.\<close>
 lemma found_unfold:

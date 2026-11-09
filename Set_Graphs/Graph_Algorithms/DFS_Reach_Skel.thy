@@ -2,6 +2,8 @@ theory DFS_Reach_Skel
   imports DFS DFS_Skeletons.DFS_Skeleton
 begin
 
+provenance ai_human
+
 section \<open>Reachability by DFS (skeleton instance)\<close>
 
 text \<open>Whether @{term t} is reachable from @{term s}, as an instance of the generic DFS skeleton:
@@ -14,6 +16,8 @@ The reachability invariants of \<open>DFS\<close> are re-derived here against th
 correctness theorems come out in the same form: a @{term NotReachable} verdict means there is no
 walk at all from @{term s} to @{term t}, and a @{term Reachable} verdict hands back the reversed
 stack as a distinct walk from @{term s} to @{term t}.\<close>
+
+provenance human
 
 subsection \<open>Setup\<close>
 
@@ -38,7 +42,11 @@ lemma subtract_from_empty:
 
 subsection \<open>Semantics via the skeleton callbacks\<close>
 
+provenance ai_human
+
 text \<open>The found test reads the stack head; the two return slots are written on the two exits.\<close>
+
+provenance human
 
 definition "reach_found (st::('v,'vset) DFS_reach_state) =
    (case stack st of [] \<Rightarrow> False | v # _ \<Rightarrow> v = t)"
@@ -47,7 +55,11 @@ definition "reach_on_found (st::('v,'vset) DFS_reach_state) = (st \<lparr>return
 
 definition "reach_on_empty (st::('v,'vset) DFS_reach_state) = (st \<lparr>return := NotReachable\<rparr>)"
 
+provenance ai_human
+
 definition "reach_on_backtrack v (st::('v,'vset) DFS_reach_state) = st"
+
+provenance human
 
 definition "initial_state = \<lparr>stack = [s], seen = insert s \<emptyset>\<^sub>N, return = NotReachable\<rparr>"
 
@@ -74,7 +86,7 @@ lemma spine_preservation:
   "stack (reach_on_found st) = stack st" "seen (reach_on_found st) = seen st"
   "stack (reach_on_empty st) = stack st" "seen (reach_on_empty st) = seen st"
   "stack (reach_on_backtrack v st) = stack st" "seen (reach_on_backtrack v st) = seen st"
-  by (auto simp: reach_on_found_def reach_on_empty_def reach_on_backtrack_def no_push_def split: list.splits)
+  by \<^marker>\<open>provenance ai_human\<close> (auto simp: reach_on_found_def reach_on_empty_def reach_on_backtrack_def no_push_def split: list.splits)
 
 sublocale reach: DFS_skeleton_thms
   where lookup = lookup and G = G and s = s
@@ -82,7 +94,7 @@ sublocale reach: DFS_skeleton_thms
     and on_empty = reach_on_empty and on_backtrack = reach_on_backtrack
     and on_push = no_push
   using DFS_axioms
-  by (unfold_locales)
+  by \<^marker>\<open>provenance ai_human\<close> (unfold_locales)
      (auto simp: reach.DFS_skeleton_axioms_def DFS_axioms_def
                  reach_on_found_def reach_on_empty_def reach_on_backtrack_def no_push_def split: list.splits)
 
@@ -92,7 +104,7 @@ lemma upd1_unfold:
   "stack (reach.DFS_skeleton_upd1 st) = sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st) # stack st"
   "seen (reach.DFS_skeleton_upd1 st) = insert (sel ((\<N>\<^sub>G (hd (stack st))) -\<^sub>G seen st)) (seen st)"
   "return (reach.DFS_skeleton_upd1 st) = return st"
-  by (auto simp: reach.DFS_skeleton_upd1_def no_push_def Let_def)
+  by \<^marker>\<open>provenance ai_human\<close> (auto simp: reach.DFS_skeleton_upd1_def no_push_def Let_def)
 
 lemma upd2_unfold:
   "stack (reach.DFS_skeleton_upd2 st) = tl (stack st)"

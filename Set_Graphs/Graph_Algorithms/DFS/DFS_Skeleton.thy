@@ -1,6 +1,8 @@
 theory DFS_Skeleton
-  imports Directed_Set_Graphs.Pair_Graph_Specs Data_Structures.Set2_Addons
+  imports Directed_Set_Graphs.Pair_Graph_Specs Data_Structures.Set2_Addons AI_Provenance.Provenance
 begin
+
+provenance ai_human
 
 text \<open>A generic DFS skeleton: the search spine (stack/seen) is fixed; per-algorithm semantics
 are supplied as the callbacks found/on_found/on_empty/on_backtrack/on_push, which may only write
@@ -14,6 +16,8 @@ the other callbacks it carries the spine-preservation contract of \<open>DFS_ske
 must not disturb \<open>stack\<close>/\<open>seen\<close>. Instances that need no such data pass
 \<open>on_push = (\<lambda>u st. st)\<close>.\<close>
 
+provenance human
+
 record ('ver, 'vset) DFS_skeleton_state = stack:: "'ver list" seen:: "'vset"
 
 named_theorems call_cond_elims
@@ -24,6 +28,8 @@ named_theorems invar_props_elims
 named_theorems invar_holds_intros
 named_theorems state_rel_intros
 named_theorems state_rel_holds_intros
+
+provenance ai_human
 
 text \<open>The no-op push hook, for instances that maintain nothing on push. It is a constant rather
 than \<open>\<lambda>u st. st\<close> so that the spine-preservation assumptions of
@@ -50,8 +56,12 @@ fixes G::"'adjmap" and s::"'v"
   and on_push     :: "'v \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme"
 begin
 
+provenance human
+
 abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
+
+provenance ai_human
 
 function (domintros) DFS_skeleton::"('v,'vset,'more) DFS_skeleton_state_scheme \<Rightarrow> ('v,'vset,'more) DFS_skeleton_state_scheme" where
   "DFS_skeleton dfs_state =
@@ -80,6 +90,8 @@ partial_function (tailrec) DFS_skeleton_impl::"('v,'vset,'more) DFS_skeleton_sta
                 DFS_skeleton_impl (on_backtrack v (dfs_state \<lparr>stack := stack_tl\<rparr>))))
      | _ \<Rightarrow> on_empty dfs_state)"
 
+provenance human
+
 lemmas [code] = DFS_skeleton_impl.simps
 
 lemma DFS_skeleton_impl_same:
@@ -102,6 +114,8 @@ lemma DFS_skeleton_call_1_conds[call_cond_elims]:
     (\<N>\<^sub>G (hd (stack dfs_state))) -\<^sub>G (seen dfs_state) \<noteq> \<emptyset>\<^sub>N\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
   by(auto simp: DFS_skeleton_call_1_conds_def split: list.splits option.splits if_splits)
 
+provenance ai_human
+
 definition "DFS_skeleton_upd1 dfs_state = (
     let
       N = (\<N>\<^sub>G (hd (stack dfs_state)));
@@ -110,6 +124,8 @@ definition "DFS_skeleton_upd1 dfs_state = (
       seen' = insert u (seen dfs_state)
     in
       on_push u (dfs_state \<lparr>stack := stack', seen := seen'\<rparr>))"
+
+provenance human
 
 definition "DFS_skeleton_call_2_conds dfs_state =
     (case (stack dfs_state) of (v # stack_tl) \<Rightarrow>
@@ -229,6 +245,8 @@ text \<open>The reasoning layer: the callbacks --- \<open>on_push\<close> includ
 search spine (stack/seen), and the graph is well-formed. Under these the structural invariants
 and termination hold generically.\<close>
 
+provenance ai_human
+
 locale DFS_skeleton_thms = DFS_skeleton +
   assumes DFS_skeleton_axioms: DFS_skeleton_axioms
     and on_found_stack[simp]:     "stack (on_found st) = stack st"
@@ -244,6 +262,8 @@ begin
 context
 includes set_ops.automation2 and Graph.adjmap.automation and Graph.vset.set.automation
 begin
+
+provenance human
 
 lemma graph_inv[simp,intro]:
           "Graph.graph_inv G"

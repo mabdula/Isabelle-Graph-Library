@@ -2,6 +2,8 @@ theory DFS_Skeleton_Refine_Unfin
   imports DFS_Skeleton
 begin
 
+provenance ai_human
+
 text \<open>A refinement of \<^locale>\<open>DFS_skeleton\<close> that removes the set difference from the search's
   inner loop.
 

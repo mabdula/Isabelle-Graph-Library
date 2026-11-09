@@ -18,6 +18,8 @@ session "DFS_Skeletons" in DFS = "Directed_Set_Graphs" +
     directed-cycle detection in Directed_Cycle_DFS, or an external development such as a datalog
     foundedness check -- need not depend on Graph_Algorithms_Dev, which pulls in
     Verified_SAT_Based_AI_Planning, BFS and Bellman-Ford.\<close>
+  sessions
+    AI_Provenance
   theories
     DFS_Skeleton
     DFS_Skeleton_Refine
@@ -29,6 +31,8 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
     DFS_DirCycle is the single-root directed-cycle detector on the DFS_Skeletons skeleton: a cycle
     exists below the root iff the search meets a back edge, i.e. an edge into a seen but unfinished
     vertex.\<close>
+  sessions
+    AI_Provenance
   theories
     DFS_DirCycle
 
@@ -40,6 +44,7 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     Undirected_Set_Graphs
     DFS_Skeletons
     Directed_Cycle_DFS
+    AI_Provenance
   theories
     RBT_Map_Extension
     DFS
