@@ -455,9 +455,13 @@ lemma face_trans:
 proof -
   obtain A' b' I' where A'_b':"((A', b') = sub_system A b I')
                               \<and> F = {x. A' *\<^sub>v x = b' \<and> x \<in> P}"
-    using char_face1[of A nr b F] assms(1-4) 
-    unfolding P_def 
-    by \<^marker>\<open>provenance ai\<close> blast
+  proof \<^marker>\<open>provenance ai\<close> -
+    obtain A' b' I' where "(A', b') = sub_system A b I'"
+      "F = {x. A' *\<^sub>v x = b' \<and> x \<in> polyhedron A b}"
+      by (rule char_face1[OF A b assms(4)[unfolded P_def]])
+    then show thesis
+      using that unfolding P_def by blast
+  qed
   then obtain C d  where C_d:"C = (A @\<^sub>r(A' @\<^sub>r (-A')))" "d = (b @\<^sub>v (b' @\<^sub>v (-b')))"  
     "F = polyhedron C d"
     "dim_row (A @\<^sub>r (A' @\<^sub>r (-A'))) = dim_vec (b @\<^sub>v(b' @\<^sub>v (-b')))"
@@ -486,9 +490,15 @@ proof -
     using C_dims by \<^marker>\<open>provenance ai\<close> simp
   obtain C' d' J where C'_d': "((C', d') = sub_system C d J)
                               \<and> F' = {x. C' *\<^sub>v x = d' \<and> x \<in> F}"
-    using char_face1[of C "dim_row C" d F'] assms(1-5) C_carr d_carr
-    unfolding `F = polyhedron C d`
-    by \<^marker>\<open>provenance ai\<close> blast
+  proof \<^marker>\<open>provenance ai\<close> -
+    have "face (polyhedron C d) F'"
+      using assms(5) `F = polyhedron C d` by simp
+    then obtain C' d' J where "(C', d') = sub_system C d J"
+      "F' = {x. C' *\<^sub>v x = d' \<and> x \<in> polyhedron C d}"
+      by (rule char_face1[OF C_carr d_carr])
+    then show thesis
+      using that `F = polyhedron C d` by blast
+  qed
   obtain A'' b'' where A''_b'': "((A'', b'') = sub_system A b (I' \<union> J))" 
     proof \<^marker>\<open>provenance ai\<close> -
       obtain A''' b''' where "sub_system A b (I' \<union> J) = (A''', b''')"
