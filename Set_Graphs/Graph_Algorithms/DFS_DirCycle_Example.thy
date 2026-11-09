@@ -18,27 +18,27 @@ neighbourhood = dircycle.Graph.neighbourhood
   by(auto intro!: DFS_dircycle.intro simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                                            vset_inv_def)
 
-text ‹The partial-function unfolding equation cannot serve as a code equation directly (its head
+text \<open>The partial-function unfolding equation cannot serve as a code equation directly (its head
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
-instance, with the callbacks inlined.›
+instance, with the callbacks inlined.\<close>
 lemmas find_dircycle_code[code] =
   dircycle.dc.DFS_skeleton_impl.simps[folded find_dircycle_def[folded cyc_found_def],
     unfolded dircycle.cyc_on_found_def dircycle.cyc_on_empty_def dircycle.cyc_on_backtrack_def]
 
-text ‹A digraph containing the directed cycle 1→2→3→1 (plus a tail 3→4→5).›
+text \<open>A digraph containing the directed cycle 1\<rightarrow>2\<rightarrow>3\<rightarrow>1 (plus a tail 3\<rightarrow>4\<rightarrow>5).\<close>
 definition "cyc_edges = [(1::nat, 2::nat), (2, 3), (3, 1), (3, 4), (4, 5)]"
 definition "G_cyc = a_graph cyc_edges"
 
-text ‹A DAG on the same vertices: the diamond 1→2→4, 1→3→4, then 4→5. No directed cycle.›
+text \<open>A DAG on the same vertices: the diamond 1\<rightarrow>2\<rightarrow>4, 1\<rightarrow>3\<rightarrow>4, then 4\<rightarrow>5. No directed cycle.\<close>
 definition "dag_edges = [(1::nat, 2::nat), (1, 3), (2, 4), (3, 4), (4, 5)]"
 definition "G_dag = a_graph dag_edges"
 
-text ‹A self-loop is a directed cycle and is reported.›
+text \<open>A self-loop is a directed cycle and is reported.\<close>
 definition "loop_edges = [(1::nat, 1::nat), (1, 2)]"
 definition "G_loop = a_graph loop_edges"
 
-text ‹A 2-cycle between 1 and 2 is a genuine directed cycle: unlike the undirected DFS (which
-excludes the stack parent), the directed instance reports it.›
+text \<open>A 2-cycle between 1 and 2 is a genuine directed cycle: unlike the undirected DFS (which
+excludes the stack parent), the directed instance reports it.\<close>
 definition "two_cycle_edges = [(1::nat, 2::nat), (2, 1)]"
 definition "G_two = a_graph two_cycle_edges"
 
@@ -48,13 +48,13 @@ value "dircycle_initial_state (1::nat)"
 
 value "find_dircycle G_cyc (dircycle_initial_state (1::nat))"
 
-text ‹The cycle 1→2→3→1 is found ...›
+text \<open>The cycle 1\<rightarrow>2\<rightarrow>3\<rightarrow>1 is found ...\<close>
 value "DFS_dircycle_state.cycle (find_dircycle G_cyc (dircycle_initial_state (1::nat)))"
-text ‹... but from source 4 only the tail 4→5 is reachable, so no cycle is seen (single-source!).›
+text \<open>... but from source 4 only the tail 4\<rightarrow>5 is reachable, so no cycle is seen (single-source!).\<close>
 value "DFS_dircycle_state.cycle (find_dircycle G_cyc (dircycle_initial_state (4::nat)))"
-text ‹The DAG is cycle-free.›
+text \<open>The DAG is cycle-free.\<close>
 value "DFS_dircycle_state.cycle (find_dircycle G_dag (dircycle_initial_state (1::nat)))"
-text ‹Self-loops and 2-cycles are directed cycles and are reported.›
+text \<open>Self-loops and 2-cycles are directed cycles and are reported.\<close>
 value "DFS_dircycle_state.cycle (find_dircycle G_loop (dircycle_initial_state (1::nat)))"
 value "DFS_dircycle_state.cycle (find_dircycle G_two (dircycle_initial_state (1::nat)))"
 

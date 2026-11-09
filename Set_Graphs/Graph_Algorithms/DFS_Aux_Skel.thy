@@ -1167,7 +1167,7 @@ proof (intro invar_props_intros, goal_cases)
   show ?case
   proof (cases "tl (stack dfs_aux_state)")
     case Nil
-    \<comment> \<open>Stack = [v]: The only neighbor in seen−finished would have to be v itself,
+    \<comment> \<open>Stack = [v]: The only neighbor in seen-finished would have to be v itself,
         but no self-loops, contradiction.\<close>
     let ?x = "sel (((\<N>\<^sub>G ?v) -\<^sub>G \<emptyset>\<^sub>N) \<inter>\<^sub>G (seen dfs_aux_state -\<^sub>G finished dfs_aux_state))"
     have ne: "((\<N>\<^sub>G ?v) -\<^sub>G \<emptyset>\<^sub>N) \<inter>\<^sub>G (seen dfs_aux_state -\<^sub>G finished dfs_aux_state) \<noteq> \<emptyset>\<^sub>N"

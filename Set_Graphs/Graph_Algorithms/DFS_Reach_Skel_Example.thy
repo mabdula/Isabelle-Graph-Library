@@ -21,9 +21,9 @@ from_list = dfs.Graph.from_list
   by(auto intro!: DFS_Reach.intro  simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                                            vset_inv_def)
 
-text ‹The partial-function unfolding equation cannot serve as a code equation directly (its head
+text \<open>The partial-function unfolding equation cannot serve as a code equation directly (its head
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
-instance, with the callbacks inlined.›
+instance, with the callbacks inlined.\<close>
 lemmas dfs_impl_code[code] =
   dfs.reach.DFS_skeleton_impl.simps[folded dfs_impl_def[folded reach_found_def],
     unfolded dfs.reach_on_found_def dfs.reach_on_empty_def dfs.reach_on_backtrack_def]
