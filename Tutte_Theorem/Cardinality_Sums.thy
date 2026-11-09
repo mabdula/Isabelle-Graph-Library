@@ -221,8 +221,8 @@ next
     using `\<forall>a\<in>F. b \<notin> a` DiffD2 calculation(1) by auto
   moreover have "\<exists>!b1. b1 \<in> C\<union>{b} \<and> b1 \<in> x" 
     using \<open>b \<in> B \<and> b \<in> x\<close> calculation(1) by blast
-  ultimately show ?case 
-    by (blast intro!: exI[of _ "C \<union> {b}"])
+  ultimately show ?case
+    using `\<forall>a\<in>F. b \<notin> a` by (intro exI[of _ "C \<union> {b}"]) auto
 qed
 
 

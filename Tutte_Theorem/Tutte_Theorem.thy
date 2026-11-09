@@ -247,7 +247,7 @@ proof(rule ccontr)
     have cc: "connected_component G v = connected_component (G \<setminus> {}) v"
       using graph_diff_empty by (rule arg_cong)
     have "C = connected_component (G \<setminus> {}) v"
-      using v(2) cc by simp
+      using v(2) by simp
     then have "\<exists>x \<in> Vs G - {}. C = connected_component (G \<setminus> {}) x \<and> odd (card C)"
       using v(1) codd by blast
     then show "C \<in> odd_comps_in_diff G {}"

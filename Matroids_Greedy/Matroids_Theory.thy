@@ -137,8 +137,26 @@ proof-
 
     have rank_eq_iff: "(n = rank X) \<longleftrightarrow> 
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
-      unfolding rank_def using Max_eq_iff[OF `finite ?indep_cards` `?indep_cards \<noteq> {}`]
-      by force
+    proof
+      assume "n = rank X"
+      then have n_eq: "n = Max ?indep_cards"
+        by (simp add: rank_def)
+      have "n \<in> ?indep_cards"
+        using Max_in[OF `finite ?indep_cards` `?indep_cards \<noteq> {}`] n_eq by simp
+      moreover have "\<forall>a\<in>?indep_cards. a \<le> n"
+        using Max_ge[OF `finite ?indep_cards`] n_eq by simp
+      ultimately show "\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y')"
+        by auto
+    next
+      assume "\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y')"
+      then obtain Y where Y: "indep_in X Y" "card Y = n" "\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'"
+        by blast
+      have "Max ?indep_cards = n"
+        unfolding Max_eq_iff[OF `finite ?indep_cards` `?indep_cards \<noteq> {}`]
+        using Y by auto
+      then show "n = rank X"
+        by (simp add: rank_def)
+    qed
 
     have "(\<exists>Y. basis_in X Y \<and> card Y = n \<and> (\<forall>Y'. basis_in X Y' \<longrightarrow> card Y \<ge> card Y')) \<longleftrightarrow>
       (\<exists>Y. indep_in X Y \<and> card Y = n \<and> (\<forall>Y'. indep_in X Y' \<longrightarrow> card Y \<ge> card Y'))"
