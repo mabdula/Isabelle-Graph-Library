@@ -51,7 +51,28 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
         (on-stack) and unfinished sets become state components maintained incrementally, so both of
         level 0's differences disappear. DFS_DirCycle_Linear_Tracked_Aux_Equiv relates the two inner searches,
         step for step; DFS_DirCycle_Linear_Tracked_Equiv relates the two outer sweeps, which agree
-        on the verdict but need not visit in the same order.\<close>
+        on the verdict but need not visit in the same order.
+      * Level 2 -- DFS_DirCycle_Linear_Tracked_Aux_Refine and DFS_DirCycle_Linear_Tracked_Refine,
+        on DFS_Skeleton_Refine_Unfin, where the adjacency map itself moves into the state and
+        on_backtrack deletes the finished vertex's in-edges (read off a state-carried inverse
+        map, kept the exact inverse of the carried one by dropping the finished vertex's row
+        alongside, so the deletions cost one pass over the edges in total). The carried
+        neighbourhoods then hold exactly the unfinished out-neighbours, so both remaining
+        per-step set operations go at once: the descend step reads a plain neighbourhood instead
+        of "neighbourhood - seen" (evaluated twice per step), and the back-edge test becomes one
+        membership -- is the selected vertex gray? -- instead of level 1's "neighbourhood
+        intersect gray" scan. With that the whole search is O(V + E). The outer sweep threads the
+        pruned map from one inner call to the next, so the pruning is done once over the whole run
+        rather than once per root; its state record extends level 1's. The equivalence back to
+        level 1 is weaker than at the lower levels: the two inner searches are lockstep-equal
+        (a plain equation under the record package's truncate) exactly on clean runs, and on
+        cyclic runs only the verdicts agree -- this search detects the back edge when sel hands
+        it over rather than at the first opportunity, but a back edge adjacent to the stack can
+        never be backtracked past, so it always forces a report. Soundness and completeness
+        transport across the verdict. The inner search needs one assumption the vset ADT does not
+        supply, sel_cong -- that sel is determined by the element set -- because its clean-run
+        lockstep hands sel vsets built by different operations; the outer sweep does not, since
+        it selects from the very vset level 1 selects from.\<close>
   sessions
     AI_Provenance
   theories
@@ -63,6 +84,8 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
     DFS_DirCycle_Linear_Tracked_Aux_Equiv
     DFS_DirCycle_Linear_Tracked
     DFS_DirCycle_Linear_Tracked_Equiv
+    DFS_DirCycle_Linear_Tracked_Aux_Refine
+    DFS_DirCycle_Linear_Tracked_Refine
 
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
