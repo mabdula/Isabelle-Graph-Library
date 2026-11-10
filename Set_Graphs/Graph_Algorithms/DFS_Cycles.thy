@@ -1,5 +1,5 @@
 theory DFS_Cycles
-  imports DFS_Cycles_Aux
+  imports DFS_Aux_Skel
 begin
 
 
@@ -1099,5 +1099,56 @@ lemma DFS_Cycles_correct_2:
 end
 
 end
+
+subsection\<^marker>\<open>provenance ai\<close> \<open>The inner search as the skeleton instance \<open>DFS_Aux_Skel\<close>\<close>
+
+text\<^marker>\<open>provenance ai\<close> \<open>The single-root undirected-cycle search \<open>DFS_Aux_Skel\<close>, run from each root \<open>s\<close>, satisfies
+  \<open>dfs_aux_axioms\<close>: each conjunct is one of its correctness theorems \<open>DFS_Aux_correct_1\<close>..\<open>6\<close>.\<close>
+
+locale\<^marker>\<open>provenance ai\<close> DFS_Cycles_Skel =
+  DFS_Cycles where dfs_aux = dfs_aux and seen_aux = DFS_skeleton_state.seen
+    and cycle_aux = DFS_dircycle_state.cycle
+  for dfs_aux :: "'v \<Rightarrow> ('v, 'vset) DFS_dircycle_state"
+begin
+
+interpretation\<^marker>\<open>provenance ai\<close> skel: DFS_Aux_Skel where lookup = lookup and G = G and s = s for s
+  by unfold_locales
+
+lemma\<^marker>\<open>provenance ai\<close> dfs_aux_axioms_skel:
+  assumes "DFS_Cycles_axioms"
+      and "\<And>s. s \<in> dVs (Graph.digraph_abs G) \<Longrightarrow>
+             dfs_aux s = skel.aux.DFS_skeleton (skel.initial_state s)"
+  shows "dfs_aux_axioms"
+proof -
+  have ax: "skel.DFS_Aux_axioms s" if "s \<in> dVs (Graph.digraph_abs G)" for s
+    using assms(1) that unfolding DFS_Cycles_axioms_def skel.DFS_Aux_axioms_def by blast
+  note thms = DFS_Aux_Skel_thms.intro[OF skel.DFS_Aux_Skel_axioms DFS_Aux_Skel_thms_axioms.intro[OF ax]]
+  show ?thesis
+    unfolding dfs_aux_axioms_def
+    by (simp add: assms(2) DFS_Aux_Skel_thms.DFS_Aux_correct_1[OF thms]
+          DFS_Aux_Skel_thms.DFS_Aux_correct_2[OF thms] DFS_Aux_Skel_thms.DFS_Aux_correct_3[OF thms]
+          DFS_Aux_Skel_thms.DFS_Aux_correct_4[OF thms] DFS_Aux_Skel_thms.DFS_Aux_correct_5[OF thms]
+          DFS_Aux_Skel_thms.DFS_Aux_correct_6[OF thms])
+qed
+
+text\<^marker>\<open>provenance ai\<close> \<open>The same for the executable \<open>partial_function\<close> version of the inner search,
+  which agrees with the total one on every root in the graph.\<close>
+
+lemma\<^marker>\<open>provenance ai\<close> dfs_aux_axioms_skel_impl:
+  assumes "DFS_Cycles_axioms"
+      and "dfs_aux = (\<lambda>s. skel.aux.DFS_skeleton_impl (skel.initial_state s))"
+  shows "dfs_aux_axioms"
+proof (rule dfs_aux_axioms_skel[OF assms(1)])
+  fix s
+  assume s: "s \<in> dVs (Graph.digraph_abs G)"
+  interpret t: DFS_Aux_Skel_thms where lookup = lookup and G = G and s = s
+    using assms(1) s unfolding DFS_Cycles_axioms_def
+    by unfold_locales (unfold skel.DFS_Aux_axioms_def, blast)
+  show "dfs_aux s = skel.aux.DFS_skeleton (skel.initial_state s)"
+    using skel.aux.DFS_skeleton_impl_same[OF t.aux_initial_dom] by (simp add: assms(2))
+qed
+
+end
+
 
 end

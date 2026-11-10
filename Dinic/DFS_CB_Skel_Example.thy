@@ -2,7 +2,9 @@ theory DFS_CB_Skel_Example
   imports DFS_CB_Skel Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
-text ‹Instantiation of the dead-end collecting DFS (skeleton instance) with Red-Black Trees.›
+provenance human
+
+text \<open>Instantiation of the dead-end collecting DFS (skeleton instance) with Red-Black Trees.\<close>
 
 global_interpretation dfs: DFS_CB
   where insert = vset_insert
@@ -26,7 +28,7 @@ global_interpretation dfs: DFS_CB
   defines  dfs_backtrack_initial_state = dfs.initial_state
     and    neighbourhood = dfs.Graph.neighbourhood
     and    cb_found = dfs.cb_found
-    and    dfs_del_dead_impl = dfs.cb.DFS_skel_impl
+    and    dfs_del_dead_impl = dfs.cb.DFS_skeleton_impl
     and    add_edge = dfs.Graph.add_edge
     and    delete_edge = dfs.Graph.delete_edge
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
@@ -34,11 +36,11 @@ global_interpretation dfs: DFS_CB
         simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                                            vset_inv_def)
 
-text ‹The partial-function unfolding equation cannot serve as a code equation directly (its head
+text \<open>The partial-function unfolding equation cannot serve as a code equation directly (its head
 carries the instantiated callbacks as compound arguments), so we restate it once at the concrete
-instance, with the callbacks inlined.›
+instance, with the callbacks inlined.\<close>
 lemmas dfs_del_dead_impl_code[code] =
-  dfs.cb.DFS_skel_impl.simps[folded dfs_del_dead_impl_def[folded cb_found_def],
+  dfs.cb.DFS_skeleton_impl.simps[folded dfs_del_dead_impl_def[folded cb_found_def],
     unfolded dfs.cb_on_found_def dfs.cb_on_empty_def dfs.cb_on_backtrack_def]
 
 definition "edges = [(0::nat, 1::nat), (0, 2), (2, 3), (2,4), (1,5), (5,8), (8,7),
@@ -50,9 +52,9 @@ value edges
 value "vertices edges"
 value G
 value "neighbourhood G"
-text ‹The two runs below exercise the executable dead-end-collecting DFS. (The bare initial state is
-not displayed via value: the fresh backtrack field's polymorphic list element type has no term_of
-instance for direct printing; the concrete runs below fix the type and evaluate.)›
+text \<open>The two runs below exercise the executable dead-end-collecting DFS. (The bare initial state is
+not displayed via value: the fresh backtrack field's polymorphic list element type has no \<open>term_of\<close>
+instance for direct printing; the concrete runs below fix the type and evaluate.)\<close>
 value "dfs_del_dead_impl G 2 (dfs_backtrack_initial_state 0)"
 value "dfs_del_dead_impl G 10 (dfs_backtrack_initial_state 0)"
 
