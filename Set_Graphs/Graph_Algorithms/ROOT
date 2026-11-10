@@ -46,7 +46,12 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
       * Level 0 -- DFS_DirCycle_Linear{_Aux}, on DFS_Skeleton and DFS_DirCycle unchanged, i.e. with
         the identity on_push. The reference implementation: the back-edge test recomputes
         "seen - finished" at every skeleton step, and the outer loop recomputes "V - finished" at
-        every iteration.\<close>
+        every iteration.
+      * Level 1 -- DFS_DirCycle_Linear_Tracked{_Aux}, the first level to use on_push. The gray
+        (on-stack) and unfinished sets become state components maintained incrementally, so both of
+        level 0's differences disappear. DFS_DirCycle_Linear_Tracked_Aux_Equiv relates the two inner searches,
+        step for step; DFS_DirCycle_Linear_Tracked_Equiv relates the two outer sweeps, which agree
+        on the verdict but need not visit in the same order.\<close>
   sessions
     AI_Provenance
   theories
@@ -54,6 +59,10 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
     Graph_Topological_Order
     DFS_DirCycle_Linear_Aux
     DFS_DirCycle_Linear
+    DFS_DirCycle_Linear_Tracked_Aux
+    DFS_DirCycle_Linear_Tracked_Aux_Equiv
+    DFS_DirCycle_Linear_Tracked
+    DFS_DirCycle_Linear_Tracked_Equiv
 
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
