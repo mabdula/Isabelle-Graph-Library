@@ -32,12 +32,28 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
     exists below the root iff the search meets a back edge, i.e. an edge into a seen but unfinished
     vertex. Graph_Topological_Order gives the certificate view -- a finite directed graph has a
     topological numbering iff it has no directed cycle, which is the usual way to certify
-    acyclicity, checkable in one pass over the edges.\<close>
+    acyclicity, checkable in one pass over the edges.
+
+    On top of that sits a whole-graph (linear) directed-cycle search, the directed counterpart of
+    DFS_Cycles: an outer sweep over the vertices calling the detector once per remaining root, each
+    call pre-seeded with the region earlier calls already finished, so the whole run is linear
+    rather than one fresh DFS per vertex. It is developed as a chain of refinements, each level
+    removing one set operation from a hot loop and each justified by an equivalence back to the
+    level below it, so that the correctness argument is stated once against the simplest version and
+    inherited by the fastest one. Every level ships an inner pre-seeded DFS (..._Aux) and an outer
+    sweep that calls it once per remaining root.
+
+      * Level 0 -- DFS_DirCycle_Linear{_Aux}, on DFS_Skeleton and DFS_DirCycle unchanged, i.e. with
+        the identity on_push. The reference implementation: the back-edge test recomputes
+        "seen - finished" at every skeleton step, and the outer loop recomputes "V - finished" at
+        every iteration.\<close>
   sessions
     AI_Provenance
   theories
     DFS_DirCycle
     Graph_Topological_Order
+    DFS_DirCycle_Linear_Aux
+    DFS_DirCycle_Linear
 
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
