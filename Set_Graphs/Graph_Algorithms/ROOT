@@ -30,11 +30,14 @@ session "Directed_Cycle_DFS" in Directed_Cycles = "DFS_Skeletons" +
 
     DFS_DirCycle is the single-root directed-cycle detector on the DFS_Skeletons skeleton: a cycle
     exists below the root iff the search meets a back edge, i.e. an edge into a seen but unfinished
-    vertex.\<close>
+    vertex. Graph_Topological_Order gives the certificate view -- a finite directed graph has a
+    topological numbering iff it has no directed cycle, which is the usual way to certify
+    acyclicity, checkable in one pass over the edges.\<close>
   sessions
     AI_Provenance
   theories
     DFS_DirCycle
+    Graph_Topological_Order
 
 session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
   options [document = pdf, document_output = "output"]
