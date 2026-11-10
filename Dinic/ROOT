@@ -4,11 +4,10 @@ session "Dinic" = "HOL-Library" +
 sessions
   Flow_Theory
   Graph_Algorithms_Dev
+  AI_Provenance
 
 theories
 Blocking_Flow
-DFS_Collect_Backtrack
-DFS_Collect_Backtrack_Example
 DFS_CB_Skel
 DFS_CB_Skel_Example
 Compute_Blocking_Simple
