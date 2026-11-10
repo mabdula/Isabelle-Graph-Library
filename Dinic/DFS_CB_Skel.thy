@@ -1,5 +1,5 @@
 theory DFS_CB_Skel
-  imports Graph_Algorithms_Dev.DFS_Reach_Skel
+  imports Graph_Algorithms_Dev.DFS
 begin
 
 provenance human

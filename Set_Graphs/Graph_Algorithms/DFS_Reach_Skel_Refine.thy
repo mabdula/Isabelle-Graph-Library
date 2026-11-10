@@ -1,12 +1,12 @@
 theory DFS_Reach_Skel_Refine
-  imports DFS_Reach_Skel DFS_Skeletons.DFS_Skeleton_Refine
+  imports DFS DFS_Skeletons.DFS_Skeleton_Refine
 begin
 
 provenance ai_human
 
 section \<open>Reachability on the prune-at-push refined skeleton\<close>
 
-text \<open>The reachability search of \<^theory>\<open>Graph_Algorithms_Dev.DFS_Reach_Skel\<close> as an instance of
+text \<open>The reachability search of \<^theory>\<open>Graph_Algorithms_Dev.DFS\<close> as an instance of
   \<^locale>\<open>DFS_skeleton_refine\<close> --- the \<^emph>\<open>unseen-neighbours\<close> refinement: the adjacency map moves
   into the state and \<open>on_push u\<close> deletes every edge entering \<open>u\<close>, so the carried neighbourhoods
   hold exactly the unseen out-neighbours and the loop reads \<open>\<N> (adj st) v\<close> where the plain
@@ -29,11 +29,11 @@ text \<open>The reachability search of \<^theory>\<open>Graph_Algorithms_Dev.DFS
   obligation --- and is not needed: the pruned edges are never read back.)\<close>
 
 record ('ver, 'vset, 'adjmap) DFS_reach_refine_state =
-  "('ver, 'vset) DFS_reach_state" +
+  "('ver, 'vset) DFS_state" +
   adj :: "'adjmap"
 
 locale DFS_Reach_Refine =
-  DFS_Reach where lookup = lookup
+  DFS where lookup = lookup
   for lookup :: "'adjmap \<Rightarrow> 'v \<Rightarrow> 'vset option" +
   fixes R :: "'adjmap"
 begin
@@ -167,7 +167,7 @@ lemma del_preds_abs:
 
 subsection \<open>The refined search\<close>
 
-text \<open>The callbacks of \<^theory>\<open>Graph_Algorithms_Dev.DFS_Reach_Skel\<close> at the extended state, plus
+text \<open>The callbacks of \<^theory>\<open>Graph_Algorithms_Dev.DFS\<close> at the extended state, plus
   the one job this refinement adds: \<open>rreach_on_push\<close> prunes the carried graph.\<close>
 
 definition "rreach_found (st::('v,'vset,'adjmap) DFS_reach_refine_state) =
@@ -222,7 +222,7 @@ lemma rreach_adj[simp]:
 
 end
 
-text \<open>The reasoning layer, on top of \<^locale>\<open>DFS_Reach_thms\<close>. Three further assumptions, and no
+text \<open>The reasoning layer, on top of \<^locale>\<open>DFS_thms\<close>. Three further assumptions, and no
   others:
   \<^item> \<open>sel_cong\<close> --- \<open>sel\<close> is determined by the element set. It comes straight from
     \<^locale>\<open>DFS_skeleton_refine_thms\<close> and is \<^emph>\<open>not\<close> dischargeable here: the refined loop hands
@@ -235,7 +235,7 @@ text \<open>The reasoning layer, on top of \<^locale>\<open>DFS_Reach_thms\<clos
     read but never written.\<close>
 
 locale DFS_Reach_Refine_thms =
-  DFS_Reach_Refine + DFS_Reach_thms +
+  DFS_Reach_Refine + DFS_thms +
   assumes sel_cong: "vset_inv X \<Longrightarrow> vset_inv Y \<Longrightarrow> t_set X = t_set Y \<Longrightarrow> sel X = sel Y"
       and R_graph_inv: "Graph.graph_inv R"
       and R_preds: "t_set (Graph.neighbourhood R u) = {p. (p, u) \<in> Graph.digraph_abs G}"
@@ -372,29 +372,29 @@ text \<open>The refined state record \<^emph>\<open>extends\<close> the plain on
   same branch at every step and the projection commutes with the whole run.\<close>
 
 lemma truncate_sel[simp]:
-  "stack (DFS_reach_state.truncate st) = stack st"
-  "seen (DFS_reach_state.truncate st) = seen st"
-  "return (DFS_reach_state.truncate st) = return st"
-  by (simp_all add: DFS_reach_state.truncate_def)
+  "stack (DFS_state.truncate st) = stack st"
+  "seen (DFS_state.truncate st) = seen st"
+  "return (DFS_state.truncate st) = return st"
+  by (simp_all add: DFS_state.truncate_def)
 
 lemma truncate_found[simp]:
-  "reach_found (DFS_reach_state.truncate st) = rreach_found st"
+  "reach_found (DFS_state.truncate st) = rreach_found st"
   by (cases "stack st") (simp_all add: reach_found_def rreach_found_def)
 
 lemma truncate_invars[simp]:
-  "reach.invar_1 (DFS_reach_state.truncate st) = rr.invar_1 st"
-  "reach.invar_seen_stack (DFS_reach_state.truncate st) = rr.invar_seen_stack st"
+  "reach.invar_1 (DFS_state.truncate st) = rr.invar_1 st"
+  "reach.invar_seen_stack (DFS_state.truncate st) = rr.invar_seen_stack st"
   by (simp_all add: rr.invar_1_def rr.invar_seen_stack_def
                     reach.invar_1_def reach.invar_seen_stack_def)
 
 lemma truncate_conds[simp]:
-  "reach.DFS_skeleton_call_1_conds (DFS_reach_state.truncate st)
+  "reach.DFS_skeleton_call_1_conds (DFS_state.truncate st)
      = rr.DFS_skeleton_call_1_conds st"
-  "reach.DFS_skeleton_call_2_conds (DFS_reach_state.truncate st)
+  "reach.DFS_skeleton_call_2_conds (DFS_state.truncate st)
      = rr.DFS_skeleton_call_2_conds st"
-  "reach.DFS_skeleton_ret_1_conds (DFS_reach_state.truncate st)
+  "reach.DFS_skeleton_ret_1_conds (DFS_state.truncate st)
      = rr.DFS_skeleton_ret_1_conds st"
-  "reach.DFS_skeleton_ret_2_conds (DFS_reach_state.truncate st)
+  "reach.DFS_skeleton_ret_2_conds (DFS_state.truncate st)
      = rr.DFS_skeleton_ret_2_conds st"
   by (simp_all add: reach.DFS_skeleton_call_1_conds_def rr.DFS_skeleton_call_1_conds_def
                     reach.DFS_skeleton_call_2_conds_def rr.DFS_skeleton_call_2_conds_def
@@ -403,14 +403,14 @@ lemma truncate_conds[simp]:
               split: list.splits)
 
 lemma truncate_steps[simp]:
-  "reach.DFS_skeleton_upd1 (DFS_reach_state.truncate st)
-     = DFS_reach_state.truncate (rr.DFS_skeleton_upd1 st)"
-  "reach.DFS_skeleton_upd2 (DFS_reach_state.truncate st)
-     = DFS_reach_state.truncate (rr.DFS_skeleton_upd2 st)"
-  "reach.DFS_skeleton_ret1 (DFS_reach_state.truncate st)
-     = DFS_reach_state.truncate (rr.DFS_skeleton_ret1 st)"
-  "reach.DFS_skeleton_ret2 (DFS_reach_state.truncate st)
-     = DFS_reach_state.truncate (rr.DFS_skeleton_ret2 st)"
+  "reach.DFS_skeleton_upd1 (DFS_state.truncate st)
+     = DFS_state.truncate (rr.DFS_skeleton_upd1 st)"
+  "reach.DFS_skeleton_upd2 (DFS_state.truncate st)
+     = DFS_state.truncate (rr.DFS_skeleton_upd2 st)"
+  "reach.DFS_skeleton_ret1 (DFS_state.truncate st)
+     = DFS_state.truncate (rr.DFS_skeleton_ret1 st)"
+  "reach.DFS_skeleton_ret2 (DFS_state.truncate st)
+     = DFS_state.truncate (rr.DFS_skeleton_ret2 st)"
   by (simp_all add: reach.DFS_skeleton_upd1_def rr.DFS_skeleton_upd1_def
                     reach.DFS_skeleton_upd2_def rr.DFS_skeleton_upd2_def
                     reach.DFS_skeleton_ret1_def rr.DFS_skeleton_ret1_def
@@ -419,7 +419,7 @@ lemma truncate_steps[simp]:
                     reach_on_backtrack_def rreach_on_backtrack_def
                     reach_on_empty_def rreach_on_empty_def
                     reach_on_found_def rreach_on_found_def
-                    DFS_reach_state.truncate_def Let_def)
+                    DFS_state.truncate_def Let_def)
 
 subsection \<open>The projection commutes with the whole run\<close>
 
@@ -427,71 +427,71 @@ theorem refine_run_agree:
   assumes dom: "rr.DFS_skeleton_dom st"
       and "rr.invar_1 st"
       and "rr.invar_seen_stack st"
-  shows "DFS_reach_state.truncate (rr.DFS_skeleton st)
-           = reach.DFS_skeleton (DFS_reach_state.truncate st)"
+  shows "DFS_state.truncate (rr.DFS_skeleton st)
+           = reach.DFS_skeleton (DFS_state.truncate st)"
   using assms(2-)
 proof (induction rule: rr.DFS_skeleton_induct[OF dom])
   case IH: (1 st)
-  have t1: "reach.invar_1 (DFS_reach_state.truncate st)"
+  have t1: "reach.invar_1 (DFS_state.truncate st)"
     using IH(4) by simp
-  have t2: "reach.invar_seen_stack (DFS_reach_state.truncate st)"
+  have t2: "reach.invar_seen_stack (DFS_state.truncate st)"
     using IH(5) by simp
   note simps = rr.DFS_skeleton_simps[OF IH(1)]
   note tsimps = reach.DFS_skeleton_simps[OF reach.DFS_skeleton_terminates[OF t1 t2]]
   show ?case
   proof (rule rr.DFS_skeleton_cases[where dfs_state = st])
     assume c: "rr.DFS_skeleton_call_1_conds st"
-    have tc: "reach.DFS_skeleton_call_1_conds (DFS_reach_state.truncate st)"
+    have tc: "reach.DFS_skeleton_call_1_conds (DFS_state.truncate st)"
       using c by simp
-    have "DFS_reach_state.truncate (rr.DFS_skeleton (rr.DFS_skeleton_upd1 st))
-            = reach.DFS_skeleton (DFS_reach_state.truncate (rr.DFS_skeleton_upd1 st))"
+    have "DFS_state.truncate (rr.DFS_skeleton (rr.DFS_skeleton_upd1 st))
+            = reach.DFS_skeleton (DFS_state.truncate (rr.DFS_skeleton_upd1 st))"
       by (rule IH(2)[OF c rr.invar_1_holds_1[OF c IH(4)]
                           rr.invar_seen_stack_holds_1[OF c IH(4) IH(5)]])
     thus ?thesis by (simp add: simps(1)[OF c] tsimps(1)[OF tc])
   next
     assume c: "rr.DFS_skeleton_call_2_conds st"
-    have tc: "reach.DFS_skeleton_call_2_conds (DFS_reach_state.truncate st)"
+    have tc: "reach.DFS_skeleton_call_2_conds (DFS_state.truncate st)"
       using c by simp
-    have "DFS_reach_state.truncate (rr.DFS_skeleton (rr.DFS_skeleton_upd2 st))
-            = reach.DFS_skeleton (DFS_reach_state.truncate (rr.DFS_skeleton_upd2 st))"
+    have "DFS_state.truncate (rr.DFS_skeleton (rr.DFS_skeleton_upd2 st))
+            = reach.DFS_skeleton (DFS_state.truncate (rr.DFS_skeleton_upd2 st))"
       by (rule IH(3)[OF c rr.invar_1_holds_2[OF c IH(4)]
                           rr.invar_seen_stack_holds_2[OF c IH(4) IH(5)]])
     thus ?thesis by (simp add: simps(2)[OF c] tsimps(2)[OF tc])
   next
     assume c: "rr.DFS_skeleton_ret_1_conds st"
-    have tc: "reach.DFS_skeleton_ret_1_conds (DFS_reach_state.truncate st)"
+    have tc: "reach.DFS_skeleton_ret_1_conds (DFS_state.truncate st)"
       using c by simp
     show ?thesis by (simp add: simps(3)[OF c] tsimps(3)[OF tc])
   next
     assume c: "rr.DFS_skeleton_ret_2_conds st"
-    have tc: "reach.DFS_skeleton_ret_2_conds (DFS_reach_state.truncate st)"
+    have tc: "reach.DFS_skeleton_ret_2_conds (DFS_state.truncate st)"
       using c by simp
     show ?thesis by (simp add: simps(4)[OF c] tsimps(4)[OF tc])
   qed
 qed
 
 lemma truncate_initial:
-  "DFS_reach_state.truncate rreach_initial_state = initial_state"
-  by (simp add: DFS_reach_state.truncate_def rreach_initial_state_def initial_state_def)
+  "DFS_state.truncate rreach_initial_state = initial_state"
+  by (simp add: DFS_state.truncate_def rreach_initial_state_def initial_state_def)
 
 text \<open>The capstone: forgetting the carried graph, the refined run \<^emph>\<open>is\<close> the plain reachability
-  run --- it does the same thing. Everything proved of \<open>DFS_reach\<close> therefore holds of the
+  run --- it does the same thing. Everything proved of \<open>DFS\<close> therefore holds of the
   refined run verbatim.\<close>
 
 theorem reach_refine_agrees:
-  "DFS_reach_state.truncate reach_refine_result = DFS_reach initial_state"
+  "DFS_state.truncate reach_refine_result = DFS initial_state"
 proof -
-  have "DFS_reach_state.truncate (rr.DFS_skeleton rreach_initial_state)
-          = reach.DFS_skeleton (DFS_reach_state.truncate rreach_initial_state)"
+  have "DFS_state.truncate (rr.DFS_skeleton rreach_initial_state)
+          = reach.DFS_skeleton (DFS_state.truncate rreach_initial_state)"
     by (rule refine_run_agree[OF rr.DFS_skeleton_terminates[OF initial_refine_invars]
                                  initial_refine_invars])
-  thus ?thesis by (simp add: reach_refine_eq_more truncate_initial)
+  thus ?thesis by (simp add: reach_refine_eq_more truncate_initial DFS_def)
 qed
 
 corollary reach_refine_components:
-  shows "stack reach_refine_result = stack (DFS_reach initial_state)"
-    and "seen reach_refine_result = seen (DFS_reach initial_state)"
-    and "return reach_refine_result = return (DFS_reach initial_state)"
+  shows "stack reach_refine_result = stack (DFS initial_state)"
+    and "seen reach_refine_result = seen (DFS initial_state)"
+    and "return reach_refine_result = return (DFS initial_state)"
   using arg_cong[where f = stack, OF reach_refine_agrees]
   using arg_cong[where f = seen, OF reach_refine_agrees]
   using arg_cong[where f = return, OF reach_refine_agrees]
@@ -511,8 +511,8 @@ theorem DFS_reach_refine_correct_2:
   using DFS_correct_2 assms reach_refine_components(1,3) by simp_all
 
 corollary reach_refine_impl_agrees:
-  "DFS_reach_state.truncate (rr.DFS_skeleton_refine_impl rreach_initial_state)
-     = DFS_reach initial_state"
+  "DFS_state.truncate (rr.DFS_skeleton_refine_impl rreach_initial_state)
+     = DFS initial_state"
   by (simp add: rr.DFS_skeleton_refine_impl_same[OF rreach_initial_dom] reach_refine_agrees)
 
 end

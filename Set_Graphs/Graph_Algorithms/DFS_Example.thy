@@ -2,6 +2,8 @@ theory DFS_Example
   imports DFS Directed_Set_Graphs.Pair_Graph_RBT
 begin
 
+provenance human
+
 global_interpretation dfs: DFS where insert = vset_insert and
  sel = sel and  vset_empty = vset_empty and  diff = vset_diff and
  lookup = lookup and empty = map_empty and delete=delete and isin = isin and t_set=t_set

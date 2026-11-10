@@ -51,7 +51,6 @@ session "Graph_Algorithms_Dev" = "Directed_Set_Graphs" +
     RBT_Map_Extension
     DFS
     DFS_Example
-    DFS_Reach_Skel
     DFS_Reach_Skel_Refine
     BFS_2
     BFS_Subprocedures

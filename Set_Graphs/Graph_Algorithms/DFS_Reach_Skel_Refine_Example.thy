@@ -1,11 +1,11 @@
 theory DFS_Reach_Skel_Refine_Example
-  imports DFS_Reach_Skel_Refine DFS_Reach_Skel_Example
+  imports DFS_Reach_Skel_Refine DFS_Example
 begin
 
 provenance ai_human
 
 text \<open>The refined reachability DFS at the red-black-tree instantiation, run side by side with
-the plain one of \<^theory>\<open>Graph_Algorithms_Dev.DFS_Reach_Skel_Example\<close> on the same graph: same
+the plain one of \<^theory>\<open>Graph_Algorithms_Dev.DFS_Example\<close> on the same graph: same
 verdicts --- it does the same thing --- computed off the state-carried pruned map instead of a
 per-step set difference. Only the \<^emph>\<open>function layer\<close> is interpreted: the reasoning layer's
 \<open>sel_cong\<close> is a genuine extra requirement on the vset ADT (a set-determined \<open>sel\<close>) which the
@@ -24,7 +24,7 @@ rreach_found = rdfs.rreach_found and
 rdfs_del_preds = rdfs.del_preds and
 rdfs_del_in_edges = rdfs.del_in_edges
   using G.Pair_Graph_Specs_axioms RBT.Set2_axioms
-  by(auto intro!: DFS_Reach_Refine.intro DFS_Reach.intro
+  by(auto intro!: DFS_Reach_Refine.intro DFS.intro
           simp add: edge_map_update_def RBT_Set.empty_def adj_inv_def map_empty_def
                     vset_inv_def)
 
@@ -38,9 +38,9 @@ provenance ai_human
 lemmas rdfs_impl_code[code] =
   rdfs.rr.DFS_skeleton_refine_impl.simps[folded rdfs_impl_def[folded rreach_found_def],
     unfolded rdfs.rreach_on_found_def rdfs.rreach_on_empty_def rdfs.rreach_on_backtrack_def
-             rdfs.rreach_on_push_def, folded DFS_Reach_Skel_Example.neighbourhood_def]
+             rdfs.rreach_on_push_def, folded DFS_Example.neighbourhood_def]
 
-text \<open>The graph of \<open>DFS_Reach_Skel_Example\<close>, and its reverse map --- the predecessors, built
+text \<open>The graph of \<open>DFS_Example\<close>, and its reverse map --- the predecessors, built
 once by swapping every edge --- for the in-edge deletion.\<close>
 provenance human
 
