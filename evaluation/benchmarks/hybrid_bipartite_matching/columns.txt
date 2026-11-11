@@ -1,3 +1,0 @@
-# The one column of the hybrid solver tables: column name, the single-run program (relative to this directory), fixed arguments.
-# run/run_experiments.py reads this; `make column-<name>` builds the program.  README.txt describes the row.
-hybrid             bench_hybrid

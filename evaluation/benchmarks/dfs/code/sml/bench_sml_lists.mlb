@@ -1,5 +1,0 @@
-(* MLton basis file of bench_sml_lists, the adjacency-list export.  GEN is work/exports/current/dfs. *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/DFS_Lists_SML/DFS_Lists.sml
-gr_parser.sml
-main_lists.sml

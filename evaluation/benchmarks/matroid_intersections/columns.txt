@@ -1,5 +1,0 @@
-# The solver columns of the matroid intersection tables: column name, the single-run program (relative to this directory), fixed arguments.
-# run/run_experiments.py reads this; `make column-<name>` builds the program.  README.txt describes every column.
-sml                bench_sml
-sage_oracle        competitors/sage_oracle/bench_sage_oracle
-sage_plain         competitors/sage_plain/bench_sage_plain

@@ -1,5 +1,0 @@
-(* MLton basis file of bench_sml.  GEN is work/exports/current/dijkstra (the Makefile passes it). *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/Dijkstra_SML/Dijkstra.sml
-gr_parser.sml
-main.sml

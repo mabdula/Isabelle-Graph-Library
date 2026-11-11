@@ -50,10 +50,37 @@ For the more practically usable algorithms, we include an implementation. For ot
 # How to use
 
  - Go to https://isabelle.in.tum.de/, pick and download the version of Isabelle2025-2 specific to your OS
- - Go to https://www.isa-afp.org/download/ and download the 2025-2 version of the AFP
+ - Go to https://www.isa-afp.org/download/ and download the 2025-2 version of the AFP (we build the library with the AFP snapshot of 17 March 2026)
  - Add the AFP as a collection of components to your local Isabelle: 'isabelle components -u [path to afp]/afp/thys'
  - Same for this directory: 'isabelle components -u [path to this directory]'
  - All theories in this formalisation should be available now!
+
+## Using the library in your own development
+
+Once this directory is registered as a component, its sessions can be used like those of the AFP. For example, a development that builds on the theory of matchings lists `Basic_Matching` among the `sessions` in its `ROOT` file and imports `Basic_Matching.Matching` in its theories. To check one session and the sessions it depends on, run `isabelle build SESSION`, e.g. `isabelle build Graph_Algorithms_Dev`. To check the whole library, run `isabelle build -D .` in this directory.
+
+## Generated code
+
+The executable algorithms are refined to imperative programs, from which the build generates code. Each export theory below writes its code into the directory named in the last column, next to the theory. Unless stated otherwise, the code is generated in SML, Scala and Go, and the SML and Scala code is also compiled during the build.
+
+| Algorithm | Session | Export theory | Directory |
+|---|---|---|---|
+| BFS, on graphs as arrays (CSR) and as red-black trees | `Graph_Algorithms_Dev` | `Set_Graphs/Graph_Algorithms/Refinements/BFS_Code_Export.thy` | `BFS_code_exports` |
+| DFS, on graphs as arrays (CSR), lists and red-black trees | `Graph_Algorithms_Dev` | `Set_Graphs/Graph_Algorithms/Refinements/DFS_Code_Export.thy` | `DFS_code_exports` |
+| Dijkstra's algorithm | `Graph_Algorithms_Dev` | `Set_Graphs/Graph_Algorithms/Refinements/Dijkstra_Code_Export.thy` | `Dijkstra_code_exports` |
+| Kruskal's algorithm | `Spanning_Trees` | `Spanning_Trees/Refinements/Kruskal_Code_Export.thy` | `Kruskal_code_exports` |
+| Push-relabel | `Push_Relabel` | `Push_Relabel/Refinements/Push_Relabel_Code_Export.thy` | `Push_Relabel_code_exports` |
+| FIFO push-relabel of the AFP, for comparison | `Push_Relabel` | `Push_Relabel/Refinements/AFP_FIFO_Push_Relabel_Code_Export.thy` | `AFP_FIFO_Push_Relabel_code_exports` |
+| Hungarian method | `Hungarian_Method` | `Hungarian_Method/Refinements/Hungarian_Code_Export.thy` | `Hungarian_code_exports` |
+| Assignment solver (SML only) | `Hungarian_Method` | `Hungarian_Method/Refinements/Assignment_Solver_Code_Export.thy` | `Assignment_Solver_code_exports` |
+| Bipartite matching and b-matching, unweighted and weighted, by matroid intersection | `Matroid_Intersection` | `Matroid_Intersection/Applications/Bipartite_Matching_Code_Export.thy` | `Bipartite_Matching_code_exports` |
+| Network simplex, as a solver for DIMACS minimum-cost flow instances (SML only) | `Use_Network_Simplex` | `Mincost_Flow_Algorithms/Use_Network_Simplex/Refinements/DIMACS_Solver_Code_Export.thy` | `DIMACS_Solver_code_exports` |
+
+For example, `isabelle build Spanning_Trees` writes the code of Kruskal's algorithm to `Spanning_Trees/Refinements/Kruskal_code_exports`.
+
+## TACAS 2027 artefact
+
+The artefact of the TACAS 2027 paper on this library adds an index from the listings of the paper to the library and the scripts of the experiments. It is archived at https://doi.org/10.5281/zenodo.23805452 and kept on the branch `tacas27` (tag `tacas27-artefact`).
 
 ## Acknowledgements
 

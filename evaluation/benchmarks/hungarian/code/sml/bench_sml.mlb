@@ -1,5 +1,0 @@
-(* MLton basis file of bench_sml.  GEN is work/exports/current/hungarian (the Makefile passes it). *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/SML/Hungarian.sml
-asn_parser.sml
-main.sml

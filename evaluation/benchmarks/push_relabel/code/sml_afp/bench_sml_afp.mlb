@@ -1,7 +1,0 @@
-(* MLton basis file of bench_sml_afp, the AFP export (Lammich and Sefidgar, Prpu_Maxflow, FIFO push-relabel).
-   GEN is work/exports/current/push_relabel (the Makefile passes it). *)
-$(SML_LIB)/basis/basis.mlb
-$(GEN)/AFP/SML/AFP_FIFO_Push_Relabel.sml
-max_parser.sml
-csr.sml
-main_afp.sml
