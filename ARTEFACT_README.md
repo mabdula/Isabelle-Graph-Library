@@ -2,7 +2,7 @@
 
 This artefact is the Isabelle/HOL formal development accompanying the paper. It contains the full library of verified graph algorithms, the code exported from it, and a machine-checked index that links every listing in the paper to its formal counterpart.
 
-The artefact is archived at [DOI to be added]. The paths in this file are relative to the top directory of that archive. For the contents of the library, the publications it builds on, and how to install Isabelle and the Archive of Formal Proofs and register this development as a component, see `README.md` in that directory. For the index, see `Paper_Index/README.md`. For the experimental evaluation, see `evaluation/README.md`.
+The artefact is archived at <https://doi.org/10.5281/zenodo.23805452>. The paths in this file are relative to the top directory of that archive. For the contents of the library, the publications it builds on, and how to install Isabelle and the Archive of Formal Proofs and register this development as a component, see `README.md` in that directory. For the index, see `Paper_Index/README.md`. For the experimental evaluation, see `evaluation/README.md`.
 
 ## Badges
 
