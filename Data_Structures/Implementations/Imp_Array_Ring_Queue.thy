@@ -5,6 +5,8 @@ theory Imp_Array_Ring_Queue
     More_Arith
 begin
 
+provenance ai
+
 section \<open>Bounded Queues as Ring Buffers\<close>
 
 text \<open>A FIFO queue of capacity \<open>cap\<close>: an array of length \<open>cap\<close>, allocated once, holding the

@@ -1,7 +1,9 @@
 theory Bounded_Queue_Specs
   imports
-    Main
+    Main AI_Provenance.Provenance
 begin
+
+provenance ai
 
 section \<open>FIFO Queues of Bounded Length\<close>
 

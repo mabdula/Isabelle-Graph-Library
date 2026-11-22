@@ -2,6 +2,8 @@ theory Partition_Oracle
   imports Exchange_Oracles
 begin
 
+provenance ai_human
+
 section \<open>Oracles for Unit Partition Matroids\<close>
 
 text \<open>The carrier is partitioned into blocks by \<open>blk\<close>. A set is independent iff it 

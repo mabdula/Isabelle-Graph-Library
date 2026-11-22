@@ -4,6 +4,8 @@ theory Fixed_Univ_List_Specs_Imp
     Fixed_Univ_List_Specs
 begin
 
+provenance ai
+
 locale imp_rlist =
   fixes rl_assn :: "'a list \<Rightarrow> 'p \<Rightarrow> assn"
     and len_imp :: "'p \<Rightarrow> nat Heap"

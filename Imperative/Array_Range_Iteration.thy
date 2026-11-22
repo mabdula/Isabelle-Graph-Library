@@ -4,6 +4,8 @@ theory Array_Range_Iteration
     Data_Structures.More_Arith
 begin
 
+provenance ai_human
+
 section \<open>Iterating over a Range of an Array\<close>
 
 text \<open>Folds of a heap function over the entries of an array between two positions, together

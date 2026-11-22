@@ -4,6 +4,8 @@ theory Bounded_Queue_Specs_Imp
     Bounded_Queue_Specs
 begin
 
+provenance ai
+
 text \<open>Imperative bounded queues. Pushing and popping work in place; the only allocating operation
       is @{term queue_empty_imp}, which is used during initialisation only.\<close>
 

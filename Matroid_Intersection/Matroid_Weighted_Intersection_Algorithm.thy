@@ -2,6 +2,8 @@ theory Matroid_Weighted_Intersection_Algorithm
   imports Matroid_Weighted_Intersection_Path_Loop Matroid_Intersection_Algorithm
 begin
 
+provenance ai_human
+
 section \<open>Weighted Matroid Intersection Algorithm\<close>
 
 text \<open>Frank's weighted matroid intersection algorithm (Korte--Vygen, Section 13.7) with the tight

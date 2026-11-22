@@ -4,6 +4,8 @@ theory Bounded_Stack_Specs_Imp
     Bounded_Stack_Specs
 begin
 
+provenance ai
+
 text \<open>Imperative bounded stacks. Pushing and popping work in place; the only allocating operation
       is @{term stack_empty_imp}, which is used during initialisation only.\<close>
 

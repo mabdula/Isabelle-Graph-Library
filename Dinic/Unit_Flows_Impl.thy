@@ -7,6 +7,8 @@ theory Unit_Flows_Impl
     "HOL-Library.Product_Lexorder"
 begin
 
+provenance ai_human
+
 hide_const (open) RBT_Set.insert
 
 section \<open>Executable Unit Flows\<close>

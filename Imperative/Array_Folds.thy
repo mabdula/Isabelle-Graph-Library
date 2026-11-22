@@ -2,6 +2,8 @@ theory Array_Folds
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
+provenance ai
+
 section \<open>Folds over an Array\<close>
 
 text \<open>Left and right folds of a heap function over a prefix of an array, which refine

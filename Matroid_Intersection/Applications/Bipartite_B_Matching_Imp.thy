@@ -2,6 +2,8 @@ theory Bipartite_B_Matching_Imp
   imports Matroid_Intersection_Imp Bipartite_Arrays Capacity_Partition_Oracle_Imp
 begin
 
+provenance ai_human
+
 (*TODO Once we have more b matching theory, set up own b-matching
     theory in Basic_Matching Session and put b-matching defs there.*)
 

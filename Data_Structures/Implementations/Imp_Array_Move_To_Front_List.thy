@@ -5,6 +5,8 @@ theory Imp_Array_Move_To_Front_List
     Fixed_Univ_List_Specs_Imp
 begin
 
+provenance ai
+
 section \<open>Distinct Lists with Move-to-Front as Doubly-Linked Lists in Arrays\<close>
 
 text \<open>A distinct list over the elements \<open>{..<n}\<close>, stored in a successor and a predecessor array

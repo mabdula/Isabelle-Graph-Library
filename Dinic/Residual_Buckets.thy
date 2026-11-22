@@ -5,6 +5,8 @@ theory Residual_Buckets
     "HOL-Data_Structures.Map_Specs"
 begin
 
+provenance ai_human
+
 section \<open>Residual Edges Grouped by Pairs of Vertices\<close>
 
 text \<open>A residual graph is a multigraph. A search on its projection to pairs of vertices needs, for

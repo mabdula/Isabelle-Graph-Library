@@ -2,6 +2,8 @@ theory Edmonds_Matching_LP
   imports Matching_LP HOL.Rings
 begin
 
+provenance human
+
 definition "odd_subsets X = {Y | Y. Y \<subseteq> X \<and> odd (card Y)}"
 
 notation odd_subsets ("\<Omega> _")

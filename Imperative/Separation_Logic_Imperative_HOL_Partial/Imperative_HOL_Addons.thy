@@ -2,6 +2,8 @@ theory Imperative_HOL_Addons
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main
 begin
 
+provenance ai_human
+
 section \<open>Additions to Imperative HOL\<close>
 
 subsection \<open>Precondition Rules\<close>

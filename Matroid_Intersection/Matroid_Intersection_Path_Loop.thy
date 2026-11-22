@@ -2,6 +2,8 @@ theory Matroid_Intersection_Path_Loop
   imports Matroid_Intersection
 begin
 
+provenance ai_human
+
 section \<open>Matroid Intersection as a Loop over an Abstract Path Search\<close>
 
 text \<open>The augmentation loop of unweighted matroid intersection. 

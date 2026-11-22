@@ -4,6 +4,8 @@ theory Matroid_Partitioning
   imports Matroid_Intersection Data_Structures.More_Logic
 begin
 
+provenance ai_human
+
 text \<open>
   This theory formalises \S13.6 of Korte--Vygen, \<^emph>\<open>Combinatorial Optimization\<close>: the
     \<^emph>\<open>union\<close>

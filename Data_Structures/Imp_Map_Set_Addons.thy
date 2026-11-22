@@ -5,6 +5,8 @@ theory Imp_Map_Set_Addons
           More_Lists
 begin
 
+provenance ai_human
+
 section \<open>Additions to the Imperative Map and Set Interfaces\<close>
 
 text \<open>This theory extends the interfaces for imperative maps and sets of the separation logic

@@ -5,6 +5,8 @@ theory Imp_Array_Fun
     Data_Structures.Fixed_Univ_List_Specs_Imp
 begin
 
+provenance ai_human
+
 lemma array_rlist: "imp_rlist (\<lambda>xs a. a \<mapsto>\<^sub>a xs) Array.len Array.nth"
   by unfold_locales sep_auto+
 

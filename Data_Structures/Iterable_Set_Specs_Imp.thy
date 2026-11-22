@@ -2,6 +2,8 @@ theory Iterable_Set_Specs_Imp
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main Iterable_Set_Specs
 begin
 
+provenance ai_human
+
 locale iterable_set_imp =
   iterable_set where iterable_set_invar = iterable_set_invar
     and iterable_set_abstract = iterable_set_abstract

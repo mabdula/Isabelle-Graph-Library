@@ -2,6 +2,8 @@ theory List_Cursor
   imports Data_Structures.Iterable_Set_Specs
 begin
 
+provenance ai
+
 section \<open>A Cursor over a List of Distinct Elements\<close>
 
 text \<open>An immutable set, given as a list of distinct elements, together with a cursor into the

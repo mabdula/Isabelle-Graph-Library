@@ -2,6 +2,8 @@ theory Matching_Specs
   imports Matching
 begin
 
+provenance ai_human
+
 section \<open>Read-only Access to a Matching\<close>
 
 text \<open>The representation and invariant of a matching are abstract. Partner lookup returns

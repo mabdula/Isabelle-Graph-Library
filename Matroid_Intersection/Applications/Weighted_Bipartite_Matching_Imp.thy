@@ -2,6 +2,8 @@ theory Weighted_Bipartite_Matching_Imp
   imports Bipartite_Matching_Imp Matroid_Weighted_Intersection_Imp
 begin
 
+provenance ai_human
+
 section \<open>Maximum Weight Bipartite Matching in Imperative HOL\<close>
 
 text \<open>The graph arrays and matroid handles come from

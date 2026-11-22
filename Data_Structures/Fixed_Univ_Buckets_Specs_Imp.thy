@@ -4,6 +4,8 @@ theory Fixed_Univ_Buckets_Specs_Imp
     Fixed_Univ_Buckets_Specs
 begin
 
+provenance ai
+
 text \<open>Imperative buckets over a fixed universe. Updates work in place; the only allocating
       operation is @{term buckets_empty_imp}, which is used during initialisation only.\<close>
 

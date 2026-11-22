@@ -1,7 +1,9 @@
 theory Array_Linked_Lists
   imports
-    Main
+    Main AI_Provenance.Provenance
 begin
+
+provenance ai
 
 section \<open>Doubly-Linked Lists in Successor and Predecessor Maps\<close>
 

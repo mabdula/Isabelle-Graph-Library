@@ -1,7 +1,9 @@
 theory Bounded_Stack_Specs
   imports
-    Main
+    Main AI_Provenance.Provenance
 begin
+
+provenance ai
 
 section \<open>LIFO Stacks of Bounded Length\<close>
 

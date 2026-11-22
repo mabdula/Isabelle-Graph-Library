@@ -2,6 +2,8 @@ theory Bipartite_Matching_Imp
   imports Matroid_Intersection_Imp Bipartite_Arrays
 begin
 
+provenance ai_human
+
 section \<open>Maximum Bipartite Matching in Imperative HOL\<close>
 
 text \<open>The input graph is given by two arrays of the same length \<open>m\<close>: edge \<open>i\<close> joins the

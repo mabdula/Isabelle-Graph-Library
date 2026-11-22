@@ -2,6 +2,8 @@ theory Alternating_Forest_Expansion
   imports Alternating_Forest_Contraction
 begin                  
 
+provenance human
+
 (*Note: not necessary for the current executable blossom,
     but it will be useful for a cubic version of weighted blossom
     where path search and blossom expansion are interwoven.*)

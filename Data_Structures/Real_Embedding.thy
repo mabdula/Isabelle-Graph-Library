@@ -1,6 +1,8 @@
 theory Real_Embedding
-  imports Complex_Main
+  imports Complex_Main AI_Provenance.Provenance
 begin
+
+provenance ai_human
 
 text \<open>A ring embedding of the executable value type @{typ 'n} into the reals: an order-preserving
       ring homomorphism. Instantiated by @{term id} for the real program and by @{const of_int} for the

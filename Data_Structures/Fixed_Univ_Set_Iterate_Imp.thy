@@ -4,6 +4,8 @@ theory Fixed_Univ_Set_Iterate_Imp
     More_Lists
 begin
 
+provenance ai_human
+
 section \<open>Ordered Iteration over Imperative Fixed-Universe Sets\<close>
 
 text \<open>A fixed order of the elements of finite sets that is compatible with filtering.\<close>

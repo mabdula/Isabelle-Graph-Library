@@ -4,6 +4,8 @@ theory Matching_Certificate_Spec
           Data_Structures.Real_Embedding
 begin
 
+provenance ai_human
+
 section \<open>Certificate Checkers for Extremal Bipartite Matchings: Specification\<close>
 
 text \<open>A checker that is independent of any solver. It receives an instance, a candidate matching

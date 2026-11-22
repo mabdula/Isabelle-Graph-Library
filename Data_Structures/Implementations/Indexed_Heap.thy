@@ -2,6 +2,8 @@ theory Indexed_Heap
   imports Main More_Lists Data_Structures.Fixed_Univ_Key_Value_Queue_Specs
 begin
 
+provenance ai_human
+
 section \<open>An Indexed Binary Min-Heap: Functional Model\<close>
 
 text \<open>A binary min-heap over elements that are natural numbers (indices into a fixed universe,

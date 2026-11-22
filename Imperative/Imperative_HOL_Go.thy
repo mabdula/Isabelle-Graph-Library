@@ -1,8 +1,10 @@
 theory Imperative_HOL_Go
   imports
     "HOL-Imperative_HOL.Imperative_HOL"
-    "Go.Go_Setup"
+    "Go.Go_Setup" AI_Provenance.Provenance
 begin
+
+provenance ai_human
 
 section \<open>Imperative HOL in Go\<close>
 

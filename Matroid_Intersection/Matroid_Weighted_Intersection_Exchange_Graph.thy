@@ -2,6 +2,8 @@ theory Matroid_Weighted_Intersection_Exchange_Graph
   imports Matroid_Weighted_Intersection_Path_Loop Matroid_Intersection_Exchange_Graph
 begin
 
+provenance ai_human
+
 section \<open>Weighted Matroid Intersection on the Exchange Graph\<close>
 
 text \<open>The weighted counterpart of @{theory Matroid_Intersection.Matroid_Intersection_Exchange_Graph}:

@@ -1,6 +1,8 @@
 theory Fixed_Univ_Set_Specs
-  imports Main
+  imports Main AI_Provenance.Provenance
 begin
+
+provenance human
 
 locale fixed_univ_set =
   fixes U :: "'a set"

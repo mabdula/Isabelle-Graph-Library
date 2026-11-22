@@ -1,6 +1,8 @@
 theory Fixed_Univ_Map_Specs
-  imports Main
+  imports Main AI_Provenance.Provenance
 begin
+
+provenance human
 
 locale fixed_univ_map =
 fixes K::"'a set"

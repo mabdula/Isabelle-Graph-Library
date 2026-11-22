@@ -3,6 +3,8 @@ theory Imp_Range_Iteration
     More_Lists
 begin
 
+provenance ai_human
+
 section \<open>Imperative Iteration over Ranges of Indices and over Lists\<close>
 
 text \<open>Folds of a heap function over the indices \<open>[0..<i]\<close> (downwards, as a @{const foldr}) and

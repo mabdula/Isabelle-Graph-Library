@@ -2,6 +2,8 @@ theory List_Cursor_Imperative
   imports List_Cursor Data_Structures.Iterable_Set_Specs_Imp
 begin
 
+provenance ai
+
 section \<open>The List Cursor in the Heap\<close>
 
 text \<open>The list is stored in an array, which is only read, and the cursor in a reference.\<close>

@@ -2,6 +2,8 @@ theory Matroid_Intersection_Exchange_Graph
   imports Exchange_Oracles Matroid_Intersection_Path_Loop "Graph_Algorithms_Dev.BFS_3"
 begin
 
+provenance ai_human
+
 section \<open>Matroid Intersection on the Exchange Graph\<close>
 
 text \<open>The only layer connecting the augmentation loop

@@ -2,6 +2,8 @@ theory Matroid_Weighted_Intersection_Path_Loop
   imports Matroid_Intersection_Path_Loop Matroid_Weighted_Intersection
 begin
 
+provenance ai_human
+
 section \<open>Weighted Matroid Intersection as a Loop over an Abstract Tight-Path Search\<close>
 
 text \<open>The primal-dual loop of Frank's weighted matroid intersection algorithm (Korte--Vygen,

@@ -1,7 +1,9 @@
 theory Fixed_Univ_Buckets_Specs
   imports
-    Main
+    Main AI_Provenance.Provenance
 begin
+
+provenance ai
 
 section \<open>Buckets over a Fixed Universe\<close>
 

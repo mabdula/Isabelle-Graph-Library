@@ -2,6 +2,8 @@ theory Imp_Bool_Set
   imports Imp_Range_Iteration Data_Structures.Fixed_Univ_Set_Specs_Imp
 begin
 
+provenance ai_human
+
 section \<open>Sets of Nats below a Bound as Boolean Arrays\<close>
 
 text \<open>The array holds exactly the characteristic list of the set.\<close>

@@ -1,7 +1,9 @@
 theory Fixed_Univ_List_Specs
   imports
-    Main
+    Main AI_Provenance.Provenance
 begin
+
+provenance ai
 
 section \<open>Distinct Lists over a Fixed Universe\<close>
 

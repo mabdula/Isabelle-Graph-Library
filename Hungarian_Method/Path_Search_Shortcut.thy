@@ -5,6 +5,8 @@ theory Path_Search_Shortcut
     Data_Structures.More_Arith
 begin
 
+provenance ai_human
+
 section \<open>A Rematching Shortcut before the Path Search\<close>
 
 text \<open>Before a full path search, augmenting row reduction in the style of Jonker and Volgenant is

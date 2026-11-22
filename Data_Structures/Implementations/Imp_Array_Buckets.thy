@@ -5,6 +5,8 @@ theory Imp_Array_Buckets
     Fixed_Univ_Buckets_Specs_Imp
 begin
 
+provenance ai
+
 section \<open>Buckets as Doubly-Linked Lists in Arrays\<close>
 
 text \<open>Buckets with keys \<open>{..<nb}\<close> over the elements \<open>{..<n}\<close>: one doubly-linked list per bucket,

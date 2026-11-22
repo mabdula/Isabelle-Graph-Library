@@ -2,6 +2,8 @@ theory Exchange_Oracles
   imports Matroid_Intersection 
 begin
 
+provenance ai_human
+
 section \<open>Insertion and Exchange Oracles\<close>
 
 text \<open>This theory turns the weak insertion oracles and the circuit oracles into

@@ -2,6 +2,8 @@ theory Fixed_Univ_Map_Specs_Imp
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main Fixed_Univ_Map_Specs
 begin
 
+provenance ai_human
+
 text \<open>The basic interface: immutable maps, with a lookup only. Update in place is an extension
       (@{text fixed_univ_map_imp}), as are the add-ons below.\<close>
 

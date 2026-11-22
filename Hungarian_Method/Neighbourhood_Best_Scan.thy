@@ -4,6 +4,8 @@ theory Neighbourhood_Best_Scan
     Complex_Main
 begin
 
+provenance ai
+
 section \<open>The Best Two Neighbours in a Collection of Neighbourhoods\<close>
 
 text \<open>A cursor scan over the neighbourhood of a vertex @{term u} that keeps a neighbour of minimum

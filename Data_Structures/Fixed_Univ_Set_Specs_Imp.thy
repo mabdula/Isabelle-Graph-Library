@@ -2,6 +2,8 @@ theory Fixed_Univ_Set_Specs_Imp
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main Fixed_Univ_Set_Specs
 begin
 
+provenance ai_human
+
 text \<open>The basic interface: membership test, insertion and deletion in place. The add-ons below
       provide allocation of the empty set (@{text fixed_univ_set_imp}), clearing in place and
       copying into another set; bigger locales combine those they need.\<close>

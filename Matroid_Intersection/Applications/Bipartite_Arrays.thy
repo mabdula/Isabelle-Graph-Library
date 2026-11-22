@@ -2,6 +2,8 @@ theory Bipartite_Arrays
   imports Partition_Oracle_Imp Basic_Matching.Matching
 begin
 
+provenance ai_human
+
 section \<open>Bipartite Graphs Given by Two Arrays\<close>
 
 text \<open>The graph is the set of the doubletons \<open>{fs ! i, ts ! i}\<close>. It is bipartite with the left

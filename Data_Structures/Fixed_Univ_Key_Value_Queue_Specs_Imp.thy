@@ -2,6 +2,9 @@ theory Fixed_Univ_Key_Value_Queue_Specs_Imp
   imports Separation_Logic_Imperative_HOL_Partial.Sep_Main 
           Fixed_Univ_Key_Value_Queue_Specs
 begin
+
+provenance ai_human
+
 section \<open>Imperative Key-Value Queues\<close>
 
 text \<open>The functional key-value queue of @{locale key_value_queue} is extended by a representation

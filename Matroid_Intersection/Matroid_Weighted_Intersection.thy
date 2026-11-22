@@ -2,6 +2,8 @@ theory Matroid_Weighted_Intersection
   imports Matroid_Intersection Data_Structures.More_Arith
 begin
 
+provenance ai_human
+
 section \<open>Theory for Weighted Matroid Intersection\<close>
 
 text \<open>This file contains theory for weighted matroid intersection (Korte\&Vygen, Section 13.7). It formalises

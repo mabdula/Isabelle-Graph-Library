@@ -4,6 +4,8 @@ theory Array_Map_Set_Addons
           Separation_Logic_Imperative_HOL_Partial.Array_Set_Impl
 begin
 
+provenance ai_human
+
 section \<open>Array Maps and Array Sets: Clearing, Ordered Iteration, Functional Models\<close>
 
 text \<open>The array maps @{const is_iam} and array sets @{const is_ias} of the separation logic library

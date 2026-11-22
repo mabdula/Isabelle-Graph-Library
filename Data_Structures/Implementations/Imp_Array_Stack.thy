@@ -3,6 +3,8 @@ theory Imp_Array_Stack
     Data_Structures.Bounded_Stack_Specs_Imp
 begin
 
+provenance ai
+
 section \<open>Bounded Stacks as Arrays\<close>
 
 text \<open>A LIFO stack of capacity \<open>cap\<close>: an array of length \<open>cap\<close>, allocated once, holding the

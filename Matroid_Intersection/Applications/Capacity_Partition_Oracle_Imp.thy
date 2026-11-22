@@ -2,6 +2,8 @@ theory Capacity_Partition_Oracle_Imp
   imports Partition_Oracle_Imp
 begin
 
+provenance ai_human
+
 section \<open>Partition Matroids with Capacities\<close>
 
 text \<open>The carrier is partitioned into blocks by \<open>blk\<close>, and every block \<open>b\<close> has a

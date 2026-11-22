@@ -4,6 +4,8 @@ theory Imp_Bool_Set_Iterate
     Fixed_Univ_Set_Iterate_Imp
 begin
 
+provenance ai_human
+
 section \<open>Iterating over Boolean Arrays\<close>
 
 text \<open>The iterator carries the array, its length and the next member. Advancing scans the array

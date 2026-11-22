@@ -2,6 +2,8 @@ theory Weighted_Bipartite_Matching_Matroid
   imports Max_Bipartite_Matching_Matroid Matroid_Weighted_Intersection_Algorithm
 begin
 
+provenance ai_human
+
 section \<open>Maximum Weight Bipartite Matching via Weighted Matroid Intersection\<close>
 
 text \<open>This file uses the weighted matroid intersection algorithm to obtain an algorithm for

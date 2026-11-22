@@ -2,6 +2,8 @@ theory Matching_Contraction_Expansion
   imports Graph_Quotient Basic_Matching.Matching_Augmentation_Executable
 begin
 
+provenance human
+
 locale blossom_matching_spec =
   fixes K::"'v set"
    and empty_matching::'matching

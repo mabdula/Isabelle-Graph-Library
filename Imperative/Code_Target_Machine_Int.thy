@@ -5,6 +5,8 @@ theory Code_Target_Machine_Int
     "Imperative_HOL_Go"
 begin
 
+provenance ai_human
+
 section \<open>Serialising @{typ nat} and @{typ int} to Machine Integers\<close>
 
 text \<open>Both @{typ nat} and @{typ int} become signed 64-bit integers of the target language:

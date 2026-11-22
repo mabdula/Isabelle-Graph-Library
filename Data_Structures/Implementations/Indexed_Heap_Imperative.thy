@@ -2,6 +2,8 @@ theory Indexed_Heap_Imperative
   imports Indexed_Heap   Data_Structures.Fixed_Univ_Key_Value_Queue_Specs_Imp
 begin
 
+provenance ai_human
+
 section \<open>An Indexed Binary Min-Heap in Imperative HOL\<close>
 
 text \<open>The heap of \<open>Indexed_Heap\<close> over the universe \<open>{..<n}\<close>. It
